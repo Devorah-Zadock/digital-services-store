@@ -28,6 +28,10 @@
 .builder-form textarea { resize: vertical; }
 .sep { border: none; border-top: 1px solid #EDEFEE; margin: 8px 0 14px; }
 
+.lang-tabs { display: flex; gap: 6px; }
+.lang-tab { flex: 1; background: var(--white); border: 1.5px solid #DDE4E1; color: var(--dark); padding: 7px 0; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.lang-tab.active { background: var(--teal); border-color: var(--teal); color: var(--white); }
+
 .color-row { display: flex; align-items: center; gap: 12px; }
 .color-row input[type="color"] { width: 44px; height: 34px; border: none; border-radius: 6px; padding: 0; cursor: pointer; background: none; }
 .swatches { display: flex; gap: 6px; }

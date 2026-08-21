@@ -42,6 +42,13 @@
       <select id="tpl-select"></select>
     </div>
     <div class="field">
+      <label>שפה / Language</label>
+      <div class="lang-tabs">
+        <button type="button" class="lang-tab active" data-lang="he">עברית</button>
+        <button type="button" class="lang-tab" data-lang="en">English</button>
+      </div>
+    </div>
+    <div class="field">
       <label for="color-picker">צבע ראשי</label>
       <div class="color-row">
         <input type="color" id="color-picker" value="#1F5C4E">
@@ -51,21 +58,28 @@
 
     <hr class="sep">
 
-    <div class="field"><label for="f-name">שם מלא</label><input id="f-name" type="text"></div>
-    <div class="field"><label for="f-title">תפקיד / כותרת</label><input id="f-title" type="text"></div>
-    <div class="field"><label for="f-contact">פרטי קשר (מופרד ב-|)</label><input id="f-contact" type="text"></div>
-    <div class="field"><label for="f-summary">תקציר מקצועי</label><textarea id="f-summary" rows="3"></textarea></div>
+    <div class="field"><label for="f-name" data-label="name">שם מלא</label><input id="f-name" type="text"></div>
+    <div class="field"><label for="f-title" data-label="title">תפקיד / כותרת</label><input id="f-title" type="text"></div>
+    <div class="field"><label for="f-contact" data-label="contact">פרטי קשר (מופרד ב-|)</label><input id="f-contact" type="text"></div>
+    <div class="field"><label for="f-summary" data-label="summary">תקציר מקצועי</label><textarea id="f-summary" rows="3"></textarea></div>
 
     <hr class="sep">
     <div class="jobs-head">
-      <label>ניסיון תעסוקתי</label>
-      <button type="button" class="btn-mini" id="add-job">+ הוסף תפקיד</button>
+      <label data-label="jobsHead">ניסיון תעסוקתי</label>
+      <button type="button" class="btn-mini" id="add-job" data-label="addJob">+ הוסף תפקיד</button>
     </div>
     <div id="jobs-list"></div>
 
     <hr class="sep">
-    <div class="field"><label for="f-education">השכלה</label><input id="f-education" type="text"></div>
-    <div class="field"><label for="f-skills">כישורים (מופרד ב-|)</label><input id="f-skills" type="text"></div>
+    <div class="jobs-head">
+      <label data-label="projectsHead">פרויקטים (אופציונלי)</label>
+      <button type="button" class="btn-mini" id="add-project" data-label="addProject">+ הוסף פרויקט</button>
+    </div>
+    <div id="projects-list"></div>
+
+    <hr class="sep">
+    <div class="field"><label for="f-education" data-label="education">השכלה</label><input id="f-education" type="text"></div>
+    <div class="field"><label for="f-skills" data-label="skills">כישורים (מופרד ב-|)</label><input id="f-skills" type="text"></div>
   </aside>
 
   <main class="builder-preview">
@@ -77,7 +91,7 @@
           <button type="button" class="btn btn-teal" id="download-btn-free">הורדת PDF — חינם</button>
 
           <div class="upsell-box">
-            <p style="margin:0 0 8px; font-size:13px; font-weight:600;">רוצים גרסה נקייה בלי הקרדיט? שדרוג חד-פעמי ל-BizKit Pro מסיר אותו מכל התבניות, לתמיד.</p>
+            <p style="margin:0 0 8px; font-size:13px; font-weight:600;">שדרוג חד-פעמי ל-BizKit Pro: מסיר את הקרדיט מכל התבניות לתמיד, ונותן גישה מוקדמת לכל תבנית חדשה שנוסיף.</p>
             <a href="#" id="buy-link" class="btn btn-gold" style="margin-bottom:10px;">שדרוג ל-Pro</a>
             <p style="margin:0 0 6px; font-size:12.5px;">כבר יש לכם קוד רישוי?</p>
             <div class="license-row">

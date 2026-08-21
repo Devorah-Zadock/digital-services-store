@@ -1,4 +1,4 @@
-/* Renders a CV as an HTML string from {layout, font, palette, content}.
+/* Renders a CV as an HTML string from {layout, font, palette, content, lang}.
    Shared by the live builder preview and the print/PDF output, so what the
    user sees while editing is exactly what they get in the exported file.
 
@@ -6,9 +6,17 @@
    recolored):
    - "sidebar": two-column, colored sidebar with avatar initials + chip skills
    - "bold": single column, oversized editorial name + numbered section badges
-   - "classic-mono": quiet, refined, conservative — no chips, generous whitespace */
+   - "classic-mono": quiet, refined, conservative — no chips, generous whitespace
+
+   lang is "he" (RTL) or "en" (LTR) — mirrors layout direction and swaps
+   section labels; content itself must already be in the matching language. */
 const CV_DARK = "222222";
 const CV_GREY = "5A5A5A";
+
+const LABELS = {
+  he: { contact: "פרטי קשר", skills: "כישורים", summary: "תקציר מקצועי", experience: "ניסיון תעסוקתי", education: "השכלה", projects: "פרויקטים" },
+  en: { contact: "Contact", skills: "Skills", summary: "Professional Summary", experience: "Experience", education: "Education", projects: "Projects" },
+};
 
 function escapeHtml(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -39,6 +47,7 @@ const SHARED_CSS = `
   .cv-doc .cv-jobtitle { font-weight:700; }
   .cv-doc .cv-dates { font-size:11px; font-style:italic; }
   .cv-doc .cv-summary { font-size:13px; line-height:1.65; margin:0; }
+  .cv-doc .cv-link { font-size:11px; font-weight:600; }
 `;
 
 function chipHtml(text, chipBg, chipColor, chipFont) {
@@ -46,11 +55,21 @@ function chipHtml(text, chipBg, chipColor, chipFont) {
 }
 function creditHtml(showCredit) {
   if (!showCredit) return "";
-  return `<div style="text-align:center; padding:10px 20px 16px; font-size:10px; color:#9A9A9A;">נוצר עם BizKit · bizkit.example</div>`;
+  return `<div style="text-align:center; padding:10px 20px 16px; font-size:10px; color:#9A9A9A;">Made with BizKit · bizkit.example</div>`;
+}
+function projectsList(projects, primaryHex) {
+  if (!projects || !projects.length) return "";
+  return projects.map((p) => `
+    <div style="margin-bottom:12px;">
+      <div class="cv-jobtitle" style="font-size:13px;">${escapeHtml(p.title)}${p.link ? ` <span class="cv-link" style="color:#${primaryHex};">(${escapeHtml(p.link)})</span>` : ""}</div>
+      <ul style="margin-top:4px;">${bulletsToLis(p.bullets)}</ul>
+    </div>`).join("");
 }
 
 /* ---------------- Sidebar layout ---------------- */
-function renderSidebar({ font, palette, content, showCredit }) {
+function renderSidebar({ font, palette, content, showCredit, lang }) {
+  const L = LABELS[lang];
+  const dir = lang === "en" ? "ltr" : "rtl";
   const contactLines = splitParts(content.contact);
   const skillChips = splitParts(content.skills).map((s) => chipHtml(s, "rgba(255,255,255,.14)", "#fff")).join("");
   const jobsHtml = content.jobs.map((j, i) => `
@@ -65,7 +84,7 @@ function renderSidebar({ font, palette, content, showCredit }) {
 
   return `
   <style>${SHARED_CSS}
-    .cv-sidebar-wrap { display:flex; flex-direction:row-reverse; min-height:600px; }
+    .cv-sidebar-wrap { display:flex; flex-direction:${lang === "en" ? "row" : "row-reverse"}; min-height:600px; }
     .cv-side { width:255px; flex:none; background:#${palette.primaryDark}; color:#fff; padding:36px 26px; text-align:center; }
     .cv-side .avatar { width:78px; height:78px; border-radius:50%; background:rgba(255,255,255,.16); display:flex; align-items:center; justify-content:center; margin:0 auto 16px; font-size:26px; font-weight:700; color:#fff; }
     .cv-side h1 { font-size:21px; margin:0 0 4px; }
@@ -77,23 +96,24 @@ function renderSidebar({ font, palette, content, showCredit }) {
     .cv-main h2 { font-size:14px; color:#${palette.primary}; margin:0 0 12px; text-transform:uppercase; letter-spacing:.05em; }
     .cv-main h2:not(:first-child) { margin-top:26px; }
   </style>
-  <div class="cv-doc" dir="rtl">
+  <div class="cv-doc" dir="${dir}">
     <div class="cv-sidebar-wrap">
       <aside class="cv-side">
         <div class="avatar">${escapeHtml(initialsOf(content.name))}</div>
         <h1>${escapeHtml(content.name)}</h1>
         <div class="role">${escapeHtml(content.title)}</div>
-        <div class="sec-label">פרטי קשר</div>
+        <div class="sec-label">${L.contact}</div>
         ${contactLines.map((c) => `<div class="contact-line">${escapeHtml(c)}</div>`).join("")}
-        <div class="sec-label">כישורים</div>
+        <div class="sec-label">${L.skills}</div>
         <div class="chips">${skillChips}</div>
       </aside>
       <main class="cv-main">
-        <h2>תקציר מקצועי</h2>
+        <h2>${L.summary}</h2>
         <p class="cv-summary">${escapeHtml(content.summary)}</p>
-        <h2>ניסיון תעסוקתי</h2>
+        <h2>${L.experience}</h2>
         ${jobsHtml}
-        <h2>השכלה</h2>
+        ${content.projects && content.projects.length ? `<h2>${L.projects}</h2>${projectsList(content.projects, palette.primary)}` : ""}
+        <h2>${L.education}</h2>
         <p class="cv-summary">${escapeHtml(content.education)}</p>
       </main>
     </div>
@@ -102,7 +122,9 @@ function renderSidebar({ font, palette, content, showCredit }) {
 }
 
 /* ---------------- Bold editorial layout ---------------- */
-function renderBold({ font, palette, content, showCredit }) {
+function renderBold({ font, palette, content, showCredit, lang }) {
+  const L = LABELS[lang];
+  const dir = lang === "en" ? "ltr" : "rtl";
   const skillChips = splitParts(content.skills).map((s) => chipHtml(s, "#" + palette.ice, "#" + palette.primaryDark)).join("");
   let n = 0;
   const badge = () => { n += 1; return String(n).padStart(2, "0"); };
@@ -130,7 +152,7 @@ function renderBold({ font, palette, content, showCredit }) {
     .cv-bold-body h2:first-child { margin-top:0; }
     .cv-bold-body h2 .n { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:6px; background:#${palette.primary}; color:#fff; font-size:11px; font-weight:700; flex:none; }
   </style>
-  <div class="cv-doc" dir="rtl">
+  <div class="cv-doc" dir="${dir}">
     <div class="cv-bold-head">
       <div class="inner">
         <h1>${escapeHtml(content.name)}</h1>
@@ -139,13 +161,14 @@ function renderBold({ font, palette, content, showCredit }) {
       </div>
     </div>
     <div class="cv-bold-body">
-      <h2><span class="n">${badge()}</span> תקציר מקצועי</h2>
+      <h2><span class="n">${badge()}</span> ${L.summary}</h2>
       <p class="cv-summary">${escapeHtml(content.summary)}</p>
-      <h2><span class="n">${badge()}</span> ניסיון תעסוקתי</h2>
+      <h2><span class="n">${badge()}</span> ${L.experience}</h2>
       ${jobsHtml}
-      <h2><span class="n">${badge()}</span> השכלה</h2>
+      ${content.projects && content.projects.length ? `<h2><span class="n">${badge()}</span> ${L.projects}</h2>${projectsList(content.projects, palette.primary)}` : ""}
+      <h2><span class="n">${badge()}</span> ${L.education}</h2>
       <p class="cv-summary">${escapeHtml(content.education)}</p>
-      <h2><span class="n">${badge()}</span> כישורים</h2>
+      <h2><span class="n">${badge()}</span> ${L.skills}</h2>
       <div>${skillChips}</div>
     </div>
     ${creditHtml(showCredit)}
@@ -153,7 +176,9 @@ function renderBold({ font, palette, content, showCredit }) {
 }
 
 /* ---------------- Classic / quiet layout ---------------- */
-function renderClassicMono({ font, palette, content, showCredit }) {
+function renderClassicMono({ font, palette, content, showCredit, lang }) {
+  const L = LABELS[lang];
+  const dir = lang === "en" ? "ltr" : "rtl";
   let n = 0;
   const badge = () => { n += 1; return String(n).padStart(2, "0"); };
   const jobsHtml = content.jobs.map((j) => `
@@ -174,28 +199,30 @@ function renderClassicMono({ font, palette, content, showCredit }) {
     .cv-cm-body h2:first-child { margin-top:0; }
     .cv-cm-body h2 .n { font-size:11px; color:#${palette.primary}; font-weight:700; }
   </style>
-  <div class="cv-doc" dir="rtl">
+  <div class="cv-doc" dir="${dir}">
     <div class="cv-cm-head">
       <h1>${escapeHtml(content.name)}</h1>
       <div class="role">${escapeHtml(content.title)}</div>
       <div class="contact">${escapeHtml(content.contact)}</div>
     </div>
     <div class="cv-cm-body">
-      <h2><span class="n">${badge()}</span> תקציר מקצועי</h2>
+      <h2><span class="n">${badge()}</span> ${L.summary}</h2>
       <p class="cv-summary">${escapeHtml(content.summary)}</p>
-      <h2><span class="n">${badge()}</span> ניסיון תעסוקתי</h2>
+      <h2><span class="n">${badge()}</span> ${L.experience}</h2>
       ${jobsHtml}
-      <h2><span class="n">${badge()}</span> השכלה</h2>
+      ${content.projects && content.projects.length ? `<h2><span class="n">${badge()}</span> ${L.projects}</h2>${projectsList(content.projects, palette.primary)}` : ""}
+      <h2><span class="n">${badge()}</span> ${L.education}</h2>
       <p class="cv-summary">${escapeHtml(content.education)}</p>
-      <h2><span class="n">${badge()}</span> כישורים</h2>
+      <h2><span class="n">${badge()}</span> ${L.skills}</h2>
       <p class="cv-summary">${escapeHtml(content.skills)}</p>
     </div>
     ${creditHtml(showCredit)}
   </div>`;
 }
 
-function renderCVHtml({ layout, font, palette, content, showCredit }) {
-  const args = { font, palette, content, showCredit };
+function renderCVHtml({ layout, font, palette, content, showCredit, lang }) {
+  const l = lang === "en" ? "en" : "he";
+  const args = { font, palette, content, showCredit, lang: l };
   let html;
   if (layout === "sidebar") html = renderSidebar(args);
   else if (layout === "bold") html = renderBold(args);
