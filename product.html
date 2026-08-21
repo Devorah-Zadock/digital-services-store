@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>קטלוג תבניות — BizKit</title>
-<meta name="description" content="קטלוג תבניות עסקיות: קורות חיים לפי מקצוע, מצגות עסקיות ועוד — מוכן להורדה ועריכה מיידית.">
+<title>מוצר — BizKit</title>
+<meta name="description" content="תבנית עסקית מוכנה להורדה ועריכה מיידית.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -26,23 +26,17 @@
   </nav>
 </header>
 
-<section class="hero" style="padding:60px 24px 70px;">
-  <h1 style="font-size:34px;">קטלוג המוצרים</h1>
-  <p class="lead">תבניות מוכנות, בעיצוב מקצועי — לבחירה, הורדה והתאמה אישית תוך דקות. קורות חיים מותאמים לפי מקצוע, ומצגות עסקיות.</p>
-</section>
+<div class="container">
+  <div id="product-root"></div>
+</div>
 
-<section>
+<section class="bg-ice" id="related-section">
   <div class="container">
-    <div class="tabs" id="cat-tabs"></div>
-    <div class="grid" id="product-grid"></div>
-
-    <div class="banner mt-40">
-      <div>
-        <h3>אוטומציות עסקיות <span class="badge-free">בקרוב · חינם</span></h3>
-        <p>מדריכים מוכנים ל-Make (Integromat) שיחסכו לכם שעות עבודה ידנית — בקרוב יתווספו כאן.</p>
-      </div>
-      <a href="contact.html" class="btn btn-teal">עדכנו אותי כשזה יוצא</a>
+    <div class="section-head">
+      <div class="kicker">אולי גם יעניין אתכם</div>
+      <h2>תבניות נוספות באותה קטגוריה</h2>
     </div>
+    <div class="grid" id="related-grid"></div>
   </div>
 </section>
 

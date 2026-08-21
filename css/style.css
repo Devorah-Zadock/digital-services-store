@@ -79,8 +79,19 @@ section { padding: 80px 0; }
 .section-head p { color: var(--grey); font-size: 16px; }
 .bg-ice { background: var(--ice); }
 
+/* ---------- Category tabs ---------- */
+.tabs { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 40px; }
+.tab {
+  background: var(--white); border: 1.5px solid #DDE4E1; color: var(--dark);
+  padding: 9px 20px; border-radius: 30px; font-size: 14px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+}
+.tab:hover { border-color: var(--teal); }
+.tab.active { background: var(--teal); border-color: var(--teal); color: var(--white); }
+
 /* ---------- Product grid / cards ---------- */
-.grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 32px; }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+.grid.grid-2 { grid-template-columns: repeat(2, 1fr); }
 .card {
   background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow);
   overflow: hidden; display: flex; flex-direction: column;
