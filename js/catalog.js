@@ -78,9 +78,14 @@ function initProductPage() {
           <span style="color:var(--grey); font-size:14px;">תשלום חד-פעמי · הורדה מיידית</span>
         </div>
         <ul class="checklist">${p.checklist.map((c) => `<li>${c}</li>`).join("")}</ul>
+        ${p.categorySlug === "deck" ? `
         <!-- TODO: replace href with the real Gumroad / Payhip checkout link for this product -->
         <a href="contact.html" class="btn btn-gold">לרכישה מאובטחת</a>
         <div class="note-box">מעדיפים לנסות לפני שרוכשים, או יש שאלה? <a href="contact.html" style="color:var(--teal); font-weight:600;">כתבו לנו</a> ונשמח לעזור.</div>
+        ` : `
+        <a href="builder.html?template=${p.slug}" class="btn btn-gold">עריכה ותצוגה מקדימה — בחינם</a>
+        <div class="note-box">ממלאים את הפרטים שלכם ורואים תוצאה חיה. הורדת ה-PDF הסופי נפתחת רק אחרי רכישה — כך שהקובץ שברשותכם הוא תמיד הגרסה האישית שלכם, לא קובץ Word גנרי שאפשר להעביר הלאה.</div>
+        `}
       </div>
     </div>`;
 

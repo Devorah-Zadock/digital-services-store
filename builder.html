@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>בילדר קורות חיים — BizKit</title>
+<meta name="description" content="התאימו אישית קורות חיים בזמן אמת, והורידו PDF לאחר רכישה.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/builder.css">
+</head>
+<body>
+
+<header class="site no-print">
+  <nav class="nav">
+    <a href="index.html" class="brand"><span class="dot"></span>BizKit</a>
+    <div class="nav-links">
+      <a href="index.html">בית</a>
+      <a href="products.html">קטלוג</a>
+      <a href="about.html">אודות</a>
+      <a href="contact.html">צור קשר</a>
+    </div>
+    <a href="products.html" class="nav-cta">לקטלוג</a>
+    <button class="burger" aria-label="תפריט">☰</button>
+  </nav>
+</header>
+
+<section class="builder-top no-print">
+  <div class="container">
+    <div class="breadcrumb"><a href="products.html">קטלוג</a> / בילדר קורות חיים</div>
+    <h1 style="font-size:26px; margin:6px 0 4px;">התאימו אישית ותצפו בזמן אמת</h1>
+    <p style="color:var(--grey); font-size:14px; margin:0;">מלאו את הפרטים שלכם, בחרו צבע — והתצוגה המקדימה מתעדכנת מיד. הורדת ה-PDF הסופי נפתחת אחרי רכישה.</p>
+  </div>
+</section>
+
+<div class="container builder-wrap">
+  <aside class="builder-form no-print">
+    <div class="field">
+      <label for="tpl-select">בחרו תבנית</label>
+      <select id="tpl-select"></select>
+    </div>
+    <div class="field">
+      <label for="color-picker">צבע ראשי</label>
+      <div class="color-row">
+        <input type="color" id="color-picker" value="#1F5C4E">
+        <div class="swatches" id="swatches"></div>
+      </div>
+    </div>
+
+    <hr class="sep">
+
+    <div class="field"><label for="f-name">שם מלא</label><input id="f-name" type="text"></div>
+    <div class="field"><label for="f-title">תפקיד / כותרת</label><input id="f-title" type="text"></div>
+    <div class="field"><label for="f-contact">פרטי קשר (מופרד ב-|)</label><input id="f-contact" type="text"></div>
+    <div class="field"><label for="f-summary">תקציר מקצועי</label><textarea id="f-summary" rows="3"></textarea></div>
+
+    <hr class="sep">
+    <div class="jobs-head">
+      <label>ניסיון תעסוקתי</label>
+      <button type="button" class="btn-mini" id="add-job">+ הוסף תפקיד</button>
+    </div>
+    <div id="jobs-list"></div>
+
+    <hr class="sep">
+    <div class="field"><label for="f-education">השכלה</label><input id="f-education" type="text"></div>
+    <div class="field"><label for="f-skills">כישורים (מופרד ב-|)</label><input id="f-skills" type="text"></div>
+  </aside>
+
+  <main class="builder-preview">
+    <div class="preview-sticky">
+      <div id="preview-doc"></div>
+      <div class="export-panel no-print" id="export-panel">
+        <div id="lock-state" class="lock-locked">
+          <p style="margin:0 0 10px; font-size:14px;">🔒 הורדת ה-PDF נפתחת אחרי רכישה. יש לכם כבר קוד רישוי?</p>
+          <div class="license-row">
+            <input type="text" id="license-key" placeholder="הדביקו כאן את קוד הרישוי מהמייל">
+            <button type="button" class="btn btn-teal" id="verify-btn">אימות</button>
+          </div>
+          <p id="license-msg" style="font-size:13px; margin:8px 0 0;"></p>
+          <a href="#" id="buy-link" class="btn btn-gold" style="margin-top:14px;">רכישה — קבלת קוד רישוי במייל</a>
+        </div>
+        <div id="unlock-state" class="lock-unlocked" style="display:none;">
+          <p style="margin:0 0 12px; font-size:14px; color:var(--teal-dark); font-weight:600;">✓ הרכישה אומתה — אפשר להוריד</p>
+          <button type="button" class="btn btn-gold" id="download-btn">הורדת PDF</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<footer class="site no-print">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <h5>BizKit</h5>
+        <p style="font-size:14px; max-width:320px;">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
+      </div>
+      <div>
+        <h5>ניווט</h5>
+        <ul>
+          <li><a href="products.html">קטלוג מוצרים</a></li>
+          <li><a href="about.html">אודות</a></li>
+          <li><a href="contact.html">צור קשר</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>צור קשר</h5>
+        <ul>
+          <li>hello@bizkit.example</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">© 2026 BizKit. כל הזכויות שמורות.</div>
+  </div>
+</footer>
+
+<script src="js/cv-content.js"></script>
+<script src="js/color-utils.js"></script>
+<script src="js/cv-render.js"></script>
+<script src="js/builder.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
