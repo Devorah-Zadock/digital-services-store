@@ -64,7 +64,7 @@
 
 @media print {
   .no-print { display: none !important; }
-  body, .builder-wrap, .container { all: unset; display: block; }
-  #preview-doc .cv-doc { box-shadow: none; margin: 0; max-width: 100%; }
+  body, .builder-wrap, .container, .builder-preview, .preview-sticky { all: unset; display: block; }
+  #preview-doc .cv-doc { box-shadow: none; margin: 0; max-width: 100%; width: 100%; }
   @page { size: A4; margin: 0; }
 }
