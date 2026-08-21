@@ -1,16 +1,12 @@
-/* CV builder: template + color selection, live-editing form, live preview,
-   and a Gumroad-license-gated PDF export (window.print()).
-   IMPORTANT: GUMROAD_CONFIG below has placeholder permalinks/links —
+/* CV builder: template + color selection, live-editing form, live preview.
+   Freemium model: PDF export (window.print()) is ALWAYS free, with a small
+   "made with BizKit" credit line. One Gumroad product ("BizKit Pro") removes
+   the credit line from every template, verified client-side against
+   Gumroad's public License Verification API — no backend needed.
+   IMPORTANT: GUMROAD_PRODUCT below has a placeholder permalink/link —
    see README "Gumroad setup" before going live. */
-const GUMROAD_CONFIG = {
-  "cv-general-modern": { permalink: "REPLACE_ME_cv_general", checkoutUrl: "https://gum.co/REPLACE_ME_cv_general" },
-  "cv-dev-dark": { permalink: "REPLACE_ME_cv_dev_dark", checkoutUrl: "https://gum.co/REPLACE_ME_cv_dev_dark" },
-  "cv-dev-minimal": { permalink: "REPLACE_ME_cv_dev_minimal", checkoutUrl: "https://gum.co/REPLACE_ME_cv_dev_minimal" },
-  "cv-design-creative": { permalink: "REPLACE_ME_cv_design_creative", checkoutUrl: "https://gum.co/REPLACE_ME_cv_design_creative" },
-  "cv-design-portfolio": { permalink: "REPLACE_ME_cv_design_portfolio", checkoutUrl: "https://gum.co/REPLACE_ME_cv_design_portfolio" },
-  "cv-accounting-classic": { permalink: "REPLACE_ME_cv_accounting", checkoutUrl: "https://gum.co/REPLACE_ME_cv_accounting" },
-  "cv-business-clean": { permalink: "REPLACE_ME_cv_business", checkoutUrl: "https://gum.co/REPLACE_ME_cv_business" },
-};
+const GUMROAD_PRODUCT = { permalink: "REPLACE_ME_bizkit_pro", checkoutUrl: "https://gum.co/REPLACE_ME_bizkit_pro" };
+const UNLOCK_KEY = "bizkit_pro_unlocked";
 
 const SWATCHES = ["1F5C4E", "24476B", "C24B1F", "B5175A", "1F2A44", "2563EB", "334E68"];
 
@@ -18,9 +14,8 @@ let state = { slug: null, content: null };
 
 function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
 
-function unlockKey(slug) {
-  const cfg = GUMROAD_CONFIG[slug];
-  return "bizkit_unlocked_" + (cfg ? cfg.permalink : slug);
+function isUnlocked() {
+  return localStorage.getItem(UNLOCK_KEY) === "1";
 }
 
 function loadTemplate(slug) {
@@ -31,9 +26,6 @@ function loadTemplate(slug) {
   document.getElementById("color-picker").value = "#" + tpl.defaultColor;
   renderForm();
   renderPreview();
-  refreshLockUI();
-  const cfg = GUMROAD_CONFIG[slug];
-  document.getElementById("buy-link").href = cfg ? cfg.checkoutUrl : "#";
   const url = new URL(location.href);
   url.searchParams.set("template", slug);
   history.replaceState(null, "", url);
@@ -42,7 +34,7 @@ function loadTemplate(slug) {
 function renderPreview() {
   const tpl = CV_TEMPLATES[state.slug];
   const palette = derivePalette(document.getElementById("color-picker").value);
-  const html = renderCVHtml({ headerStyle: tpl.headerStyle, font: tpl.font, palette, content: state.content });
+  const html = renderCVHtml({ layout: tpl.layout, font: tpl.font, palette, content: state.content, showCredit: !isUnlocked() });
   document.getElementById("preview-doc").innerHTML = html;
 }
 
@@ -119,15 +111,15 @@ function wireStaticInputs() {
 }
 
 function refreshLockUI() {
-  const unlocked = localStorage.getItem(unlockKey(state.slug)) === "1";
+  const unlocked = isUnlocked();
   document.getElementById("lock-state").style.display = unlocked ? "none" : "block";
   document.getElementById("unlock-state").style.display = unlocked ? "block" : "none";
+  renderPreview();
 }
 
 async function verifyLicense() {
   const key = document.getElementById("license-key").value.trim();
   const msg = document.getElementById("license-msg");
-  const cfg = GUMROAD_CONFIG[state.slug];
   if (!key) { msg.textContent = "יש להזין קוד רישוי."; msg.className = "err"; return; }
   msg.textContent = "בודקים...";
   msg.className = "";
@@ -135,11 +127,11 @@ async function verifyLicense() {
     const res = await fetch("https://api.gumroad.com/v2/licenses/verify", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ product_permalink: cfg.permalink, license_key: key }),
+      body: new URLSearchParams({ product_permalink: GUMROAD_PRODUCT.permalink, license_key: key }),
     });
     const data = await res.json();
     if (data.success) {
-      localStorage.setItem(unlockKey(state.slug), "1");
+      localStorage.setItem(UNLOCK_KEY, "1");
       msg.textContent = "";
       refreshLockUI();
     } else {
@@ -157,10 +149,13 @@ document.addEventListener("DOMContentLoaded", () => {
   select.innerHTML = Object.entries(CV_TEMPLATES).map(([slug, t]) => `<option value="${slug}">${t.label}</option>`).join("");
 
   wireStaticInputs();
+  document.getElementById("buy-link").href = GUMROAD_PRODUCT.checkoutUrl;
   document.getElementById("verify-btn").addEventListener("click", verifyLicense);
   document.getElementById("download-btn").addEventListener("click", () => window.print());
+  document.getElementById("download-btn-free").addEventListener("click", () => window.print());
 
   const startSlug = new URLSearchParams(location.search).get("template");
   loadTemplate(startSlug && CV_TEMPLATES[startSlug] ? startSlug : Object.keys(CV_TEMPLATES)[0]);
   select.value = state.slug;
+  refreshLockUI();
 });

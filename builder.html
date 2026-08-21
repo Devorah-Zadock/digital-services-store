@@ -31,7 +31,7 @@
   <div class="container">
     <div class="breadcrumb"><a href="products.html">קטלוג</a> / בילדר קורות חיים</div>
     <h1 style="font-size:26px; margin:6px 0 4px;">התאימו אישית ותצפו בזמן אמת</h1>
-    <p style="color:var(--grey); font-size:14px; margin:0;">מלאו את הפרטים שלכם, בחרו צבע — והתצוגה המקדימה מתעדכנת מיד. הורדת ה-PDF הסופי נפתחת אחרי רכישה.</p>
+    <p style="color:var(--grey); font-size:14px; margin:0;">מלאו את הפרטים שלכם, בחרו צבע — והתצוגה מתעדכנת מיד. הורדת PDF חינמית תמיד; שדרוג חד-פעמי ל-Pro מסיר את שורת הקרדיט.</p>
   </div>
 </section>
 
@@ -73,16 +73,22 @@
       <div id="preview-doc"></div>
       <div class="export-panel no-print" id="export-panel">
         <div id="lock-state" class="lock-locked">
-          <p style="margin:0 0 10px; font-size:14px;">🔒 הורדת ה-PDF נפתחת אחרי רכישה. יש לכם כבר קוד רישוי?</p>
-          <div class="license-row">
-            <input type="text" id="license-key" placeholder="הדביקו כאן את קוד הרישוי מהמייל">
-            <button type="button" class="btn btn-teal" id="verify-btn">אימות</button>
+          <p style="margin:0 0 12px; font-size:14px; font-weight:600; color:var(--teal-dark);">ההורדה חינמית — עם שורת קרדיט קטנה בתחתית ("נוצר עם BizKit").</p>
+          <button type="button" class="btn btn-teal" id="download-btn-free">הורדת PDF — חינם</button>
+
+          <div class="upsell-box">
+            <p style="margin:0 0 8px; font-size:13px; font-weight:600;">רוצים גרסה נקייה בלי הקרדיט? שדרוג חד-פעמי ל-BizKit Pro מסיר אותו מכל התבניות, לתמיד.</p>
+            <a href="#" id="buy-link" class="btn btn-gold" style="margin-bottom:10px;">שדרוג ל-Pro</a>
+            <p style="margin:0 0 6px; font-size:12.5px;">כבר יש לכם קוד רישוי?</p>
+            <div class="license-row">
+              <input type="text" id="license-key" placeholder="הדביקו כאן את קוד הרישוי מהמייל">
+              <button type="button" class="btn btn-teal" id="verify-btn">אימות</button>
+            </div>
+            <p id="license-msg" style="font-size:13px; margin:8px 0 0;"></p>
           </div>
-          <p id="license-msg" style="font-size:13px; margin:8px 0 0;"></p>
-          <a href="#" id="buy-link" class="btn btn-gold" style="margin-top:14px;">רכישה — קבלת קוד רישוי במייל</a>
         </div>
         <div id="unlock-state" class="lock-unlocked" style="display:none;">
-          <p style="margin:0 0 12px; font-size:14px; color:var(--teal-dark); font-weight:600;">✓ הרכישה אומתה — אפשר להוריד</p>
+          <p style="margin:0 0 12px; font-size:14px; color:var(--teal-dark); font-weight:600;">✓ יש לכם גישת Pro — כל ההורדות נקיות, בלי קרדיט</p>
           <button type="button" class="btn btn-gold" id="download-btn">הורדת PDF</button>
         </div>
       </div>

@@ -46,6 +46,7 @@
 #preview-doc { margin-bottom: 20px; }
 
 .export-panel { background: var(--ice); border-radius: var(--radius); padding: 22px; }
+.upsell-box { background: var(--white); border-radius: 10px; padding: 16px; margin-top: 16px; border: 1px dashed #D8C79A; }
 .license-row { display: flex; gap: 8px; }
 .license-row input { flex: 1; padding: 10px 12px; border-radius: 7px; border: 1px solid #DADFDD; font-family: inherit; font-size: 13px; }
 #license-msg.err { color: #B23; }

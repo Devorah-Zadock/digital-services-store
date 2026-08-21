@@ -1,6 +1,12 @@
-/* Renders a CV as an HTML string from {headerStyle, font, palette, content}.
+/* Renders a CV as an HTML string from {layout, font, palette, content}.
    Shared by the live builder preview and the print/PDF output, so what the
-   user sees while editing is exactly what they get in the exported file. */
+   user sees while editing is exactly what they get in the exported file.
+
+   Three layout systems (deliberately different from each other, not just
+   recolored):
+   - "sidebar": two-column, colored sidebar with avatar initials + chip skills
+   - "bold": single column, oversized editorial name + numbered section badges
+   - "classic-mono": quiet, refined, conservative — no chips, generous whitespace */
 const CV_DARK = "222222";
 const CV_GREY = "5A5A5A";
 
@@ -15,77 +21,184 @@ function bulletsToLis(text) {
     .map((l) => `<li>${escapeHtml(l)}</li>`)
     .join("");
 }
-
-function headerHtml(headerStyle, palette, content) {
-  if (headerStyle === "block") {
-    return `
-    <div class="cv-header cv-block" style="background:#${palette.primaryDark}">
-      <h1>${escapeHtml(content.name)}</h1>
-      <div class="cv-role" style="color:#${palette.headerAccentText}">${escapeHtml(content.title)}</div>
-      <div class="cv-contact" style="color:#fff">${escapeHtml(content.contact)}</div>
-    </div>`;
-  }
-  if (headerStyle === "minimal") {
-    return `
-    <div class="cv-header cv-minimal">
-      <h1 style="color:#${palette.primaryDark}">${escapeHtml(content.name)}</h1>
-      <div class="cv-role" style="color:#${palette.primary}; border-bottom:3px solid #${palette.primary};">${escapeHtml(content.title)}</div>
-      <div class="cv-contact" style="color:#${CV_GREY}">${escapeHtml(content.contact)}</div>
-    </div>`;
-  }
-  return `
-  <div class="cv-header cv-classic">
-    <h1 style="color:#${CV_DARK}; border-top:2px solid #${CV_DARK}; border-bottom:2px solid #${CV_DARK};">${escapeHtml(content.name)}</h1>
-    <div class="cv-role" style="color:#${CV_GREY}">${escapeHtml(content.title)}</div>
-    <div class="cv-contact" style="color:#${CV_GREY}">${escapeHtml(content.contact)}</div>
-  </div>`;
+function splitParts(text) {
+  return String(text || "").split("|").map((s) => s.trim()).filter(Boolean);
+}
+function initialsOf(name) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "";
+  const first = parts[0][0] || "";
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
+  return (first + last).toUpperCase();
 }
 
-function renderCVHtml({ headerStyle, font, palette, content }) {
-  const jobsHtml = content.jobs.map((j) => `
-    <div class="cv-job">
-      <div class="cv-row"><span class="cv-jobtitle">${escapeHtml(j.title)} | ${escapeHtml(j.place)}</span><span class="cv-dates">${escapeHtml(j.dates)}</span></div>
+const SHARED_CSS = `
+  .cv-doc { font-family: var(--cv-font); background:#fff; color:#${CV_DARK}; width:100%; max-width:794px; margin:0 auto; box-shadow:0 10px 30px rgba(0,0,0,.12); overflow:hidden; }
+  .cv-doc ul { margin:0; padding-inline-start:20px; }
+  .cv-doc li { font-size:12.5px; color:#333; line-height:1.6; }
+  .cv-doc .cv-jobtitle { font-weight:700; }
+  .cv-doc .cv-dates { font-size:11px; font-style:italic; }
+  .cv-doc .cv-summary { font-size:13px; line-height:1.65; margin:0; }
+`;
+
+function chipHtml(text, chipBg, chipColor, chipFont) {
+  return `<span style="display:inline-block; background:${chipBg}; color:${chipColor}; font-family:${chipFont || "inherit"}; font-size:11px; padding:5px 12px; border-radius:20px; margin:0 0 6px 6px;">${escapeHtml(text)}</span>`;
+}
+function creditHtml(showCredit) {
+  if (!showCredit) return "";
+  return `<div style="text-align:center; padding:10px 20px 16px; font-size:10px; color:#9A9A9A;">נוצר עם BizKit · bizkit.example</div>`;
+}
+
+/* ---------------- Sidebar layout ---------------- */
+function renderSidebar({ font, palette, content, showCredit }) {
+  const contactLines = splitParts(content.contact);
+  const skillChips = splitParts(content.skills).map((s) => chipHtml(s, "rgba(255,255,255,.14)", "#fff")).join("");
+  const jobsHtml = content.jobs.map((j, i) => `
+    <div class="tl-item" style="position:relative; padding-inline-end:20px; padding-bottom:${i === content.jobs.length - 1 ? 0 : 22}px;">
+      <div style="position:absolute; inset-inline-end:0; top:4px; width:9px; height:9px; border-radius:50%; background:#${palette.primary};"></div>
+      ${i !== content.jobs.length - 1 ? `<div style="position:absolute; inset-inline-end:4px; top:15px; bottom:0; width:1px; background:#E4E4E4;"></div>` : ""}
+      <div class="cv-jobtitle" style="font-size:13.5px; color:#${CV_DARK};">${escapeHtml(j.title)}</div>
+      <div style="font-size:12px; color:#${palette.primary}; font-weight:600; margin-top:1px;">${escapeHtml(j.place)}</div>
+      <div class="cv-dates" style="color:#${CV_GREY}; margin:2px 0 6px;">${escapeHtml(j.dates)}</div>
       <ul>${bulletsToLis(j.bullets)}</ul>
     </div>`).join("");
 
   return `
-  <style>
-    .cv-doc { font-family: ${font}; background:#fff; color:#${CV_DARK}; width:100%; max-width:794px; margin:0 auto; box-shadow:0 10px 30px rgba(0,0,0,.12); }
-    .cv-doc .cv-header.cv-block { color:#fff; padding:34px 40px; }
-    .cv-doc .cv-header.cv-block h1 { font-size:34px; font-weight:700; margin:0; }
-    .cv-doc .cv-header.cv-block .cv-role { font-size:18px; margin-top:6px; }
-    .cv-doc .cv-header.cv-block .cv-contact { font-size:12.5px; margin-top:14px; opacity:.92; }
-    .cv-doc .cv-header.cv-minimal { padding:34px 40px 20px; }
-    .cv-doc .cv-header.cv-minimal h1 { font-size:32px; font-weight:700; margin:0; }
-    .cv-doc .cv-header.cv-minimal .cv-role { font-size:18px; display:inline-block; padding-bottom:10px; margin-top:8px; }
-    .cv-doc .cv-header.cv-minimal .cv-contact { font-size:13px; margin-top:14px; }
-    .cv-doc .cv-header.cv-classic { padding:34px 40px 20px; text-align:center; }
-    .cv-doc .cv-header.cv-classic h1 { font-size:30px; font-weight:700; padding:14px 0; margin:0; }
-    .cv-doc .cv-header.cv-classic .cv-role { font-size:15px; font-style:italic; margin-top:10px; }
-    .cv-doc .cv-header.cv-classic .cv-contact { font-size:12px; margin-top:8px; }
-    .cv-doc .cv-body { padding:26px 40px 40px; }
-    .cv-doc h2 { color:#${palette.primary}; font-size:16px; border-bottom:2px solid #${palette.primary}; padding-bottom:6px; margin:22px 0 10px; }
-    .cv-doc h2:first-child { margin-top:0; }
-    .cv-doc p.cv-summary { font-size:13.5px; line-height:1.6; margin:0; }
-    .cv-doc .cv-job { margin-top:12px; }
-    .cv-doc .cv-row { font-size:14px; }
-    .cv-doc .cv-jobtitle { font-weight:700; }
-    .cv-doc .cv-dates { color:#${CV_GREY}; font-size:11.5px; font-style:italic; margin-inline-start:8px; }
-    .cv-doc ul { margin:4px 0 0; padding-inline-start:20px; }
-    .cv-doc li { font-size:13px; color:#333; line-height:1.65; }
-    .cv-doc .cv-skills, .cv-doc .cv-edu { font-size:13px; line-height:1.7; }
+  <style>${SHARED_CSS}
+    .cv-sidebar-wrap { display:flex; flex-direction:row-reverse; min-height:600px; }
+    .cv-side { width:255px; flex:none; background:#${palette.primaryDark}; color:#fff; padding:36px 26px; text-align:center; }
+    .cv-side .avatar { width:78px; height:78px; border-radius:50%; background:rgba(255,255,255,.16); display:flex; align-items:center; justify-content:center; margin:0 auto 16px; font-size:26px; font-weight:700; color:#fff; }
+    .cv-side h1 { font-size:21px; margin:0 0 4px; }
+    .cv-side .role { font-size:12.5px; color:${"#" + palette.headerAccentText}; margin-bottom:18px; }
+    .cv-side .sec-label { font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:${"#" + palette.headerAccentText}; text-align:start; margin:20px 0 10px; opacity:.85; }
+    .cv-side .contact-line { font-size:11.5px; text-align:start; margin-bottom:8px; opacity:.92; word-break:break-word; }
+    .cv-side .chips { text-align:start; }
+    .cv-main { flex:1; padding:36px 30px; min-width:0; }
+    .cv-main h2 { font-size:14px; color:#${palette.primary}; margin:0 0 12px; text-transform:uppercase; letter-spacing:.05em; }
+    .cv-main h2:not(:first-child) { margin-top:26px; }
   </style>
   <div class="cv-doc" dir="rtl">
-    ${headerHtml(headerStyle, palette, content)}
-    <div class="cv-body">
-      <h2>תקציר מקצועי</h2>
-      <p class="cv-summary">${escapeHtml(content.summary)}</p>
-      <h2>ניסיון תעסוקתי</h2>
-      ${jobsHtml}
-      <h2>השכלה</h2>
-      <div class="cv-edu">${escapeHtml(content.education)}</div>
-      <h2>כישורים</h2>
-      <div class="cv-skills">${escapeHtml(content.skills)}</div>
+    <div class="cv-sidebar-wrap">
+      <aside class="cv-side">
+        <div class="avatar">${escapeHtml(initialsOf(content.name))}</div>
+        <h1>${escapeHtml(content.name)}</h1>
+        <div class="role">${escapeHtml(content.title)}</div>
+        <div class="sec-label">פרטי קשר</div>
+        ${contactLines.map((c) => `<div class="contact-line">${escapeHtml(c)}</div>`).join("")}
+        <div class="sec-label">כישורים</div>
+        <div class="chips">${skillChips}</div>
+      </aside>
+      <main class="cv-main">
+        <h2>תקציר מקצועי</h2>
+        <p class="cv-summary">${escapeHtml(content.summary)}</p>
+        <h2>ניסיון תעסוקתי</h2>
+        ${jobsHtml}
+        <h2>השכלה</h2>
+        <p class="cv-summary">${escapeHtml(content.education)}</p>
+      </main>
     </div>
+    ${creditHtml(showCredit)}
   </div>`;
+}
+
+/* ---------------- Bold editorial layout ---------------- */
+function renderBold({ font, palette, content, showCredit }) {
+  const skillChips = splitParts(content.skills).map((s) => chipHtml(s, "#" + palette.ice, "#" + palette.primaryDark)).join("");
+  let n = 0;
+  const badge = () => { n += 1; return String(n).padStart(2, "0"); };
+  const jobsHtml = content.jobs.map((j) => `
+    <div style="margin-bottom:16px;">
+      <div style="display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;">
+        <span style="width:6px; height:6px; border-radius:50%; background:#${palette.primary}; display:inline-block;"></span>
+        <span class="cv-jobtitle" style="font-size:14px;">${escapeHtml(j.title)}</span>
+        <span style="font-size:12.5px; color:#${palette.primary}; font-weight:600;">${escapeHtml(j.place)}</span>
+        <span class="cv-dates" style="color:#${CV_GREY};">${escapeHtml(j.dates)}</span>
+      </div>
+      <ul style="margin-top:6px;">${bulletsToLis(j.bullets)}</ul>
+    </div>`).join("");
+
+  return `
+  <style>${SHARED_CSS}
+    .cv-bold-head { position:relative; padding:44px 40px 26px; overflow:hidden; }
+    .cv-bold-head::before { content:""; position:absolute; inset-inline-end:-60px; top:-70px; width:220px; height:220px; border-radius:50%; background:#${palette.ice}; z-index:0; }
+    .cv-bold-head .inner { position:relative; z-index:1; }
+    .cv-bold-head h1 { font-size:46px; font-weight:700; margin:0; line-height:1.05; color:#${CV_DARK}; }
+    .cv-bold-head .role-badge { display:inline-block; background:#${palette.primary}; color:#fff; font-size:13px; font-weight:600; padding:6px 16px; border-radius:20px; margin-top:14px; }
+    .cv-bold-head .contact { font-size:12px; color:#${CV_GREY}; margin-top:14px; }
+    .cv-bold-body { padding:6px 40px 40px; }
+    .cv-bold-body h2 { display:flex; align-items:center; gap:10px; font-size:15px; margin:24px 0 12px; color:#${CV_DARK}; }
+    .cv-bold-body h2:first-child { margin-top:0; }
+    .cv-bold-body h2 .n { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:6px; background:#${palette.primary}; color:#fff; font-size:11px; font-weight:700; flex:none; }
+  </style>
+  <div class="cv-doc" dir="rtl">
+    <div class="cv-bold-head">
+      <div class="inner">
+        <h1>${escapeHtml(content.name)}</h1>
+        <span class="role-badge">${escapeHtml(content.title)}</span>
+        <div class="contact">${escapeHtml(content.contact)}</div>
+      </div>
+    </div>
+    <div class="cv-bold-body">
+      <h2><span class="n">${badge()}</span> תקציר מקצועי</h2>
+      <p class="cv-summary">${escapeHtml(content.summary)}</p>
+      <h2><span class="n">${badge()}</span> ניסיון תעסוקתי</h2>
+      ${jobsHtml}
+      <h2><span class="n">${badge()}</span> השכלה</h2>
+      <p class="cv-summary">${escapeHtml(content.education)}</p>
+      <h2><span class="n">${badge()}</span> כישורים</h2>
+      <div>${skillChips}</div>
+    </div>
+    ${creditHtml(showCredit)}
+  </div>`;
+}
+
+/* ---------------- Classic / quiet layout ---------------- */
+function renderClassicMono({ font, palette, content, showCredit }) {
+  let n = 0;
+  const badge = () => { n += 1; return String(n).padStart(2, "0"); };
+  const jobsHtml = content.jobs.map((j) => `
+    <div style="margin-bottom:14px;">
+      <div class="cv-row" style="font-size:13.5px;"><span class="cv-jobtitle">${escapeHtml(j.title)} — ${escapeHtml(j.place)}</span></div>
+      <div class="cv-dates" style="color:#${CV_GREY}; margin:1px 0 6px;">${escapeHtml(j.dates)}</div>
+      <ul>${bulletsToLis(j.bullets)}</ul>
+    </div>`).join("");
+
+  return `
+  <style>${SHARED_CSS}
+    .cv-cm-head { padding:40px 44px 22px; text-align:center; border-bottom:1px solid #E6E6E6; }
+    .cv-cm-head h1 { font-size:28px; font-weight:700; margin:0; letter-spacing:.02em; color:#${CV_DARK}; }
+    .cv-cm-head .role { font-size:13px; color:#${palette.primary}; margin-top:8px; letter-spacing:.05em; text-transform:uppercase; }
+    .cv-cm-head .contact { font-size:11.5px; color:#${CV_GREY}; margin-top:10px; }
+    .cv-cm-body { padding:28px 44px 44px; }
+    .cv-cm-body h2 { display:flex; align-items:center; gap:10px; font-size:12.5px; letter-spacing:.08em; text-transform:uppercase; color:#${CV_DARK}; margin:24px 0 12px; }
+    .cv-cm-body h2:first-child { margin-top:0; }
+    .cv-cm-body h2 .n { font-size:11px; color:#${palette.primary}; font-weight:700; }
+  </style>
+  <div class="cv-doc" dir="rtl">
+    <div class="cv-cm-head">
+      <h1>${escapeHtml(content.name)}</h1>
+      <div class="role">${escapeHtml(content.title)}</div>
+      <div class="contact">${escapeHtml(content.contact)}</div>
+    </div>
+    <div class="cv-cm-body">
+      <h2><span class="n">${badge()}</span> תקציר מקצועי</h2>
+      <p class="cv-summary">${escapeHtml(content.summary)}</p>
+      <h2><span class="n">${badge()}</span> ניסיון תעסוקתי</h2>
+      ${jobsHtml}
+      <h2><span class="n">${badge()}</span> השכלה</h2>
+      <p class="cv-summary">${escapeHtml(content.education)}</p>
+      <h2><span class="n">${badge()}</span> כישורים</h2>
+      <p class="cv-summary">${escapeHtml(content.skills)}</p>
+    </div>
+    ${creditHtml(showCredit)}
+  </div>`;
+}
+
+function renderCVHtml({ layout, font, palette, content, showCredit }) {
+  const args = { font, palette, content, showCredit };
+  let html;
+  if (layout === "sidebar") html = renderSidebar(args);
+  else if (layout === "bold") html = renderBold(args);
+  else html = renderClassicMono(args);
+  return `<style>.cv-doc{--cv-font:${font};}</style>` + html;
 }

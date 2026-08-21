@@ -1,4 +1,4 @@
-function money(n) { return "₪" + n; }
+function money(n) { return n === 0 ? "חינם" : "₪" + n; }
 
 function cardHtml(p) {
   return `
@@ -10,7 +10,7 @@ function cardHtml(p) {
         <p>${p.shortDesc}</p>
         <div class="price-row">
           <span class="price">${money(p.price)}</span>
-          <a href="product.html?slug=${p.slug}" class="btn btn-teal">לצפייה במוצר</a>
+          <a href="product.html?slug=${p.slug}" class="btn btn-teal">${p.price === 0 ? "עריכה חינמית" : "לצפייה במוצר"}</a>
         </div>
       </div>
     </div>`;
@@ -75,7 +75,7 @@ function initProductPage() {
         <div class="format-badges">${p.formatBadges.map((b) => `<span class="format-badge">${b}</span>`).join("")}</div>
         <div class="price-block">
           <span class="price">${money(p.price)}</span>
-          <span style="color:var(--grey); font-size:14px;">תשלום חד-פעמי · הורדה מיידית</span>
+          <span style="color:var(--grey); font-size:14px;">${p.categorySlug === "deck" ? "תשלום חד-פעמי · הורדה מיידית" : "הורדת PDF חינמית תמיד"}</span>
         </div>
         <ul class="checklist">${p.checklist.map((c) => `<li>${c}</li>`).join("")}</ul>
         ${p.categorySlug === "deck" ? `
@@ -83,8 +83,8 @@ function initProductPage() {
         <a href="contact.html" class="btn btn-gold">לרכישה מאובטחת</a>
         <div class="note-box">מעדיפים לנסות לפני שרוכשים, או יש שאלה? <a href="contact.html" style="color:var(--teal); font-weight:600;">כתבו לנו</a> ונשמח לעזור.</div>
         ` : `
-        <a href="builder.html?template=${p.slug}" class="btn btn-gold">עריכה ותצוגה מקדימה — בחינם</a>
-        <div class="note-box">ממלאים את הפרטים שלכם ורואים תוצאה חיה. הורדת ה-PDF הסופי נפתחת רק אחרי רכישה — כך שהקובץ שברשותכם הוא תמיד הגרסה האישית שלכם, לא קובץ Word גנרי שאפשר להעביר הלאה.</div>
+        <a href="builder.html?template=${p.slug}" class="btn btn-gold">עריכה והורדה — חינם</a>
+        <div class="note-box">ממלאים את הפרטים שלכם ורואים תוצאה חיה. הורדת PDF חינמית תמיד, עם שורת קרדיט קטנה בתחתית. שדרוג חד-פעמי ל-BizKit Pro פותח גרסה נקייה בלי הקרדיט — בכל התבניות, לתמיד.</div>
         `}
       </div>
     </div>`;

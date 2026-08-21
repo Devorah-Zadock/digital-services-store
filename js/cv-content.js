@@ -4,7 +4,7 @@
 const CV_TEMPLATES = {
   "cv-general-modern": {
     label: "כללי / שיווק — מודרני",
-    headerStyle: "block",
+    layout: "sidebar",
     defaultColor: "1F5C4E",
     font: "Arial, sans-serif",
     content: {
@@ -22,7 +22,7 @@ const CV_TEMPLATES = {
   },
   "cv-dev-dark": {
     label: "תכנות — כהה",
-    headerStyle: "block",
+    layout: "sidebar",
     defaultColor: "2563EB",
     font: "Arial, sans-serif",
     content: {
@@ -39,8 +39,8 @@ const CV_TEMPLATES = {
     },
   },
   "cv-dev-minimal": {
-    label: "תכנות — מינימלי",
-    headerStyle: "minimal",
+    label: "תכנות — נועז",
+    layout: "bold",
     defaultColor: "334E68",
     font: "Arial, sans-serif",
     content: {
@@ -58,7 +58,7 @@ const CV_TEMPLATES = {
   },
   "cv-design-creative": {
     label: "עיצוב — יצירתי",
-    headerStyle: "block",
+    layout: "bold",
     defaultColor: "C24B1F",
     font: "Arial, sans-serif",
     content: {
@@ -75,8 +75,8 @@ const CV_TEMPLATES = {
     },
   },
   "cv-design-portfolio": {
-    label: "עיצוב — פורטפוליו מינימלי",
-    headerStyle: "minimal",
+    label: "עיצוב — פורטפוליו",
+    layout: "sidebar",
     defaultColor: "B5175A",
     font: "Arial, sans-serif",
     content: {
@@ -94,7 +94,7 @@ const CV_TEMPLATES = {
   },
   "cv-accounting-classic": {
     label: "הנהלת חשבונות — קלאסי",
-    headerStyle: "classic",
+    layout: "classic-mono",
     defaultColor: "1F2A44",
     font: "Georgia, 'Times New Roman', serif",
     content: {
@@ -112,7 +112,7 @@ const CV_TEMPLATES = {
   },
   "cv-business-clean": {
     label: "כללי / עסקי — נקי",
-    headerStyle: "minimal",
+    layout: "classic-mono",
     defaultColor: "24476B",
     font: "Arial, sans-serif",
     content: {
