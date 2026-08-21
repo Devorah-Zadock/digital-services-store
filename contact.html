@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>צור קשר — BizKit</title>
+<meta name="description" content="יש שאלה? דברו איתנו.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site">
+  <nav class="nav">
+    <a href="index.html" class="brand"><span class="dot"></span>BizKit</a>
+    <div class="nav-links">
+      <a href="index.html">בית</a>
+      <a href="products.html">קטלוג</a>
+      <a href="about.html">אודות</a>
+      <a href="contact.html" class="active">צור קשר</a>
+    </div>
+    <a href="products.html" class="nav-cta">לצפייה בקטלוג</a>
+    <button class="burger" aria-label="תפריט">☰</button>
+  </nav>
+</header>
+
+<section class="hero" style="padding:60px 24px 70px;">
+  <h1 style="font-size:34px;">נשמח לשמוע מכם</h1>
+  <p class="lead">שאלה על מוצר, בקשה מיוחדת, או רוצים לעדכן כשאוטומציות ה-Make יוצאות? כתבו לנו.</p>
+</section>
+
+<section>
+  <div class="container">
+    <form class="contact-form">
+      <div class="field">
+        <label for="name">שם מלא</label>
+        <input id="name" name="name" type="text" required>
+      </div>
+      <div class="field">
+        <label for="email">אימייל</label>
+        <input id="email" name="email" type="email" required>
+      </div>
+      <div class="field">
+        <label for="message">הודעה</label>
+        <textarea id="message" name="message" required></textarea>
+      </div>
+      <button type="submit" class="btn btn-gold">שליחה</button>
+    </form>
+    <p class="center" style="color:var(--grey); font-size:14px; margin-top:18px;">אפשר גם ישירות במייל: <a href="mailto:hello@bizkit.example" style="color:var(--teal); font-weight:600;">hello@bizkit.example</a></p>
+  </div>
+</section>
+
+<footer class="site">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <h5>BizKit</h5>
+        <p style="font-size:14px; max-width:320px;">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
+      </div>
+      <div>
+        <h5>ניווט</h5>
+        <ul>
+          <li><a href="products.html">קטלוג מוצרים</a></li>
+          <li><a href="about.html">אודות</a></li>
+          <li><a href="contact.html">צור קשר</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>צור קשר</h5>
+        <ul>
+          <li>hello@bizkit.example</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">© 2026 BizKit. כל הזכויות שמורות.</div>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>
