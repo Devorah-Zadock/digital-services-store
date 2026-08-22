@@ -43,16 +43,18 @@ function photoCircleHtml(photo, size) {
   return `<div style="width:${size}px; height:${size}px; border-radius:50%; overflow:hidden; flex:none;"><img src="${photo}" alt="" style="width:100%; height:100%; object-fit:cover; display:block;"></div>`;
 }
 
-const SHARED_CSS = `
-  .cv-doc { font-family: var(--cv-font); background:#fff; color:#${CV_DARK}; width:100%; max-width:794px; margin:0 auto; box-shadow:0 10px 30px rgba(0,0,0,.12); overflow:hidden; overflow-wrap:break-word; }
+function sharedCss(tc) {
+  return `
+  .cv-doc { font-family: var(--cv-font); background:#fff; color:#${tc}; width:100%; max-width:794px; margin:0 auto; box-shadow:0 10px 30px rgba(0,0,0,.12); overflow:hidden; overflow-wrap:break-word; }
   .cv-doc h1, .cv-doc h2, .cv-doc .cv-jobtitle, .cv-doc .contact-line, .cv-doc .role { overflow-wrap:break-word; }
   .cv-doc ul { margin:0; padding-inline-start:20px; }
-  .cv-doc li { font-size:12.5px; color:#333; line-height:1.6; }
+  .cv-doc li { font-size:12.5px; color:#${tc}; line-height:1.6; }
   .cv-doc .cv-jobtitle { font-weight:700; }
   .cv-doc .cv-dates { font-size:11px; font-style:italic; }
   .cv-doc .cv-summary { font-size:13px; line-height:1.65; margin:0; }
   .cv-doc .cv-link { font-size:11px; font-weight:600; }
 `;
+}
 
 function chipHtml(text, chipBg, chipColor, chipFont) {
   return `<span style="display:inline-block; background:${chipBg}; color:${chipColor}; font-family:${chipFont || "inherit"}; font-size:11px; padding:5px 12px; border-radius:20px; margin:0 0 6px 6px;">${escapeHtml(text)}</span>`;
@@ -67,7 +69,8 @@ function projectsList(projects, primaryHex) {
 }
 
 /* ---------------- Sidebar layout ---------------- */
-function renderSidebar({ font, palette, content, lang }) {
+function renderSidebar({ font, palette, content, lang, textColor }) {
+  const tc = textColor || CV_DARK;
   const L = LABELS[lang];
   const dir = lang === "en" ? "ltr" : "rtl";
   const contactLines = splitParts(content.contact);
@@ -75,14 +78,14 @@ function renderSidebar({ font, palette, content, lang }) {
   const jobsHtml = content.jobs.map((j, i) => `
     <div class="tl-item" style="padding-bottom:${i === content.jobs.length - 1 ? 0 : 20}px;">
       <div class="tl-dot" style="background:#${palette.primary};"></div>
-      <div class="cv-jobtitle" style="font-size:13.5px; color:#${CV_DARK};">${escapeHtml(j.title)}</div>
+      <div class="cv-jobtitle" style="font-size:13.5px; color:#${tc};">${escapeHtml(j.title)}</div>
       <div style="font-size:12px; color:#${palette.primary}; font-weight:600; margin-top:1px;">${escapeHtml(j.place)}</div>
       <div class="cv-dates" style="color:#${CV_GREY}; margin:2px 0 6px;">${escapeHtml(j.dates)}</div>
       <ul>${bulletsToLis(j.bullets)}</ul>
     </div>`).join("");
 
   return `
-  <style>${SHARED_CSS}
+  <style>${sharedCss(tc)}
     .cv-sidebar-wrap { display:flex; flex-direction:${lang === "en" ? "row" : "row-reverse"}; min-height:1095px; }
     .cv-side { width:255px; flex:none; background:#${palette.primaryDark}; color:#fff; padding:36px 26px; text-align:center; }
     .cv-side .avatar { width:78px; height:78px; border-radius:50%; background:rgba(255,255,255,.16); display:flex; align-items:center; justify-content:center; margin:0 auto 16px; font-size:26px; font-weight:700; color:#fff; }
@@ -124,7 +127,8 @@ function renderSidebar({ font, palette, content, lang }) {
 }
 
 /* ---------------- Bold editorial layout ---------------- */
-function renderBold({ font, palette, content, lang }) {
+function renderBold({ font, palette, content, lang, textColor }) {
+  const tc = textColor || CV_DARK;
   const L = LABELS[lang];
   const dir = lang === "en" ? "ltr" : "rtl";
   const skillChips = splitParts(content.skills).map((s) => chipHtml(s, "#" + palette.ice, "#" + palette.primaryDark)).join("");
@@ -142,15 +146,15 @@ function renderBold({ font, palette, content, lang }) {
     </div>`).join("");
 
   return `
-  <style>${SHARED_CSS}
+  <style>${sharedCss(tc)}
     .cv-bold-head { position:relative; padding:44px 40px 26px; overflow:hidden; }
     .cv-bold-head::before { content:""; position:absolute; inset-inline-end:-60px; top:-70px; width:220px; height:220px; border-radius:50%; background:#${palette.ice}; z-index:0; }
     .cv-bold-head .inner { position:relative; z-index:1; }
-    .cv-bold-head h1 { font-size:46px; font-weight:700; margin:0; line-height:1.05; color:#${CV_DARK}; }
+    .cv-bold-head h1 { font-size:46px; font-weight:700; margin:0; line-height:1.05; color:#${tc}; }
     .cv-bold-head .role-badge { display:inline-block; background:#${palette.primary}; color:#fff; font-size:13px; font-weight:600; padding:6px 16px; border-radius:20px; margin-top:14px; }
     .cv-bold-head .contact { font-size:12px; color:#${CV_GREY}; margin-top:14px; }
     .cv-bold-body { padding:6px 40px 40px; }
-    .cv-bold-body h2 { display:flex; align-items:center; gap:10px; font-size:15px; margin:24px 0 12px; color:#${CV_DARK}; }
+    .cv-bold-body h2 { display:flex; align-items:center; gap:10px; font-size:15px; margin:24px 0 12px; color:#${tc}; }
     .cv-bold-body h2:first-child { margin-top:0; }
     .cv-bold-body h2 .n { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:6px; background:#${palette.primary}; color:#fff; font-size:11px; font-weight:700; flex:none; }
   </style>
@@ -178,7 +182,8 @@ function renderBold({ font, palette, content, lang }) {
 }
 
 /* ---------------- Classic / quiet layout ---------------- */
-function renderClassicMono({ font, palette, content, lang }) {
+function renderClassicMono({ font, palette, content, lang, textColor }) {
+  const tc = textColor || CV_DARK;
   const L = LABELS[lang];
   const dir = lang === "en" ? "ltr" : "rtl";
   let n = 0;
@@ -191,13 +196,13 @@ function renderClassicMono({ font, palette, content, lang }) {
     </div>`).join("");
 
   return `
-  <style>${SHARED_CSS}
+  <style>${sharedCss(tc)}
     .cv-cm-head { padding:40px 44px 22px; text-align:center; border-bottom:1px solid #E6E6E6; }
-    .cv-cm-head h1 { font-size:28px; font-weight:700; margin:0; letter-spacing:.02em; color:#${CV_DARK}; }
+    .cv-cm-head h1 { font-size:28px; font-weight:700; margin:0; letter-spacing:.02em; color:#${tc}; }
     .cv-cm-head .role { font-size:13px; color:#${palette.primary}; margin-top:8px; letter-spacing:.05em; text-transform:uppercase; }
     .cv-cm-head .contact { font-size:11.5px; color:#${CV_GREY}; margin-top:10px; }
     .cv-cm-body { padding:28px 44px 44px; }
-    .cv-cm-body h2 { display:flex; align-items:center; gap:10px; font-size:12.5px; letter-spacing:.08em; text-transform:uppercase; color:#${CV_DARK}; margin:24px 0 12px; }
+    .cv-cm-body h2 { display:flex; align-items:center; gap:10px; font-size:12.5px; letter-spacing:.08em; text-transform:uppercase; color:#${tc}; margin:24px 0 12px; }
     .cv-cm-body h2:first-child { margin-top:0; }
     .cv-cm-body h2 .n { font-size:11px; color:#${palette.primary}; font-weight:700; }
   </style>
@@ -222,9 +227,9 @@ function renderClassicMono({ font, palette, content, lang }) {
   </div>`;
 }
 
-function renderCVHtml({ layout, font, palette, content, lang }) {
+function renderCVHtml({ layout, font, palette, content, lang, textColor }) {
   const l = lang === "en" ? "en" : "he";
-  const args = { font, palette, content, lang: l };
+  const args = { font, palette, content, lang: l, textColor };
   let html;
   if (layout === "sidebar") html = renderSidebar(args);
   else if (layout === "bold") html = renderBold(args);

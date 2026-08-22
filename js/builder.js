@@ -17,12 +17,12 @@ const FORM_LABELS = {
     jobsHead: "ניסיון תעסוקתי", addJob: "+ הוסף תפקיד", role: "תפקיד", place: "מקום עבודה", dates: "תאריכים (למשל 2021 – היום)",
     bullets: "הישגים — שורה לכל נקודה", remove: "הסרה", education: "השכלה", skills: "כישורים (מופרד ב-|)",
     projectsHead: "פרויקטים (אופציונלי)", addProject: "+ הוסף פרויקט", projTitle: "שם הפרויקט", projLink: "קישור (למשל github.com/...)",
-    font: "גופן", photo: "תמונת פרופיל (אופציונלי)", uploadPhoto: "העלאת תמונה", removePhoto: "הסרת תמונה" },
+    font: "גופן", photo: "תמונת פרופיל (אופציונלי)", uploadPhoto: "העלאת תמונה", removePhoto: "הסרת תמונה", textColor: "צבע טקסט" },
   en: { name: "Full name", title: "Job title", contact: "Contact info (separate with |)", summary: "Professional summary",
     jobsHead: "Experience", addJob: "+ Add role", role: "Job title", place: "Company", dates: "Dates (e.g. 2021 – Present)",
     bullets: "Achievements — one per line", remove: "Remove", education: "Education", skills: "Skills (separate with |)",
     projectsHead: "Projects (optional)", addProject: "+ Add project", projTitle: "Project name", projLink: "Link (e.g. github.com/...)",
-    font: "Font", photo: "Profile photo (optional)", uploadPhoto: "Upload photo", removePhoto: "Remove photo" },
+    font: "Font", photo: "Profile photo (optional)", uploadPhoto: "Upload photo", removePhoto: "Remove photo", textColor: "Text color" },
 };
 
 let state = { slug: null, lang: "he", fontId: "assistant", content: null };
@@ -38,6 +38,7 @@ function loadTemplate(slug) {
   state.content.photo = null;
   state.fontId = tpl.font && tpl.font.indexOf("Georgia") !== -1 ? "frank" : "assistant";
   document.getElementById("color-picker").value = "#" + tpl.defaultColor;
+  document.getElementById("text-color-picker").value = "#222222";
   renderForm();
   renderPreview();
   const url = new URL(location.href);
@@ -55,7 +56,8 @@ function renderPreview() {
   const tpl = CV_TEMPLATES[state.slug];
   const palette = derivePalette(document.getElementById("color-picker").value);
   const font = (FONT_OPTIONS.find((f) => f.id === state.fontId) || FONT_OPTIONS[0]).css;
-  const html = renderCVHtml({ layout: tpl.layout, font, palette, content: state.content, lang: state.lang });
+  const textColor = document.getElementById("text-color-picker").value.replace("#", "");
+  const html = renderCVHtml({ layout: tpl.layout, font, palette, content: state.content, lang: state.lang, textColor });
   document.getElementById("preview-doc").innerHTML = html;
 }
 
@@ -132,6 +134,7 @@ function wireStaticInputs() {
   });
 
   document.getElementById("color-picker").addEventListener("input", renderPreview);
+  document.getElementById("text-color-picker").addEventListener("input", renderPreview);
 
   document.getElementById("font-select").addEventListener("change", (e) => {
     state.fontId = e.target.value;
