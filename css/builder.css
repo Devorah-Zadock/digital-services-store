@@ -3,7 +3,7 @@
 
 .builder-wrap {
   display: grid;
-  grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 440px) minmax(0, 1fr);
   gap: 32px;
   padding: 32px 24px 60px;
   align-items: start;
@@ -53,7 +53,7 @@
 .job-block { border: 1px solid #EDEFEE; border-radius: 8px; padding: 12px; margin-bottom: 12px; display: grid; gap: 8px; min-width: 0; }
 .job-block-head { display: flex; justify-content: space-between; align-items: center; }
 .job-remove { background: none; border: none; color: #B23; font-size: 12px; cursor: pointer; font-family: inherit; }
-.job-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.job-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
 .job-grid input { min-width: 0; }
 
 .builder-preview { min-width: 0; }

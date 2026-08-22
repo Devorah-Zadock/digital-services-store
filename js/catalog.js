@@ -1,17 +1,17 @@
 function money(n) { return n === 0 ? "חינם" : "₪" + n; }
 
 function cardHtml(p) {
+  const actionLabel = p.downloadUrl ? "להורדה" : (p.price === 0 ? "לעריכה" : "לצפייה");
   return `
     <div class="card" data-cat="${p.categorySlug}">
       <div class="thumb"><img src="images/previews/${p.image}" alt="${p.title}" loading="lazy"></div>
       <div class="body">
-        <span class="tag">${p.category} · ${p.format}</span>
-        <h3>${p.title}</h3>
-        <p>${p.shortDesc}</p>
-        <div class="price-row">
-          <span class="price">${money(p.price)}</span>
-          <a href="product.html?slug=${p.slug}" class="btn btn-teal">${p.downloadUrl ? "הורדה חינמית" : (p.price === 0 ? "עריכה חינמית" : "לצפייה במוצר")}</a>
+        <div class="card-meta">
+          <span class="tag">${p.category}</span>
+          ${p.price === 0 ? `<span class="tag tag-free">חינם</span>` : `<span class="price">${money(p.price)}</span>`}
         </div>
+        <h3>${p.title}</h3>
+        <a href="product.html?slug=${p.slug}" class="btn btn-teal card-cta">${actionLabel}</a>
       </div>
     </div>`;
 }
