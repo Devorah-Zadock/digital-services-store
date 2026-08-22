@@ -27,7 +27,7 @@ const CHAT_FAQ = [
     a: "בראש עמוד הבילדר יש כפתור שפה גדול וברור — עברית או אנגלית, כולל היפוך כיוון אוטומטי של כל התבנית." },
   { kw: ["הורדה", "pdf", "שמירה", "export", "הדפסה"],
     a: "לוחצים על \"הורדת PDF\" בתחתית הבילדר — זה פותח את חלון ההדפסה של הדפדפן, ובוחרים \"שמירה כ-PDF\"." },
-  { kw: ["צור קשר", "מייל", "email", "contact", "שאלה", "עזרה", "בעיה"],
+  { kw: ["צור קשר", "יצירת קשר", "קשר", "מייל", "email", "contact", "שאלה", "עזרה", "בעיה"],
     a: "אפשר לכתוב לנו דרך עמוד צור קשר ונחזור אליכם בהקדם.",
     link: { href: "contact.html", label: "לעמוד צור קשר" } },
   { kw: ["קטלוג", "מוצרים", "תבניות", "products"],
@@ -38,7 +38,20 @@ const CHAT_FALLBACK = {
   a: "לא הצלחתי למצוא תשובה מדויקת לזה. אפשר לנסות לשאול אחרת, או לפנות אלינו ישירות.",
   link: { href: "contact.html", label: "לעמוד צור קשר" },
 };
-const CHAT_QUICK = ["איך בונים קו\"ח?", "המצגות בחינם?", "איך מורידים PDF?"];
+const CHAT_QUICK = [
+  "איך בונים קורות חיים?",
+  "המצגות בחינם?",
+  "איך מורידים PDF?",
+  "אפשר לשנות גופן וצבע?",
+  "אפשר להעלות תמונה?",
+  "יש תבניות באנגלית?",
+  "יש קבצי Excel?",
+  "איך יוצרים קשר?",
+];
+
+function escapeHtml(s) {
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
 
 function chatMatch(text) {
   const q = String(text || "").trim().toLowerCase();
@@ -53,7 +66,7 @@ function chatMatch(text) {
 
 function bubbleHtml(text, link, who) {
   return `<div class="chat-msg chat-msg-${who}">
-    <div class="chat-bubble">${text}${link ? `<a href="${link.href}" class="chat-link">${link.label} ←</a>` : ""}</div>
+    <div class="chat-bubble">${escapeHtml(text)}${link ? `<a href="${link.href}" class="chat-link">${escapeHtml(link.label)} ←</a>` : ""}</div>
   </div>`;
 }
 
@@ -127,7 +140,7 @@ function injectChatWidget() {
         <button type="button" class="widget-close" id="chat-close" aria-label="סגירה">✕</button>
       </div>
       <div class="chat-body" id="chat-body"></div>
-      <div class="chat-quick" id="chat-quick">${CHAT_QUICK.map((q) => `<button type="button" class="chat-chip" data-q="${q}">${q}</button>`).join("")}</div>
+      <div class="chat-quick" id="chat-quick">${CHAT_QUICK.map((q) => `<button type="button" class="chat-chip" data-q="${escapeHtml(q)}">${escapeHtml(q)}</button>`).join("")}</div>
       <form class="chat-input-row" id="chat-form">
         <input type="text" id="chat-input" placeholder="כתבו שאלה..." autocomplete="off">
         <button type="submit" class="btn btn-teal">שליחה</button>
