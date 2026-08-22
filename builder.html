@@ -7,7 +7,7 @@
 <meta name="description" content="התאימו אישית קורות חיים בזמן אמת, והורידו PDF לאחר רכישה.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700&family=Rubik:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@400;500;700&family=Noto+Serif+Hebrew:wght@400;500;600;700&family=David+Libre:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/builder.css">
 </head>
@@ -28,10 +28,16 @@
 </header>
 
 <section class="builder-top no-print">
-  <div class="container">
-    <div class="breadcrumb"><a href="products.html">קטלוג</a> / בילדר קורות חיים</div>
-    <h1 style="font-size:26px; margin:6px 0 4px;">התאימו אישית ותצפו בזמן אמת</h1>
-    <p style="color:var(--grey); font-size:14px; margin:0;">מלאו את הפרטים שלכם, בחרו צבע וגם שפה — עברית או אנגלית — והתצוגה מתעדכנת מיד. הורדת PDF חינמית לגמרי.</p>
+  <div class="container builder-top-row">
+    <div>
+      <div class="breadcrumb"><a href="products.html">קטלוג</a> / בילדר קורות חיים</div>
+      <h1 style="font-size:26px; margin:6px 0 4px;">התאימו אישית ותצפו בזמן אמת</h1>
+      <p style="color:var(--grey); font-size:14px; margin:0;">מלאו את הפרטים שלכם, בחרו צבע, גופן ותבנית — והתצוגה מתעדכנת מיד. הורדת PDF חינמית לגמרי.</p>
+    </div>
+    <div class="lang-switch-big" id="lang-switch-big" role="radiogroup" aria-label="שפת קורות החיים">
+      <button type="button" class="lang-big active" data-lang="he"><span class="dot"></span>עברית</button>
+      <button type="button" class="lang-big" data-lang="en"><span class="dot"></span>English</button>
+    </div>
   </div>
 </section>
 
@@ -42,17 +48,28 @@
       <select id="tpl-select"></select>
     </div>
     <div class="field">
-      <label>שפה / Language</label>
-      <div class="lang-tabs">
-        <button type="button" class="lang-tab active" data-lang="he">עברית</button>
-        <button type="button" class="lang-tab" data-lang="en">English</button>
-      </div>
+      <label for="font-select" data-label="font">גופן</label>
+      <select id="font-select"></select>
     </div>
     <div class="field">
       <label for="color-picker">צבע ראשי</label>
       <div class="color-row">
         <input type="color" id="color-picker" value="#1F5C4E">
         <div class="swatches" id="swatches"></div>
+      </div>
+    </div>
+
+    <hr class="sep">
+
+    <div class="field">
+      <label data-label="photo">תמונת פרופיל (אופציונלי)</label>
+      <div class="photo-row">
+        <div class="photo-preview" id="photo-preview"></div>
+        <div class="photo-actions">
+          <label class="btn-mini photo-upload-btn" for="f-photo" data-label="uploadPhoto">העלאת תמונה</label>
+          <input type="file" id="f-photo" accept="image/*" style="display:none;">
+          <button type="button" class="photo-remove" id="photo-remove" data-label="removePhoto">הסרת תמונה</button>
+        </div>
       </div>
     </div>
 
@@ -124,5 +141,6 @@
 <script src="js/cv-render.js"></script>
 <script src="js/builder.js"></script>
 <script src="js/main.js"></script>
+<script src="js/widgets.js"></script>
 </body>
 </html>

@@ -39,9 +39,13 @@ function initialsOf(name) {
   const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
   return (first + last).toUpperCase();
 }
+function photoCircleHtml(photo, size) {
+  return `<div style="width:${size}px; height:${size}px; border-radius:50%; overflow:hidden; flex:none;"><img src="${photo}" alt="" style="width:100%; height:100%; object-fit:cover; display:block;"></div>`;
+}
 
 const SHARED_CSS = `
-  .cv-doc { font-family: var(--cv-font); background:#fff; color:#${CV_DARK}; width:100%; max-width:794px; margin:0 auto; box-shadow:0 10px 30px rgba(0,0,0,.12); overflow:hidden; }
+  .cv-doc { font-family: var(--cv-font); background:#fff; color:#${CV_DARK}; width:100%; max-width:794px; margin:0 auto; box-shadow:0 10px 30px rgba(0,0,0,.12); overflow:hidden; overflow-wrap:break-word; }
+  .cv-doc h1, .cv-doc h2, .cv-doc .cv-jobtitle, .cv-doc .contact-line, .cv-doc .role { overflow-wrap:break-word; }
   .cv-doc ul { margin:0; padding-inline-start:20px; }
   .cv-doc li { font-size:12.5px; color:#333; line-height:1.6; }
   .cv-doc .cv-jobtitle { font-weight:700; }
@@ -95,7 +99,7 @@ function renderSidebar({ font, palette, content, lang }) {
   <div class="cv-doc" dir="${dir}">
     <div class="cv-sidebar-wrap">
       <aside class="cv-side">
-        <div class="avatar">${escapeHtml(initialsOf(content.name))}</div>
+        ${content.photo ? `<div class="avatar avatar-photo">${photoCircleHtml(content.photo, 78)}</div>` : `<div class="avatar">${escapeHtml(initialsOf(content.name))}</div>`}
         <h1>${escapeHtml(content.name)}</h1>
         <div class="role">${escapeHtml(content.title)}</div>
         <div class="sec-label">${L.contact}</div>
@@ -149,6 +153,7 @@ function renderBold({ font, palette, content, lang }) {
   </style>
   <div class="cv-doc" dir="${dir}">
     <div class="cv-bold-head">
+      ${content.photo ? `<div style="position:absolute; z-index:2; top:28px; inset-inline-end:32px; box-shadow:0 8px 20px rgba(0,0,0,.15); border-radius:50%;">${photoCircleHtml(content.photo, 72)}</div>` : ""}
       <div class="inner">
         <h1>${escapeHtml(content.name)}</h1>
         <span class="role-badge">${escapeHtml(content.title)}</span>
@@ -195,6 +200,7 @@ function renderClassicMono({ font, palette, content, lang }) {
   </style>
   <div class="cv-doc" dir="${dir}">
     <div class="cv-cm-head">
+      ${content.photo ? `<div style="margin:0 auto 14px; box-shadow:0 4px 14px rgba(0,0,0,.12); border-radius:50%; display:inline-block;">${photoCircleHtml(content.photo, 64)}</div>` : ""}
       <h1>${escapeHtml(content.name)}</h1>
       <div class="role">${escapeHtml(content.title)}</div>
       <div class="contact">${escapeHtml(content.contact)}</div>
