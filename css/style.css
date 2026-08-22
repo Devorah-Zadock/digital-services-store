@@ -36,6 +36,27 @@ body {
   line-height: 1.6;
 }
 
+/* ---------- Animated cursor (fine-pointer devices only, see js/cursor.js) ---------- */
+.custom-cursor-active, .custom-cursor-active a, .custom-cursor-active button,
+.custom-cursor-active input, .custom-cursor-active textarea, .custom-cursor-active select,
+.custom-cursor-active * { cursor: none !important; }
+.cursor-dot, .cursor-ring {
+  position: fixed; top: 0; left: 0; pointer-events: none; z-index: 9999;
+  border-radius: 50%; transform: translate(-100px, -100px); will-change: transform; opacity: 0;
+  mix-blend-mode: difference;
+}
+.custom-cursor-active .cursor-dot, .custom-cursor-active .cursor-ring { opacity: 1; }
+.cursor-dot {
+  width: 6px; height: 6px; margin: -3px 0 0 -3px; background: #fff;
+  transition: width .25s cubic-bezier(.2,.8,.2,1), height .25s cubic-bezier(.2,.8,.2,1), margin .25s cubic-bezier(.2,.8,.2,1), opacity .2s ease;
+}
+.cursor-ring {
+  width: 26px; height: 26px; margin: -13px 0 0 -13px; border: 1.25px solid #fff; background: transparent;
+  transition: width .3s cubic-bezier(.2,.8,.2,1), height .3s cubic-bezier(.2,.8,.2,1), margin .3s cubic-bezier(.2,.8,.2,1), background .2s ease, opacity .2s ease;
+}
+.cursor-hover .cursor-ring { width: 38px; height: 38px; margin: -19px 0 0 -19px; background: rgba(255,255,255,.10); }
+.cursor-down .cursor-ring { width: 20px; height: 20px; margin: -10px 0 0 -10px; }
+
 img { max-width: 100%; display: block; }
 a { color: inherit; text-decoration: none; }
 ul { margin: 0; }
