@@ -73,9 +73,8 @@ function renderSidebar({ font, palette, content, lang }) {
   const contactLines = splitParts(content.contact);
   const skillChips = splitParts(content.skills).map((s) => chipHtml(s, "rgba(255,255,255,.14)", "#fff")).join("");
   const jobsHtml = content.jobs.map((j, i) => `
-    <div class="tl-item" style="position:relative; padding-inline-end:20px; padding-bottom:${i === content.jobs.length - 1 ? 0 : 22}px;">
-      <div style="position:absolute; inset-inline-end:0; top:4px; width:9px; height:9px; border-radius:50%; background:#${palette.primary};"></div>
-      ${i !== content.jobs.length - 1 ? `<div style="position:absolute; inset-inline-end:4px; top:15px; bottom:0; width:1px; background:#E4E4E4;"></div>` : ""}
+    <div class="tl-item" style="padding-bottom:${i === content.jobs.length - 1 ? 0 : 20}px;">
+      <div class="tl-dot" style="background:#${palette.primary};"></div>
       <div class="cv-jobtitle" style="font-size:13.5px; color:#${CV_DARK};">${escapeHtml(j.title)}</div>
       <div style="font-size:12px; color:#${palette.primary}; font-weight:600; margin-top:1px;">${escapeHtml(j.place)}</div>
       <div class="cv-dates" style="color:#${CV_GREY}; margin:2px 0 6px;">${escapeHtml(j.dates)}</div>
@@ -95,6 +94,10 @@ function renderSidebar({ font, palette, content, lang }) {
     .cv-main { flex:1; padding:36px 30px; min-width:0; }
     .cv-main h2 { font-size:14px; color:#${palette.primary}; margin:0 0 12px; text-transform:uppercase; letter-spacing:.05em; }
     .cv-main h2:not(:first-child) { margin-top:26px; }
+    .tl-wrap { position:relative; }
+    .tl-wrap::before { content:""; position:absolute; inset-inline-end:4px; top:5px; bottom:5px; width:2px; background:#EAEAEA; }
+    .tl-item { position:relative; padding-inline-end:20px; }
+    .tl-dot { position:absolute; inset-inline-end:0px; top:3px; width:10px; height:10px; border-radius:50%; box-shadow:0 0 0 3px #fff; }
   </style>
   <div class="cv-doc" dir="${dir}">
     <div class="cv-sidebar-wrap">
@@ -111,7 +114,7 @@ function renderSidebar({ font, palette, content, lang }) {
         <h2>${L.summary}</h2>
         <p class="cv-summary">${escapeHtml(content.summary)}</p>
         <h2>${L.experience}</h2>
-        ${jobsHtml}
+        <div class="tl-wrap">${jobsHtml}</div>
         ${content.projects && content.projects.length ? `<h2>${L.projects}</h2>${projectsList(content.projects, palette.primary)}` : ""}
         <h2>${L.education}</h2>
         <p class="cv-summary">${escapeHtml(content.education)}</p>
