@@ -53,10 +53,6 @@ const SHARED_CSS = `
 function chipHtml(text, chipBg, chipColor, chipFont) {
   return `<span style="display:inline-block; background:${chipBg}; color:${chipColor}; font-family:${chipFont || "inherit"}; font-size:11px; padding:5px 12px; border-radius:20px; margin:0 0 6px 6px;">${escapeHtml(text)}</span>`;
 }
-function creditHtml(showCredit) {
-  if (!showCredit) return "";
-  return `<div style="text-align:center; padding:10px 20px 16px; font-size:10px; color:#9A9A9A;">Made with BizKit · bizkit.example</div>`;
-}
 function projectsList(projects, primaryHex) {
   if (!projects || !projects.length) return "";
   return projects.map((p) => `
@@ -67,7 +63,7 @@ function projectsList(projects, primaryHex) {
 }
 
 /* ---------------- Sidebar layout ---------------- */
-function renderSidebar({ font, palette, content, showCredit, lang }) {
+function renderSidebar({ font, palette, content, lang }) {
   const L = LABELS[lang];
   const dir = lang === "en" ? "ltr" : "rtl";
   const contactLines = splitParts(content.contact);
@@ -117,12 +113,11 @@ function renderSidebar({ font, palette, content, showCredit, lang }) {
         <p class="cv-summary">${escapeHtml(content.education)}</p>
       </main>
     </div>
-    ${creditHtml(showCredit)}
   </div>`;
 }
 
 /* ---------------- Bold editorial layout ---------------- */
-function renderBold({ font, palette, content, showCredit, lang }) {
+function renderBold({ font, palette, content, lang }) {
   const L = LABELS[lang];
   const dir = lang === "en" ? "ltr" : "rtl";
   const skillChips = splitParts(content.skills).map((s) => chipHtml(s, "#" + palette.ice, "#" + palette.primaryDark)).join("");
@@ -171,12 +166,11 @@ function renderBold({ font, palette, content, showCredit, lang }) {
       <h2><span class="n">${badge()}</span> ${L.skills}</h2>
       <div>${skillChips}</div>
     </div>
-    ${creditHtml(showCredit)}
   </div>`;
 }
 
 /* ---------------- Classic / quiet layout ---------------- */
-function renderClassicMono({ font, palette, content, showCredit, lang }) {
+function renderClassicMono({ font, palette, content, lang }) {
   const L = LABELS[lang];
   const dir = lang === "en" ? "ltr" : "rtl";
   let n = 0;
@@ -216,13 +210,12 @@ function renderClassicMono({ font, palette, content, showCredit, lang }) {
       <h2><span class="n">${badge()}</span> ${L.skills}</h2>
       <p class="cv-summary">${escapeHtml(content.skills)}</p>
     </div>
-    ${creditHtml(showCredit)}
   </div>`;
 }
 
-function renderCVHtml({ layout, font, palette, content, showCredit, lang }) {
+function renderCVHtml({ layout, font, palette, content, lang }) {
   const l = lang === "en" ? "en" : "he";
-  const args = { font, palette, content, showCredit, lang: l };
+  const args = { font, palette, content, lang: l };
   let html;
   if (layout === "sidebar") html = renderSidebar(args);
   else if (layout === "bold") html = renderBold(args);

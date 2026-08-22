@@ -1,18 +1,6 @@
 /* CV builder: template + language + color selection, live-editing form,
-   live preview. Freemium model: PDF export (window.print()) is ALWAYS free,
-   with a small "made with BizKit" credit line. One Gumroad product
-   ("BizKit Pro") removes the credit line from every template, verified
-   client-side against Gumroad's public License Verification API — no
-   backend needed.
-   IMPORTANT: GUMROAD_PRODUCT below has a placeholder permalink/link —
-   see README "Gumroad setup" before going live. */
-const GUMROAD_PRODUCT = { permalink: "REPLACE_ME_bizkit_pro", checkoutUrl: "https://gum.co/REPLACE_ME_bizkit_pro" };
-const UNLOCK_KEY = "bizkit_pro_unlocked";
-
-function gumroadConfigured() {
-  return !GUMROAD_PRODUCT.permalink.startsWith("REPLACE_ME");
-}
-
+   live preview, and a free PDF export (window.print()). No paywall, no
+   account, no license check — the whole thing is free to use. */
 const SWATCHES = ["1F5C4E", "24476B", "C24B1F", "B5175A", "1F2A44", "2563EB", "334E68"];
 
 const FORM_LABELS = {
@@ -29,10 +17,6 @@ const FORM_LABELS = {
 let state = { slug: null, lang: "he", content: null };
 
 function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
-
-function isUnlocked() {
-  return localStorage.getItem(UNLOCK_KEY) === "1";
-}
 
 function loadTemplate(slug) {
   const tpl = CV_TEMPLATES[slug];
@@ -57,7 +41,7 @@ function setLang(lang) {
 function renderPreview() {
   const tpl = CV_TEMPLATES[state.slug];
   const palette = derivePalette(document.getElementById("color-picker").value);
-  const html = renderCVHtml({ layout: tpl.layout, font: tpl.font, palette, content: state.content, showCredit: !isUnlocked(), lang: state.lang });
+  const html = renderCVHtml({ layout: tpl.layout, font: tpl.font, palette, content: state.content, lang: state.lang });
   document.getElementById("preview-doc").innerHTML = html;
 }
 
@@ -181,59 +165,12 @@ function wireStaticInputs() {
   document.querySelectorAll(".lang-tab").forEach((btn) => btn.addEventListener("click", () => setLang(btn.dataset.lang)));
 }
 
-function refreshLockUI() {
-  const unlocked = isUnlocked();
-  document.getElementById("lock-state").style.display = unlocked ? "none" : "block";
-  document.getElementById("unlock-state").style.display = unlocked ? "block" : "none";
-  renderPreview();
-}
-
-async function verifyLicense() {
-  const key = document.getElementById("license-key").value.trim();
-  const msg = document.getElementById("license-msg");
-  if (!key) { msg.textContent = "יש להזין קוד רישוי."; msg.className = "err"; return; }
-  msg.textContent = "בודקים...";
-  msg.className = "";
-  try {
-    const res = await fetch("https://api.gumroad.com/v2/licenses/verify", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ product_permalink: GUMROAD_PRODUCT.permalink, license_key: key }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      localStorage.setItem(UNLOCK_KEY, "1");
-      msg.textContent = "";
-      refreshLockUI();
-    } else {
-      msg.textContent = "קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב.";
-      msg.className = "err";
-    }
-  } catch (err) {
-    msg.textContent = "שגיאת חיבור לשירות האימות. נסו שוב בעוד רגע.";
-    msg.className = "err";
-  }
-}
-
 document.addEventListener("DOMContentLoaded", () => {
   const select = document.getElementById("tpl-select");
   select.innerHTML = Object.entries(CV_TEMPLATES).map(([slug, t]) => `<option value="${slug}">${t.label}</option>`).join("");
 
   wireStaticInputs();
-  const buyLink = document.getElementById("buy-link");
-  if (gumroadConfigured()) {
-    buyLink.href = GUMROAD_PRODUCT.checkoutUrl;
-  } else {
-    buyLink.href = "#";
-    buyLink.addEventListener("click", (e) => {
-      e.preventDefault();
-      document.getElementById("license-msg").textContent = "השדרוג עוד לא זמין לרכישה — בקרוב.";
-      document.getElementById("license-msg").className = "err";
-    });
-  }
-  document.getElementById("verify-btn").addEventListener("click", verifyLicense);
   document.getElementById("download-btn").addEventListener("click", () => window.print());
-  document.getElementById("download-btn-free").addEventListener("click", () => window.print());
 
   const startSlug = new URLSearchParams(location.search).get("template");
   const startLang = new URLSearchParams(location.search).get("lang");
@@ -241,5 +178,4 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll(".lang-tab").forEach((b) => b.classList.toggle("active", b.dataset.lang === state.lang));
   loadTemplate(startSlug && CV_TEMPLATES[startSlug] ? startSlug : Object.keys(CV_TEMPLATES)[0]);
   select.value = state.slug;
-  refreshLockUI();
 });

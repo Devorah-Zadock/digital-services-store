@@ -83,7 +83,7 @@ function initProductPage() {
         <div class="note-box">קובץ מלא, מוכן לעריכה. יש שאלה? <a href="contact.html" style="color:var(--teal); font-weight:600;">כתבו לנו</a> ונשמח לעזור.</div>
         ` : `
         <a href="builder.html?template=${p.slug}" class="btn btn-gold">עריכה והורדה — חינם</a>
-        <div class="note-box">ממלאים את הפרטים שלכם ורואים תוצאה חיה. הורדת PDF חינמית תמיד, עם שורת קרדיט קטנה בתחתית. שדרוג חד-פעמי ל-BizKit Pro פותח גרסה נקייה בלי הקרדיט — בכל התבניות, לתמיד.</div>
+        <div class="note-box">ממלאים את הפרטים שלכם ורואים תוצאה חיה, בעברית או באנגלית. הורדת PDF חינמית לגמרי.</div>
         `}
       </div>
     </div>`;
