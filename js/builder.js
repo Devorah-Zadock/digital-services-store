@@ -59,7 +59,34 @@ function renderPreview() {
   const textColor = document.getElementById("text-color-picker").value.replace("#", "");
   const html = renderCVHtml({ layout: tpl.layout, font, palette, content: state.content, lang: state.lang, textColor });
   document.getElementById("preview-doc").innerHTML = html;
+  fitPreviewToContainer();
 }
+
+/* The CV doc is always rendered at its true fixed A4 width (794px) so the
+   internal layout proportions exactly match the printed PDF. On screens
+   narrower than that (mobile, or a narrow desktop window), we scale the
+   whole rendered box down visually instead of letting the layout reflow —
+   reflowing would starve fixed-width columns (like the sidebar layout's
+   255px aside) and break the design. The print stylesheet resets this
+   transform, so exported PDFs are never affected. */
+function fitPreviewToContainer() {
+  const wrap = document.getElementById("preview-doc");
+  const doc = wrap.querySelector(".cv-doc");
+  if (!doc) return;
+  doc.style.transform = "none";
+  wrap.style.height = "auto";
+  const available = wrap.clientWidth;
+  const natural = doc.offsetWidth;
+  const scale = available < natural ? available / natural : 1;
+  doc.style.transformOrigin = "top center";
+  doc.style.transform = `scale(${scale})`;
+  wrap.style.height = (doc.offsetHeight * scale) + "px";
+}
+
+window.addEventListener("resize", () => {
+  clearTimeout(window._fitPreviewTimer);
+  window._fitPreviewTimer = setTimeout(fitPreviewToContainer, 150);
+});
 
 function renderPhotoPreview() {
   const el = document.getElementById("photo-preview");

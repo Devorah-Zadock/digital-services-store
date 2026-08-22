@@ -45,7 +45,7 @@ function photoCircleHtml(photo, size) {
 
 function sharedCss(tc) {
   return `
-  .cv-doc { font-family: var(--cv-font); background:#fff; color:#${tc}; width:100%; max-width:794px; margin:0 auto; box-shadow:0 10px 30px rgba(0,0,0,.12); overflow:hidden; overflow-wrap:break-word; }
+  .cv-doc { font-family: var(--cv-font); background:#fff; color:#${tc}; width:794px; margin:0 auto; box-shadow:0 10px 30px rgba(0,0,0,.12); overflow:hidden; overflow-wrap:break-word; }
   .cv-doc h1, .cv-doc h2, .cv-doc .cv-jobtitle, .cv-doc .contact-line, .cv-doc .role { overflow-wrap:break-word; }
   .cv-doc ul { margin:0; padding-inline-start:20px; }
   .cv-doc li { font-size:12.5px; color:#${tc}; line-height:1.6; }

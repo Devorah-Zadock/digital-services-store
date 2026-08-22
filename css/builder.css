@@ -58,7 +58,8 @@
 
 .builder-preview { min-width: 0; }
 .preview-sticky { position: sticky; top: 90px; }
-#preview-doc { margin-bottom: 20px; }
+#preview-doc { margin-bottom: 20px; overflow: hidden; }
+#preview-doc .cv-doc { transition: transform .15s ease; }
 
 .export-panel { background: var(--ice); border-radius: var(--radius); padding: 22px; }
 
@@ -89,6 +90,7 @@
 @media print {
   .no-print { display: none !important; }
   body, .builder-wrap, .container, .builder-preview, .preview-sticky { all: unset; display: block; }
-  #preview-doc .cv-doc { box-shadow: none; margin: 0; max-width: 100%; width: 100%; }
+  #preview-doc { height: auto !important; overflow: visible !important; }
+  #preview-doc .cv-doc { box-shadow: none; margin: 0; width: 100% !important; transform: none !important; }
   @page { size: A4; margin: 0; }
 }
