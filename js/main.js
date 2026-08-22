@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const message = form.querySelector("#message").value.trim();
       const subject = encodeURIComponent("פנייה מהאתר - " + name);
       const body = encodeURIComponent(message + "\n\nלחזרה: " + email);
-      window.location.href = `mailto:hello@bizkit.example?subject=${subject}&body=${body}`;
+      window.location.href = `mailto:hello@deskkit.example?subject=${subject}&body=${body}`;
     });
   }
 });

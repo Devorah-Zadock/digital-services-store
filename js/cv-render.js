@@ -80,7 +80,7 @@ function renderSidebar({ font, palette, content, lang }) {
 
   return `
   <style>${SHARED_CSS}
-    .cv-sidebar-wrap { display:flex; flex-direction:${lang === "en" ? "row" : "row-reverse"}; min-height:600px; }
+    .cv-sidebar-wrap { display:flex; flex-direction:${lang === "en" ? "row" : "row-reverse"}; min-height:1123px; }
     .cv-side { width:255px; flex:none; background:#${palette.primaryDark}; color:#fff; padding:36px 26px; text-align:center; }
     .cv-side .avatar { width:78px; height:78px; border-radius:50%; background:rgba(255,255,255,.16); display:flex; align-items:center; justify-content:center; margin:0 auto 16px; font-size:26px; font-weight:700; color:#fff; }
     .cv-side h1 { font-size:21px; margin:0 0 4px; }

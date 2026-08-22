@@ -64,7 +64,7 @@ function initProductPage() {
   const slug = new URLSearchParams(location.search).get("slug");
   const p = PRODUCTS.find((x) => x.slug === slug) || PRODUCTS[0];
 
-  document.title = p.title + " — BizKit";
+  document.title = p.title + " — DeskKit";
   root.innerHTML = `
     <div class="product-hero">
       <div class="thumb"><img src="images/previews/${p.image}" alt="תצוגה מקדימה של ${p.title}"></div>
