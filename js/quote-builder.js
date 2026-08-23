@@ -53,6 +53,7 @@ function renderQuoteForm() {
   document.getElementById("qf-eventName").value = q.eventName;
   document.getElementById("qf-description").value = q.description;
   document.getElementById("qf-price").value = q.price;
+  document.getElementById("qf-vatRate").value = q.vatRate;
   document.getElementById("qf-vatNote").value = q.vatNote;
   document.getElementById("qf-policeNote").value = q.policeNote;
   document.getElementById("qf-signerName").value = q.signerName;
@@ -66,7 +67,7 @@ function wireQuoteForm() {
     "qf-businessName": "businessName", "qf-tagline1": "tagline1", "qf-tagline2": "tagline2",
     "qf-email": "email", "qf-businessNumber": "businessNumber", "qf-today": "today",
     "qf-recipient": "recipient", "qf-eventName": "eventName", "qf-description": "description",
-    "qf-price": "price", "qf-vatNote": "vatNote", "qf-policeNote": "policeNote",
+    "qf-price": "price", "qf-vatRate": "vatRate", "qf-vatNote": "vatNote", "qf-policeNote": "policeNote",
     "qf-signerName": "signerName", "qf-phone": "phone", "qf-fax": "fax",
   };
   Object.entries(map).forEach(([id, key]) => {

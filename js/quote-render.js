@@ -5,8 +5,10 @@ function escapeHtmlQ(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-/* Israel's standard VAT rate (18% as of 2025) — update here if it changes. */
-const QUOTE_VAT_RATE = 0.18;
+/* Fallback VAT rate (%) used only if the business owner leaves the VAT-rate
+   field empty or invalid. The real rate is editable in the builder, since
+   Israel's VAT rate can change over time. */
+const QUOTE_DEFAULT_VAT_RATE = 18;
 
 function parseILS(s) {
   const n = parseFloat(String(s || "").replace(/,/g, "").trim());
@@ -51,12 +53,18 @@ function renderQuoteHtml(q) {
   const priceLabel = isMulti ? "מחיר לכל אירוע" : "מחיר";
   const priceNum = parseILS(q.price);
   const hasVatNote = String(q.vatNote || "").trim().length > 0;
+  const vatRateNum = parseFloat(String(q.vatRate ?? "").replace(/,/g, "").trim());
+  const vatRatePct = isNaN(vatRateNum) ? QUOTE_DEFAULT_VAT_RATE : vatRateNum;
   // Two mutually exclusive states: either the note says the price excludes
   // VAT (as typed), or — if that note is cleared — show the calculated
-  // VAT-inclusive price instead. Never both, never neither.
+  // VAT-inclusive price instead, using the editable VAT-rate field. Never
+  // both, never neither.
   const vatLineHtml = hasVatNote
     ? `<div class="vat-note">${escapeHtmlQ(q.vatNote)}</div>`
-    : (priceNum !== null ? `<div class="price-line vat-inclusive">מחיר כולל מע"מ: ${formatILS(priceNum * (1 + QUOTE_VAT_RATE))} ₪.</div>` : "");
+    : (priceNum !== null
+        ? `<div class="vat-note">מע"מ: ${vatRatePct}%</div>
+           <div class="price-line vat-inclusive">מחיר כולל מע"מ: ${formatILS(priceNum * (1 + vatRatePct / 100))} ₪.</div>`
+        : "");
 
   return `
   <style>${QUOTE_CSS}</style>
