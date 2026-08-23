@@ -5,6 +5,17 @@ function escapeHtmlQ(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+/* Israel's standard VAT rate (18% as of 2025) — update here if it changes. */
+const QUOTE_VAT_RATE = 0.18;
+
+function parseILS(s) {
+  const n = parseFloat(String(s || "").replace(/,/g, "").trim());
+  return isNaN(n) ? null : n;
+}
+function formatILS(n) {
+  return n.toLocaleString("en-US", { maximumFractionDigits: 2 });
+}
+
 const QUOTE_CSS = `
   .quote-doc { font-family: 'Heebo', Arial, sans-serif; background:#fff; color:#1E1E1E; width:794px; margin:0 auto; box-shadow:0 10px 30px rgba(0,0,0,.12); padding:50px 56px; overflow-wrap:break-word; }
   .quote-doc .bsd { font-size:12px; color:#6B6B6B; margin-bottom:6px; }
@@ -29,7 +40,20 @@ const QUOTE_CSS = `
 `;
 
 function renderQuoteHtml(q) {
-  const datesHtml = (q.eventDates || []).filter(Boolean).map((d) => `<li>${escapeHtmlQ(d)}</li>`).join("");
+  const validDates = (q.eventDates || []).filter(Boolean);
+  const isMulti = validDates.length > 1;
+
+  const subjectHtml = isMulti
+    ? `<div class="subject">הצעת מחיר ל${escapeHtmlQ(q.eventName)} בתאריכים:</div>
+       <ul class="dates-list">${validDates.map((d) => `<li>${escapeHtmlQ(d)}</li>`).join("")}</ul>`
+    : `<div class="subject">הצעת מחיר ל${escapeHtmlQ(q.eventName)}${validDates.length === 1 ? ` בתאריך ${escapeHtmlQ(validDates[0])}` : ""}</div>`;
+
+  const priceLabel = isMulti ? "מחיר לכל אירוע" : "מחיר";
+  const priceNum = parseILS(q.price);
+  const vatInclusiveHtml = (q.showVatInclusive && priceNum !== null)
+    ? `<div class="price-line vat-inclusive">מחיר כולל מע"מ: ${formatILS(priceNum * (1 + QUOTE_VAT_RATE))} ₪.</div>`
+    : "";
+
   return `
   <style>${QUOTE_CSS}</style>
   <div class="quote-doc" dir="rtl">
@@ -44,10 +68,10 @@ function renderQuoteHtml(q) {
     <div class="date-row">${escapeHtmlQ(q.today)}</div>
     <div class="recipient">לכבוד ${escapeHtmlQ(q.recipient)}</div>
     <div class="greeting">שלום רב,</div>
-    <div class="subject">הצעת מחיר ל${escapeHtmlQ(q.eventName)} בתאריכים:</div>
-    <ul class="dates-list">${datesHtml}</ul>
+    ${subjectHtml}
     <div class="description">${escapeHtmlQ(q.description)}</div>
-    <div class="price-line">מחיר כל אירוע: ${escapeHtmlQ(q.price)} ₪.</div>
+    <div class="price-line">${priceLabel}: ${escapeHtmlQ(q.price)} ₪.</div>
+    ${vatInclusiveHtml}
     <div class="vat-note">${escapeHtmlQ(q.vatNote)}</div>
     <div class="police-note">${escapeHtmlQ(q.policeNote)}</div>
     <div class="signature">

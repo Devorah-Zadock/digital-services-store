@@ -76,7 +76,11 @@
       <div id="dates-list"></div>
 
       <div class="field"><label>תיאור האירוע</label><textarea id="qf-description" rows="3"></textarea></div>
-      <div class="field"><label>מחיר לכל אירוע (₪)</label><input id="qf-price" type="text"></div>
+      <div class="field"><label>מחיר (₪)</label><input id="qf-price" type="text"></div>
+      <div class="field" style="display:flex; flex-direction:row; align-items:center; gap:8px;">
+        <input id="qf-showVatInclusive" type="checkbox" style="width:auto;">
+        <label for="qf-showVatInclusive" style="margin:0;">הצג גם מחיר כולל מע"מ (מחושב אוטומטית)</label>
+      </div>
       <div class="field"><label>הערת מע"מ</label><input id="qf-vatNote" type="text"></div>
       <div class="field"><label>הערה נוספת</label><input id="qf-policeNote" type="text"></div>
 

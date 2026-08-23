@@ -52,6 +52,7 @@ function renderQuoteForm() {
   document.getElementById("qf-eventName").value = q.eventName;
   document.getElementById("qf-description").value = q.description;
   document.getElementById("qf-price").value = q.price;
+  document.getElementById("qf-showVatInclusive").checked = q.showVatInclusive;
   document.getElementById("qf-vatNote").value = q.vatNote;
   document.getElementById("qf-policeNote").value = q.policeNote;
   document.getElementById("qf-signerName").value = q.signerName;
@@ -73,6 +74,11 @@ function wireQuoteForm() {
       quoteState[key] = e.target.value;
       renderQuotePreview();
     });
+  });
+
+  document.getElementById("qf-showVatInclusive").addEventListener("change", (e) => {
+    quoteState.showVatInclusive = e.target.checked;
+    renderQuotePreview();
   });
 
   document.getElementById("add-date").addEventListener("click", () => {
