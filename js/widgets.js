@@ -3,15 +3,12 @@
    pages) — just include this script after main.js.
 
    FEEDBACK_ENDPOINT: paste a Formspree endpoint here to receive ratings by
-   email (see README "משוב ודירוג"). Until it's set, the form still works —
-   it just falls back to a "send us an email" link instead of auto-submitting.
-
-   FEEDBACK_WHATSAPP_NUMBER: a phone number in international format with no
-   "+", spaces, or leading zero (e.g. an Israeli 050-xxx-xxxx number becomes
-   "9725xxxxxxx") to also offer sending feedback via WhatsApp. Leave empty
-   to hide that option — it only appears once a number is set. */
+   email AND have them saved permanently in a private inbox you can revisit
+   any time (see README "משוב ודירוג", and see admin.html for a private
+   in-site page linking to that inbox). Until it's set, the form still
+   works — it just falls back to a "send us an email" link instead of
+   auto-submitting. */
 const FEEDBACK_ENDPOINT = "";
-const FEEDBACK_WHATSAPP_NUMBER = "";
 
 const CHAT_FAQ = [
   { kw: ["קו\"ח", "קוח", "קורות חיים", "cv", "resume", "בילדר", "builder"],
@@ -87,10 +84,7 @@ function injectFeedbackWidget() {
         <p class="widget-sub">דירוג קצר עוזר לנו להשתפר — לוקח חצי דקה.</p>
         <div class="star-row" id="star-row">${[1, 2, 3, 4, 5].map((n) => `<button type="button" class="star" data-star="${n}" aria-label="${n} כוכבים">★</button>`).join("")}</div>
         <textarea id="feedback-text" rows="3" placeholder="רוצים להוסיף עוד משהו? (לא חובה)"></textarea>
-        <div style="display:flex; gap:8px;">
-          <button type="button" class="btn btn-gold" id="feedback-submit" style="flex:1;">שליחה במייל</button>
-          ${FEEDBACK_WHATSAPP_NUMBER ? `<button type="button" class="btn btn-teal" id="feedback-whatsapp" style="flex:1;">שליחה בוואטסאפ</button>` : ""}
-        </div>
+        <button type="button" class="btn btn-gold" id="feedback-submit" style="width:100%;">שליחת משוב</button>
         <div class="widget-note" id="feedback-note"></div>
       </div>
     </div>`;
@@ -129,7 +123,7 @@ function injectFeedbackWidget() {
         body: JSON.stringify({ rating, message: text, page: location.pathname }),
       });
       if (!res.ok) throw new Error("bad response");
-      note.textContent = "תודה על המשוב! 🙏";
+      note.textContent = "תודה על המשוב!";
       note.className = "widget-note ok";
       document.getElementById("feedback-text").value = "";
     } catch (err) {
@@ -137,17 +131,6 @@ function injectFeedbackWidget() {
       note.className = "widget-note warn";
     }
   });
-
-  const whatsappBtn = document.getElementById("feedback-whatsapp");
-  if (whatsappBtn) {
-    whatsappBtn.addEventListener("click", () => {
-      const note = document.getElementById("feedback-note");
-      if (!rating) { note.textContent = "בחרו דירוג לפני השליחה 🙂"; note.className = "widget-note warn"; return; }
-      const text = document.getElementById("feedback-text").value.trim();
-      const message = `משוב על DeskKit — ${rating} כוכבים${text ? "\n" + text : ""}`;
-      window.open(`https://wa.me/${FEEDBACK_WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, "_blank");
-    });
-  }
 }
 
 function injectChatWidget() {
