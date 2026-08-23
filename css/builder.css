@@ -90,7 +90,8 @@
 @media print {
   .no-print { display: none !important; }
   body, .builder-wrap, .container, .builder-preview, .preview-sticky { all: unset; display: block; }
-  #preview-doc { height: auto !important; overflow: visible !important; }
+  #preview-doc, #quote-preview { height: auto !important; overflow: visible !important; }
   #preview-doc .cv-doc { box-shadow: none; margin: 0; width: 100% !important; transform: none !important; }
+  #quote-preview .quote-doc { box-shadow: none; margin: 0; width: 100% !important; }
   @page { size: A4; margin: 0; }
 }

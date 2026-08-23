@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>הצעות מחיר — פרטי</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/builder.css">
+<style>
+  .quote-gate-wrap {
+    min-height: 70vh; display: flex; align-items: center; justify-content: center; padding: 40px 24px;
+  }
+  .quote-gate-box {
+    background: var(--white); border: 1px solid #EAEDEC; border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 36px 32px; max-width: 360px; width: 100%; text-align: center;
+  }
+  .quote-gate-box h1 { font-size: 20px; color: var(--teal-dark); margin: 0 0 8px; }
+  .quote-gate-box p { font-size: 13.5px; color: var(--grey); margin: 0 0 20px; }
+  .quote-gate-box input[type="password"] {
+    width: 100%; box-sizing: border-box; padding: 12px 14px; border-radius: 8px; border: 1px solid #DADFDD;
+    font-family: inherit; font-size: 15px; margin-bottom: 12px; text-align: center;
+  }
+  .quote-login-err { color: #B23; font-size: 13px; min-height: 18px; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<header class="site no-print">
+  <nav class="nav">
+    <a href="index.html" class="brand"><span class="dot"></span>DeskKit</a>
+  </nav>
+</header>
+
+<div id="quote-gate" class="quote-gate-wrap no-print">
+  <div class="quote-gate-box">
+    <h1>אזור פרטי</h1>
+    <p>העמוד הזה מיועד רק לבעל העסק — נא להזין סיסמה.</p>
+    <form id="quote-login-form">
+      <input type="password" id="quote-password" placeholder="סיסמה" autocomplete="off" autofocus>
+      <div class="quote-login-err" id="quote-login-err"></div>
+      <button type="submit" class="btn btn-teal" style="width:100%;">כניסה</button>
+    </form>
+  </div>
+</div>
+
+<div id="quote-app" style="display:none;">
+  <section class="builder-top no-print">
+    <div class="container">
+      <h1 style="font-size:26px; margin:6px 0 4px;">בילדר הצעות מחיר — אזור פרטי</h1>
+      <p style="color:var(--grey); font-size:14px; margin:0;">ממלאים את הפרטים המשתנים, רואים תצוגה חיה, ומורידים PDF.</p>
+    </div>
+  </section>
+
+  <div class="container builder-wrap">
+    <aside class="builder-form no-print">
+      <div class="field"><label>שם העסק</label><input id="qf-businessName" type="text"></div>
+      <div class="field"><label>שורת תיאור 1</label><input id="qf-tagline1" type="text"></div>
+      <div class="field"><label>שורת תיאור 2</label><input id="qf-tagline2" type="text"></div>
+      <div class="field"><label>אימייל</label><input id="qf-email" type="text" dir="ltr"></div>
+      <div class="field"><label>מספר עוסק</label><input id="qf-businessNumber" type="text"></div>
+
+      <hr class="sep">
+
+      <div class="field"><label>תאריך היום</label><input id="qf-today" type="text"></div>
+      <div class="field"><label>לכבוד (שם הנמען)</label><input id="qf-recipient" type="text"></div>
+      <div class="field"><label>שם האירוע / התהלוכה</label><input id="qf-eventName" type="text"></div>
+
+      <div class="jobs-head">
+        <label>תאריכי האירוע</label>
+        <button type="button" class="btn-mini" id="add-date">+ הוספת תאריך</button>
+      </div>
+      <div id="dates-list"></div>
+
+      <div class="field"><label>תיאור האירוע</label><textarea id="qf-description" rows="3"></textarea></div>
+      <div class="field"><label>מחיר לכל אירוע (₪)</label><input id="qf-price" type="text"></div>
+      <div class="field"><label>הערת מע"מ</label><input id="qf-vatNote" type="text"></div>
+      <div class="field"><label>הערה נוספת</label><input id="qf-policeNote" type="text"></div>
+
+      <hr class="sep">
+
+      <div class="field"><label>שם החותם</label><input id="qf-signerName" type="text"></div>
+      <div class="field"><label>טלפון</label><input id="qf-phone" type="text" dir="ltr"></div>
+      <div class="field"><label>פקס</label><input id="qf-fax" type="text" dir="ltr"></div>
+    </aside>
+
+    <main class="builder-preview">
+      <div class="preview-sticky">
+        <div id="quote-preview"></div>
+        <div class="export-panel no-print">
+          <p style="margin:0 0 12px; font-size:14px; font-weight:600; color:var(--teal-dark);">הורדת PDF</p>
+          <button type="button" class="btn btn-gold" id="quote-download-btn">הורדת PDF</button>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="js/quote-content.js"></script>
+<script src="js/quote-render.js"></script>
+<script src="js/quote-builder.js"></script>
+</body>
+</html>
