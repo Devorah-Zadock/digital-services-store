@@ -50,9 +50,13 @@ function renderQuoteHtml(q) {
 
   const priceLabel = isMulti ? "מחיר לכל אירוע" : "מחיר";
   const priceNum = parseILS(q.price);
-  const vatInclusiveHtml = (q.showVatInclusive && priceNum !== null)
-    ? `<div class="price-line vat-inclusive">מחיר כולל מע"מ: ${formatILS(priceNum * (1 + QUOTE_VAT_RATE))} ₪.</div>`
-    : "";
+  const hasVatNote = String(q.vatNote || "").trim().length > 0;
+  // Two mutually exclusive states: either the note says the price excludes
+  // VAT (as typed), or — if that note is cleared — show the calculated
+  // VAT-inclusive price instead. Never both, never neither.
+  const vatLineHtml = hasVatNote
+    ? `<div class="vat-note">${escapeHtmlQ(q.vatNote)}</div>`
+    : (priceNum !== null ? `<div class="price-line vat-inclusive">מחיר כולל מע"מ: ${formatILS(priceNum * (1 + QUOTE_VAT_RATE))} ₪.</div>` : "");
 
   return `
   <style>${QUOTE_CSS}</style>
@@ -71,8 +75,7 @@ function renderQuoteHtml(q) {
     ${subjectHtml}
     <div class="description">${escapeHtmlQ(q.description)}</div>
     <div class="price-line">${priceLabel}: ${escapeHtmlQ(q.price)} ₪.</div>
-    ${vatInclusiveHtml}
-    <div class="vat-note">${escapeHtmlQ(q.vatNote)}</div>
+    ${vatLineHtml}
     <div class="police-note">${escapeHtmlQ(q.policeNote)}</div>
     <div class="signature">
       בברכה,<br>

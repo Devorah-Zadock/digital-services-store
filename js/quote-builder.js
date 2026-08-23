@@ -29,12 +29,13 @@ function renderQuotePreview() {
   document.getElementById("quote-preview").innerHTML = renderQuoteHtml(quoteState);
 }
 
-function dateBlockHtml(date, i) {
+function dateBlockHtml(date, i, total) {
+  const canRemove = total > 1;
   return `
   <div class="job-block" data-didx="${i}">
     <div class="job-block-head">
       <strong style="font-size:12.5px;">תאריך ${i + 1}</strong>
-      <button type="button" class="job-remove" data-dremove="${i}">הסרה</button>
+      ${canRemove ? `<button type="button" class="job-remove" data-dremove="${i}">הסרה</button>` : ""}
     </div>
     <input type="text" placeholder="לדוגמה: 18.12.2024" data-date="${i}" value="${escapeHtmlQ(date)}">
   </div>`;
@@ -52,13 +53,12 @@ function renderQuoteForm() {
   document.getElementById("qf-eventName").value = q.eventName;
   document.getElementById("qf-description").value = q.description;
   document.getElementById("qf-price").value = q.price;
-  document.getElementById("qf-showVatInclusive").checked = q.showVatInclusive;
   document.getElementById("qf-vatNote").value = q.vatNote;
   document.getElementById("qf-policeNote").value = q.policeNote;
   document.getElementById("qf-signerName").value = q.signerName;
   document.getElementById("qf-phone").value = q.phone;
   document.getElementById("qf-fax").value = q.fax;
-  document.getElementById("dates-list").innerHTML = q.eventDates.map(dateBlockHtml).join("");
+  document.getElementById("dates-list").innerHTML = q.eventDates.map((d, i) => dateBlockHtml(d, i, q.eventDates.length)).join("");
 }
 
 function wireQuoteForm() {
@@ -76,11 +76,6 @@ function wireQuoteForm() {
     });
   });
 
-  document.getElementById("qf-showVatInclusive").addEventListener("change", (e) => {
-    quoteState.showVatInclusive = e.target.checked;
-    renderQuotePreview();
-  });
-
   document.getElementById("add-date").addEventListener("click", () => {
     quoteState.eventDates.push("");
     renderQuoteForm();
@@ -95,6 +90,7 @@ function wireQuoteForm() {
   document.getElementById("dates-list").addEventListener("click", (e) => {
     const idx = e.target.dataset.dremove;
     if (idx === undefined) return;
+    if (quoteState.eventDates.length <= 1) return; // always need at least one event date
     quoteState.eventDates.splice(Number(idx), 1);
     renderQuoteForm();
     renderQuotePreview();

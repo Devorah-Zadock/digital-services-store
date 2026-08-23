@@ -12,7 +12,6 @@ const QUOTE_DEFAULT = {
   eventDates: [""],
   description: "התהלוכה ברכבים עם הגברה, לפי המסלול של המזמין.",
   price: "",
-  showVatInclusive: true,
   vatNote: "לא כולל מע\"מ.",
   policeNote: "נא לטפל באישור משטרה לאירוע.",
   signerName: "זבולון צדוק",
