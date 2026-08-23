@@ -101,8 +101,18 @@ function renderSidebar({ font, palette, content, lang, textColor }) {
     .tl-wrap::before { content:""; position:absolute; inset-inline-end:4px; top:5px; bottom:5px; width:2px; background:#EAEAEA; }
     .tl-item { position:relative; padding-inline-end:20px; }
     .tl-dot { position:absolute; inset-inline-end:0px; top:3px; width:10px; height:10px; border-radius:50%; box-shadow:0 0 0 3px #fff; }
+    .print-side-bg { display:none; }
+    @media print {
+      /* A flex child's background doesn't reliably continue past a print
+         page break — it just stops at page 1's edge on multi-page resumes.
+         position:fixed elements, uniquely, repaint on every printed page,
+         so this backing layer keeps the sidebar color going on page 2+. */
+      .print-side-bg { display:block; position:fixed; top:0; bottom:0; left:0; width:255px; z-index:0; }
+      .cv-sidebar-wrap { position:relative; z-index:1; }
+    }
   </style>
   <div class="cv-doc" dir="${dir}">
+    <div class="print-side-bg" style="background:#${palette.primaryDark};"></div>
     <div class="cv-sidebar-wrap">
       <aside class="cv-side">
         ${content.photo ? `<div class="avatar avatar-photo">${photoCircleHtml(content.photo, 78)}</div>` : `<div class="avatar">${escapeHtml(initialsOf(content.name))}</div>`}

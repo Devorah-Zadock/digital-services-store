@@ -74,12 +74,22 @@ function fitPreviewToContainer() {
   const doc = wrap.querySelector(".cv-doc");
   if (!doc) return;
   doc.style.transform = "none";
+  doc.style.margin = "0";
   wrap.style.height = "auto";
-  const available = wrap.clientWidth;
+  const wrapRect = wrap.getBoundingClientRect();
+  const docRect = doc.getBoundingClientRect(); // natural, pre-transform position
+  const available = wrapRect.width;
   const natural = doc.offsetWidth;
   const scale = available < natural ? available / natural : 1;
-  doc.style.transformOrigin = "top center";
-  doc.style.transform = `scale(${scale})`;
+  // Measure rather than assume where the browser naturally places an
+  // over-width block in this RTL container (it doesn't reliably sit flush
+  // at the container's own start edge), then compute the exact shift
+  // needed to land it centered after scaling.
+  const preTransformLeft = docRect.left - wrapRect.left;
+  const desiredLeft = (available - natural * scale) / 2;
+  const translateX = desiredLeft - preTransformLeft;
+  doc.style.transformOrigin = "top left";
+  doc.style.transform = `translateX(${translateX}px) scale(${scale})`;
   wrap.style.height = (doc.offsetHeight * scale) + "px";
 }
 
