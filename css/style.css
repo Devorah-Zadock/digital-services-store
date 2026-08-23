@@ -104,12 +104,10 @@ header.site {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 24px; max-width: var(--max); margin: 0 auto;
 }
-.brand { font-size: 22px; font-weight: 700; color: var(--teal-dark); display: flex; align-items: center; gap: 8px; letter-spacing: -.01em; }
-.brand .dot {
-  width: 11px; height: 11px; border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, var(--gold-light), var(--gold));
-  box-shadow: 0 0 0 4px rgba(201,154,59,.15);
-}
+.brand { font-size: 22px; font-weight: 700; color: var(--teal-dark); display: flex; align-items: center; gap: 7px; letter-spacing: -.01em; }
+.brand .brand-mark { width: 17px; height: 17px; flex: none; }
+.brand .brand-mark .bm-face { fill: var(--gold); }
+.brand .brand-mark .bm-fold { fill: var(--gold-light); }
 .nav-links { display: flex; gap: 28px; font-size: 15px; font-weight: 500; }
 .nav-links a { color: var(--dark); opacity: .85; padding: 6px 0; border-bottom: 2px solid transparent; transition: opacity .15s ease, border-color .15s ease; }
 .nav-links a:hover, .nav-links a.active { opacity: 1; border-color: var(--gold); }
