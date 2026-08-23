@@ -37,6 +37,24 @@
   .admin-status { font-size: 13px; font-weight: 600; padding: 8px 12px; border-radius: 8px; margin-bottom: 16px; display: inline-block; }
   .admin-status.connected { background: #E4F2EC; color: var(--teal-dark); }
   .admin-status.pending { background: #FBF1DD; color: #8A6212; }
+
+  .admin-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+  .admin-card-head h2 { margin: 0; }
+  .admin-refresh-btn {
+    background: var(--grey-light); color: var(--teal-dark); border: none; border-radius: 8px;
+    padding: 7px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .admin-refresh-btn:hover { background: #E2E7E4; }
+  .admin-loading, .admin-empty, .admin-error { font-size: 13.5px; color: var(--grey); }
+  .admin-error { color: #B23; }
+  .feedback-item { border-top: 1px solid #EDEFEE; padding: 14px 0; }
+  .feedback-item:first-child { border-top: none; padding-top: 4px; }
+  .feedback-item-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+  .feedback-stars { color: var(--gold); font-size: 15px; letter-spacing: 1px; }
+  .feedback-date { font-size: 12px; color: var(--grey); }
+  .feedback-msg { font-size: 14px; color: var(--dark); line-height: 1.6; margin: 0 0 4px; white-space: pre-wrap; }
+  .feedback-msg-empty { color: var(--grey); font-style: italic; }
+  .feedback-page { font-size: 11.5px; color: var(--grey); }
 </style>
 </head>
 <body>
@@ -63,19 +81,25 @@
   <div class="admin-card">
     <h2>הודעות משוב מהאתר</h2>
     <div id="admin-status"></div>
-    <p id="admin-explain"></p>
-    <div id="admin-inbox-action"></div>
+  </div>
+  <div class="admin-card" id="admin-feed-card" style="display:none;">
+    <div class="admin-card-head">
+      <h2>כל ההודעות</h2>
+      <button type="button" class="admin-refresh-btn" id="admin-refresh">רענון</button>
+    </div>
+    <div id="admin-feed"></div>
   </div>
   <div class="admin-card" id="admin-setup-card">
     <h2>איך מחברים את תיבת ההודעות</h2>
-    <p>האתר סטטי (בלי שרת/מסד נתונים משלו) — לכן כדי שהודעות מבקרים יישמרו לצמיתות במקום פרטי שרק את רואה (ולא ייעלמו עם רענון או ייסגרו במחשב של המבקר), הן צריכות להישלח לשירות חיצוני קטן. זה כבר מחובר לטופס המשוב באתר — נשאר רק להפעיל אותו:</p>
+    <p>האתר סטטי (בלי שרת/מסד נתונים משלו) — לכן כדי שהודעות מבקרים יישמרו לצמיתות במקום פרטי שרק את רואה (ולא ייעלמו עם רענון או ייסגרו במחשב של המבקר), הן צריכות להישלח לשירות חיצוני. הבחירה כאן: **Google Forms + Google Sheets** — בחינם, בלי הגבלת כמות, ובחשבון Google שכבר יש לך:</p>
     <ol>
-      <li>נכנסים ל-<a href="https://formspree.io" target="_blank" rel="noopener">formspree.io</a> ופותחים חשבון חינמי (עד 50 הודעות בחודש, בלי כרטיס אשראי) עם <code>digital.dz.studio@gmail.com</code>.</li>
-      <li>יוצרים טופס חדש (New Form) ומאשרים את כתובת המייל.</li>
-      <li>מעתיקים את כתובת ה-endpoint (נראית כך: <code>https://formspree.io/f/xxxxxxxx</code>) ומדביקים אותה בקבוע <code>FEEDBACK_ENDPOINT</code> בקובץ <code>js/widgets.js</code>.</li>
-      <li>באותו חשבון formspree יש לוח בקרה עם כל ההודעות שאי פעם נשלחו — מעתיקים את כתובת הקישור אליו ומדביקים בקבוע <code>ADMIN_INBOX_URL</code> בקובץ <code>js/admin.js</code>.</li>
+      <li>יוצרים <a href="https://forms.google.com" target="_blank" rel="noopener">Google Form</a> חדש (עם <code>digital.dz.studio@gmail.com</code>) עם 3 שאלות, **בדיוק בסדר הזה**: (1) "דירוג" — מסוג Linear scale מ-1 עד 5, (2) "הודעה" — מסוג Paragraph, לא חובה, (3) "עמוד" — מסוג Short answer, לא חובה.</li>
+      <li>בלשונית "Responses" לוחצים על סמל הירוק של Sheets ← "Create new spreadsheet" — זה יוצר גיליון מקושר שכל תשובה נופלת אליו אוטומטית.</li>
+      <li>פותחים את הגיליון ← Share ← משנים ל"Anyone with the link" ← Viewer. מעתיקים את ה-ID מתוך כתובת הגיליון (המחרוזת הארוכה בין <code>/d/</code> ל-<code>/edit</code>) ומדביקים בקבוע <code>GOOGLE_SHEET_ID</code> בקובץ <code>js/admin.js</code>.</li>
+      <li>בעורך הטופס לוחצים על שלוש הנקודות (⋮) למעלה ← "Get pre-filled link". ממלאים כל שדה בערך לדוגמה (למשל 5 / test / test) ← "Get Link" ← מעתיקים את הקישור שנוצר. הוא נראה כך: <code>...viewform?entry.111=5&amp;entry.222=test&amp;entry.333=test</code> — שלושת המספרים אחרי <code>entry.</code> הם מזהי השדות, **באותו סדר של השאלות בטופס**.</li>
+      <li>לוקחים את כתובת הטופס (מהדפדפן, בלי <code>?usp=...</code>) ומחליפים בסופה <code>/viewform</code> ב-<code>/formResponse</code> — זו הכתובת שמדביקים בקבוע <code>GOOGLE_FORM_ACTION_URL</code> בקובץ <code>js/widgets.js</code>. את שלושת מזהי השדות מדביקים בקבועים <code>GOOGLE_FORM_ENTRY_RATING</code>, <code>GOOGLE_FORM_ENTRY_MESSAGE</code> ו-<code>GOOGLE_FORM_ENTRY_PAGE</code> — לפי סדר השאלות.</li>
     </ol>
-    <p style="margin-bottom:0;">אחרי זה, כל הודעה שנשלחת דרך האתר גם מגיעה מייד למייל שלך וגם נשמרת בלוח הבקרה — קבועה, לא נמחקת, ונגישה רק לך דרך ההתחברות לחשבון ה-formspree שלך.</p>
+    <p style="margin-bottom:0;">אחרי זה, כל הודעה שנשלחת דרך האתר נכנסת אוטומטית לגיליון שלך — לצמיתות, בלי הגבלת כמות — ומוצגת כאן למעלה בתצוגה נוחה, כי העמוד הזה קורא ישירות מאותו גיליון.</p>
   </div>
 </div>
 
