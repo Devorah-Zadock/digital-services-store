@@ -16,7 +16,7 @@ function waLink(phone) {
   return digits ? `https://wa.me/${digits}` : "";
 }
 function siteFontImport() {
-  return `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&display=swap" rel="stylesheet">`;
+  return `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap" rel="stylesheet">`;
 }
 function siteBaseCss() {
   return `
@@ -24,10 +24,11 @@ function siteBaseCss() {
     body { margin:0; font-family:'Heebo',Arial,sans-serif; color:#1E1E1E; line-height:1.6; }
     img { max-width:100%; display:block; }
     a { text-decoration:none; color:inherit; }
-    .container { max-width:980px; margin:0 auto; padding:0 24px; }
+    .container { max-width:1000px; margin:0 auto; padding:0 24px; }
+    .eyebrow { display:inline-block; font-size:12.5px; font-weight:700; letter-spacing:.05em; padding:7px 18px; border-radius:20px; }
     .wa-fab { position:fixed; bottom:22px; inset-inline-end:22px; width:56px; height:56px; border-radius:50%;
       background:#25D366; color:#fff; display:flex; align-items:center; justify-content:center; font-size:26px;
-      box-shadow:0 8px 22px rgba(0,0,0,.22); z-index:50; }
+      box-shadow:0 8px 22px rgba(0,0,0,.25); z-index:50; }
   `;
 }
 function waFabHtml(d) {
@@ -60,27 +61,40 @@ function renderLocalServiceSite(d) {
   const wa = waLink(d.whatsapp || d.phone);
   const services = servicesData(d);
   const css = `
-    .ls-header { background:#fff; border-bottom:1px solid #EEE; padding:14px 0; }
+    .ls-header { background:#fff; border-bottom:1px solid #EEE; padding:16px 0; }
     .ls-header .row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
-    .ls-header .biz { font-size:19px; font-weight:800; color:#${pal.primaryDark}; }
-    .ls-header .phone { font-size:14px; font-weight:700; color:#${pal.primaryDark}; }
-    .ls-hero { background:linear-gradient(160deg, #${pal.primaryDark}, #${pal.primary} 70%); color:#fff; padding:70px 0 84px; text-align:center; }
-    .ls-hero h1 { font-size:38px; margin:0 0 14px; }
-    .ls-hero p { font-size:17px; opacity:.92; max-width:560px; margin:0 auto 28px; }
-    .ls-cta { display:inline-block; background:#fff; color:#${pal.primaryDark}; font-weight:800; padding:14px 30px; border-radius:30px; font-size:15px; }
-    .ls-section { padding:56px 0; }
-    .ls-section h2 { font-size:26px; color:#${pal.primaryDark}; margin:0 0 26px; text-align:center; }
-    .ls-services { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:18px; }
-    .ls-card { border:1px solid #ECECEC; border-radius:14px; padding:22px; background:#FAFAF9; }
-    .ls-card h3 { margin:0 0 8px; font-size:17px; color:#${pal.primaryDark}; }
-    .ls-card p { margin:0 0 10px; font-size:14px; color:#555; }
-    .ls-card .price-tag { font-weight:800; color:#${pal.primary}; }
-    .ls-about { background:#${pal.ice}; padding:56px 0; }
+    .ls-header .biz { font-family:'Frank Ruhl Libre',serif; font-size:20px; font-weight:700; color:#${pal.primaryDark}; }
+    .ls-header .phone { font-size:13.5px; font-weight:700; color:#${pal.primaryDark}; background:#${pal.ice}; padding:9px 18px; border-radius:20px; }
+
+    .ls-hero { position:relative; overflow:hidden; text-align:center; color:#fff; padding:100px 0 112px;
+      background: radial-gradient(circle at 22% 20%, rgba(255,255,255,.18), transparent 55%),
+                  linear-gradient(155deg, #${pal.primaryDark} 0%, #${pal.primary} 60%, #${pal.primaryDark} 130%); }
+    .ls-hero .eyebrow { background:rgba(255,255,255,.16); color:#fff; margin-bottom:20px; }
+    .ls-hero h1 { font-family:'Frank Ruhl Libre',serif; font-size:48px; font-weight:700; margin:0 0 18px; line-height:1.25; }
+    .ls-hero p { font-size:18px; opacity:.92; max-width:560px; margin:0 auto 34px; }
+    .ls-cta { display:inline-block; background:#fff; color:#${pal.primaryDark}; font-weight:800; padding:16px 38px; border-radius:30px; font-size:15.5px; box-shadow:0 14px 30px rgba(0,0,0,.28); }
+
+    .ls-section { padding:68px 0; }
+    .ls-section .head { text-align:center; margin-bottom:40px; }
+    .ls-section .eyebrow { background:#${pal.ice}; color:#${pal.primaryDark}; margin-bottom:14px; }
+    .ls-section h2 { font-family:'Frank Ruhl Libre',serif; font-size:32px; color:#${pal.primaryDark}; margin:0; }
+    .ls-services { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:22px; }
+    .ls-card { border:1px solid #EFEFEF; border-radius:16px; padding:28px; background:#fff; box-shadow:0 12px 28px rgba(0,0,0,.06); }
+    .ls-card .num { width:36px; height:36px; border-radius:50%; background:#${pal.ice}; color:#${pal.primaryDark};
+      display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; margin-bottom:16px; }
+    .ls-card h3 { margin:0 0 8px; font-size:18px; color:#${pal.primaryDark}; font-weight:700; }
+    .ls-card p { margin:0 0 12px; font-size:14px; color:#666; }
+    .ls-card .price-tag { font-weight:800; color:#${pal.primary}; font-size:16px; }
+
+    .ls-about { background:#${pal.ice}; padding:68px 0; }
     .ls-about .container { max-width:720px; text-align:center; }
-    .ls-contact { background:#${pal.primary}; color:#fff; padding:50px 0; text-align:center; }
-    .ls-contact h2 { font-size:22px; margin:0 0 18px; }
-    .ls-contact .line { font-size:15px; margin-bottom:8px; opacity:.92; }
-    .ls-footer { padding:20px 0; text-align:center; font-size:12px; color:#888; }
+    .ls-about h2 { font-family:'Frank Ruhl Libre',serif; font-size:28px; color:#${pal.primaryDark}; margin:14px 0 18px; }
+    .ls-about p { font-size:16.5px; color:#3a3a3a; }
+
+    .ls-contact { background:linear-gradient(155deg, #${pal.primaryDark}, #${pal.primary}); color:#fff; padding:60px 0; text-align:center; }
+    .ls-contact h2 { font-family:'Frank Ruhl Libre',serif; font-size:28px; margin:0 0 22px; }
+    .ls-contact .line { font-size:15.5px; margin-bottom:8px; opacity:.94; }
+    .ls-footer { padding:22px 0; text-align:center; font-size:12px; color:#999; }
   `;
   const body = `
     <header class="ls-header"><div class="container row">
@@ -88,16 +102,17 @@ function renderLocalServiceSite(d) {
       ${d.phone ? `<a class="phone" href="tel:${escapeHtmlS(d.phone)}">${escapeHtmlS(d.phone)}</a>` : ""}
     </div></header>
     <section class="ls-hero"><div class="container">
+      <span class="eyebrow">שירות מקצועי ואמין</span>
       <h1>${escapeHtmlS(d.businessName)}</h1>
       ${d.tagline ? `<p>${escapeHtmlS(d.tagline)}</p>` : ""}
       ${wa ? `<a class="ls-cta" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}
     </div></section>
     ${services.length ? `<section class="ls-section"><div class="container">
-      <h2>השירותים שלנו</h2>
-      <div class="ls-services">${services.map((s) => `
-        <div class="ls-card"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price-tag">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
+      <div class="head"><span class="eyebrow">מה אנחנו מציעים</span><h2>השירותים שלנו</h2></div>
+      <div class="ls-services">${services.map((s, i) => `
+        <div class="ls-card"><div class="num">${String(i + 1).padStart(2, "0")}</div><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price-tag">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
     </div></section>` : ""}
-    ${d.about ? `<section class="ls-about"><div class="container"><h2>קצת עלינו</h2><p>${nl2brS(d.about)}</p></div></section>` : ""}
+    ${d.about ? `<section class="ls-about"><div class="container"><span class="eyebrow" style="background:#fff; color:#${pal.primaryDark};">מי אנחנו</span><h2>קצת עלינו</h2><p>${nl2brS(d.about)}</p></div></section>` : ""}
     <section class="ls-contact"><div class="container">
       <h2>יצירת קשר</h2>
       ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
@@ -116,21 +131,30 @@ function renderFreelancerSite(d) {
   const wa = waLink(d.whatsapp || d.phone);
   const services = servicesData(d);
   const css = `
-    .fr-wrap { max-width:640px; margin:0 auto; padding:90px 24px 60px; text-align:center; }
-    .fr-name { font-size:34px; font-weight:800; color:#${pal.primaryDark}; margin:0 0 6px; }
-    .fr-role { font-size:16px; color:#${pal.primary}; font-weight:700; margin:0 0 30px; letter-spacing:.02em; }
-    .fr-about { font-size:16.5px; color:#333; margin:0 0 36px; }
-    .fr-tags { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:44px; }
-    .fr-tag { border:1.5px solid #${pal.primary}; color:#${pal.primaryDark}; padding:8px 18px; border-radius:24px; font-size:13.5px; font-weight:700; }
-    .fr-cta { display:block; background:#${pal.primary}; color:#fff; padding:60px 24px; text-align:center; }
-    .fr-cta h2 { margin:0 0 18px; font-size:22px; }
-    .fr-cta .btn { display:inline-block; background:#fff; color:#${pal.primaryDark}; font-weight:800; padding:13px 28px; border-radius:30px; margin:6px; }
-    .fr-footer { padding:20px 0; text-align:center; font-size:12px; color:#999; }
+    .fr-hero { position:relative; overflow:hidden; text-align:center; color:#fff; padding:120px 24px 96px;
+      background: radial-gradient(circle at 30% 22%, rgba(255,255,255,.16), transparent 55%),
+                  linear-gradient(155deg, #${pal.primaryDark}, #${pal.primary} 75%); }
+    .fr-hero .eyebrow { background:rgba(255,255,255,.16); color:#fff; }
+    .fr-name { font-family:'Frank Ruhl Libre',serif; font-size:48px; font-weight:700; margin:18px 0 8px; }
+    .fr-role { font-size:17px; opacity:.92; font-weight:600; letter-spacing:.02em; }
+
+    .fr-body { max-width:640px; margin:0 auto; padding:60px 24px; text-align:center; }
+    .fr-about { font-size:17px; color:#333; line-height:1.85; margin:0 0 36px; }
+    .fr-tags { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
+    .fr-tag { border:1.5px solid #${pal.primary}; color:#${pal.primaryDark}; padding:9px 20px; border-radius:24px; font-size:13.5px; font-weight:700; background:#${pal.ice}; }
+
+    .fr-cta { background:linear-gradient(155deg, #${pal.primaryDark}, #${pal.primary}); color:#fff; padding:66px 24px; text-align:center; }
+    .fr-cta h2 { font-family:'Frank Ruhl Libre',serif; font-size:29px; margin:0 0 24px; }
+    .fr-cta .btn { display:inline-block; background:#fff; color:#${pal.primaryDark}; font-weight:800; padding:14px 30px; border-radius:30px; margin:6px; box-shadow:0 12px 26px rgba(0,0,0,.22); }
+    .fr-footer { padding:22px 0; text-align:center; font-size:12px; color:#999; }
   `;
   const body = `
-    <div class="fr-wrap">
+    <section class="fr-hero">
+      <span class="eyebrow">${escapeHtmlS(d.tagline) ? "ברוכים הבאים" : "פרילנסר / יועץ"}</span>
       <div class="fr-name">${escapeHtmlS(d.businessName)}</div>
       ${d.tagline ? `<div class="fr-role">${escapeHtmlS(d.tagline)}</div>` : ""}
+    </section>
+    <div class="fr-body">
       ${d.about ? `<p class="fr-about">${nl2brS(d.about)}</p>` : ""}
       ${services.length ? `<div class="fr-tags">${services.map((s) => `<span class="fr-tag">${escapeHtmlS(s.name)}</span>`).join("")}</div>` : ""}
     </div>
@@ -152,22 +176,29 @@ function renderCatalogSite(d) {
   const wa = waLink(d.whatsapp || d.phone);
   const services = servicesData(d);
   const css = `
-    .cat-nav { background:#${pal.primary}; color:#fff; padding:16px 0; }
+    .cat-nav { background:#fff; border-bottom:1px solid #EEE; padding:16px 0; }
     .cat-nav .row { display:flex; align-items:center; justify-content:space-between; }
-    .cat-nav .biz { font-size:18px; font-weight:800; }
-    .cat-nav a.wa-link { background:rgba(255,255,255,.15); padding:8px 16px; border-radius:20px; font-size:13px; font-weight:700; }
-    .cat-title { background:#${pal.ice}; padding:38px 0; text-align:center; }
-    .cat-title h1 { font-size:28px; color:#${pal.primaryDark}; margin:0 0 8px; }
-    .cat-title p { font-size:14.5px; color:#555; margin:0; }
-    .cat-grid { padding:44px 0; display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:18px; }
-    .cat-card { border:1px solid #ECECEC; border-radius:12px; overflow:hidden; }
-    .cat-card .swatch-bar { height:8px; background:#${pal.primary}; }
-    .cat-card .body { padding:18px; }
-    .cat-card h3 { margin:0 0 6px; font-size:16px; color:#${pal.primaryDark}; }
-    .cat-card p { margin:0 0 10px; font-size:13.5px; color:#666; }
-    .cat-card .price { font-weight:800; color:#${pal.primary}; font-size:15px; }
-    .cat-about { padding:20px 0 50px; text-align:center; max-width:640px; margin:0 auto; color:#444; font-size:15px; }
-    .cat-footer { background:#${pal.primary}; color:#fff; padding:26px 0; text-align:center; font-size:13px; }
+    .cat-nav .biz { font-family:'Frank Ruhl Libre',serif; font-size:19px; font-weight:700; color:#${pal.primaryDark}; }
+    .cat-nav a.wa-link { background:#${pal.primary}; color:#fff; padding:9px 18px; border-radius:20px; font-size:13px; font-weight:700; }
+
+    .cat-title { position:relative; overflow:hidden; text-align:center; color:#fff; padding:70px 0 60px;
+      background: radial-gradient(circle at 25% 25%, rgba(255,255,255,.16), transparent 55%),
+                  linear-gradient(155deg, #${pal.primaryDark}, #${pal.primary} 75%); }
+    .cat-title .eyebrow { background:rgba(255,255,255,.16); color:#fff; margin-bottom:16px; }
+    .cat-title h1 { font-family:'Frank Ruhl Libre',serif; font-size:38px; margin:0 0 12px; }
+    .cat-title p { font-size:15.5px; opacity:.92; margin:0 0 16px; }
+    .cat-title .stats { font-size:13px; opacity:.85; }
+
+    .cat-grid { padding:52px 0; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:22px; }
+    .cat-card { border:1px solid #EEE; border-radius:14px; overflow:hidden; background:#fff; box-shadow:0 12px 26px rgba(0,0,0,.06); }
+    .cat-card .swatch-bar { height:6px; background:linear-gradient(90deg, #${pal.primary}, #${pal.primaryDark}); }
+    .cat-card .body { padding:20px; }
+    .cat-card h3 { margin:0 0 6px; font-size:16.5px; color:#${pal.primaryDark}; font-weight:700; }
+    .cat-card p { margin:0 0 12px; font-size:13.5px; color:#666; }
+    .cat-card .price { font-weight:800; color:#${pal.primary}; font-size:15.5px; }
+
+    .cat-about { padding:24px 0 58px; text-align:center; max-width:640px; margin:0 auto; color:#3a3a3a; font-size:15.5px; }
+    .cat-footer { background:#${pal.primaryDark}; color:#fff; padding:28px 0; text-align:center; font-size:13px; }
   `;
   const body = `
     <nav class="cat-nav"><div class="container row">
@@ -175,8 +206,10 @@ function renderCatalogSite(d) {
       ${wa ? `<a class="wa-link" href="${wa}" target="_blank" rel="noopener">וואטסאפ</a>` : ""}
     </div></nav>
     <section class="cat-title"><div class="container">
+      <span class="eyebrow">קטלוג המוצרים שלנו</span>
       <h1>${escapeHtmlS(d.businessName)}</h1>
       ${d.tagline ? `<p>${escapeHtmlS(d.tagline)}</p>` : ""}
+      ${services.length ? `<div class="stats">${services.length} מוצרים/שירותים זמינים</div>` : ""}
     </div></section>
     ${services.length ? `<div class="container"><div class="cat-grid">${services.map((s) => `
       <div class="cat-card"><div class="swatch-bar"></div><div class="body">
