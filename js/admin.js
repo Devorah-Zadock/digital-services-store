@@ -13,7 +13,7 @@ const ADMIN_AUTH_KEY = "deskkit-admin-auth";
 /* Paste the Formspree submissions-dashboard URL here once it's set up
    (see the setup steps on this page). Leave empty to show the setup
    instructions instead. */
-const ADMIN_INBOX_URL = "";
+const ADMIN_INBOX_URL = "https://formspree.io/forms/moeagwvk/submissions";
 
 async function sha256Hex(text) {
   const enc = new TextEncoder().encode(text);
