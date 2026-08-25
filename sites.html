@@ -60,6 +60,14 @@
 
 <div class="container builder-wrap">
   <aside class="builder-form no-print">
+    <div class="field" style="background:var(--ice); border-radius:8px; padding:12px;">
+      <label style="margin-bottom:4px;">כבר בניתם אתר כאן בעבר?</label>
+      <p style="font-size:12px; color:var(--grey); margin:0 0 8px;">בתוך קובץ ה-ZIP שהורדתם יש גם קובץ בשם <b>site-data.json</b>. אם שמרתם אותו, אפשר לטעון אותו כאן וכל הפרטים יחזרו בדיוק כמו שהיו — גם ממחשב אחר.</p>
+      <label class="btn-mini" for="load-data-file" style="display:inline-block; cursor:pointer;">טעינת קובץ נתונים</label>
+      <input type="file" id="load-data-file" accept="application/json" style="display:none;">
+      <div id="load-data-note" style="font-size:12px; margin-top:6px;"></div>
+    </div>
+
     <div class="field">
       <label>עיצוב האתר</label>
       <div class="site-tpl-row" id="tpl-row"></div>
@@ -112,6 +120,10 @@
           <div class="go-live-box">
             <b>איך מעלים את זה לאוויר (בעצמכם, תוך דקה):</b><br>
             נכנסים ל־<a href="https://app.netlify.com/drop" target="_blank" rel="noopener">app.netlify.com/drop</a>, גוררים את התיקייה המחולצת מה-ZIP לתוך העמוד — ומקבלים כתובת אתר חיה מיד. בלי הרשמה, בלי כרטיס אשראי.
+          </div>
+          <div class="go-live-box">
+            <b>רוצים לערוך שוב בעתיד (גם ממחשב אחר)?</b><br>
+            בתוך ה-ZIP יש גם קובץ בשם <b>site-data.json</b> — שומרים אותו במקום בטוח. בפעם הבאה, חוזרים לעמוד הזה ומעלים אותו בכפתור "טעינת קובץ נתונים" למעלה, וכל הפרטים חוזרים בדיוק כמו שהיו.
           </div>
         </div>
       </div>

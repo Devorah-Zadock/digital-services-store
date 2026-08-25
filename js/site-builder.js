@@ -141,6 +141,10 @@ function wireForm() {
 async function downloadSiteZip() {
   const zip = new JSZip();
   zip.file("index.html", currentSiteHtml());
+  // Lets the customer restore their exact form data later — even from a
+  // different device — by re-uploading this file to the "load saved data"
+  // input, without us needing any account system or server-side storage.
+  zip.file("site-data.json", JSON.stringify(siteState, null, 2));
   const blob = await zip.generateAsync({ type: "blob" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -153,6 +157,31 @@ async function downloadSiteZip() {
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+function loadDataFromFile(file) {
+  const note = document.getElementById("load-data-note");
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      if (!parsed || !parsed.data || !SITE_TEMPLATES[parsed.template]) throw new Error("invalid shape");
+      siteState = parsed;
+      renderTplButtons();
+      renderFormValues();
+      renderSitePreview();
+      note.textContent = "הנתונים נטענו בהצלחה!";
+      note.style.color = "var(--teal)";
+    } catch (err) {
+      note.textContent = "לא הצלחנו לקרוא את הקובץ הזה. ודאו שזה הקובץ site-data.json שהורדתם מהאתר.";
+      note.style.color = "#B23";
+    }
+  };
+  reader.onerror = () => {
+    note.textContent = "שגיאה בקריאת הקובץ. נסו שוב.";
+    note.style.color = "#B23";
+  };
+  reader.readAsText(file);
 }
 
 function refreshUnlockUI() {
@@ -202,4 +231,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("verify-btn").addEventListener("click", verifySiteLicense);
   document.getElementById("download-zip-btn").addEventListener("click", downloadSiteZip);
+
+  document.getElementById("load-data-file").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file) loadDataFromFile(file);
+    e.target.value = "";
+  });
 });
