@@ -189,15 +189,48 @@ function wireForm() {
   });
 }
 
+function publishGuideText(pages) {
+  const fileList = pages.map((p) => `${p}.html`).concat("site-data.json").map((f) => `  • ${f}`).join("\n");
+  return `איך להעלות את האתר לאוויר
+==========================
+
+מה יש בתיקייה הזו:
+${fileList}
+
+שלב 1 — פרסום האתר (בחינם, תוך דקה, בלי הרשמה):
+1. נכנסים לכתובת: https://app.netlify.com/drop
+2. גוררים את התיקייה הזו (כולה) לתוך העמוד.
+3. מקבלים כתובת אתר חיה באופן מיידי — אפשר לשלוח אותה לכל אחד.
+בלי הרשמה, בלי כרטיס אשראי, בלי עלות.
+
+שלב 2 — דומיין משלכם (לא חובה):
+אפשר להמשיך להשתמש בכתובת החינמית שמקבלים מ-Netlify, או לחבר בהמשך
+דומיין שרכשתם בנפרד (למשל מ-GoDaddy או מרשם דומיינים ישראלי) — אפשרות
+"Domain settings" בתוך האתר שנוצר ב-Netlify.
+
+רוצים לערוך שוב בעתיד (גם ממחשב אחר)?
+בתוך התיקייה הזו יש קובץ בשם site-data.json — שמרו אותו במקום בטוח.
+בפעם הבאה, חוזרים לעמוד בניית האתר ומעלים אותו בכפתור "טעינת קובץ
+נתונים", וכל הפרטים חוזרים בדיוק כמו שהיו.
+
+שאלות? digital.dz.studio@gmail.com
+`;
+}
+
 async function downloadSiteZip() {
   const zip = new JSZip();
-  enabledSitePages().forEach((page) => {
+  const pages = enabledSitePages();
+  pages.forEach((page) => {
     zip.file(`${page}.html`, currentSiteHtml(page));
   });
   // Lets the customer restore their exact form data later — even from a
   // different device — by re-uploading this file to the "load saved data"
   // input, without us needing any account system or server-side storage.
   zip.file("site-data.json", JSON.stringify(siteState, null, 2));
+  // The Netlify Drop steps live on this page too, but the ZIP needs to
+  // stand on its own — a customer opening it weeks later, or forwarding
+  // it to whoever manages their hosting, won't necessarily come back here.
+  zip.file("how-to-publish.txt", publishGuideText(pages));
   const blob = await zip.generateAsync({ type: "blob" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
