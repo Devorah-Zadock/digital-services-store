@@ -2,23 +2,13 @@
    guide chatbot. Both are self-injecting (no markup needed in the HTML
    pages) — just include this script after main.js.
 
-   Feedback storage: submissions go to a Google Form, which Google Forms
-   saves as new rows in a linked Google Sheet — free, no submission limit,
-   and it persists permanently (survives refresh, not just this browser).
-   admin.html then reads that same sheet back and displays it nicely.
-   See README "משוב ודירוג" for the one-time setup steps. Until the three
-   constants below are filled in, the widget still works — it just falls
-   back to a "send us an email" link instead of auto-submitting.
-
-   GOOGLE_FORM_ACTION_URL: your form's action URL — take the form's
-   "viewform" link and replace /viewform with /formResponse.
-   GOOGLE_FORM_ENTRY_RATING / _MESSAGE / _PAGE: the entry.NNNNNNNNN field
-   ID for each of the form's three questions (get these via the form's
-   "Get pre-filled link" option — see README for exact steps). */
-const GOOGLE_FORM_ACTION_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeKcW1dglT94Psp3CVBwYMkCjy9deBVRHQs1ckl7X3XvaKXNQ/formResponse";
-const GOOGLE_FORM_ENTRY_RATING = "2035073733";
-const GOOGLE_FORM_ENTRY_MESSAGE = "505234675";
-const GOOGLE_FORM_ENTRY_PAGE = "358160448";
+   FEEDBACK_ENDPOINT: paste a Formspree endpoint here to receive ratings by
+   email AND have them saved permanently in a private inbox you can revisit
+   any time (see README "משוב ודירוג", and see admin.html for a private
+   in-site page linking to that inbox). Until it's set, the form still
+   works — it just falls back to a "send us an email" link instead of
+   auto-submitting. */
+const FEEDBACK_ENDPOINT = "";
 
 const CHAT_FAQ = [
   { kw: ["קו\"ח", "קוח", "קורות חיים", "cv", "resume", "בילדר", "builder"],
@@ -118,7 +108,7 @@ function injectFeedbackWidget() {
     if (!rating) { note.textContent = "בחרו דירוג לפני השליחה 🙂"; note.className = "widget-note warn"; return; }
     const text = document.getElementById("feedback-text").value.trim();
 
-    if (!GOOGLE_FORM_ACTION_URL) {
+    if (!FEEDBACK_ENDPOINT) {
       const mailHref = `mailto:digital.dz.studio@gmail.com?subject=${encodeURIComponent("משוב על האתר — " + rating + " כוכבים")}&body=${encodeURIComponent(text)}`;
       note.innerHTML = `תודה! טופס המשוב האוטומטי עוד לא מחובר — אם תרצו, אפשר <a href="${mailHref}">לשלוח לנו את זה במייל</a>.`;
       note.className = "widget-note";
@@ -127,15 +117,12 @@ function injectFeedbackWidget() {
     note.textContent = "שולח…";
     note.className = "widget-note";
     try {
-      const body = new URLSearchParams();
-      body.set(GOOGLE_FORM_ENTRY_RATING, String(rating));
-      body.set(GOOGLE_FORM_ENTRY_MESSAGE, text);
-      body.set(GOOGLE_FORM_ENTRY_PAGE, location.pathname);
-      // Google Forms doesn't send CORS headers, so the response is opaque
-      // (mode: "no-cors") — we can't confirm success from the fetch result
-      // itself, only that the request went out. This is the standard,
-      // widely-used technique for posting to Google Forms from a static site.
-      await fetch(GOOGLE_FORM_ACTION_URL, { method: "POST", mode: "no-cors", body });
+      const res = await fetch(FEEDBACK_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ rating, message: text, page: location.pathname }),
+      });
+      if (!res.ok) throw new Error("bad response");
       note.textContent = "תודה על המשוב!";
       note.className = "widget-note ok";
       document.getElementById("feedback-text").value = "";
