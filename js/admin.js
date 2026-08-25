@@ -27,22 +27,18 @@ function showPanel() {
 
   const status = document.getElementById("admin-status");
   const explain = document.getElementById("admin-explain");
-  const frameWrap = document.getElementById("admin-inbox-frame-wrap");
-  const frame = document.getElementById("admin-inbox-frame");
-  const fallbackLink = document.getElementById("admin-inbox-fallback-link");
+  const action = document.getElementById("admin-inbox-action");
   const setupCard = document.getElementById("admin-setup-card");
 
   if (ADMIN_INBOX_URL) {
     status.innerHTML = `<span class="admin-status connected">מחובר</span>`;
-    explain.textContent = "הודעות שנשלחות דרך טופס המשוב באתר נשמרות כאן לצמיתות, ולא נעלמות עם רענון — כי הן מאוחסנות בשרת חיצוני, לא בדפדפן.";
-    frame.src = ADMIN_INBOX_URL;
-    fallbackLink.href = ADMIN_INBOX_URL;
-    frameWrap.style.display = "";
+    explain.textContent = "הודעות שנשלחות דרך טופס המשוב באתר נשמרות כאן לצמיתות, ולא נעלמות עם רענון — כי הן מאוחסנות בשרת חיצוני, לא בדפדפן. הכפתור למטה נוחת ישר על טבלה עם כל ההודעות — אם כבר מחוברים ל-formspree בדפדפן הזה, זה לא יבקש התחברות נוספת.";
+    action.innerHTML = `<a href="${ADMIN_INBOX_URL}" target="_blank" rel="noopener" class="btn btn-gold">פתיחת תיבת ההודעות</a>`;
     setupCard.style.display = "none";
   } else {
     status.innerHTML = `<span class="admin-status pending">עוד לא חובר</span>`;
     explain.textContent = "תיבת ההודעות עוד לא מחוברת — עד אז, הודעות משוב שנשלחות באתר מוצגות למבקר עם \"תודה על המשוב!\", אבל לא נשמרות באף מקום שאת יכולה לראות. פועלים לפי ההוראות למטה כדי לחבר אותה (לוקח כמה דקות, חד-פעמי).";
-    frameWrap.style.display = "none";
+    action.innerHTML = "";
     setupCard.style.display = "";
   }
 }
