@@ -21,7 +21,7 @@ const ADMIN_AUTH_KEY = "deskkit-admin-auth";
    always right, since it's the first/only tab Google Forms creates.
    See README for exact setup steps. Leave GOOGLE_SHEET_ID empty to show
    setup instructions instead of the feed. */
-const GOOGLE_SHEET_ID = "/19rpPKlSp73En7PUpCc6nJhv-qlC8ydLaQlpn6XAlrPs/";
+const GOOGLE_SHEET_ID = "19rpPKlSp73En7PUpCc6nJhv-qlC8ydLaQlpn6XAlrPs";
 const GOOGLE_SHEET_GID = "0";
 
 function escapeHtmlA(s) {
