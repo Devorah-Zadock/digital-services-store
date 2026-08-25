@@ -1,9 +1,15 @@
-/* Renders a complete, standalone business-website HTML document from the
+/* Renders complete, standalone business-website HTML documents from the
    wizard's data. Three structurally different templates (not just recolored
    copies of each other) share the same data shape, so the customer's own
    content, photo and color still make each result genuinely different from
    another business using the same template. Depends on derivePalette from
-   js/color-utils.js (loaded before this file). */
+   js/color-utils.js (loaded before this file).
+
+   Each template's render(d, page) can produce more than one HTML document:
+   page is "index" (default), "about" or "contact" — only used when the
+   customer opts in to separate pages (d.pages.about / d.pages.contact).
+   When they don't, everything still lives on a single index.html exactly
+   as before. */
 
 function escapeHtmlS(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -29,6 +35,10 @@ function siteBaseCss() {
     .wa-fab { position:fixed; bottom:22px; inset-inline-end:22px; width:56px; height:56px; border-radius:50%;
       background:#25D366; color:#fff; display:flex; align-items:center; justify-content:center; font-size:26px;
       box-shadow:0 8px 22px rgba(0,0,0,.25); z-index:50; }
+    .site-search { text-align:center; margin:0 0 30px; }
+    .site-search-input { width:100%; max-width:360px; padding:11px 18px; border-radius:24px; border:1.5px solid #E2E2E2; font-family:inherit; font-size:14px; }
+    .site-search-input:focus { outline:none; border-color:#BBB; }
+    .site-search-empty { text-align:center; color:#888; font-size:14px; padding:26px 0; }
   `;
 }
 function waFabHtml(d) {
@@ -38,6 +48,85 @@ function waFabHtml(d) {
 function servicesData(d) {
   return (d.services || []).filter((s) => s.name && s.name.trim());
 }
+
+/* Guarantees every section has something reasonable to show, even for a
+   customer who hasn't filled much in yet — placeholders read clearly as
+   placeholders (instructive, not invented business claims) so a download
+   never looks broken or empty, but also never lies about the business. */
+const SITE_PLACEHOLDER_SERVICES = [
+  { name: "שירות ראשון", desc: "תארו כאן בקצרה מה כלול בשירות הזה" },
+  { name: "שירות שני", desc: "תארו כאן בקצרה מה כלול בשירות הזה" },
+  { name: "שירות שלישי", desc: "תארו כאן בקצרה מה כלול בשירות הזה" },
+];
+function withFallback(d) {
+  const services = servicesData(d);
+  return {
+    businessName: (d.businessName || "").trim() || "שם העסק שלכם",
+    tagline: (d.tagline || "").trim() || "התיאור הקצר שלכם יופיע כאן",
+    about: (d.about || "").trim() || "ספרו כאן בכמה משפטים מי אתם, מה הניסיון שלכם, ולמה כדאי לבחור בכם.",
+    _services: services.length ? services : SITE_PLACEHOLDER_SERVICES,
+    _hasContact: !!(d.phone || d.whatsapp || d.email || d.address),
+  };
+}
+
+/* Falls back through whatever contact channel actually exists, so a CTA
+   button never links to nothing. */
+function primaryCtaHref(d, page) {
+  const wa = waLink(d.whatsapp || d.phone);
+  if (wa) return { href: wa, label: "שליחת הודעה בוואטסאפ", external: true };
+  if (d.email) return { href: `mailto:${d.email}`, label: "שליחת מייל", external: false };
+  if (d.phone) return { href: `tel:${d.phone}`, label: "התקשרות עכשיו", external: false };
+  if (d.pages && d.pages.contact && page !== "contact") return { href: "contact.html", label: "יצירת קשר", external: false };
+  return null;
+}
+function ctaHtml(cta, cls) {
+  if (!cta) return "";
+  return `<a class="${cls}" href="${escapeHtmlS(cta.href)}"${cta.external ? ' target="_blank" rel="noopener"' : ""}>${escapeHtmlS(cta.label)}</a>`;
+}
+
+/* Builds the shared multi-page nav links (Home / About / Contact) — only
+   returns something when the customer actually turned on extra pages, so a
+   single-page site's markup is completely unaffected. */
+function siteNavLinks(d, activePage) {
+  const pages = [{ key: "index", label: "בית", href: "index.html" }];
+  if (d.pages && d.pages.about) pages.push({ key: "about", label: "אודות", href: "about.html" });
+  if (d.pages && d.pages.contact) pages.push({ key: "contact", label: "צור קשר", href: "contact.html" });
+  if (pages.length < 2) return "";
+  return pages.map((p) => `<a href="${p.href}"${p.key === activePage ? ' class="active"' : ""}>${escapeHtmlS(p.label)}</a>`).join("");
+}
+
+/* Client-side search — filters the cards inside a target grid as the
+   visitor types. Fully offline, no backend: matches against a data-search
+   attribute baked into each card at build time. */
+function searchBoxHtml(targetSel, placeholder) {
+  return `<div class="site-search"><input type="search" class="site-search-input" data-search-target="${targetSel}" placeholder="${escapeHtmlS(placeholder)}" aria-label="${escapeHtmlS(placeholder)}"></div>`;
+}
+function searchScriptHtml() {
+  return `<script>
+    document.querySelectorAll(".site-search-input").forEach(function (input) {
+      var target = document.querySelector(input.getAttribute("data-search-target"));
+      if (!target) return;
+      var cards = Array.prototype.slice.call(target.children);
+      var empty = document.createElement("div");
+      empty.className = "site-search-empty";
+      empty.textContent = "לא נמצאו תוצאות מתאימות";
+      empty.style.display = "none";
+      target.parentNode.insertBefore(empty, target.nextSibling);
+      input.addEventListener("input", function () {
+        var q = input.value.trim().toLowerCase();
+        var anyVisible = false;
+        cards.forEach(function (card) {
+          var text = (card.getAttribute("data-search") || card.textContent || "").toLowerCase();
+          var match = !q || text.indexOf(q) !== -1;
+          card.style.display = match ? "" : "none";
+          if (match) anyVisible = true;
+        });
+        empty.style.display = anyVisible ? "none" : "block";
+      });
+    });
+  </script>`;
+}
+
 function siteDoc(head, body) {
   return `<!doctype html>
 <html lang="he" dir="rtl">
@@ -56,15 +145,21 @@ ${body}
 }
 
 /* ---------- Template 1: local service business ---------- */
-function renderLocalServiceSite(d) {
+function renderLocalServiceSite(d, page) {
+  page = page || "index";
   const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
-  const services = servicesData(d);
+  const navLinksHtml = siteNavLinks(d, page);
+  const cta = primaryCtaHref(d, page);
   const css = `
     .ls-header { background:#fff; border-bottom:1px solid #EEE; padding:16px 0; }
-    .ls-header .row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .ls-header .row { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
     .ls-header .biz { font-family:'Frank Ruhl Libre',serif; font-size:20px; font-weight:700; color:#${pal.primaryDark}; }
     .ls-header .phone { font-size:13.5px; font-weight:700; color:#${pal.primaryDark}; background:#${pal.ice}; padding:9px 18px; border-radius:20px; }
+    .ls-nav { display:flex; gap:18px; }
+    .ls-nav a { font-size:13.5px; font-weight:600; color:#555; }
+    .ls-nav a.active { color:#${pal.primaryDark}; }
 
     .ls-hero { position:relative; overflow:hidden; text-align:center; color:#fff; padding:100px 0 112px;
       background: radial-gradient(circle at 22% 20%, rgba(255,255,255,.18), transparent 55%),
@@ -75,9 +170,9 @@ function renderLocalServiceSite(d) {
     .ls-cta { display:inline-block; background:#fff; color:#${pal.primaryDark}; font-weight:800; padding:16px 38px; border-radius:30px; font-size:15.5px; box-shadow:0 14px 30px rgba(0,0,0,.28); }
 
     .ls-section { padding:68px 0; }
-    .ls-section .head { text-align:center; margin-bottom:40px; }
+    .ls-section .head { text-align:center; margin-bottom:28px; }
     .ls-section .eyebrow { background:#${pal.ice}; color:#${pal.primaryDark}; margin-bottom:14px; }
-    .ls-section h2 { font-family:'Frank Ruhl Libre',serif; font-size:32px; color:#${pal.primaryDark}; margin:0; }
+    .ls-section h2 { font-family:'Frank Ruhl Libre',serif; font-size:32px; color:#${pal.primaryDark}; margin:0 0 20px; }
     .ls-services { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:22px; }
     .ls-card { border:1px solid #EFEFEF; border-radius:16px; padding:28px; background:#fff; box-shadow:0 12px 28px rgba(0,0,0,.06); }
     .ls-card .num { width:36px; height:36px; border-radius:50%; background:#${pal.ice}; color:#${pal.primaryDark};
@@ -96,41 +191,80 @@ function renderLocalServiceSite(d) {
     .ls-contact .line { font-size:15.5px; margin-bottom:8px; opacity:.94; }
     .ls-footer { padding:22px 0; text-align:center; font-size:12px; color:#999; }
   `;
-  const body = `
+  const header = `
     <header class="ls-header"><div class="container row">
-      <div class="biz">${escapeHtmlS(d.businessName)}</div>
+      <div class="biz">${escapeHtmlS(dd.businessName)}</div>
+      ${navLinksHtml ? `<nav class="ls-nav">${navLinksHtml}</nav>` : ""}
       ${d.phone ? `<a class="phone" href="tel:${escapeHtmlS(d.phone)}">${escapeHtmlS(d.phone)}</a>` : ""}
-    </div></header>
-    <section class="ls-hero"><div class="container">
-      <span class="eyebrow">שירות מקצועי ואמין</span>
-      <h1>${escapeHtmlS(d.businessName)}</h1>
-      ${d.tagline ? `<p>${escapeHtmlS(d.tagline)}</p>` : ""}
-      ${wa ? `<a class="ls-cta" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}
-    </div></section>
-    ${services.length ? `<section class="ls-section"><div class="container">
-      <div class="head"><span class="eyebrow">מה אנחנו מציעים</span><h2>השירותים שלנו</h2></div>
-      <div class="ls-services">${services.map((s, i) => `
-        <div class="ls-card"><div class="num">${String(i + 1).padStart(2, "0")}</div><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price-tag">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
-    </div></section>` : ""}
-    ${d.about ? `<section class="ls-about"><div class="container"><span class="eyebrow" style="background:#fff; color:#${pal.primaryDark};">מי אנחנו</span><h2>קצת עלינו</h2><p>${nl2brS(d.about)}</p></div></section>` : ""}
-    <section class="ls-contact"><div class="container">
-      <h2>יצירת קשר</h2>
-      ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
-      ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
-      ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
-    </div></section>
-    <div class="ls-footer">© ${new Date().getFullYear()} ${escapeHtmlS(d.businessName)}</div>
-    ${waFabHtml(d)}
-  `;
-  return siteDoc({ title: d.businessName, description: d.tagline, css }, body);
+    </div></header>`;
+  const footer = `<div class="ls-footer">© ${new Date().getFullYear()} ${escapeHtmlS(dd.businessName)}</div>${waFabHtml(d)}`;
+
+  let main;
+  if (page === "about") {
+    main = `
+      <section class="ls-hero" style="padding:70px 0 54px;"><div class="container">
+        <span class="eyebrow">מי אנחנו</span><h1 style="font-size:36px;">${escapeHtmlS(dd.businessName)}</h1>
+      </div></section>
+      <section class="ls-about" style="padding:64px 0;"><div class="container"><p>${nl2brS(dd.about)}</p></div></section>`;
+  } else if (page === "contact") {
+    main = `
+      <section class="ls-hero" style="padding:70px 0 54px;"><div class="container">
+        <span class="eyebrow">נשמח לשמוע מכם</span><h1 style="font-size:36px;">יצירת קשר</h1>
+      </div></section>
+      <section class="ls-contact"><div class="container">
+        ${dd._hasContact ? `
+          ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
+          ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
+          ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
+        ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת ליצירת קשר.</div>`}
+        ${wa ? `<a class="ls-cta" style="margin-top:10px;" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}
+      </div></section>`;
+  } else {
+    const showSearch = dd._services.length >= 3;
+    main = `
+      <section class="ls-hero"><div class="container">
+        <span class="eyebrow">שירות מקצועי ואמין</span>
+        <h1>${escapeHtmlS(dd.businessName)}</h1>
+        <p>${escapeHtmlS(dd.tagline)}</p>
+        ${ctaHtml(cta, "ls-cta")}
+      </div></section>
+      <section class="ls-section"><div class="container">
+        <div class="head"><span class="eyebrow">מה אנחנו מציעים</span><h2>השירותים שלנו</h2>
+        ${showSearch ? searchBoxHtml("#ls-services-grid", "חיפוש שירות...") : ""}</div>
+        <div class="ls-services" id="ls-services-grid">${dd._services.map((s, i) => `
+          <div class="ls-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><div class="num">${String(i + 1).padStart(2, "0")}</div><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price-tag">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
+        ${showSearch ? searchScriptHtml() : ""}
+      </div></section>
+      ${(!d.pages || !d.pages.about) ? `<section class="ls-about"><div class="container"><span class="eyebrow" style="background:#fff; color:#${pal.primaryDark};">מי אנחנו</span><h2>קצת עלינו</h2><p>${nl2brS(dd.about)}</p></div></section>` : ""}
+      ${(!d.pages || !d.pages.contact) ? `<section class="ls-contact"><div class="container">
+        <h2>יצירת קשר</h2>
+        ${dd._hasContact ? `
+          ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
+          ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
+          ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
+        ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת.</div>`}
+      </div></section>` : ""}
+    `;
+  }
+  const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
+  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${header}${main}${footer}`);
 }
 
 /* ---------- Template 2: freelancer / consultant ---------- */
-function renderFreelancerSite(d) {
+function renderFreelancerSite(d, page) {
+  page = page || "index";
   const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
-  const services = servicesData(d);
+  const navLinksHtml = siteNavLinks(d, page);
   const css = `
+    .fr-nav { background:#fff; border-bottom:1px solid #EEE; padding:14px 0; }
+    .fr-nav .row { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
+    .fr-nav-name { font-family:'Frank Ruhl Libre',serif; font-weight:700; font-size:16px; color:#${pal.primaryDark}; }
+    .fr-nav nav { display:flex; gap:16px; }
+    .fr-nav nav a { font-size:13.5px; font-weight:600; color:#555; }
+    .fr-nav nav a.active { color:#${pal.primaryDark}; }
+
     .fr-hero { position:relative; overflow:hidden; text-align:center; color:#fff; padding:120px 24px 96px;
       background: radial-gradient(circle at 30% 22%, rgba(255,255,255,.16), transparent 55%),
                   linear-gradient(155deg, #${pal.primaryDark}, #${pal.primary} 75%); }
@@ -148,38 +282,69 @@ function renderFreelancerSite(d) {
     .fr-cta .btn { display:inline-block; background:#fff; color:#${pal.primaryDark}; font-weight:800; padding:14px 30px; border-radius:30px; margin:6px; box-shadow:0 12px 26px rgba(0,0,0,.22); }
     .fr-footer { padding:22px 0; text-align:center; font-size:12px; color:#999; }
   `;
-  const body = `
-    <section class="fr-hero">
-      <span class="eyebrow">${escapeHtmlS(d.tagline) ? "ברוכים הבאים" : "פרילנסר / יועץ"}</span>
-      <div class="fr-name">${escapeHtmlS(d.businessName)}</div>
-      ${d.tagline ? `<div class="fr-role">${escapeHtmlS(d.tagline)}</div>` : ""}
-    </section>
-    <div class="fr-body">
-      ${d.about ? `<p class="fr-about">${nl2brS(d.about)}</p>` : ""}
-      ${services.length ? `<div class="fr-tags">${services.map((s) => `<span class="fr-tag">${escapeHtmlS(s.name)}</span>`).join("")}</div>` : ""}
-    </div>
-    <section class="fr-cta">
-      <h2>בואו נדבר</h2>
-      ${wa ? `<a class="btn" href="${wa}" target="_blank" rel="noopener">וואטסאפ</a>` : ""}
-      ${d.email ? `<a class="btn" href="mailto:${escapeHtmlS(d.email)}">שליחת מייל</a>` : ""}
-      ${d.phone ? `<a class="btn" href="tel:${escapeHtmlS(d.phone)}">התקשרות</a>` : ""}
-    </section>
-    <div class="fr-footer">© ${new Date().getFullYear()} ${escapeHtmlS(d.businessName)}</div>
-    ${waFabHtml(d)}
-  `;
-  return siteDoc({ title: d.businessName, description: d.tagline, css }, body);
+  const navBar = navLinksHtml ? `<div class="fr-nav"><div class="container row"><span class="fr-nav-name">${escapeHtmlS(dd.businessName)}</span><nav>${navLinksHtml}</nav></div></div>` : "";
+  const footer = `<div class="fr-footer">© ${new Date().getFullYear()} ${escapeHtmlS(dd.businessName)}</div>${waFabHtml(d)}`;
+
+  let main;
+  if (page === "about") {
+    main = `
+      <section class="fr-hero" style="padding:70px 24px 54px;">
+        <span class="eyebrow">מי אני</span>
+        <div class="fr-name" style="font-size:34px;">${escapeHtmlS(dd.businessName)}</div>
+      </section>
+      <div class="fr-body"><p class="fr-about">${nl2brS(dd.about)}</p></div>`;
+  } else if (page === "contact") {
+    main = `
+      <section class="fr-hero" style="padding:70px 24px 54px;">
+        <span class="eyebrow">נשמח לשמוע מכם</span>
+        <div class="fr-name" style="font-size:34px;">יצירת קשר</div>
+      </section>
+      <section class="fr-cta">
+        <h2>בואו נדבר</h2>
+        ${wa ? `<a class="btn" href="${wa}" target="_blank" rel="noopener">וואטסאפ</a>` : ""}
+        ${d.email ? `<a class="btn" href="mailto:${escapeHtmlS(d.email)}">שליחת מייל</a>` : ""}
+        ${d.phone ? `<a class="btn" href="tel:${escapeHtmlS(d.phone)}">התקשרות</a>` : ""}
+        ${!wa && !d.email && !d.phone ? `<p style="opacity:.85;">פרטו כאן דרכי יצירת קשר.</p>` : ""}
+      </section>`;
+  } else {
+    const services = dd._services;
+    main = `
+      <section class="fr-hero">
+        <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "פרילנסר / יועץ"}</span>
+        <div class="fr-name">${escapeHtmlS(dd.businessName)}</div>
+        <div class="fr-role">${escapeHtmlS(dd.tagline)}</div>
+      </section>
+      <div class="fr-body">
+        <p class="fr-about">${nl2brS(dd.about)}</p>
+        <div class="fr-tags">${services.map((s) => `<span class="fr-tag">${escapeHtmlS(s.name)}</span>`).join("")}</div>
+      </div>
+      <section class="fr-cta">
+        <h2>בואו נדבר</h2>
+        ${wa ? `<a class="btn" href="${wa}" target="_blank" rel="noopener">וואטסאפ</a>` : ""}
+        ${d.email ? `<a class="btn" href="mailto:${escapeHtmlS(d.email)}">שליחת מייל</a>` : ""}
+        ${d.phone ? `<a class="btn" href="tel:${escapeHtmlS(d.phone)}">התקשרות</a>` : ""}
+      </section>
+    `;
+  }
+  const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
+  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${navBar}${main}${footer}`);
 }
 
 /* ---------- Template 3: small catalog / shop ---------- */
-function renderCatalogSite(d) {
+function renderCatalogSite(d, page) {
+  page = page || "index";
   const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
-  const services = servicesData(d);
+  const navLinksHtml = siteNavLinks(d, page);
   const css = `
     .cat-nav { background:#fff; border-bottom:1px solid #EEE; padding:16px 0; }
-    .cat-nav .row { display:flex; align-items:center; justify-content:space-between; }
+    .cat-nav .row { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
     .cat-nav .biz { font-family:'Frank Ruhl Libre',serif; font-size:19px; font-weight:700; color:#${pal.primaryDark}; }
     .cat-nav a.wa-link { background:#${pal.primary}; color:#fff; padding:9px 18px; border-radius:20px; font-size:13px; font-weight:700; }
+    .cat-pagenav { display:flex; gap:16px; }
+    .cat-pagenav a { font-size:13.5px; font-weight:600; color:#555; }
+    .cat-pagenav a.active { color:#${pal.primaryDark}; }
 
     .cat-title { position:relative; overflow:hidden; text-align:center; color:#fff; padding:70px 0 60px;
       background: radial-gradient(circle at 25% 25%, rgba(255,255,255,.16), transparent 55%),
@@ -189,7 +354,7 @@ function renderCatalogSite(d) {
     .cat-title p { font-size:15.5px; opacity:.92; margin:0 0 16px; }
     .cat-title .stats { font-size:13px; opacity:.85; }
 
-    .cat-grid { padding:52px 0; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:22px; }
+    .cat-grid { padding:52px 0 20px; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:22px; }
     .cat-card { border:1px solid #EEE; border-radius:14px; overflow:hidden; background:#fff; box-shadow:0 12px 26px rgba(0,0,0,.06); }
     .cat-card .swatch-bar { height:6px; background:linear-gradient(90deg, #${pal.primary}, #${pal.primaryDark}); }
     .cat-card .body { padding:20px; }
@@ -198,32 +363,65 @@ function renderCatalogSite(d) {
     .cat-card .price { font-weight:800; color:#${pal.primary}; font-size:15.5px; }
 
     .cat-about { padding:24px 0 58px; text-align:center; max-width:640px; margin:0 auto; color:#3a3a3a; font-size:15.5px; }
+    .cat-info { background:#${pal.ice}; padding:60px 0; text-align:center; }
+    .cat-info .line { font-size:16px; color:#333; margin-bottom:8px; }
     .cat-footer { background:#${pal.primaryDark}; color:#fff; padding:28px 0; text-align:center; font-size:13px; }
   `;
-  const body = `
+  const nav = `
     <nav class="cat-nav"><div class="container row">
-      <div class="biz">${escapeHtmlS(d.businessName)}</div>
+      <div class="biz">${escapeHtmlS(dd.businessName)}</div>
+      ${navLinksHtml ? `<div class="cat-pagenav">${navLinksHtml}</div>` : ""}
       ${wa ? `<a class="wa-link" href="${wa}" target="_blank" rel="noopener">וואטסאפ</a>` : ""}
-    </div></nav>
-    <section class="cat-title"><div class="container">
-      <span class="eyebrow">קטלוג המוצרים שלנו</span>
-      <h1>${escapeHtmlS(d.businessName)}</h1>
-      ${d.tagline ? `<p>${escapeHtmlS(d.tagline)}</p>` : ""}
-      ${services.length ? `<div class="stats">${services.length} מוצרים/שירותים זמינים</div>` : ""}
-    </div></section>
-    ${services.length ? `<div class="container"><div class="cat-grid">${services.map((s) => `
-      <div class="cat-card"><div class="swatch-bar"></div><div class="body">
-        <h3>${escapeHtmlS(s.name)}</h3>
-        ${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}
-        ${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}
-      </div></div>`).join("")}</div></div>` : ""}
-    ${d.about ? `<div class="cat-about">${nl2brS(d.about)}</div>` : ""}
-    <footer class="cat-footer">
+    </div></nav>`;
+  const footer = `<footer class="cat-footer">
       ${d.phone ? `${escapeHtmlS(d.phone)} · ` : ""}${d.email ? `${escapeHtmlS(d.email)} · ` : ""}${d.address ? escapeHtmlS(d.address) : ""}
-    </footer>
-    ${waFabHtml(d)}
-  `;
-  return siteDoc({ title: d.businessName, description: d.tagline, css }, body);
+    </footer>${waFabHtml(d)}`;
+
+  let main;
+  if (page === "about") {
+    main = `
+      <section class="cat-title" style="padding:56px 0 48px;"><div class="container">
+        <span class="eyebrow">מי אנחנו</span><h1>${escapeHtmlS(dd.businessName)}</h1>
+      </div></section>
+      <div class="container"><div class="cat-about" style="padding:48px 0;">${nl2brS(dd.about)}</div></div>`;
+  } else if (page === "contact") {
+    main = `
+      <section class="cat-title" style="padding:56px 0 48px;"><div class="container">
+        <span class="eyebrow">נשמח לשמוע מכם</span><h1>יצירת קשר</h1>
+      </div></section>
+      <section class="cat-info"><div class="container">
+        ${dd._hasContact ? `
+          ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
+          ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
+          ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
+        ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת ליצירת קשר.</div>`}
+        ${wa ? `<a class="wa-link" style="display:inline-block; margin-top:10px;" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}
+      </div></section>`;
+  } else {
+    const services = dd._services;
+    const showSearch = services.length >= 3;
+    main = `
+      <section class="cat-title"><div class="container">
+        <span class="eyebrow">קטלוג המוצרים שלנו</span>
+        <h1>${escapeHtmlS(dd.businessName)}</h1>
+        <p>${escapeHtmlS(dd.tagline)}</p>
+        <div class="stats">${services.length} מוצרים/שירותים זמינים</div>
+      </div></section>
+      <div class="container">
+        ${showSearch ? searchBoxHtml("#cat-grid", "חיפוש מוצר או שירות...") : ""}
+        <div class="cat-grid" id="cat-grid">${services.map((s) => `
+          <div class="cat-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><div class="swatch-bar"></div><div class="body">
+            <h3>${escapeHtmlS(s.name)}</h3>
+            ${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}
+            ${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}
+          </div></div>`).join("")}</div>
+        ${showSearch ? searchScriptHtml() : ""}
+      </div>
+      ${(!d.pages || !d.pages.about) ? `<div class="cat-about">${nl2brS(dd.about)}</div>` : ""}
+    `;
+  }
+  const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
+  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${nav}${main}${footer}`);
 }
 
 const SITE_TEMPLATES = {

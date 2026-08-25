@@ -32,6 +32,15 @@
   .unlock-note.ok { color: var(--teal); font-weight: 600; }
   .go-live-box { background: #fff; border: 1px solid #EAEDEC; border-radius: 10px; padding: 16px; margin-top: 14px; font-size: 13px; color: var(--grey); line-height: 1.7; }
   .go-live-box b { color: var(--teal-dark); }
+  .page-toggle { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; color: var(--dark); margin-bottom: 8px; cursor: pointer; }
+  .page-toggle input { width: auto; margin: 0; }
+  .preview-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+  .preview-tab-btn {
+    background: var(--white); border: 2px solid #DDE4E1; color: var(--dark);
+    padding: 7px 16px; border-radius: 20px; font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit;
+    transition: border-color .15s ease, background .15s ease, color .15s ease;
+  }
+  .preview-tab-btn.active { border-color: var(--teal); background: var(--ice); color: var(--teal-dark); }
 </style>
 </head>
 <body>
@@ -98,10 +107,20 @@
     <div class="field"><label for="s-whatsapp">מספר וואטסאפ (אם שונה מהטלפון)</label><input id="s-whatsapp" type="text" dir="ltr"></div>
     <div class="field"><label for="s-email">מייל</label><input id="s-email" type="text" dir="ltr"></div>
     <div class="field"><label for="s-address">כתובת</label><input id="s-address" type="text"></div>
+
+    <hr class="sep">
+
+    <div class="field">
+      <label>דפים נוספים (לא חובה)</label>
+      <p style="font-size:12px; color:var(--grey); margin:0 0 10px;">כשמפעילים דף נפרד, הוא נוצר כקובץ משלו באתר, ובראש (ובתחתית) כל הדפים יופיע ניווט לכל הדפים הקיימים — בדיוק כמו באתר הזה.</p>
+      <label class="page-toggle"><input type="checkbox" id="s-page-about"> דף "אודות" נפרד</label>
+      <label class="page-toggle"><input type="checkbox" id="s-page-contact"> דף "צור קשר" נפרד</label>
+    </div>
   </aside>
 
   <main class="builder-preview">
     <div class="preview-sticky">
+      <div class="preview-tabs no-print" id="preview-tabs" style="display:none;"></div>
       <iframe id="site-preview-frame" title="תצוגה מקדימה של האתר"></iframe>
 
       <div class="export-panel no-print" style="margin-top:20px;">

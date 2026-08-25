@@ -27,9 +27,21 @@ const SITE_DEFAULT = {
   email: "",
   address: "",
   services: [{ name: "", desc: "", price: "" }],
+  pages: { about: false, contact: false },
 };
 
 let siteState = { template: "local-service", data: JSON.parse(JSON.stringify(SITE_DEFAULT)) };
+let previewPage = "index";
+
+/* Older saved/loaded data (from before the multi-page feature existed)
+   won't have a `pages` object — patch it in rather than special-casing
+   every read site-wide. */
+function ensurePagesShape(data) {
+  if (!data.pages || typeof data.pages !== "object") data.pages = { about: false, contact: false };
+  data.pages.about = !!data.pages.about;
+  data.pages.contact = !!data.pages.contact;
+  return data;
+}
 
 function serviceItemHtml(s, i, total) {
   const canRemove = total > 1;
@@ -65,7 +77,7 @@ function renderTplButtons() {
 }
 
 function renderFormValues() {
-  const d = siteState.data;
+  const d = ensurePagesShape(siteState.data);
   document.getElementById("s-name").value = d.businessName;
   document.getElementById("s-tagline").value = d.tagline;
   document.getElementById("s-about").value = d.about;
@@ -74,11 +86,40 @@ function renderFormValues() {
   document.getElementById("s-whatsapp").value = d.whatsapp;
   document.getElementById("s-email").value = d.email;
   document.getElementById("s-address").value = d.address;
+  document.getElementById("s-page-about").checked = d.pages.about;
+  document.getElementById("s-page-contact").checked = d.pages.contact;
   renderServicesList();
 }
 
-function currentSiteHtml() {
-  return SITE_TEMPLATES[siteState.template].render(siteState.data);
+function enabledSitePages() {
+  const d = ensurePagesShape(siteState.data);
+  const pages = ["index"];
+  if (d.pages.about) pages.push("about");
+  if (d.pages.contact) pages.push("contact");
+  return pages;
+}
+
+function currentSiteHtml(page) {
+  return SITE_TEMPLATES[siteState.template].render(siteState.data, page || "index");
+}
+
+function renderPreviewTabs() {
+  const wrap = document.getElementById("preview-tabs");
+  const pages = enabledSitePages();
+  if (!pages.includes(previewPage)) previewPage = "index";
+  if (pages.length < 2) { wrap.style.display = "none"; wrap.innerHTML = ""; return; }
+  const labels = { index: "בית", about: "אודות", contact: "צור קשר" };
+  wrap.style.display = "flex";
+  wrap.innerHTML = pages.map((p) =>
+    `<button type="button" class="preview-tab-btn${p === previewPage ? " active" : ""}" data-page="${p}">${labels[p]}</button>`
+  ).join("");
+  wrap.querySelectorAll(".preview-tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      previewPage = btn.dataset.page;
+      renderPreviewTabs();
+      document.getElementById("site-preview-frame").srcdoc = currentSiteHtml(previewPage);
+    });
+  });
 }
 
 function saveSiteState() {
@@ -96,7 +137,8 @@ function loadSiteState() {
 }
 
 function renderSitePreview() {
-  document.getElementById("site-preview-frame").srcdoc = currentSiteHtml();
+  renderPreviewTabs();
+  document.getElementById("site-preview-frame").srcdoc = currentSiteHtml(previewPage);
   saveSiteState();
 }
 
@@ -113,6 +155,15 @@ function wireForm() {
   });
   document.getElementById("s-color").addEventListener("input", (e) => {
     siteState.data.primaryColor = e.target.value;
+    renderSitePreview();
+  });
+
+  document.getElementById("s-page-about").addEventListener("change", (e) => {
+    ensurePagesShape(siteState.data).pages.about = e.target.checked;
+    renderSitePreview();
+  });
+  document.getElementById("s-page-contact").addEventListener("change", (e) => {
+    ensurePagesShape(siteState.data).pages.contact = e.target.checked;
     renderSitePreview();
   });
 
@@ -140,7 +191,9 @@ function wireForm() {
 
 async function downloadSiteZip() {
   const zip = new JSZip();
-  zip.file("index.html", currentSiteHtml());
+  enabledSitePages().forEach((page) => {
+    zip.file(`${page}.html`, currentSiteHtml(page));
+  });
   // Lets the customer restore their exact form data later — even from a
   // different device — by re-uploading this file to the "load saved data"
   // input, without us needing any account system or server-side storage.
@@ -167,6 +220,8 @@ function loadDataFromFile(file) {
       const parsed = JSON.parse(reader.result);
       if (!parsed || !parsed.data || !SITE_TEMPLATES[parsed.template]) throw new Error("invalid shape");
       siteState = parsed;
+      ensurePagesShape(siteState.data);
+      previewPage = "index";
       renderTplButtons();
       renderFormValues();
       renderSitePreview();
@@ -221,6 +276,7 @@ async function verifySiteLicense() {
 document.addEventListener("DOMContentLoaded", () => {
   const saved = loadSiteState();
   if (saved) siteState = saved;
+  ensurePagesShape(siteState.data);
 
   document.getElementById("buy-link").href = SITE_GUMROAD_CONFIG.checkoutUrl;
   renderTplButtons();
