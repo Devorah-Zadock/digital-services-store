@@ -11,6 +11,11 @@
    that instead of product_permalink. */
 const SITE_GUMROAD_CONFIG = { productId: "NUyzNlvxdpU_49TE5nk9fg==", checkoutUrl: "https://dizstudio.gumroad.com/l/rhkfld" };
 const SITE_UNLOCK_KEY = "deskkit_sites_unlocked_" + SITE_GUMROAD_CONFIG.productId;
+/* Persists the customer's own form input (business name, services, etc.) in
+   their browser, so returning to edit or re-download later doesn't mean
+   retyping everything from scratch — separate from SITE_UNLOCK_KEY, which
+   only remembers whether the license was verified. */
+const SITE_DATA_KEY = "deskkit_sites_data_v1";
 
 const SITE_DEFAULT = {
   businessName: "",
@@ -76,8 +81,23 @@ function currentSiteHtml() {
   return SITE_TEMPLATES[siteState.template].render(siteState.data);
 }
 
+function saveSiteState() {
+  try { localStorage.setItem(SITE_DATA_KEY, JSON.stringify(siteState)); } catch (err) { /* storage unavailable — not fatal, just won't persist */ }
+}
+
+function loadSiteState() {
+  try {
+    const raw = localStorage.getItem(SITE_DATA_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && parsed.data && SITE_TEMPLATES[parsed.template]) return parsed;
+  } catch (err) { /* corrupt/old data — ignore and start fresh */ }
+  return null;
+}
+
 function renderSitePreview() {
   document.getElementById("site-preview-frame").srcdoc = currentSiteHtml();
+  saveSiteState();
 }
 
 function wireForm() {
@@ -170,6 +190,9 @@ async function verifySiteLicense() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  const saved = loadSiteState();
+  if (saved) siteState = saved;
+
   document.getElementById("buy-link").href = SITE_GUMROAD_CONFIG.checkoutUrl;
   renderTplButtons();
   renderFormValues();
