@@ -235,6 +235,30 @@ section { padding: 88px 0; }
 .banner p { margin: 0; color: #CFE3DC; font-size: 14px; max-width: 480px; }
 .badge-free { background: linear-gradient(135deg, var(--gold-light), var(--gold)); color: var(--teal-dark); font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; margin-inline-start: 10px; }
 
+/* ---------- Paid-product spotlight (site-builder promo) ---------- */
+.spotlight {
+  position: relative; overflow: hidden; isolation: isolate;
+  background: radial-gradient(circle at 15% 20%, rgba(201,154,59,.16), transparent 45%), linear-gradient(135deg, var(--teal-dark), var(--teal) 85%);
+  border-radius: var(--radius); box-shadow: var(--shadow-lg);
+  padding: 48px; display: grid; grid-template-columns: 1.1fr .9fr; gap: 36px; align-items: center;
+}
+.spotlight-kicker { color: var(--gold-light); font-weight: 700; font-size: 13px; letter-spacing: .04em; margin-bottom: 10px; }
+.spotlight h2 { color: var(--white); font-size: 30px; margin: 0 0 14px; }
+.spotlight p { color: #CFE3DC; font-size: 15px; margin: 0 0 20px; max-width: 460px; }
+.spotlight-list { list-style: none; margin: 0 0 26px; padding: 0; display: grid; gap: 10px; }
+.spotlight-list li { color: var(--white); font-size: 14px; display: flex; align-items: center; gap: 10px; }
+.spotlight-list li::before { content: "✓"; color: var(--gold-light); font-weight: 700; }
+.spotlight-visual {
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); border-radius: var(--radius-sm);
+  padding: 26px; color: var(--white);
+}
+.spotlight-visual .tpl-chip { display: inline-block; background: rgba(255,255,255,.1); border-radius: 8px; padding: 6px 12px; font-size: 12.5px; margin: 0 6px 10px 0; }
+.spotlight-visual .price-tag { font-size: 30px; font-weight: 800; color: var(--gold-light); margin: 10px 0 4px; }
+.spotlight-visual .price-note { font-size: 13px; color: #CFE3DC; }
+@media (max-width: 760px) {
+  .spotlight { grid-template-columns: 1fr; padding: 32px 22px; }
+}
+
 /* ---------- Product detail page ---------- */
 .product-hero { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; padding: 60px 0; }
 .product-hero .thumb { background: linear-gradient(160deg, var(--ice), #F7FBF9); border-radius: var(--radius); padding: 28px; display:flex; align-items:center; justify-content:center; }
