@@ -1,0 +1,179 @@
+/* Business-website builder: wizard form + live iframe preview (free), with
+   the downloadable ZIP gated behind a Gumroad license key — same pattern as
+   the CV builder used before it went free (see README "Gumroad setup" for
+   exact setup steps, and the honest security caveat: client-side check,
+   not real DRM). */
+
+/* IMPORTANT: placeholder permalink/checkout link — see README before going
+   live with this product. */
+const SITE_GUMROAD_CONFIG = { permalink: "REPLACE_ME_site_builder", checkoutUrl: "https://gum.co/REPLACE_ME_site_builder" };
+const SITE_UNLOCK_KEY = "deskkit_sites_unlocked_" + SITE_GUMROAD_CONFIG.permalink;
+
+const SITE_DEFAULT = {
+  businessName: "",
+  tagline: "",
+  about: "",
+  primaryColor: "#1F5C4E",
+  phone: "",
+  whatsapp: "",
+  email: "",
+  address: "",
+  services: [{ name: "", desc: "", price: "" }],
+};
+
+let siteState = { template: "local-service", data: JSON.parse(JSON.stringify(SITE_DEFAULT)) };
+
+function serviceItemHtml(s, i, total) {
+  const canRemove = total > 1;
+  return `
+  <div class="services-item" data-idx="${i}">
+    <div class="services-item-head">
+      <strong style="font-size:12.5px;">שירות ${i + 1}</strong>
+      ${canRemove ? `<button type="button" class="job-remove" data-service-remove="${i}">הסרה</button>` : ""}
+    </div>
+    <input type="text" placeholder="שם השירות/מוצר" data-service="${i}" data-key="name" value="${escapeHtmlS(s.name)}">
+    <input type="text" placeholder="תיאור קצר (לא חובה)" data-service="${i}" data-key="desc" value="${escapeHtmlS(s.desc)}">
+    <input type="text" placeholder="מחיר (לא חובה)" data-service="${i}" data-key="price" value="${escapeHtmlS(s.price)}">
+  </div>`;
+}
+
+function renderServicesList() {
+  document.getElementById("services-list").innerHTML =
+    siteState.data.services.map((s, i) => serviceItemHtml(s, i, siteState.data.services.length)).join("");
+}
+
+function renderTplButtons() {
+  const row = document.getElementById("tpl-row");
+  row.innerHTML = Object.entries(SITE_TEMPLATES).map(([key, t]) =>
+    `<button type="button" class="site-tpl-btn${key === siteState.template ? " active" : ""}" data-tpl="${key}">${t.label}</button>`
+  ).join("");
+  row.querySelectorAll(".site-tpl-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      siteState.template = btn.dataset.tpl;
+      renderTplButtons();
+      renderSitePreview();
+    });
+  });
+}
+
+function renderFormValues() {
+  const d = siteState.data;
+  document.getElementById("s-name").value = d.businessName;
+  document.getElementById("s-tagline").value = d.tagline;
+  document.getElementById("s-about").value = d.about;
+  document.getElementById("s-color").value = d.primaryColor;
+  document.getElementById("s-phone").value = d.phone;
+  document.getElementById("s-whatsapp").value = d.whatsapp;
+  document.getElementById("s-email").value = d.email;
+  document.getElementById("s-address").value = d.address;
+  renderServicesList();
+}
+
+function currentSiteHtml() {
+  return SITE_TEMPLATES[siteState.template].render(siteState.data);
+}
+
+function renderSitePreview() {
+  document.getElementById("site-preview-frame").srcdoc = currentSiteHtml();
+}
+
+function wireForm() {
+  const map = {
+    "s-name": "businessName", "s-tagline": "tagline", "s-about": "about",
+    "s-phone": "phone", "s-whatsapp": "whatsapp", "s-email": "email", "s-address": "address",
+  };
+  Object.entries(map).forEach(([id, key]) => {
+    document.getElementById(id).addEventListener("input", (e) => {
+      siteState.data[key] = e.target.value;
+      renderSitePreview();
+    });
+  });
+  document.getElementById("s-color").addEventListener("input", (e) => {
+    siteState.data.primaryColor = e.target.value;
+    renderSitePreview();
+  });
+
+  document.getElementById("add-service").addEventListener("click", () => {
+    siteState.data.services.push({ name: "", desc: "", price: "" });
+    renderServicesList();
+    renderSitePreview();
+  });
+  document.getElementById("services-list").addEventListener("input", (e) => {
+    const idx = e.target.dataset.service;
+    const key = e.target.dataset.key;
+    if (idx === undefined) return;
+    siteState.data.services[idx][key] = e.target.value;
+    renderSitePreview();
+  });
+  document.getElementById("services-list").addEventListener("click", (e) => {
+    const idx = e.target.dataset.serviceRemove;
+    if (idx === undefined) return;
+    if (siteState.data.services.length <= 1) return;
+    siteState.data.services.splice(Number(idx), 1);
+    renderServicesList();
+    renderSitePreview();
+  });
+}
+
+async function downloadSiteZip() {
+  const zip = new JSZip();
+  zip.file("index.html", currentSiteHtml());
+  const blob = await zip.generateAsync({ type: "blob" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  // Plain-ASCII filename on purpose: a Hebrew business name in the
+  // `download` attribute isn't handled consistently across every
+  // browser/OS combination, so keep this generic and safe everywhere.
+  a.download = "business-website.zip";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function refreshUnlockUI() {
+  const unlocked = localStorage.getItem(SITE_UNLOCK_KEY) === "1";
+  document.getElementById("unlock-pending").style.display = unlocked ? "none" : "";
+  document.getElementById("unlock-done").style.display = unlocked ? "" : "none";
+}
+
+async function verifySiteLicense() {
+  const input = document.getElementById("license-input");
+  const note = document.getElementById("license-note");
+  const key = input.value.trim();
+  if (!key) { note.textContent = "יש להזין קוד רישוי."; note.className = "unlock-note err"; return; }
+  note.textContent = "בודקים...";
+  note.className = "unlock-note";
+  try {
+    const res = await fetch("https://api.gumroad.com/v2/licenses/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ product_permalink: SITE_GUMROAD_CONFIG.permalink, license_key: key }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      localStorage.setItem(SITE_UNLOCK_KEY, "1");
+      note.textContent = "";
+      refreshUnlockUI();
+    } else {
+      note.textContent = "קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב.";
+      note.className = "unlock-note err";
+    }
+  } catch (err) {
+    note.textContent = "שגיאת חיבור לשירות האימות. נסו שוב בעוד רגע.";
+    note.className = "unlock-note err";
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("buy-link").href = SITE_GUMROAD_CONFIG.checkoutUrl;
+  renderTplButtons();
+  renderFormValues();
+  wireForm();
+  renderSitePreview();
+  refreshUnlockUI();
+
+  document.getElementById("verify-btn").addEventListener("click", verifySiteLicense);
+  document.getElementById("download-zip-btn").addEventListener("click", downloadSiteZip);
+});

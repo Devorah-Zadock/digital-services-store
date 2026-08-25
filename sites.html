@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>בניית אתר עסקי — DeskKit</title>
+<meta name="description" content="בנו אתר עסקי שלם תוך דקות, ראו תצוגה חיה, והורידו את הקבצים המוכנים.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/builder.css">
+<style>
+  .site-tpl-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .site-tpl-btn {
+    flex: 1; min-width: 110px; background: var(--white); border: 2px solid #DDE4E1; color: var(--dark);
+    padding: 10px 8px; border-radius: 10px; font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit;
+    text-align: center; transition: border-color .15s ease, background .15s ease, color .15s ease;
+  }
+  .site-tpl-btn.active { border-color: var(--teal); background: var(--ice); color: var(--teal-dark); }
+  .services-item { border: 1px solid #EDEFEE; border-radius: 8px; padding: 12px; margin-bottom: 12px; display: grid; gap: 8px; }
+  .services-item-head { display: flex; justify-content: space-between; align-items: center; }
+  .services-item input { min-width: 0; }
+  #site-preview-frame { width: 100%; height: 78vh; min-height: 520px; border: 1px solid #EAEDEC; border-radius: var(--radius); box-shadow: var(--shadow); background: #fff; }
+  .unlock-box { border-top: 1px solid #E2DCC8; margin-top: 16px; padding-top: 16px; }
+  .unlock-box input[type="text"] {
+    width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 8px; border: 1px solid #DADFDD;
+    font-family: inherit; font-size: 14px; margin-bottom: 10px; text-align: center;
+  }
+  .unlock-note { font-size: 12.5px; color: var(--grey); min-height: 16px; margin-bottom: 8px; }
+  .unlock-note.err { color: #B23; }
+  .unlock-note.ok { color: var(--teal); font-weight: 600; }
+  .go-live-box { background: #fff; border: 1px solid #EAEDEC; border-radius: 10px; padding: 16px; margin-top: 14px; font-size: 13px; color: var(--grey); line-height: 1.7; }
+  .go-live-box b { color: var(--teal-dark); }
+</style>
+</head>
+<body>
+
+<header class="site no-print">
+  <nav class="nav">
+    <a href="index.html" class="brand"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path class="bm-face" d="M6 3H14L18 7V20H6Z"/><path class="bm-fold" d="M14 3L14 7H18Z"/></svg>DeskKit</a>
+    <div class="nav-links">
+      <a href="index.html">בית</a>
+      <a href="products.html">קטלוג</a>
+      <a href="sites.html" class="active">בניית אתר</a>
+      <a href="about.html">אודות</a>
+      <a href="contact.html">צור קשר</a>
+    </div>
+    <a href="products.html" class="nav-cta">לקטלוג</a>
+    <button class="burger" aria-label="תפריט">☰</button>
+  </nav>
+</header>
+
+<section class="builder-top no-print">
+  <div class="container">
+    <h1 style="font-size:26px; margin:6px 0 4px;">בניית אתר עסקי</h1>
+    <p style="color:var(--grey); font-size:14px; margin:0;">ממלאים את פרטי העסק, בוחרים עיצוב, ורואים תצוגה חיה. ההורדה של קובצי האתר המוכנים היא בתשלום חד-פעמי — בלי מנוי חודשי.</p>
+  </div>
+</section>
+
+<div class="container builder-wrap">
+  <aside class="builder-form no-print">
+    <div class="field">
+      <label>עיצוב האתר</label>
+      <div class="site-tpl-row" id="tpl-row"></div>
+    </div>
+
+    <hr class="sep">
+
+    <div class="field"><label for="s-name">שם העסק</label><input id="s-name" type="text"></div>
+    <div class="field"><label for="s-tagline">שורת תיאור קצרה</label><input id="s-tagline" type="text"></div>
+    <div class="field"><label for="s-about">קצת עלינו</label><textarea id="s-about" rows="3"></textarea></div>
+
+    <div class="field">
+      <label for="s-color">צבע ראשי</label>
+      <div class="color-row"><input type="color" id="s-color" value="#1F5C4E"></div>
+    </div>
+
+    <hr class="sep">
+
+    <div class="jobs-head">
+      <label>שירותים / מוצרים</label>
+      <button type="button" class="btn-mini" id="add-service">+ הוספת שירות</button>
+    </div>
+    <div id="services-list"></div>
+
+    <hr class="sep">
+
+    <div class="field"><label for="s-phone">טלפון</label><input id="s-phone" type="text" dir="ltr"></div>
+    <div class="field"><label for="s-whatsapp">מספר וואטסאפ (אם שונה מהטלפון)</label><input id="s-whatsapp" type="text" dir="ltr"></div>
+    <div class="field"><label for="s-email">מייל</label><input id="s-email" type="text" dir="ltr"></div>
+    <div class="field"><label for="s-address">כתובת</label><input id="s-address" type="text"></div>
+  </aside>
+
+  <main class="builder-preview">
+    <div class="preview-sticky">
+      <iframe id="site-preview-frame" title="תצוגה מקדימה של האתר"></iframe>
+
+      <div class="export-panel no-print" style="margin-top:20px;">
+        <div id="unlock-pending">
+          <p style="margin:0 0 12px; font-size:14px; font-weight:600; color:var(--teal-dark);">האתר מוכן — נשאר רק לפתוח את ההורדה.</p>
+          <a href="#" id="buy-link" target="_blank" rel="noopener" class="btn btn-gold" style="width:100%; box-sizing:border-box; text-align:center; display:block; margin-bottom:14px;">רכישת קוד פתיחה</a>
+          <div class="unlock-box">
+            <input type="text" id="license-input" placeholder="קוד רישוי (מהמייל של הרכישה)" dir="ltr">
+            <div class="unlock-note" id="license-note"></div>
+            <button type="button" class="btn btn-teal" id="verify-btn" style="width:100%;">אימות ופתיחה</button>
+          </div>
+        </div>
+        <div id="unlock-done" style="display:none;">
+          <p style="margin:0 0 12px; font-size:14px; font-weight:600; color:var(--teal-dark);">נפתח! מורידים את קובצי האתר:</p>
+          <button type="button" class="btn btn-gold" id="download-zip-btn" style="width:100%;">הורדת קובצי האתר (ZIP)</button>
+          <div class="go-live-box">
+            <b>איך מעלים את זה לאוויר (בעצמכם, תוך דקה):</b><br>
+            נכנסים ל־<a href="https://app.netlify.com/drop" target="_blank" rel="noopener">app.netlify.com/drop</a>, גוררים את התיקייה המחולצת מה-ZIP לתוך העמוד — ומקבלים כתובת אתר חיה מיד. בלי הרשמה, בלי כרטיס אשראי.
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<footer class="site no-print">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <h5>DeskKit</h5>
+        <p style="font-size:14px; max-width:320px;">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות, אתרים ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
+      </div>
+      <div>
+        <h5>ניווט</h5>
+        <ul>
+          <li><a href="products.html">קטלוג מוצרים</a></li>
+          <li><a href="about.html">אודות</a></li>
+          <li><a href="contact.html">צור קשר</a></li>
+          <li><a href="quotes.html">בעלי עסקים</a></li>
+          <li><a href="admin.html">ניהול</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>צור קשר</h5>
+        <ul>
+          <li>digital.dz.studio@gmail.com</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">© 2026 DeskKit. כל הזכויות שמורות.</div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="js/color-utils.js"></script>
+<script src="js/site-templates.js"></script>
+<script src="js/site-builder.js"></script>
+<script src="js/main.js"></script>
+<script src="js/widgets.js?v=4"></script>
+</body>
+</html>
