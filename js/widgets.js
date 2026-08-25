@@ -8,7 +8,7 @@
    in-site page linking to that inbox). Until it's set, the form still
    works — it just falls back to a "send us an email" link instead of
    auto-submitting. */
-const FEEDBACK_ENDPOINT = "";
+const FEEDBACK_ENDPOINT = "https://formspree.io/f/moeagwvk";
 
 const CHAT_FAQ = [
   { kw: ["קו\"ח", "קוח", "קורות חיים", "cv", "resume", "בילדר", "builder"],
