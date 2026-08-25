@@ -92,7 +92,30 @@ function siteNavLinks(d, activePage) {
   if (d.pages && d.pages.about) pages.push({ key: "about", label: "אודות", href: "about.html" });
   if (d.pages && d.pages.contact) pages.push({ key: "contact", label: "צור קשר", href: "contact.html" });
   if (pages.length < 2) return "";
-  return pages.map((p) => `<a href="${p.href}"${p.key === activePage ? ' class="active"' : ""}>${escapeHtmlS(p.label)}</a>`).join("");
+  return pages.map((p) => `<a href="${p.href}" data-site-nav data-page="${p.key}"${p.key === activePage ? ' class="active"' : ""}>${escapeHtmlS(p.label)}</a>`).join("");
+}
+
+/* A downloaded/hosted site's nav links are plain relative hrefs (index.html
+   / about.html / contact.html) — that's exactly right once the files are
+   sitting in the same folder on real hosting. But our own live preview
+   shows these documents inside an iframe via `srcdoc`, which has no file
+   of its own — a relative href there resolves against *this* editor page's
+   URL, so clicking "About" while previewing would silently load DeskKit's
+   own about.html instead of the customer's. This script only ever runs
+   when the page is inside an iframe (i.e. our preview, never a real
+   visit), and swaps the click for a postMessage the preview page uses to
+   switch its tab — the actual downloaded site is completely unaffected. */
+function previewNavScript() {
+  return `<script>
+    if (window.self !== window.top) {
+      document.querySelectorAll("a[data-site-nav]").forEach(function (a) {
+        a.addEventListener("click", function (e) {
+          e.preventDefault();
+          try { window.parent.postMessage({ deskkitPreviewNav: a.getAttribute("data-page") }, "*"); } catch (err) {}
+        });
+      });
+    }
+  </script>`;
 }
 
 /* Client-side search — filters the cards inside a target grid as the
@@ -197,7 +220,7 @@ function renderLocalServiceSite(d, page) {
       ${navLinksHtml ? `<nav class="ls-nav">${navLinksHtml}</nav>` : ""}
       ${d.phone ? `<a class="phone" href="tel:${escapeHtmlS(d.phone)}">${escapeHtmlS(d.phone)}</a>` : ""}
     </div></header>`;
-  const footer = `<div class="ls-footer">© ${new Date().getFullYear()} ${escapeHtmlS(dd.businessName)}</div>${waFabHtml(d)}`;
+  const footer = `<div class="ls-footer">© ${new Date().getFullYear()} ${escapeHtmlS(dd.businessName)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
 
   let main;
   if (page === "about") {
@@ -283,7 +306,7 @@ function renderFreelancerSite(d, page) {
     .fr-footer { padding:22px 0; text-align:center; font-size:12px; color:#999; }
   `;
   const navBar = navLinksHtml ? `<div class="fr-nav"><div class="container row"><span class="fr-nav-name">${escapeHtmlS(dd.businessName)}</span><nav>${navLinksHtml}</nav></div></div>` : "";
-  const footer = `<div class="fr-footer">© ${new Date().getFullYear()} ${escapeHtmlS(dd.businessName)}</div>${waFabHtml(d)}`;
+  const footer = `<div class="fr-footer">© ${new Date().getFullYear()} ${escapeHtmlS(dd.businessName)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
 
   let main;
   if (page === "about") {
@@ -375,7 +398,7 @@ function renderCatalogSite(d, page) {
     </div></nav>`;
   const footer = `<footer class="cat-footer">
       ${d.phone ? `${escapeHtmlS(d.phone)} · ` : ""}${d.email ? `${escapeHtmlS(d.email)} · ` : ""}${d.address ? escapeHtmlS(d.address) : ""}
-    </footer>${waFabHtml(d)}`;
+    </footer>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
 
   let main;
   if (page === "about") {

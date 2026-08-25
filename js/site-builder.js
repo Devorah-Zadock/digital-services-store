@@ -326,4 +326,20 @@ document.addEventListener("DOMContentLoaded", () => {
     if (file) loadDataFromFile(file);
     e.target.value = "";
   });
+
+  // The preview iframe's nav links can't really navigate (see
+  // previewNavScript in site-templates.js — a relative href inside srcdoc
+  // would otherwise resolve against THIS page and load DeskKit's own
+  // about/contact page instead of the customer's). Instead they post a
+  // message here, and we switch the preview tab exactly as if it had been
+  // clicked directly.
+  window.addEventListener("message", (e) => {
+    const frame = document.getElementById("site-preview-frame");
+    if (e.source !== frame.contentWindow) return;
+    const page = e.data && e.data.deskkitPreviewNav;
+    if (!page || !enabledSitePages().includes(page)) return;
+    previewPage = page;
+    renderPreviewTabs();
+    frame.srcdoc = currentSiteHtml(previewPage);
+  });
 });
