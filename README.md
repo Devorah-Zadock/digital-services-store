@@ -83,8 +83,8 @@ python3 -m http.server 8000
 
 **איך מגדירים את התשלום עם Gumroad**:
 1. יוצרים ב-[Gumroad](https://gumroad.com) מוצר חדש מסוג "License Key" (חשוב — לא מוצר רגיל, כדי שכל רכישה תייצר קוד רישוי ייחודי) ומגדירים מחיר.
-2. מעתיקים את ה-**permalink** של המוצר (מופיע בכתובת דף המוצר) ואת כתובת ה-checkout (`https://gum.co/xxxxx`).
-3. מדביקים את שניהם בקבוע `SITE_GUMROAD_CONFIG` בראש הקובץ `js/site-builder.js`, במקום הערכים `REPLACE_ME_site_builder`.
+2. בלשונית "Content" של המוצר, מוצאים את בלוק "License key" — Gumroad מציגים שם **Product ID** ייעודי לאימות מול ה-API (יציב יותר מה-permalink, כי permalink אפשר לשנות מאוחר יותר). מעתיקים אותו, וגם את כתובת ה-checkout (הקישור לדף המוצר, `https://xxx.gumroad.com/l/yyy`).
+3. מדביקים את שניהם בקבוע `SITE_GUMROAD_CONFIG` בראש הקובץ `js/site-builder.js` (`productId` ו-`checkoutUrl`).
 
 עד שזה לא מוגדר, כפתור "רכישת קוד פתיחה" לא מוביל לשום מקום אמיתי — משאירים את זה ככה רק בסביבת פיתוח.
 

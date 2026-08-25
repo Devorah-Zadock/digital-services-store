@@ -4,10 +4,13 @@
    exact setup steps, and the honest security caveat: client-side check,
    not real DRM). */
 
-/* IMPORTANT: placeholder permalink/checkout link — see README before going
-   live with this product. */
-const SITE_GUMROAD_CONFIG = { permalink: "REPLACE_ME_site_builder", checkoutUrl: "https://gum.co/REPLACE_ME_site_builder" };
-const SITE_UNLOCK_KEY = "deskkit_sites_unlocked_" + SITE_GUMROAD_CONFIG.permalink;
+/* IMPORTANT: placeholder product ID/checkout link — see README before going
+   live with this product. Gumroad's current UI surfaces a per-product
+   "product ID" specifically for API license verification (more stable than
+   the permalink, which a seller could rename later), so we verify against
+   that instead of product_permalink. */
+const SITE_GUMROAD_CONFIG = { productId: "NUyzNlvxdpU_49TE5nk9fg==", checkoutUrl: "https://dizstudio.gumroad.com/l/rhkfld" };
+const SITE_UNLOCK_KEY = "deskkit_sites_unlocked_" + SITE_GUMROAD_CONFIG.productId;
 
 const SITE_DEFAULT = {
   businessName: "",
@@ -149,7 +152,7 @@ async function verifySiteLicense() {
     const res = await fetch("https://api.gumroad.com/v2/licenses/verify", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ product_permalink: SITE_GUMROAD_CONFIG.permalink, license_key: key }),
+      body: new URLSearchParams({ product_id: SITE_GUMROAD_CONFIG.productId, license_key: key }),
     });
     const data = await res.json();
     if (data.success) {
