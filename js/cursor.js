@@ -1,23 +1,18 @@
-/* Refined animated cursor: a precise dot plus a thin trailing ring, for
-   fine-pointer devices only (touch is untouched). The native cursor is
-   NEVER hidden until the replacement is actually in position — it only
-   activates on a real mousemove, and immediately hands back control
-   (native cursor visible again) whenever the pointer leaves the page,
-   the tab loses visibility, or the window loses focus. This closes the
-   earlier bug where switching tabs or navigating left no cursor visible
-   at all until the mouse physically moved again. */
+/* Refined animated cursor: a single ring that tracks the mouse exactly
+   (no trailing/lagging second part — that was the "two circles chasing"
+   effect people found distracting), just a smooth grow/shrink transition
+   in place on hover and click. Fine-pointer devices only (touch untouched).
+   The native cursor is NEVER hidden until the replacement is actually in
+   position — it only activates on a real mousemove, and immediately hands
+   back control (native cursor visible again) whenever the pointer leaves
+   the page, the tab loses visibility, or the window loses focus. */
 (function () {
   if (!window.matchMedia || !window.matchMedia("(pointer: fine)").matches) return;
 
-  const dot = document.createElement("div");
-  dot.className = "cursor-dot";
   const ring = document.createElement("div");
   ring.className = "cursor-ring";
-  document.body.appendChild(dot);
   document.body.appendChild(ring);
 
-  let mouseX = -100, mouseY = -100;
-  let ringX = -100, ringY = -100;
   let active = false;
 
   function activate() {
@@ -31,9 +26,7 @@
   }
 
   document.addEventListener("mousemove", (e) => {
-    mouseX = e.clientX;
-    mouseY = e.clientY;
-    dot.style.transform = `translate(${mouseX}px, ${mouseY}px)`;
+    ring.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
     activate();
   });
 
@@ -42,14 +35,6 @@
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState !== "visible") deactivate();
   });
-
-  function loop() {
-    ringX += (mouseX - ringX) * 0.16;
-    ringY += (mouseY - ringY) * 0.16;
-    ring.style.transform = `translate(${ringX}px, ${ringY}px)`;
-    requestAnimationFrame(loop);
-  }
-  requestAnimationFrame(loop);
 
   const HOVER_SELECTOR = "a, button, .btn, .tab, .lang-big, .card, .swatch, .fab, .chat-chip, " +
     "select, input, textarea, [role='button'], .job-remove, .photo-remove, .project-remove, .star, .btn-mini, .widget-close";
