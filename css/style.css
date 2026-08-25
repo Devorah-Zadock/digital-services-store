@@ -37,36 +37,6 @@ body {
   overflow-x: clip;
 }
 
-/* ---------- Animated cursor (fine-pointer devices only, see js/cursor.js) ----------
-   One wrapper element gets the position transform on every mousemove; the ring
-   and dot inside it are just CSS children with no position logic of their own —
-   so they're always perfectly locked together (no "two circles chasing" lag),
-   while still layering two colors/shapes for a livelier look than a plain ring. */
-.custom-cursor-active, .custom-cursor-active a, .custom-cursor-active button,
-.custom-cursor-active input, .custom-cursor-active textarea, .custom-cursor-active select,
-.custom-cursor-active * { cursor: none !important; }
-.cursor-wrap {
-  position: fixed; top: 0; left: 0; pointer-events: none; z-index: 9999;
-  transform: translate(-100px, -100px); will-change: transform; opacity: 0; transition: opacity .2s ease;
-}
-.custom-cursor-active .cursor-wrap { opacity: 1; }
-.cursor-wrap .cursor-ring {
-  position: absolute; border-radius: 50%;
-  width: 28px; height: 28px; margin: -14px 0 0 -14px;
-  border: 1.5px solid var(--gold); background: transparent;
-  box-shadow: 0 0 0 1px rgba(255,255,255,.55);
-  transition: width .18s cubic-bezier(.2,.8,.2,1), height .18s cubic-bezier(.2,.8,.2,1), margin .18s cubic-bezier(.2,.8,.2,1), background .18s ease, border-color .18s ease;
-}
-.cursor-wrap .cursor-dot {
-  position: absolute; border-radius: 50%;
-  width: 6px; height: 6px; margin: -3px 0 0 -3px; background: var(--teal-light);
-  transition: width .18s ease, height .18s ease, margin .18s ease, background .18s ease;
-}
-.cursor-hover .cursor-wrap .cursor-ring { width: 42px; height: 42px; margin: -21px 0 0 -21px; background: rgba(201,154,59,.14); border-color: var(--gold-light); }
-.cursor-hover .cursor-wrap .cursor-dot { background: var(--gold); }
-.cursor-down .cursor-wrap .cursor-ring { width: 18px; height: 18px; margin: -9px 0 0 -9px; }
-.cursor-down .cursor-wrap .cursor-dot { width: 4px; height: 4px; margin: -2px 0 0 -2px; }
-
 img { max-width: 100%; display: block; }
 a { color: inherit; text-decoration: none; }
 ul { margin: 0; }
