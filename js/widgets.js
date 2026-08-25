@@ -15,10 +15,10 @@
    GOOGLE_FORM_ENTRY_RATING / _MESSAGE / _PAGE: the entry.NNNNNNNNN field
    ID for each of the form's three questions (get these via the form's
    "Get pre-filled link" option — see README for exact steps). */
-const GOOGLE_FORM_ACTION_URL = "";
-const GOOGLE_FORM_ENTRY_RATING = "";
-const GOOGLE_FORM_ENTRY_MESSAGE = "";
-const GOOGLE_FORM_ENTRY_PAGE = "";
+const GOOGLE_FORM_ACTION_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeKcW1dglT94Psp3CVBwYMkCjy9deBVRHQs1ckl7X3XvaKXNQ/formResponse";
+const GOOGLE_FORM_ENTRY_RATING = "2035073733";
+const GOOGLE_FORM_ENTRY_MESSAGE = "505234675";
+const GOOGLE_FORM_ENTRY_PAGE = "358160448";
 
 const CHAT_FAQ = [
   { kw: ["קו\"ח", "קוח", "קורות חיים", "cv", "resume", "בילדר", "builder"],
