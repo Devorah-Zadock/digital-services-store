@@ -6,8 +6,11 @@
    Google Forms automatically saves as rows in a linked Google Sheet — free,
    no submission limit, and it survives refresh because it lives on
    Google's servers, not the visitor's browser. This page reads that same
-   sheet back (as public CSV export — that requires the sheet to be shared
-   as "Anyone with the link: Viewer") and renders it as a feed below. */
+   sheet back — via the gviz/tq endpoint (Google's Visualization API, built
+   for exactly this kind of external embedding, and CORS-friendly — the
+   plain /export?format=csv endpoint often blocks a cross-origin fetch()
+   even when the sheet is shared correctly) — and renders it as a feed
+   below. Requires the sheet to be shared as "Anyone with the link: Viewer". */
 
 /* SHA-256 hex of the current password. Default password: "deskkit2026".
    To change it: compute a new hash (e.g. in the browser console:
@@ -76,7 +79,7 @@ async function loadFeedback() {
   const feed = document.getElementById("admin-feed");
   feed.innerHTML = `<p class="admin-loading">טוען הודעות…</p>`;
   try {
-    const url = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/export?format=csv&gid=${GOOGLE_SHEET_GID}&_=${Date.now()}`;
+    const url = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${GOOGLE_SHEET_GID}&_=${Date.now()}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error("bad response");
     const rows = parseCsv(await res.text()).filter((r) => r.some((c) => c.trim()));
