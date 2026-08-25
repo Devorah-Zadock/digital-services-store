@@ -20,12 +20,13 @@ const ADMIN_PASSWORD_HASH = "94735446ce9e3c2d0a4d9761268127335e9514fd1e0558b9d93
 const ADMIN_AUTH_KEY = "deskkit-admin-auth";
 
 /* The Sheet ID from the linked Google Sheet's URL (the long string between
-   /d/ and /edit). GOOGLE_SHEET_GID is which tab to read — "0" is almost
-   always right, since it's the first/only tab Google Forms creates.
+   /d/ and /edit). GOOGLE_SHEET_GID is which tab to read — open the "Form
+   Responses" tab in the sheet and copy the number after #gid= in the
+   browser's address bar (it's often NOT "0").
    See README for exact setup steps. Leave GOOGLE_SHEET_ID empty to show
    setup instructions instead of the feed. */
 const GOOGLE_SHEET_ID = "19rpPKlSp73En7PUpCc6nJhv-qlC8ydLaQlpn6XAlrPs";
-const GOOGLE_SHEET_GID = "0";
+const GOOGLE_SHEET_GID = "800685239";
 
 function escapeHtmlA(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
