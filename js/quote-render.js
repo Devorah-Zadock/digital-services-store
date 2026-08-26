@@ -22,6 +22,7 @@ const QUOTE_CSS = `
   .quote-doc { font-family: 'Heebo', Arial, sans-serif; background:#fff; color:#1E1E1E; width:794px; margin:0 auto; box-shadow:0 10px 30px rgba(0,0,0,.12); padding:50px 56px; overflow-wrap:break-word; }
   .quote-doc .bsd { font-size:12px; color:#6B6B6B; margin-bottom:6px; }
   .quote-doc .letterhead { text-align:center; margin-bottom:18px; }
+  .quote-doc .letterhead-logo { max-height:64px; max-width:220px; margin:0 auto 10px; display:block; }
   .quote-doc .biz-name { font-size:20px; font-weight:700; color:#163F35; margin-bottom:4px; }
   .quote-doc .tagline { font-size:12.5px; color:#444; line-height:1.5; }
   .quote-doc .contact-line { font-size:11.5px; color:#6B6B6B; margin-top:8px; }
@@ -71,6 +72,7 @@ function renderQuoteHtml(q) {
   <div class="quote-doc" dir="rtl">
     <div class="bsd">בס"ד</div>
     <div class="letterhead">
+      ${q.logoUrl ? `<img class="letterhead-logo" src="${escapeHtmlQ(q.logoUrl)}" alt="">` : ""}
       <div class="biz-name">${escapeHtmlQ(q.businessName)}</div>
       <div class="tagline">${escapeHtmlQ(q.tagline1)}</div>
       <div class="tagline">${escapeHtmlQ(q.tagline2)}</div>
