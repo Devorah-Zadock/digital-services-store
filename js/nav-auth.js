@@ -1,11 +1,18 @@
 /* Keeps the header's "👤 כניסה" link in sync with the real account
    session, on every page — not just the account-related ones. Logged
    out: links to account.html, redirecting back to the current page
-   after login. Logged in: becomes a one-click logout, everywhere. */
+   after login. Logged in: becomes a one-click logout, everywhere.
+
+   The session check is async, and every page's static HTML starts as
+   "כניסה" — so a logged-in visitor would otherwise see it flash
+   "כניסה" then flip to "התנתקות" on every single page load. The link
+   starts hidden (space still reserved, so nothing shifts) and only
+   becomes visible once we actually know which state is correct. */
 
 function applyNavAuthState(session) {
   const link = document.getElementById("nav-login-link");
   if (!link) return;
+  link.classList.remove("nav-login-pending");
   if (session && session.user) {
     link.textContent = "👤 התנתקות";
     link.href = "#";

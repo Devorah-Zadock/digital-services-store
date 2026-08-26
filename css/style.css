@@ -98,6 +98,7 @@ header.site {
 }
 .nav-cta:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(22,63,53,.3); }
 .nav-login { color: var(--grey); font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: flex-end; gap: 5px; min-width: 92px; transition: color .15s ease; }
+.nav-login.nav-login-pending { visibility: hidden; }
 .nav-login:hover { color: var(--teal-dark); }
 .burger { display: none; font-size: 26px; background: none; border: none; cursor: pointer; color: var(--teal-dark); }
 
