@@ -80,20 +80,34 @@ function wireAuth() {
     const email = document.getElementById("qa-email").value.trim();
     const password = document.getElementById("qa-password").value;
     const err = document.getElementById("qa-auth-err");
-    const msg = document.getElementById("qa-auth-msg");
     err.textContent = "";
-    msg.textContent = "";
 
     if (authMode === "signup") {
-      const { error } = await supabaseClient.auth.signUp({ email, password });
+      const { data, error } = await supabaseClient.auth.signUp({
+        email, password,
+        options: { emailRedirectTo: window.location.origin + window.location.pathname },
+      });
       if (error) { err.textContent = "ההרשמה נכשלה: " + error.message; return; }
-      msg.textContent = "נרשמתם! אם נדרש אישור מייל — תבדקו את תיבת הדואר ותלחצו על הקישור, ואז תוכלו להתחבר.";
+      if (data.session) return; // email confirmation is off — already logged in, onAuthStateChange handles it
+      showCheckEmail(email);
     } else {
       const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
       if (error) { err.textContent = "ההתחברות נכשלה: בדקו מייל וסיסמה ונסו שוב."; return; }
       // onAuthStateChange picks up the new session and routes onward.
     }
   });
+
+  document.getElementById("qa-back-to-login").addEventListener("click", () => {
+    document.getElementById("qa-check-email").style.display = "none";
+    document.getElementById("qa-auth-form-wrap").style.display = "";
+    setAuthMode("login");
+  });
+}
+
+function showCheckEmail(email) {
+  document.getElementById("qa-auth-form-wrap").style.display = "none";
+  document.getElementById("qa-check-email").style.display = "";
+  document.getElementById("qa-check-email-addr").textContent = email;
 }
 
 async function logout() {

@@ -60,21 +60,31 @@
 <!-- 1. Auth gate -->
 <div id="qa-auth" class="qa-gate-wrap no-print">
   <div class="qa-gate-box">
-    <h1 id="qa-auth-title">כניסה לחשבון העסק</h1>
-    <p class="sub" id="qa-auth-sub">נרשמים פעם אחת — ובכל כניסה הפרטים והלוגו שלכם כבר מוכנים.</p>
-    <form id="qa-auth-form">
-      <div class="field"><label>אימייל</label><input type="email" id="qa-email" dir="ltr" autocomplete="email" required></div>
-      <div class="field"><label>סיסמה</label><input type="password" id="qa-password" autocomplete="current-password" required minlength="6"></div>
-      <div class="qa-err" id="qa-auth-err"></div>
-      <div class="qa-msg" id="qa-auth-msg"></div>
-      <button type="submit" class="btn btn-teal" style="width:100%;" id="qa-auth-submit">כניסה</button>
-    </form>
-    <div class="qa-switch">
-      <span id="qa-switch-text">עדיין אין לכם חשבון?</span>
-      <button type="button" id="qa-switch-btn">להרשמה</button>
+    <div id="qa-auth-form-wrap">
+      <h1 id="qa-auth-title">כניסה לחשבון העסק</h1>
+      <p class="sub" id="qa-auth-sub">נרשמים פעם אחת — ובכל כניסה הפרטים והלוגו שלכם כבר מוכנים.</p>
+      <form id="qa-auth-form">
+        <div class="field"><label>אימייל</label><input type="email" id="qa-email" dir="ltr" autocomplete="email" required></div>
+        <div class="field"><label>סיסמה</label><input type="password" id="qa-password" autocomplete="current-password" required minlength="6"></div>
+        <div class="qa-err" id="qa-auth-err"></div>
+        <div class="qa-msg" id="qa-auth-msg"></div>
+        <button type="submit" class="btn btn-teal" style="width:100%;" id="qa-auth-submit">כניסה</button>
+      </form>
+      <div class="qa-switch">
+        <span id="qa-switch-text">עדיין אין לכם חשבון?</span>
+        <button type="button" id="qa-switch-btn">להרשמה</button>
+      </div>
+      <div class="qa-forgot">
+        <button type="button" id="qa-forgot-btn">שכחתי סיסמה</button>
+      </div>
     </div>
-    <div class="qa-forgot">
-      <button type="button" id="qa-forgot-btn">שכחתי סיסמה</button>
+    <div id="qa-check-email" style="display:none; text-align:center;">
+      <div style="font-size:40px; margin-bottom:8px;">📬</div>
+      <h1 style="margin-bottom:10px;">נשאר רק שלב אחד</h1>
+      <p class="sub" style="margin-bottom:6px;">שלחנו מייל אישור לכתובת:</p>
+      <p style="font-weight:700; color:var(--teal-dark); direction:ltr; margin-bottom:18px;" id="qa-check-email-addr"></p>
+      <p class="sub" style="margin-bottom:22px;">לוחצים על הקישור במייל (בדקו גם ספאם) — ואז אפשר לחזור לכאן ולהתחבר.</p>
+      <button type="button" class="btn btn-outline" style="width:100%;" id="qa-back-to-login">חזרה למסך התחברות</button>
     </div>
   </div>
 </div>
