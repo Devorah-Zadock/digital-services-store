@@ -480,8 +480,121 @@ function renderCatalogSite(d, page) {
   return siteDoc({ title: titles[page], description: dd.tagline, css }, `${nav}${main}${footer}`);
 }
 
+/* ---------- Template 4: modern gallery / editorial ---------- */
+function renderGallerySite(d, page) {
+  page = page || "index";
+  const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const dd = withFallback(d);
+  const wa = waLink(d.whatsapp || d.phone);
+  const navLinksHtml = siteNavLinks(d, page);
+  const cta = primaryCtaHref(d, page);
+  const embedSrc = videoEmbedSrc(d.videoUrl);
+  const hasPhoto = !!d.heroImage;
+  const css = `
+    .gl-nav { background:#fff; padding:18px 0; }
+    .gl-nav .row { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+    .gl-nav .biz { font-family:'Frank Ruhl Libre',serif; font-weight:700; font-size:18px; color:#${pal.primaryDark}; }
+    .gl-nav nav { display:flex; gap:22px; }
+    .gl-nav nav a { font-size:13px; font-weight:600; color:#555; }
+    .gl-nav nav a.active { color:#${pal.primaryDark}; text-decoration:underline; text-underline-offset:5px; }
+
+    .gl-hero { position:relative; min-height:56vh; display:flex; align-items:flex-end; overflow:hidden; }
+    .gl-hero.has-photo { background-size:cover; background-position:center; }
+    .gl-hero.no-photo { background:linear-gradient(160deg, #${pal.ice}, #fff); min-height:auto; padding:90px 0 70px; }
+    .gl-hero.has-photo::after { content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0) 25%, rgba(0,0,0,.74)); }
+    .gl-hero-inner { position:relative; z-index:1; padding:54px 0; width:100%; }
+    .gl-hero.has-photo .gl-hero-inner { color:#fff; }
+    .gl-hero.no-photo .gl-hero-inner { color:#1E1E1E; text-align:center; }
+    .gl-eyebrow { display:inline-block; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding-top:8px; border-top:2px solid currentColor; margin-bottom:16px; }
+    .gl-title { font-family:'Frank Ruhl Libre',serif; font-weight:900; font-size:52px; line-height:1.08; margin:0 0 16px; max-width:700px; }
+    .gl-hero.no-photo .gl-title { margin-inline:auto; }
+    .gl-tagline { font-size:16.5px; max-width:460px; opacity:.92; margin:0 0 26px; }
+    .gl-hero.no-photo .gl-tagline { margin-inline:auto; }
+    .gl-cta { display:inline-block; background:#${pal.primary}; color:#fff; font-weight:700; padding:14px 32px; border-radius:4px; font-size:14.5px; }
+
+    .gl-section { padding:76px 0; }
+    .gl-section-head { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:34px; flex-wrap:wrap; gap:16px; }
+    .gl-section-head h2 { font-family:'Frank Ruhl Libre',serif; font-size:32px; margin:0; }
+    .gl-kicker { font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#${pal.primary}; }
+    .gl-bento { display:grid; grid-template-columns:repeat(6,1fr); gap:18px; }
+    .gl-card { grid-column:span 3; border:1px solid #EAEAEA; padding:26px; position:relative; }
+    .gl-card::before { content:""; position:absolute; top:0; inset-inline-start:0; width:32px; height:3px; background:#${pal.primary}; }
+    .gl-bento .gl-card:first-child { grid-column:span 6; }
+    .gl-card h3 { font-size:18px; font-weight:700; margin:14px 0 8px; }
+    .gl-card p { font-size:13.5px; color:#666; margin:0 0 10px; }
+    .gl-card .price { font-weight:800; color:#${pal.primary}; font-size:15px; }
+    @media (max-width:640px) { .gl-bento .gl-card { grid-column:span 6; } .gl-title { font-size:36px; } }
+
+    .gl-about { padding:70px 0; background:#${pal.ice}; text-align:center; }
+    .gl-about blockquote { font-family:'Frank Ruhl Libre',serif; font-size:25px; line-height:1.5; margin:0 auto; max-width:740px; color:#${pal.primaryDark}; }
+    .gl-about cite { display:block; margin-top:20px; font-style:normal; font-size:13px; font-weight:700; color:#888; }
+
+    .gl-contact { padding:70px 0; text-align:center; }
+    .gl-contact h2 { font-family:'Frank Ruhl Libre',serif; font-size:30px; margin:0 0 20px; }
+    .gl-contact .line { font-size:15px; color:#555; margin-bottom:6px; }
+    .gl-footer { border-top:1px solid #EEE; padding:24px 0; text-align:center; font-size:12px; color:#999; }
+  `;
+  const header = `
+    <header class="gl-nav"><div class="container row">
+      <div class="biz">${escapeHtmlS(dd.businessName)}</div>
+      ${navLinksHtml ? `<nav>${navLinksHtml}</nav>` : ""}
+    </div></header>`;
+  const footer = `<div class="gl-footer">© ${new Date().getFullYear()} ${escapeHtmlS(dd.businessName)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
+
+  let main;
+  if (page === "about") {
+    main = `
+      <section class="gl-about"><div class="container">
+        <blockquote>${nl2brS(dd.about)}</blockquote>
+        <cite>${escapeHtmlS(dd.businessName)}</cite>
+      </div></section>`;
+  } else if (page === "contact") {
+    main = `
+      <section class="gl-contact"><div class="container">
+        <h2>יצירת קשר</h2>
+        ${dd._hasContact ? `
+          ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
+          ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
+          ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
+        ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת ליצירת קשר.</div>`}
+        ${wa ? `<a class="gl-cta" style="margin-top:14px;" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}
+      </div></section>`;
+  } else {
+    const showSearch = dd._services.length >= 3;
+    const heroStyle = hasPhoto ? ` style="background-image:url('${d.heroImage}');"` : "";
+    main = `
+      <section class="gl-hero ${hasPhoto ? "has-photo" : "no-photo"}"${heroStyle}><div class="container gl-hero-inner">
+        <span class="gl-eyebrow">${dd.tagline ? "ברוכים הבאים" : "עסק מקצועי"}</span>
+        <h1 class="gl-title">${escapeHtmlS(dd.businessName)}</h1>
+        <p class="gl-tagline">${escapeHtmlS(dd.tagline)}</p>
+        ${ctaHtml(cta, "gl-cta")}
+      </div></section>
+      <section class="gl-section"><div class="container">
+        <div class="gl-section-head"><div><span class="gl-kicker">מה אנחנו מציעים</span><h2>השירותים שלנו</h2></div>
+        ${showSearch ? searchBoxHtml("#gl-bento", "חיפוש שירות...") : ""}</div>
+        <div class="gl-bento" id="gl-bento">${dd._services.map((s) => `
+          <div class="gl-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
+        ${showSearch ? searchScriptHtml() : ""}
+      </div></section>
+      ${embedSrc ? `<div class="container"><div style="padding:0 0 40px;">${videoEmbedHtml(embedSrc)}</div></div>` : ""}
+      ${(!d.pages || !d.pages.about) ? `<section class="gl-about"><div class="container"><blockquote>${nl2brS(dd.about)}</blockquote><cite>${escapeHtmlS(dd.businessName)}</cite></div></section>` : ""}
+      ${(!d.pages || !d.pages.contact) ? `<section class="gl-contact"><div class="container">
+        <h2>יצירת קשר</h2>
+        ${dd._hasContact ? `
+          ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
+          ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
+          ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
+        ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת.</div>`}
+      </div></section>` : ""}
+    `;
+  }
+  const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
+  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${header}${main}${footer}`);
+}
+
 const SITE_TEMPLATES = {
   "local-service": { label: "עסק שירות מקומי", render: renderLocalServiceSite },
   "freelancer": { label: "פרילנסר / יועץ", render: renderFreelancerSite },
   "catalog": { label: "קטלוג קטן", render: renderCatalogSite },
+  "gallery": { label: "גלריה מודרנית", render: renderGallerySite },
 };
