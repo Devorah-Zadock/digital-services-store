@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>כניסה לחשבון — DeskKit</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .qa-gate-wrap { min-height: 70vh; display: flex; align-items: center; justify-content: center; padding: 40px 24px; }
+  .qa-gate-box {
+    background: var(--white); border: 1px solid #EAEDEC; border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 36px 32px; max-width: 380px; width: 100%;
+  }
+  .qa-gate-box h1 { font-size: 20px; color: var(--teal-dark); margin: 0 0 6px; text-align: center; }
+  .qa-gate-box p.sub { font-size: 13.5px; color: var(--grey); margin: 0 0 20px; text-align: center; }
+  .qa-gate-box .field { display: grid; gap: 5px; margin-bottom: 12px; text-align: right; }
+  .qa-gate-box label { font-size: 13px; font-weight: 700; color: var(--teal-dark); }
+  .qa-gate-box input[type="email"], .qa-gate-box input[type="password"], .qa-gate-box input[type="text"] {
+    width: 100%; box-sizing: border-box; padding: 11px 13px; border-radius: 8px; border: 1px solid #DADFDD;
+    font-family: inherit; font-size: 14.5px;
+  }
+  .qa-err { color: #B23; font-size: 13px; min-height: 18px; margin: 4px 0 8px; }
+  .qa-msg { color: var(--teal-dark); font-size: 13px; min-height: 18px; margin: 4px 0 8px; }
+  .qa-switch { text-align: center; font-size: 13.5px; margin-top: 14px; color: var(--grey); }
+  .qa-switch button { background: none; border: none; color: var(--teal); font-weight: 700; cursor: pointer; font-family: inherit; font-size: 13.5px; padding: 0; }
+  .qa-forgot { text-align: center; margin-top: 8px; }
+  .qa-forgot button { background: none; border: none; color: var(--grey); cursor: pointer; font-family: inherit; font-size: 12.5px; text-decoration: underline; padding: 0; }
+</style>
+</head>
+<body>
+
+<header class="site no-print">
+  <nav class="nav">
+    <a href="index.html" class="brand"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path class="bm-face" d="M6 3H14L18 7V20H6Z"/><path class="bm-fold" d="M14 3L14 7H18Z"/></svg>DeskKit</a>
+    <div class="nav-links">
+      <a href="index.html">בית</a>
+      <a href="products.html">קטלוג</a>
+      <a href="sites.html">בניית אתר</a>
+      <a href="about.html">אודות</a>
+      <a href="contact.html">צור קשר</a>
+      <a href="quote-app.html">הצעות מחיר</a>
+    </div>
+    <a href="products.html" class="nav-cta">לצפייה בקטלוג</a>
+    <button class="burger" aria-label="תפריט">☰</button>
+  </nav>
+</header>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+<div id="qa-auth" class="qa-gate-wrap no-print">
+  <div class="qa-gate-box">
+    <div id="qa-auth-form-wrap">
+      <h1 id="qa-auth-title">כניסה לחשבון העסק</h1>
+      <p class="sub" id="qa-auth-sub">נרשמים פעם אחת — ובכל כניסה הפרטים והלוגו שלכם כבר מוכנים.</p>
+      <form id="qa-auth-form">
+        <div class="field"><label>אימייל</label><input type="email" id="qa-email" dir="ltr" autocomplete="email" required></div>
+        <div class="field"><label>סיסמה</label><input type="password" id="qa-password" autocomplete="current-password" required minlength="6"></div>
+        <div class="qa-err" id="qa-auth-err"></div>
+        <div class="qa-msg" id="qa-auth-msg"></div>
+        <button type="submit" class="btn btn-teal" style="width:100%;" id="qa-auth-submit">כניסה</button>
+      </form>
+      <div class="qa-switch">
+        <span id="qa-switch-text">עדיין אין לכם חשבון?</span>
+        <button type="button" id="qa-switch-btn">להרשמה</button>
+      </div>
+      <div class="qa-forgot">
+        <button type="button" id="qa-forgot-btn">שכחתי סיסמה</button>
+      </div>
+    </div>
+    <div id="qa-check-email" style="display:none; text-align:center;">
+      <div style="font-size:40px; margin-bottom:8px;">📬</div>
+      <h1 style="margin-bottom:10px;">נשאר רק שלב אחד</h1>
+      <p class="sub" style="margin-bottom:6px;">שלחנו מייל אישור לכתובת:</p>
+      <p style="font-weight:700; color:var(--teal-dark); direction:ltr; margin-bottom:18px;" id="qa-check-email-addr"></p>
+      <p class="sub" style="margin-bottom:22px;">לוחצים על הקישור במייל (בדקו גם ספאם) — ואז זה יחזיר אתכם לכאן מחוברים אוטומטית.</p>
+      <button type="button" class="btn btn-outline" style="width:100%;" id="qa-back-to-login">חזרה למסך התחברות</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/supabase-config.js"></script>
+<script src="js/account.js"></script>
+</body>
+</html>

@@ -8,7 +8,6 @@ let currentUser = null;
 let currentProfile = null;
 let pendingLogoUrl = null; // set once a newly-picked logo finishes uploading
 let quoteEventState = null;
-let authMode = "login"; // "login" | "signup"
 
 function todayHebrewQA() {
   const d = new Date();
@@ -31,90 +30,14 @@ function emptyQuoteEventState() {
 }
 
 function showSection(id) {
-  ["qa-auth", "qa-profile", "qa-app"].forEach((s) => {
+  ["qa-profile", "qa-app"].forEach((s) => {
     document.getElementById(s).style.display = s === id ? "" : "none";
   });
 }
 
-/* ---------- Auth ---------- */
-
-function setAuthMode(mode) {
-  authMode = mode;
-  document.getElementById("qa-auth-err").textContent = "";
-  document.getElementById("qa-auth-msg").textContent = "";
-  if (mode === "signup") {
-    document.getElementById("qa-auth-title").textContent = "פתיחת חשבון עסק";
-    document.getElementById("qa-auth-sub").textContent = "נרשמים פעם אחת — ובכל כניסה הפרטים והלוגו שלכם כבר מוכנים.";
-    document.getElementById("qa-auth-submit").textContent = "הרשמה";
-    document.getElementById("qa-switch-text").textContent = "כבר יש לכם חשבון?";
-    document.getElementById("qa-switch-btn").textContent = "להתחברות";
-  } else {
-    document.getElementById("qa-auth-title").textContent = "כניסה לחשבון העסק";
-    document.getElementById("qa-auth-sub").textContent = "נרשמים פעם אחת — ובכל כניסה הפרטים והלוגו שלכם כבר מוכנים.";
-    document.getElementById("qa-auth-submit").textContent = "כניסה";
-    document.getElementById("qa-switch-text").textContent = "עדיין אין לכם חשבון?";
-    document.getElementById("qa-switch-btn").textContent = "להרשמה";
-  }
-}
-
-function wireAuth() {
-  document.getElementById("qa-switch-btn").addEventListener("click", () => {
-    setAuthMode(authMode === "login" ? "signup" : "login");
-  });
-
-  document.getElementById("qa-forgot-btn").addEventListener("click", async () => {
-    const email = document.getElementById("qa-email").value.trim();
-    const err = document.getElementById("qa-auth-err");
-    const msg = document.getElementById("qa-auth-msg");
-    err.textContent = "";
-    msg.textContent = "";
-    if (!email) { err.textContent = "יש להזין קודם את כתובת המייל למעלה."; return; }
-    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + window.location.pathname,
-    });
-    msg.textContent = error ? "לא הצלחנו לשלוח את המייל, נסו שוב." : "נשלח מייל לאיפוס סיסמה — תבדקו את תיבת הדואר.";
-  });
-
-  document.getElementById("qa-auth-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const email = document.getElementById("qa-email").value.trim();
-    const password = document.getElementById("qa-password").value;
-    const err = document.getElementById("qa-auth-err");
-    err.textContent = "";
-
-    if (authMode === "signup") {
-      const { data, error } = await supabaseClient.auth.signUp({
-        email, password,
-        options: { emailRedirectTo: window.location.origin + window.location.pathname },
-      });
-      if (error) { err.textContent = "ההרשמה נכשלה: " + error.message; return; }
-      if (data.session) return; // email confirmation is off — already logged in, onAuthStateChange handles it
-      showCheckEmail(email);
-    } else {
-      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-      if (error) { err.textContent = "ההתחברות נכשלה: בדקו מייל וסיסמה ונסו שוב."; return; }
-      // onAuthStateChange picks up the new session and routes onward.
-    }
-  });
-
-  document.getElementById("qa-back-to-login").addEventListener("click", () => {
-    document.getElementById("qa-check-email").style.display = "none";
-    document.getElementById("qa-auth-form-wrap").style.display = "";
-    setAuthMode("login");
-  });
-}
-
-function showCheckEmail(email) {
-  document.getElementById("qa-auth-form-wrap").style.display = "none";
-  document.getElementById("qa-check-email").style.display = "";
-  document.getElementById("qa-check-email-addr").textContent = email;
-}
-
 async function logout() {
   await supabaseClient.auth.signOut();
-  currentUser = null;
-  currentProfile = null;
-  showSection("qa-auth");
+  window.location.href = "account.html?redirect=quote-app.html";
 }
 
 /* ---------- Business profile ---------- */
@@ -307,21 +230,21 @@ async function routeAfterAuth(user) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  wireAuth();
   wireProfileForm();
-  setAuthMode("login");
 
   supabaseClient.auth.onAuthStateChange((_event, session) => {
     if (session && session.user) {
       routeAfterAuth(session.user);
-    } else if (!session) {
-      currentUser = null;
-      currentProfile = null;
-      showSection("qa-auth");
+    } else {
+      window.location.href = "account.html?redirect=quote-app.html";
     }
   });
 
   supabaseClient.auth.getSession().then(({ data }) => {
-    if (data.session && data.session.user) routeAfterAuth(data.session.user);
+    if (data.session && data.session.user) {
+      routeAfterAuth(data.session.user);
+    } else {
+      window.location.href = "account.html?redirect=quote-app.html";
+    }
   });
 });
