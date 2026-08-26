@@ -35,11 +35,6 @@ function showSection(id) {
   });
 }
 
-async function logout() {
-  await supabaseClient.auth.signOut();
-  window.location.href = "tools.html";
-}
-
 /* ---------- Business profile ---------- */
 
 function renderLogoPreview(url) {
@@ -69,8 +64,6 @@ function fillProfileForm(p) {
 }
 
 function wireProfileForm() {
-  document.getElementById("qa-logout-1").addEventListener("click", logout);
-
   document.getElementById("pf-logo-file").addEventListener("change", async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -198,7 +191,6 @@ function wireQuoteFormQA() {
 
   document.getElementById("quote-download-btn").addEventListener("click", () => window.print());
   document.getElementById("qa-edit-profile").addEventListener("click", showProfileEditor);
-  document.getElementById("qa-logout-2").addEventListener("click", logout);
 }
 
 function showQuoteBuilder() {
@@ -216,15 +208,8 @@ function showProfileEditor() {
 
 /* ---------- Boot / auth state routing ---------- */
 
-function markHeaderLoggedIn() {
-  const link = document.getElementById("nav-login-link");
-  link.textContent = "👤 התנתקות";
-  link.addEventListener("click", (e) => { e.preventDefault(); logout(); });
-}
-
 async function routeAfterAuth(user) {
   currentUser = user;
-  markHeaderLoggedIn();
   const { data } = await supabaseClient.from("profiles").select("*").eq("id", user.id).maybeSingle();
   if (data) {
     currentProfile = data;
