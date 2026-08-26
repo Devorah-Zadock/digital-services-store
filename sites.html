@@ -14,13 +14,17 @@
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/builder.css">
 <style>
-  .site-tpl-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-  .site-tpl-btn {
-    flex: 1; min-width: 110px; background: var(--white); border: 2px solid #DDE4E1; color: var(--dark);
-    padding: 10px 8px; border-radius: 10px; font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit;
-    text-align: center; transition: border-color .15s ease, background .15s ease, color .15s ease;
+  .site-tpl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .site-tpl-card {
+    border: 2px solid #DDE4E1; border-radius: 10px; overflow: hidden; cursor: pointer; background: var(--white);
+    transition: border-color .15s ease;
   }
-  .site-tpl-btn.active { border-color: var(--teal); background: var(--ice); color: var(--teal-dark); }
+  .site-tpl-card img { width: 100%; height: 68px; object-fit: cover; display: block; }
+  .site-tpl-card .info { padding: 8px 10px; }
+  .site-tpl-card .name { font-size: 12.5px; font-weight: 700; color: var(--dark); margin-bottom: 2px; }
+  .site-tpl-card .desc { font-size: 10.5px; color: var(--grey); line-height: 1.35; }
+  .site-tpl-card.active { border-color: var(--teal); }
+  .site-tpl-card.active .name { color: var(--teal-dark); }
   .services-item { border: 1px solid #EDEFEE; border-radius: 8px; padding: 12px; margin-bottom: 12px; display: grid; gap: 8px; }
   .services-item-head { display: flex; justify-content: space-between; align-items: center; }
   .services-item input { min-width: 0; }
@@ -82,7 +86,7 @@
 
     <div class="field">
       <label>עיצוב האתר</label>
-      <div class="site-tpl-row" id="tpl-row"></div>
+      <div class="site-tpl-grid" id="tpl-row"></div>
     </div>
 
     <hr class="sep">

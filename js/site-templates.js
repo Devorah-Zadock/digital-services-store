@@ -593,8 +593,8 @@ function renderGallerySite(d, page) {
 }
 
 const SITE_TEMPLATES = {
-  "local-service": { label: "עסק שירות מקומי", render: renderLocalServiceSite },
-  "freelancer": { label: "פרילנסר / יועץ", render: renderFreelancerSite },
-  "catalog": { label: "קטלוג קטן", render: renderCatalogSite },
-  "gallery": { label: "גלריה מודרנית", render: renderGallerySite },
+  "local-service": { label: "עסק שירות מקומי", desc: "Hero גדול, כרטיסי שירותים, וואטסאפ צף", thumb: "images/previews/site-local-service.webp", render: renderLocalServiceSite },
+  "freelancer": { label: "פרילנסר / יועץ", desc: "מינימלי וממורכז, מתאים למותג אישי", thumb: "images/previews/site-freelancer.webp", render: renderFreelancerSite },
+  "catalog": { label: "קטלוג קטן", desc: "רשת מוצרים עם תגי מחיר וניווט עליון", thumb: "images/previews/site-catalog.webp", render: renderCatalogSite },
+  "gallery": { label: "גלריה מודרנית", desc: "תמונה מלאה ברקע, עיצוב עיתונאי ואלגנטי", thumb: "images/previews/site-gallery.webp", render: renderGallerySite },
 };

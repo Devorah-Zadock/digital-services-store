@@ -67,14 +67,19 @@ function renderServicesList() {
 function renderTplButtons() {
   const row = document.getElementById("tpl-row");
   row.innerHTML = Object.entries(SITE_TEMPLATES).map(([key, t]) =>
-    `<button type="button" class="site-tpl-btn${key === siteState.template ? " active" : ""}" data-tpl="${key}">${t.label}</button>`
+    `<div class="site-tpl-card${key === siteState.template ? " active" : ""}" data-tpl="${key}" role="button" tabindex="0">
+      <img src="${t.thumb}" alt="${escapeHtmlS(t.label)}" loading="lazy">
+      <div class="info"><div class="name">${escapeHtmlS(t.label)}</div><div class="desc">${escapeHtmlS(t.desc)}</div></div>
+    </div>`
   ).join("");
-  row.querySelectorAll(".site-tpl-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      siteState.template = btn.dataset.tpl;
+  row.querySelectorAll(".site-tpl-card").forEach((card) => {
+    const pick = () => {
+      siteState.template = card.dataset.tpl;
       renderTplButtons();
       renderSitePreview();
-    });
+    };
+    card.addEventListener("click", pick);
+    card.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
   });
 }
 
