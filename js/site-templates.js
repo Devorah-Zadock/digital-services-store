@@ -592,9 +592,110 @@ function renderGallerySite(d, page) {
   return siteDoc({ title: titles[page], description: dd.tagline, css }, `${header}${main}${footer}`);
 }
 
+/* ---------- Template 5: bold / neo-brutalist ---------- */
+function renderBoldSite(d, page) {
+  page = page || "index";
+  const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const dd = withFallback(d);
+  const wa = waLink(d.whatsapp || d.phone);
+  const navLinksHtml = siteNavLinks(d, page);
+  const cta = primaryCtaHref(d, page);
+  const embedSrc = videoEmbedSrc(d.videoUrl);
+  const css = `
+    .nb-nav { background:#fff; border-bottom:4px solid #111; padding:16px 0; }
+    .nb-nav .row { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+    .nb-nav .biz { font-weight:900; font-size:19px; letter-spacing:-.01em; }
+    .nb-nav nav { display:flex; gap:16px; flex-wrap:wrap; }
+    .nb-nav nav a { font-size:13px; font-weight:700; color:#111; padding:4px 2px; }
+    .nb-nav nav a.active { background:#${pal.primary}; color:#fff; padding:4px 10px; }
+
+    .nb-hero { background:#${pal.ice}; border-bottom:4px solid #111; padding:80px 0; text-align:center; }
+    .nb-hero .eyebrow { display:inline-block; background:#111; color:#fff; font-size:12px; font-weight:800; letter-spacing:.06em; padding:6px 16px; margin-bottom:18px; }
+    .nb-hero h1 { font-family:'Frank Ruhl Libre',serif; font-weight:900; font-size:48px; margin:0 0 16px; line-height:1.1; }
+    .nb-hero p { font-size:16.5px; font-weight:600; max-width:480px; margin:0 auto 30px; }
+    .nb-cta { display:inline-block; background:#${pal.primary}; color:#fff; font-weight:800; padding:14px 30px; border:3px solid #111; box-shadow:5px 5px 0 #111; font-size:15px; }
+    .nb-hero-photo { border:3px solid #111; box-shadow:6px 6px 0 #111; max-width:320px; width:100%; margin:30px auto 0; }
+    .nb-hero.last { border-bottom:none; }
+
+    .nb-section { padding:68px 0; border-bottom:4px solid #111; }
+    .nb-section.last { border-bottom:none; }
+    .nb-section-head { text-align:center; margin-bottom:34px; }
+    .nb-section-head h2 { font-family:'Frank Ruhl Libre',serif; font-weight:900; font-size:30px; margin:0 0 8px; }
+    .nb-tag { display:inline-block; background:#111; color:#fff; font-size:11.5px; font-weight:800; letter-spacing:.05em; padding:5px 14px; margin-bottom:10px; }
+    .nb-section .site-search-input { border-radius:0; border:2px solid #111; }
+
+    .nb-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:24px; }
+    .nb-card { background:#fff; border:3px solid #111; box-shadow:6px 6px 0 #111; padding:24px; }
+    .nb-card h3 { font-size:17.5px; font-weight:800; margin:0 0 8px; }
+    .nb-card p { font-size:13.5px; color:#444; margin:0 0 10px; }
+    .nb-card .price { display:inline-block; background:#${pal.ice}; border:2px solid #111; font-weight:800; padding:4px 10px; font-size:13.5px; }
+
+    .nb-about { background:#111; color:#fff; padding:64px 0; text-align:center; }
+    .nb-about p { font-size:18.5px; font-weight:600; max-width:700px; margin:0 auto; line-height:1.6; }
+
+    .nb-contact { padding:64px 0; text-align:center; }
+    .nb-contact .line { display:inline-block; background:#${pal.ice}; border:2px solid #111; padding:8px 16px; margin:4px; font-weight:700; font-size:13.5px; }
+
+    .nb-footer { border-top:4px solid #111; padding:22px 0; text-align:center; font-size:12px; font-weight:700; }
+  `;
+  const header = `
+    <header class="nb-nav"><div class="container row">
+      <div class="biz">${escapeHtmlS(dd.businessName)}</div>
+      ${navLinksHtml ? `<nav>${navLinksHtml}</nav>` : ""}
+    </div></header>`;
+  const footer = `<div class="nb-footer">© ${new Date().getFullYear()} ${escapeHtmlS(dd.businessName)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
+
+  let main;
+  if (page === "about") {
+    main = `<section class="nb-about last"><div class="container"><p>${nl2brS(dd.about)}</p></div></section>`;
+  } else if (page === "contact") {
+    main = `
+      <section class="nb-hero last"><div class="container">
+        <span class="eyebrow">נשמח לשמוע מכם</span>
+        <h1 style="font-size:34px;">יצירת קשר</h1>
+        ${dd._hasContact ? `
+          ${d.phone ? `<span class="line" style="display:inline-block; background:#fff; border:2px solid #111; padding:8px 16px; margin:4px; font-weight:700; font-size:13.5px;">טלפון: ${escapeHtmlS(d.phone)}</span>` : ""}
+          ${d.email ? `<span class="line" style="display:inline-block; background:#fff; border:2px solid #111; padding:8px 16px; margin:4px; font-weight:700; font-size:13.5px;">מייל: ${escapeHtmlS(d.email)}</span>` : ""}
+          ${d.address ? `<span class="line" style="display:inline-block; background:#fff; border:2px solid #111; padding:8px 16px; margin:4px; font-weight:700; font-size:13.5px;">כתובת: ${escapeHtmlS(d.address)}</span>` : ""}
+        ` : `<p>פרטו כאן טלפון, מייל וכתובת ליצירת קשר.</p>`}
+        <div style="margin-top:20px;">${wa ? `<a class="nb-cta" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}</div>
+      </div></section>`;
+  } else {
+    const showSearch = dd._services.length >= 3;
+    main = `
+      <section class="nb-hero"><div class="container">
+        <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "עסק מקצועי"}</span>
+        <h1>${escapeHtmlS(dd.businessName)}</h1>
+        <p>${escapeHtmlS(dd.tagline)}</p>
+        ${ctaHtml(cta, "nb-cta")}
+        ${d.heroImage ? `<img class="nb-hero-photo" src="${d.heroImage}" alt="">` : ""}
+      </div></section>
+      <section class="nb-section"><div class="container">
+        <div class="nb-section-head"><span class="nb-tag">מה אנחנו מציעים</span><h2>השירותים שלנו</h2>
+        ${showSearch ? searchBoxHtml("#nb-grid", "חיפוש שירות...") : ""}</div>
+        <div class="nb-grid" id="nb-grid">${dd._services.map((s) => `
+          <div class="nb-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
+        ${showSearch ? searchScriptHtml() : ""}
+      </div></section>
+      ${embedSrc ? `<section class="nb-section"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : ""}
+      ${(!d.pages || !d.pages.about) ? `<section class="nb-about"><div class="container"><p>${nl2brS(dd.about)}</p></div></section>` : ""}
+      ${(!d.pages || !d.pages.contact) ? `<section class="nb-contact last"><div class="container">
+        ${dd._hasContact ? `
+          ${d.phone ? `<span class="line">טלפון: ${escapeHtmlS(d.phone)}</span>` : ""}
+          ${d.email ? `<span class="line">מייל: ${escapeHtmlS(d.email)}</span>` : ""}
+          ${d.address ? `<span class="line">כתובת: ${escapeHtmlS(d.address)}</span>` : ""}
+        ` : `<p>פרטו כאן טלפון, מייל וכתובת.</p>`}
+      </div></section>` : ""}
+    `;
+  }
+  const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
+  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${header}${main}${footer}`);
+}
+
 const SITE_TEMPLATES = {
   "local-service": { label: "עסק שירות מקומי", desc: "Hero גדול, כרטיסי שירותים, וואטסאפ צף", thumb: "images/previews/site-local-service.webp", render: renderLocalServiceSite },
   "freelancer": { label: "פרילנסר / יועץ", desc: "מינימלי וממורכז, מתאים למותג אישי", thumb: "images/previews/site-freelancer.webp", render: renderFreelancerSite },
   "catalog": { label: "קטלוג קטן", desc: "רשת מוצרים עם תגי מחיר וניווט עליון", thumb: "images/previews/site-catalog.webp", render: renderCatalogSite },
   "gallery": { label: "גלריה מודרנית", desc: "תמונה מלאה ברקע, עיצוב עיתונאי ואלגנטי", thumb: "images/previews/site-gallery.webp", render: renderGallerySite },
+  "bold": { label: "נועז ומודרני", desc: "מסגרות עבות, צללים חדים, טיפוגרפיה גדולה", thumb: "images/previews/site-bold.webp", render: renderBoldSite },
 };
