@@ -39,7 +39,28 @@ function siteBaseCss() {
     .site-search-input { width:100%; max-width:360px; padding:11px 18px; border-radius:24px; border:1.5px solid #E2E2E2; font-family:inherit; font-size:14px; }
     .site-search-input:focus { outline:none; border-color:#BBB; }
     .site-search-empty { text-align:center; color:#888; font-size:14px; padding:26px 0; }
+    .site-hero-photo { display:block; margin:26px auto 0; border-radius:18px; max-width:320px; width:100%; box-shadow:0 18px 40px rgba(0,0,0,.25); }
+    .site-hero-photo.round { border-radius:50%; width:132px; height:132px; object-fit:cover; margin:0 auto 18px; }
+    .site-video-wrap { position:relative; padding-bottom:56.25%; height:0; overflow:hidden; border-radius:14px; box-shadow:0 16px 34px rgba(0,0,0,.14); max-width:780px; margin:0 auto; }
+    .site-video-wrap iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
   `;
+}
+
+/* YouTube/Vimeo only — a raw uploaded video file would balloon a
+   few-KB static site into tens of MB, exactly the "heavy" tradeoff a
+   link avoids. Returns null for anything else so the section is simply
+   skipped rather than embedding a broken player. */
+function videoEmbedSrc(url) {
+  if (!url) return null;
+  const u = String(url).trim();
+  let m = u.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{6,})/);
+  if (m) return `https://www.youtube.com/embed/${m[1]}`;
+  m = u.match(/vimeo\.com\/(\d+)/);
+  if (m) return `https://player.vimeo.com/video/${m[1]}`;
+  return null;
+}
+function videoEmbedHtml(embedSrc) {
+  return `<div class="site-video-wrap"><iframe src="${embedSrc}" title="סרטון" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
 }
 function waFabHtml(d) {
   const href = waLink(d.whatsapp || d.phone);
@@ -175,6 +196,7 @@ function renderLocalServiceSite(d, page) {
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
   const cta = primaryCtaHref(d, page);
+  const embedSrc = videoEmbedSrc(d.videoUrl);
   const css = `
     .ls-header { background:#fff; border-bottom:1px solid #EEE; padding:16px 0; }
     .ls-header .row { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
@@ -250,6 +272,7 @@ function renderLocalServiceSite(d, page) {
         <h1>${escapeHtmlS(dd.businessName)}</h1>
         <p>${escapeHtmlS(dd.tagline)}</p>
         ${ctaHtml(cta, "ls-cta")}
+        ${d.heroImage ? `<img class="site-hero-photo" src="${d.heroImage}" alt="">` : ""}
       </div></section>
       <section class="ls-section"><div class="container">
         <div class="head"><span class="eyebrow">מה אנחנו מציעים</span><h2>השירותים שלנו</h2>
@@ -258,6 +281,10 @@ function renderLocalServiceSite(d, page) {
           <div class="ls-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><div class="num">${String(i + 1).padStart(2, "0")}</div><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price-tag">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
         ${showSearch ? searchScriptHtml() : ""}
       </div></section>
+      ${embedSrc ? `<section class="ls-section" style="padding-top:0;"><div class="container">
+        <div class="head"><span class="eyebrow">סרטון</span><h2>הכירו אותנו</h2></div>
+        ${videoEmbedHtml(embedSrc)}
+      </div></section>` : ""}
       ${(!d.pages || !d.pages.about) ? `<section class="ls-about"><div class="container"><span class="eyebrow" style="background:#fff; color:#${pal.primaryDark};">מי אנחנו</span><h2>קצת עלינו</h2><p>${nl2brS(dd.about)}</p></div></section>` : ""}
       ${(!d.pages || !d.pages.contact) ? `<section class="ls-contact"><div class="container">
         <h2>יצירת קשר</h2>
@@ -280,6 +307,7 @@ function renderFreelancerSite(d, page) {
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
+  const embedSrc = videoEmbedSrc(d.videoUrl);
   const css = `
     .fr-nav { background:#fff; border-bottom:1px solid #EEE; padding:14px 0; }
     .fr-nav .row { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
@@ -333,6 +361,7 @@ function renderFreelancerSite(d, page) {
     const services = dd._services;
     main = `
       <section class="fr-hero">
+        ${d.heroImage ? `<img class="site-hero-photo round" src="${d.heroImage}" alt="">` : ""}
         <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "פרילנסר / יועץ"}</span>
         <div class="fr-name">${escapeHtmlS(dd.businessName)}</div>
         <div class="fr-role">${escapeHtmlS(dd.tagline)}</div>
@@ -341,6 +370,7 @@ function renderFreelancerSite(d, page) {
         <p class="fr-about">${nl2brS(dd.about)}</p>
         <div class="fr-tags">${services.map((s) => `<span class="fr-tag">${escapeHtmlS(s.name)}</span>`).join("")}</div>
       </div>
+      ${embedSrc ? `<div class="fr-body" style="padding-top:0;">${videoEmbedHtml(embedSrc)}</div>` : ""}
       <section class="fr-cta">
         <h2>בואו נדבר</h2>
         ${wa ? `<a class="btn" href="${wa}" target="_blank" rel="noopener">וואטסאפ</a>` : ""}
@@ -360,6 +390,7 @@ function renderCatalogSite(d, page) {
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
+  const embedSrc = videoEmbedSrc(d.videoUrl);
   const css = `
     .cat-nav { background:#fff; border-bottom:1px solid #EEE; padding:16px 0; }
     .cat-nav .row { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
@@ -429,6 +460,7 @@ function renderCatalogSite(d, page) {
         <h1>${escapeHtmlS(dd.businessName)}</h1>
         <p>${escapeHtmlS(dd.tagline)}</p>
         <div class="stats">${services.length} מוצרים/שירותים זמינים</div>
+        ${d.heroImage ? `<img class="site-hero-photo" src="${d.heroImage}" alt="">` : ""}
       </div></section>
       <div class="container">
         ${showSearch ? searchBoxHtml("#cat-grid", "חיפוש מוצר או שירות...") : ""}
@@ -440,6 +472,7 @@ function renderCatalogSite(d, page) {
           </div></div>`).join("")}</div>
         ${showSearch ? searchScriptHtml() : ""}
       </div>
+      ${embedSrc ? `<div class="container"><div style="padding:36px 0;">${videoEmbedHtml(embedSrc)}</div></div>` : ""}
       ${(!d.pages || !d.pages.about) ? `<div class="cat-about">${nl2brS(dd.about)}</div>` : ""}
     `;
   }

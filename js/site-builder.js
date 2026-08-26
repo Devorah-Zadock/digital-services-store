@@ -28,6 +28,8 @@ const SITE_DEFAULT = {
   address: "",
   services: [{ name: "", desc: "", price: "" }],
   pages: { about: false, contact: false },
+  heroImage: "",
+  videoUrl: "",
 };
 
 let siteState = { template: "local-service", data: JSON.parse(JSON.stringify(SITE_DEFAULT)) };
@@ -88,7 +90,16 @@ function renderFormValues() {
   document.getElementById("s-address").value = d.address;
   document.getElementById("s-page-about").checked = d.pages.about;
   document.getElementById("s-page-contact").checked = d.pages.contact;
+  document.getElementById("s-video").value = d.videoUrl || "";
+  renderPhotoPreview();
   renderServicesList();
+}
+
+function renderPhotoPreview() {
+  const el = document.getElementById("s-photo-preview");
+  el.innerHTML = siteState.data.heroImage
+    ? `<img src="${siteState.data.heroImage}" alt="">`
+    : `<span class="site-photo-placeholder">🖼️</span>`;
 }
 
 function enabledSitePages() {
@@ -155,6 +166,33 @@ function wireForm() {
   });
   document.getElementById("s-color").addEventListener("input", (e) => {
     siteState.data.primaryColor = e.target.value;
+    renderSitePreview();
+  });
+
+  document.getElementById("s-photo").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 6 * 1024 * 1024) {
+      alert("התמונה גדולה מדי — בחרו קובץ עד 6MB.");
+      e.target.value = "";
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      siteState.data.heroImage = reader.result;
+      renderPhotoPreview();
+      renderSitePreview();
+    };
+    reader.readAsDataURL(file);
+  });
+  document.getElementById("s-photo-remove").addEventListener("click", () => {
+    siteState.data.heroImage = "";
+    document.getElementById("s-photo").value = "";
+    renderPhotoPreview();
+    renderSitePreview();
+  });
+  document.getElementById("s-video").addEventListener("input", (e) => {
+    siteState.data.videoUrl = e.target.value;
     renderSitePreview();
   });
 
