@@ -318,7 +318,7 @@ form.contact-form { display: grid; gap: 16px; max-width: 560px; margin: 0 auto; 
 
 /* ---------- Footer ---------- */
 footer.site { background: linear-gradient(180deg, var(--teal-dark), #102921); color: #CFE3DC; padding: 50px 0 26px; margin-top: 60px; }
-.footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px; margin-bottom: 30px; }
+.footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 30px; }
 .footer-grid h5 { color: var(--white); font-size: 15px; margin: 0 0 14px; }
 .footer-grid ul { list-style: none; padding: 0; display: grid; gap: 8px; font-size: 14px; }
 .footer-grid ul a { transition: color .15s ease; }
