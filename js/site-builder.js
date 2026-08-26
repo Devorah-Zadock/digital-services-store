@@ -64,23 +64,61 @@ function renderServicesList() {
     siteState.data.services.map((s, i) => serviceItemHtml(s, i, siteState.data.services.length)).join("");
 }
 
-function renderTplButtons() {
-  const row = document.getElementById("tpl-row");
-  row.innerHTML = Object.entries(SITE_TEMPLATES).map(([key, t]) =>
-    `<div class="site-tpl-card${key === siteState.template ? " active" : ""}" data-tpl="${key}" role="button" tabindex="0">
-      <img src="${t.thumb}" alt="${escapeHtmlS(t.label)}" loading="lazy">
-      <div class="info"><div class="name">${escapeHtmlS(t.label)}</div><div class="desc">${escapeHtmlS(t.desc)}</div></div>
-    </div>`
-  ).join("");
-  row.querySelectorAll(".site-tpl-card").forEach((card) => {
-    const pick = () => {
-      siteState.template = card.dataset.tpl;
-      renderTplButtons();
-      renderSitePreview();
-    };
-    card.addEventListener("click", pick);
-    card.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+/* Full catalog-style browser for the 5 site templates — same card/tab
+   markup as the CV catalog (js/catalog.js), reusing its CSS wholesale
+   rather than the old cramped in-sidebar picker. Each card links to
+   sites.html?template=KEY, a real navigation (mirrors product.html ->
+   builder.html?template=) so the wizard below can just read it from
+   the URL on load like the CV builder already does. */
+function siteTplCardHtml(key, t) {
+  return `
+    <div class="card" data-cat="${t.categorySlug}">
+      <div class="thumb"><img src="${t.thumb}" alt="${escapeHtmlS(t.label)}" loading="lazy"></div>
+      <div class="body">
+        <div class="card-meta">
+          <span class="tag">${escapeHtmlS(t.category)}</span>
+          <span class="price">99 ₪</span>
+        </div>
+        <h3>${escapeHtmlS(t.label)}</h3>
+        <p style="font-size:13px; color:var(--grey); margin:0; flex:1;">${escapeHtmlS(t.desc)}</p>
+        <a href="sites.html?template=${key}" class="btn btn-teal card-cta">בחירה ועריכה</a>
+      </div>
+    </div>`;
+}
+
+function renderTplCatalog() {
+  const tabsEl = document.getElementById("site-tpl-tabs");
+  const gridEl = document.getElementById("site-tpl-grid");
+  tabsEl.innerHTML = SITE_CATEGORIES.map((c) => `<button class="tab" data-cat="${c.slug}">${escapeHtmlS(c.label)}</button>`).join("");
+  let active = "all";
+  function apply() {
+    tabsEl.querySelectorAll(".tab").forEach((btn) => btn.classList.toggle("active", btn.dataset.cat === active));
+    const entries = Object.entries(SITE_TEMPLATES).filter(([, t]) => active === "all" || t.categorySlug === active);
+    gridEl.innerHTML = entries.map(([key, t]) => siteTplCardHtml(key, t)).join("");
+  }
+  tabsEl.querySelectorAll(".tab").forEach((btn) => {
+    btn.addEventListener("click", () => { active = btn.dataset.cat; apply(); });
   });
+  apply();
+}
+
+function renderCurrentTplInfo() {
+  const t = SITE_TEMPLATES[siteState.template];
+  document.getElementById("current-tpl-info").textContent = t ? t.label : "";
+}
+
+function showCatalog() {
+  document.getElementById("tpl-catalog-section").style.display = "";
+  document.getElementById("wizard-section").style.display = "none";
+  renderTplCatalog();
+}
+
+function showWizard() {
+  document.getElementById("tpl-catalog-section").style.display = "none";
+  document.getElementById("wizard-section").style.display = "";
+  renderCurrentTplInfo();
+  renderFormValues();
+  renderSitePreview();
 }
 
 function renderFormValues() {
@@ -308,9 +346,7 @@ function loadDataFromFile(file) {
       siteState = parsed;
       ensurePagesShape(siteState.data);
       previewPage = "index";
-      renderTplButtons();
-      renderFormValues();
-      renderSitePreview();
+      showWizard();
       note.textContent = "הנתונים נטענו בהצלחה!";
       note.style.color = "var(--teal)";
     } catch (err) {
@@ -360,16 +396,32 @@ async function verifySiteLicense() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  const params = new URLSearchParams(location.search);
+  const urlTemplate = params.get("template");
+  const forceBrowse = params.get("browse") === "1";
+
   const saved = loadSiteState();
   if (saved) siteState = saved;
   ensurePagesShape(siteState.data);
+  const hasSavedContent = !!(saved && (saved.data.businessName || (saved.data.services || []).some((s) => s.name)));
 
   document.getElementById("buy-link").href = SITE_GUMROAD_CONFIG.checkoutUrl;
-  renderTplButtons();
-  renderFormValues();
   wireForm();
-  renderSitePreview();
   refreshUnlockUI();
+
+  // Same discovery flow as the CV catalog: browse a real catalog of
+  // templates first, land straight in the wizard only when arriving via
+  // a template link or continuing a session that already has content.
+  if (urlTemplate && SITE_TEMPLATES[urlTemplate]) {
+    siteState.template = urlTemplate;
+    showWizard();
+  } else if (forceBrowse) {
+    showCatalog();
+  } else if (hasSavedContent) {
+    showWizard();
+  } else {
+    showCatalog();
+  }
 
   document.getElementById("verify-btn").addEventListener("click", verifySiteLicense);
   document.getElementById("download-zip-btn").addEventListener("click", downloadSiteZip);

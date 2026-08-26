@@ -692,10 +692,18 @@ function renderBoldSite(d, page) {
   return siteDoc({ title: titles[page], description: dd.tagline, css }, `${header}${main}${footer}`);
 }
 
+const SITE_CATEGORIES = [
+  { slug: "all", label: "הכל" },
+  { slug: "service", label: "עסקי שירות" },
+  { slug: "personal", label: "תדמית אישית" },
+  { slug: "shop", label: "קטלוג ומכירות" },
+  { slug: "creative", label: "עיצובי ויצירתי" },
+];
+
 const SITE_TEMPLATES = {
-  "local-service": { label: "עסק שירות מקומי", desc: "Hero גדול, כרטיסי שירותים, וואטסאפ צף", thumb: "images/previews/site-local-service.webp", render: renderLocalServiceSite },
-  "freelancer": { label: "פרילנסר / יועץ", desc: "מינימלי וממורכז, מתאים למותג אישי", thumb: "images/previews/site-freelancer.webp", render: renderFreelancerSite },
-  "catalog": { label: "קטלוג קטן", desc: "רשת מוצרים עם תגי מחיר וניווט עליון", thumb: "images/previews/site-catalog.webp", render: renderCatalogSite },
-  "gallery": { label: "גלריה מודרנית", desc: "תמונה מלאה ברקע, עיצוב עיתונאי ואלגנטי", thumb: "images/previews/site-gallery.webp", render: renderGallerySite },
-  "bold": { label: "נועז ומודרני", desc: "מסגרות עבות, צללים חדים, טיפוגרפיה גדולה", thumb: "images/previews/site-bold.webp", render: renderBoldSite },
+  "local-service": { label: "עסק שירות מקומי", category: "עסקי שירות", categorySlug: "service", desc: "Hero גדול, כרטיסי שירותים, וואטסאפ צף", thumb: "images/previews/site-local-service.webp", render: renderLocalServiceSite },
+  "freelancer": { label: "פרילנסר / יועץ", category: "תדמית אישית", categorySlug: "personal", desc: "מינימלי וממורכז, מתאים למותג אישי", thumb: "images/previews/site-freelancer.webp", render: renderFreelancerSite },
+  "catalog": { label: "קטלוג קטן", category: "קטלוג ומכירות", categorySlug: "shop", desc: "רשת מוצרים עם תגי מחיר וניווט עליון", thumb: "images/previews/site-catalog.webp", render: renderCatalogSite },
+  "gallery": { label: "גלריה מודרנית", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "תמונה מלאה ברקע, עיצוב עיתונאי ואלגנטי", thumb: "images/previews/site-gallery.webp", render: renderGallerySite },
+  "bold": { label: "נועז ומודרני", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "מסגרות עבות, צללים חדים, טיפוגרפיה גדולה", thumb: "images/previews/site-bold.webp", render: renderBoldSite },
 };

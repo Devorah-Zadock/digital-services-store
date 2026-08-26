@@ -14,17 +14,6 @@
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/builder.css">
 <style>
-  .site-tpl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-  .site-tpl-card {
-    border: 2px solid #DDE4E1; border-radius: 10px; overflow: hidden; cursor: pointer; background: var(--white);
-    transition: border-color .15s ease;
-  }
-  .site-tpl-card img { width: 100%; height: 68px; object-fit: cover; display: block; }
-  .site-tpl-card .info { padding: 8px 10px; }
-  .site-tpl-card .name { font-size: 12.5px; font-weight: 700; color: var(--dark); margin-bottom: 2px; }
-  .site-tpl-card .desc { font-size: 10.5px; color: var(--grey); line-height: 1.35; }
-  .site-tpl-card.active { border-color: var(--teal); }
-  .site-tpl-card.active .name { color: var(--teal-dark); }
   .services-item { border: 1px solid #EDEFEE; border-radius: 8px; padding: 12px; margin-bottom: 12px; display: grid; gap: 8px; }
   .services-item-head { display: flex; justify-content: space-between; align-items: center; }
   .services-item input { min-width: 0; }
@@ -70,23 +59,34 @@
 <section class="builder-top no-print">
   <div class="container">
     <h1 style="font-size:26px; margin:6px 0 4px;">בניית אתר עסקי</h1>
-    <p style="color:var(--grey); font-size:14px; margin:0;">ממלאים את פרטי העסק, בוחרים עיצוב, ורואים תצוגה חיה. ההורדה של קובצי האתר המוכנים היא בתשלום חד-פעמי — בלי מנוי חודשי.</p>
+    <p style="color:var(--grey); font-size:14px; margin:0;">בוחרים עיצוב, ממלאים את פרטי העסק, ורואים תצוגה חיה. ההורדה של קובצי האתר המוכנים היא בתשלום חד-פעמי — בלי מנוי חודשי.</p>
   </div>
 </section>
 
+<section class="no-print" id="tpl-catalog-section">
+  <div class="container">
+    <div class="tabs" id="site-tpl-tabs"></div>
+    <div class="grid" id="site-tpl-grid"></div>
+  </div>
+</section>
+
+<div id="wizard-section" style="display:none;">
 <div class="container builder-wrap">
   <aside class="builder-form no-print">
+    <div class="field">
+      <label>עיצוב נבחר</label>
+      <div id="current-tpl-info" style="font-size:14px; font-weight:700; color:var(--teal-dark); margin-bottom:6px;"></div>
+      <a href="sites.html?browse=1" class="btn-mini">שינוי תבנית</a>
+    </div>
+
+    <hr class="sep">
+
     <div class="field" style="background:var(--ice); border-radius:8px; padding:12px;">
       <label style="margin-bottom:4px;">כבר בניתם אתר כאן בעבר?</label>
       <p style="font-size:12px; color:var(--grey); margin:0 0 8px;">בתוך קובץ ה-ZIP שהורדתם יש גם קובץ בשם <b>site-data.json</b>. אם שמרתם אותו, אפשר לטעון אותו כאן וכל הפרטים יחזרו בדיוק כמו שהיו — גם ממחשב אחר.</p>
       <label class="btn-mini" for="load-data-file" style="display:inline-block; cursor:pointer;">טעינת קובץ נתונים</label>
       <input type="file" id="load-data-file" accept="application/json" style="display:none;">
       <div id="load-data-note" style="font-size:12px; margin-top:6px;"></div>
-    </div>
-
-    <div class="field">
-      <label>עיצוב האתר</label>
-      <div class="site-tpl-grid" id="tpl-row"></div>
     </div>
 
     <hr class="sep">
@@ -173,6 +173,7 @@
       </div>
     </div>
   </main>
+</div>
 </div>
 
 <footer class="site no-print">
