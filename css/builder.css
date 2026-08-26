@@ -1,4 +1,4 @@
-.builder-top { background: var(--grey-light); padding: 22px 0; border-bottom: 1px solid #E6E9E7; }
+.builder-top { background: var(--ice); padding: 22px 0; border-bottom: 1px solid #DCE9E4; }
 .builder-top-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
 
 .builder-wrap {

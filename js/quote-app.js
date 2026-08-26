@@ -216,8 +216,15 @@ function showProfileEditor() {
 
 /* ---------- Boot / auth state routing ---------- */
 
+function markHeaderLoggedIn() {
+  const link = document.getElementById("nav-login-link");
+  link.textContent = "👤 התנתקות";
+  link.addEventListener("click", (e) => { e.preventDefault(); logout(); });
+}
+
 async function routeAfterAuth(user) {
   currentUser = user;
+  markHeaderLoggedIn();
   const { data } = await supabaseClient.from("profiles").select("*").eq("id", user.id).maybeSingle();
   if (data) {
     currentProfile = data;
