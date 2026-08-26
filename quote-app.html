@@ -17,7 +17,7 @@
   .qa-err { color: #B23; font-size: 13px; min-height: 18px; margin: 4px 0 8px; }
   .qa-topbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
   .qa-topbar .qa-account { font-size: 13px; color: var(--grey); display: flex; align-items: center; gap: 10px; }
-  .qa-topbar .qa-account button { background: none; border: none; color: var(--teal); font-weight: 700; cursor: pointer; font-family: inherit; font-size: 13px; padding: 0; }
+  .qa-topbar .qa-account button, .qa-topbar .qa-account a { background: none; border: none; color: var(--teal); font-weight: 700; cursor: pointer; font-family: inherit; font-size: 13px; padding: 0; text-decoration: none; }
 </style>
 </head>
 <body>
@@ -29,7 +29,7 @@
       <a href="index.html">בית</a>
       <a href="products.html">קטלוג</a>
       <a href="sites.html">בניית אתר</a>
-      <a href="quote-app.html" class="active">הצעות מחיר</a>
+      <a href="tools.html" class="active">כלים לעסק</a>
       <a href="about.html">אודות</a>
       <a href="contact.html">צור קשר</a>
     </div>
@@ -49,7 +49,11 @@
         <h1 style="font-size:26px; margin:6px 0 4px;">פרטי העסק שלכם</h1>
         <p style="color:var(--grey); font-size:14px; margin:0;">ממלאים פעם אחת — הפרטים האלה יופיעו אוטומטית בכל הצעת מחיר.</p>
       </div>
-      <div class="qa-account"><button type="button" id="qa-logout-1">התנתקות</button></div>
+      <div class="qa-account">
+        <a href="tools.html">← לכלים שלי</a>
+        <span>·</span>
+        <button type="button" id="qa-logout-1">התנתקות</button>
+      </div>
     </div>
   </section>
   <div class="container" style="max-width:520px; padding-bottom:60px;">
@@ -92,6 +96,8 @@
         <p style="color:var(--grey); font-size:14px; margin:0;">פרטי העסק כבר מולאו — משלימים את פרטי האירוע ורואים תצוגה חיה.</p>
       </div>
       <div class="qa-account">
+        <a href="tools.html">← לכלים שלי</a>
+        <span>·</span>
         <button type="button" id="qa-edit-profile">עריכת פרטי העסק</button>
         <span>·</span>
         <button type="button" id="qa-logout-2">התנתקות</button>

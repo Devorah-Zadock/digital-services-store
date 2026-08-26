@@ -37,7 +37,7 @@ function showSection(id) {
 
 async function logout() {
   await supabaseClient.auth.signOut();
-  window.location.href = "account.html?redirect=quote-app.html";
+  window.location.href = "tools.html";
 }
 
 /* ---------- Business profile ---------- */

@@ -4,7 +4,7 @@
    lands back here already authenticated), we send them straight there. */
 
 const params = new URLSearchParams(location.search);
-const redirectTarget = params.get("redirect") || "quote-app.html";
+const redirectTarget = params.get("redirect") || "tools.html";
 let authMode = "login"; // "login" | "signup"
 
 function setAuthMode(mode) {

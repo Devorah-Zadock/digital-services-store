@@ -3,26 +3,32 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>מדיניות — DeskKit</title>
+<title>כלים לעסק — DeskKit</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="description" content="מדיניות מכירה, ביטולים ופרטיות — DeskKit.">
+<meta name="description" content="הצעות מחיר, ובעתיד עוד כלים לניהול העסק — כולם במקום אחד, עם חשבון אחד.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
+<style>
+  .tool-card { position: relative; }
+  .tool-card .btn-mini { margin-top: 14px; }
+  .tool-card.soon { opacity: .55; }
+  .tool-card.soon .icon { filter: grayscale(1); }
+</style>
 </head>
 <body>
 
-<header class="site">
+<header class="site no-print">
   <nav class="nav">
     <a href="index.html" class="brand"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path class="bm-face" d="M6 3H14L18 7V20H6Z"/><path class="bm-fold" d="M14 3L14 7H18Z"/></svg>DeskKit</a>
     <div class="nav-links">
       <a href="index.html">בית</a>
       <a href="products.html">קטלוג</a>
       <a href="sites.html">בניית אתר</a>
-      <a href="tools.html">כלים לעסק</a>
+      <a href="tools.html" class="active">כלים לעסק</a>
       <a href="about.html">אודות</a>
       <a href="contact.html">צור קשר</a>
     </div>
@@ -33,30 +39,25 @@
 </header>
 
 <section class="hero" style="padding:60px 24px 70px;">
-  <h1 style="font-size:34px;">מדיניות</h1>
+  <h1 style="font-size:34px;">כלים לעסק שלכם</h1>
+  <p class="lead">חשבון אחד, וכל כלי הניהול העסקיים במקום אחד — מתחילים בהצעות מחיר, ומכאן והלאה.</p>
 </section>
 
 <section>
-  <div class="container" style="max-width:720px;">
-    <h3 style="color:var(--teal-dark);">מוצרים דיגיטליים וביטול עסקה</h3>
-    <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;">
-      כל המוצרים ב-DeskKit הם קבצים דיגיטליים (מסמכים, קובצי אתר) הנשלחים או מורדים באופן מיידי. בהתאם לחוק הגנת הצרכן, תשמ"א-1981, עסקה לרכישת תוכן דיגיטלי שנמסר לצרכן אינה ניתנת לביטול לאחר מסירתו — בדיוק כמו רכישת ספר דיגיטלי או קובץ מוזיקה. אנחנו עומדים מאחורי המוצרים שלנו: אם קובץ שקיבלתם פגום, לא נפתח, או לא תואם למה שתואר — כתבו לנו ונפתור את זה.
-    </p>
-
-    <h3 style="color:var(--teal-dark);">תיאור מוצרים</h3>
-    <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;">
-      אנחנו משתדלים שהתיאור של כל מוצר יהיה מדויק ועדכני. בבונה האתרים, התצוגה המקדימה החיה מציגה בדיוק את מה שתורידו — אין הפתעות בין מה שרואים למה שמקבלים.
-    </p>
-
-    <h3 style="color:var(--teal-dark);">פרטיות</h3>
-    <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;">
-      העריכה בבילדרים (קורות חיים, בניית אתר) מתבצעת כולה בדפדפן שלכם — שום פרט או תמונה שאתם מזינים לא נשלח לשרת שלנו, עד רגע ההורדה. פרטי קשר שאתם משאירים בטופס יצירת קשר משמשים אותנו רק כדי לחזור אליכם.
-    </p>
-
-    <h3 style="color:var(--teal-dark);">יצירת קשר</h3>
-    <p style="font-size:15.5px; color:var(--grey);">
-      שאלה, בעיה עם מוצר, או כל דבר אחר — <a href="contact.html" style="color:var(--teal); font-weight:600;">צרו קשר</a> ונחזור אליכם בהקדם.
-    </p>
+  <div class="container">
+    <div class="features">
+      <div class="feature tool-card">
+        <div class="icon">🧾</div>
+        <h4>הצעות מחיר</h4>
+        <p>נרשמים פעם אחת, שומרים את פרטי העסק והלוגו שלכם, ומכל כניסה חדשה יוצרים הצעת מחיר מוכנה תוך דקה.</p>
+        <a href="quote-app.html" class="btn btn-teal btn-mini">כניסה</a>
+      </div>
+      <div class="feature tool-card soon">
+        <div class="icon">📄</div>
+        <h4>חשבוניות</h4>
+        <p>בעבודה — יתווסף כאן בהמשך, עם אותו חשבון בדיוק.</p>
+      </div>
+    </div>
   </div>
 </section>
 
