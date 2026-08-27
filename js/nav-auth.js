@@ -61,7 +61,12 @@ function openNavDropdown(wrap, email) {
   });
   dd.querySelector(".nav-confirm-yes").addEventListener("click", async () => {
     await supabaseClient.auth.signOut();
-    window.location.href = "tools.html";
+    // Reload in place rather than jumping to a fixed page: a public page
+    // just re-renders with the logged-out header, and a gated page falls
+    // through to require-auth.js's own redirect — same as visiting it
+    // signed out in the first place. Never surprises the visitor by
+    // moving them away from wherever they actually were.
+    window.location.reload();
   });
 
   setTimeout(() => document.addEventListener("click", onNavOutsideClick, true), 0);
@@ -83,7 +88,8 @@ function applyNavAuthState(session) {
 
   if (session && session.user) {
     link.href = "#";
-    link.innerHTML = navIconSvg() + "<span>התנתקות</span>";
+    link.title = session.user.email;
+    link.innerHTML = navIconSvg() + "<span>חשבון</span>";
     link.onclick = (e) => {
       e.preventDefault();
       if (document.getElementById("nav-account-dropdown")) closeNavDropdown();
@@ -92,6 +98,7 @@ function applyNavAuthState(session) {
   } else {
     const here = location.pathname.split("/").pop() || "tools.html";
     link.href = "account.html?redirect=" + encodeURIComponent(here);
+    link.removeAttribute("title");
     link.innerHTML = navIconSvg() + "<span>כניסה</span>";
     link.onclick = null;
   }

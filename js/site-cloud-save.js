@@ -48,11 +48,17 @@ function applyFinalizedLockUI() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  const urlTemplate = new URLSearchParams(location.search).get("template");
+  const params = new URLSearchParams(location.search);
+  const urlTemplate = params.get("template");
+  const forceBrowse = params.get("browse") === "1";
 
   supabaseClient.auth.getSession().then(async ({ data }) => {
     const user = data.session && data.session.user;
-    if (user) {
+    // Explicitly asked to browse the catalog (no template picked yet) —
+    // nothing to resume, and resuming here would silently snap the page
+    // right back to the wizard the moment this async check resolves,
+    // making "שינוי תבנית" look like it does nothing.
+    if (user && !forceBrowse) {
       siteCurrentUserId = user.id;
 
       // A template named explicitly (arriving from a catalog card) means
