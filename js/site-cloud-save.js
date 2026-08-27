@@ -42,9 +42,18 @@ async function finalizeSiteProject() {
   applyFinalizedLockUI();
 }
 
+/* Once a project is paid for, there's no path from inside it back to
+   "pick a different template" — that's exactly the loophole that let
+   someone keep the same content and freely try (and fully preview) a
+   new template after only ever paying once. A genuinely different site
+   only starts from the top-level "בניית אתר" nav link, which always
+   opens the full catalog fresh (see the site-wide ?browse=1 links) and
+   the "האתרים שלי" rail there to get back to any existing project. */
 function applyFinalizedLockUI() {
   const note = document.getElementById("finalized-note");
   if (note) note.style.display = "";
+  const link = document.getElementById("change-template-link");
+  if (link) link.style.display = "none";
 }
 
 /* A project is named by its own business name (what the customer

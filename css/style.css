@@ -100,6 +100,18 @@ header.site {
 .nav-login { color: var(--grey); font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: flex-end; gap: 5px; min-width: 92px; transition: color .15s ease; }
 .nav-login.nav-login-pending { visibility: hidden; }
 .nav-login:hover { color: var(--teal-dark); }
+.nav-login-email { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: ltr; text-align: right; }
+
+/* Shared "switchable list" widget — the sites rail on sites.html and the
+   content dashboard on account-settings.html both use it. */
+.my-sites-rail { background: var(--white); border: 1px solid #EAEDEC; border-radius: var(--radius); padding: 14px; margin-bottom: 16px; }
+.my-sites-rail-title { font-size: 12.5px; font-weight: 700; color: var(--teal-dark); margin: 0 0 8px; }
+.my-sites-list { display: flex; flex-direction: column; gap: 2px; }
+.my-site-row { display: block; padding: 8px 10px; border-radius: 8px; text-decoration: none; color: var(--dark); transition: background .15s ease; }
+.my-site-row:hover { background: var(--grey-light); }
+.my-site-row.active { background: var(--ice); }
+.my-site-row-name { display: block; font-size: 13px; font-weight: 600; line-height: 1.4; }
+.my-site-row-tpl { display: block; font-size: 11px; color: var(--grey); line-height: 1.4; }
 .nav-account-wrap { position: relative; display: inline-flex; }
 .nav-account-dropdown {
   position: absolute; top: calc(100% + 10px); inset-inline-end: 0;

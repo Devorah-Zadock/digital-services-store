@@ -89,7 +89,7 @@ function applyNavAuthState(session) {
   if (session && session.user) {
     link.href = "#";
     link.title = session.user.email;
-    link.innerHTML = navIconSvg() + "<span>חשבון</span>";
+    link.innerHTML = navIconSvg() + `<span class="nav-login-email">${escapeHtmlNav(session.user.email)}</span>`;
     link.onclick = (e) => {
       e.preventDefault();
       if (document.getElementById("nav-account-dropdown")) closeNavDropdown();
