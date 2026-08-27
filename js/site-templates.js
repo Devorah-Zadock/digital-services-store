@@ -692,12 +692,246 @@ function renderBoldSite(d, page) {
   return siteDoc({ title: titles[page], description: dd.tagline, css }, `${header}${main}${footer}`);
 }
 
+/* ---------- Template 6: elegant split-hero (events / boutique) ---------- */
+function renderElegantSite(d, page) {
+  page = page || "index";
+  const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const dd = withFallback(d);
+  const wa = waLink(d.whatsapp || d.phone);
+  const navLinksHtml = siteNavLinks(d, page);
+  const cta = primaryCtaHref(d, page);
+  const embedSrc = videoEmbedSrc(d.videoUrl);
+  const hasPhoto = !!d.heroImage;
+  const css = `
+    .eg-nav { padding:26px 0; }
+    .eg-nav .row { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; }
+    .eg-nav .biz { font-family:'Frank Ruhl Libre',serif; font-weight:700; font-size:19px; letter-spacing:.02em; color:#${pal.primaryDark}; }
+    .eg-nav nav { display:flex; gap:22px; }
+    .eg-nav nav a { font-size:12.5px; font-weight:600; letter-spacing:.04em; color:#666; }
+    .eg-nav nav a.active { color:#${pal.primaryDark}; }
+    .eg-rule { width:56px; height:2px; background:#${pal.primary}; margin:0 auto; }
+
+    .eg-hero { display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:44px; padding:38px 0 78px; }
+    .eg-hero-text .eyebrow { background:none; padding:0; font-style:italic; font-weight:600; color:#${pal.primary}; letter-spacing:.03em; }
+    .eg-hero-text h1 { font-family:'Frank Ruhl Libre',serif; font-size:46px; line-height:1.18; margin:16px 0 18px; color:#1E1E1E; }
+    .eg-hero-text p { font-size:16px; color:#555; max-width:420px; margin:0 0 30px; }
+    .eg-cta { display:inline-block; border:1.5px solid #${pal.primaryDark}; color:#${pal.primaryDark}; font-weight:700; font-size:13.5px; letter-spacing:.04em; padding:14px 32px; }
+    .eg-hero-photo-wrap { position:relative; }
+    .eg-hero-photo-wrap img { width:100%; aspect-ratio:4/5; object-fit:cover; }
+    .eg-hero-photo-wrap::after { content:""; position:absolute; inset:16px auto auto 16px; width:100%; height:100%; border:1.5px solid #${pal.primary}; z-index:-1; }
+    .eg-hero-noPhoto { text-align:center; padding:30px 0 10px; }
+    .eg-hero-noPhoto .eg-hero-text { margin:0 auto; }
+    .eg-hero-noPhoto .eg-hero-text p { margin-inline:auto; }
+    @media (max-width:760px) { .eg-hero { grid-template-columns:1fr; padding-bottom:50px; } .eg-hero-text h1 { font-size:34px; } }
+
+    .eg-section { padding:70px 0; }
+    .eg-section-head { text-align:center; margin-bottom:44px; }
+    .eg-kicker { font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#${pal.primary}; }
+    .eg-section-head h2 { font-family:'Frank Ruhl Libre',serif; font-size:31px; margin:12px 0 0; color:#1E1E1E; }
+    .eg-offerings { max-width:760px; margin:0 auto; }
+    .eg-offer { display:flex; justify-content:space-between; align-items:baseline; gap:20px; padding:22px 0; border-bottom:1px solid #E7E2D8; }
+    .eg-offer:first-child { border-top:1px solid #E7E2D8; }
+    .eg-offer-main h3 { margin:0 0 6px; font-size:18px; font-weight:700; color:#1E1E1E; }
+    .eg-offer-main p { margin:0; font-size:13.5px; color:#777; max-width:480px; }
+    .eg-offer .price { font-weight:700; color:#${pal.primaryDark}; font-size:15px; white-space:nowrap; }
+
+    .eg-about { background:#${pal.ice}; padding:76px 0; text-align:center; }
+    .eg-about blockquote { font-family:'Frank Ruhl Libre',serif; font-style:italic; font-size:23px; line-height:1.7; max-width:680px; margin:0 auto; color:#${pal.primaryDark}; }
+
+    .eg-contact { padding:70px 0; text-align:center; }
+    .eg-contact .line { font-size:15px; color:#555; margin-bottom:8px; }
+    .eg-footer { border-top:1px solid #EEE; padding:26px 0; text-align:center; font-size:11.5px; letter-spacing:.04em; color:#999; }
+  `;
+  const header = `
+    <header class="eg-nav"><div class="container row">
+      <div class="biz">${escapeHtmlS(dd.businessName)}</div>
+      ${navLinksHtml ? `<nav>${navLinksHtml}</nav>` : ""}
+    </div></header>`;
+  const footer = `<div class="eg-footer">© ${new Date().getFullYear()} ${escapeHtmlS(dd.businessName)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
+
+  let main;
+  if (page === "about") {
+    main = `
+      <div class="container"><div class="eg-rule" style="margin:36px auto 0;"></div></div>
+      <section class="eg-about"><div class="container"><blockquote>${nl2brS(dd.about)}</blockquote></div></section>`;
+  } else if (page === "contact") {
+    main = `
+      <section class="eg-contact"><div class="container">
+        <span class="eg-kicker">נשמח לשמוע מכם</span>
+        <h2 style="font-family:'Frank Ruhl Libre',serif; font-size:30px; margin:12px 0 26px;">יצירת קשר</h2>
+        ${dd._hasContact ? `
+          ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
+          ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
+          ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
+        ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת ליצירת קשר.</div>`}
+        ${wa ? `<a class="eg-cta" style="margin-top:16px;" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}
+      </div></section>`;
+  } else {
+    const showSearch = dd._services.length >= 3;
+    main = `
+      <section class="eg-hero ${hasPhoto ? "" : "eg-hero-noPhoto"}"><div class="container" style="${hasPhoto ? "display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:44px;" : ""}">
+        ${hasPhoto ? `
+          <div class="eg-hero-text">
+            <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "עסק בוטיק"}</span>
+            <h1>${escapeHtmlS(dd.businessName)}</h1>
+            <p>${escapeHtmlS(dd.tagline)}</p>
+            ${ctaHtml(cta, "eg-cta")}
+          </div>
+          <div class="eg-hero-photo-wrap"><img src="${d.heroImage}" alt=""></div>
+        ` : `
+          <div class="eg-hero-text">
+            <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "עסק בוטיק"}</span>
+            <h1>${escapeHtmlS(dd.businessName)}</h1>
+            <p>${escapeHtmlS(dd.tagline)}</p>
+            ${ctaHtml(cta, "eg-cta")}
+          </div>
+        `}
+      </div></section>
+      <section class="eg-section" style="padding-top:0;"><div class="container">
+        <div class="eg-section-head"><span class="eg-kicker">מה אנחנו מציעים</span><h2>השירותים שלנו</h2>
+        ${showSearch ? searchBoxHtml("#eg-offerings", "חיפוש שירות...") : ""}</div>
+        <div class="eg-offerings" id="eg-offerings">${dd._services.map((s) => `
+          <div class="eg-offer" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}">
+            <div class="eg-offer-main"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}</div>
+            ${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}
+          </div>`).join("")}</div>
+        ${showSearch ? searchScriptHtml() : ""}
+      </div></section>
+      ${embedSrc ? `<div class="container"><div style="padding:0 0 50px;">${videoEmbedHtml(embedSrc)}</div></div>` : ""}
+      ${(!d.pages || !d.pages.about) ? `<section class="eg-about"><div class="container"><span class="eg-kicker">מי אנחנו</span><blockquote style="margin-top:18px;">${nl2brS(dd.about)}</blockquote></div></section>` : ""}
+      ${(!d.pages || !d.pages.contact) ? `<section class="eg-contact"><div class="container">
+        <span class="eg-kicker">נשמח לשמוע מכם</span>
+        <h2 style="font-family:'Frank Ruhl Libre',serif; font-size:30px; margin:12px 0 26px;">יצירת קשר</h2>
+        ${dd._hasContact ? `
+          ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
+          ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
+          ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
+        ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת.</div>`}
+      </div></section>` : ""}
+    `;
+  }
+  const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
+  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${header}${main}${footer}`);
+}
+
+/* ---------- Template 7: process / how-we-work ---------- */
+function renderProcessSite(d, page) {
+  page = page || "index";
+  const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const dd = withFallback(d);
+  const wa = waLink(d.whatsapp || d.phone);
+  const navLinksHtml = siteNavLinks(d, page);
+  const cta = primaryCtaHref(d, page);
+  const embedSrc = videoEmbedSrc(d.videoUrl);
+  const css = `
+    .pr-nav { background:#fff; border-bottom:1px solid #EEE; padding:16px 0; }
+    .pr-nav .row { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+    .pr-nav .biz { font-family:'Frank Ruhl Libre',serif; font-size:19px; font-weight:700; color:#${pal.primaryDark}; }
+    .pr-nav nav { display:flex; gap:18px; }
+    .pr-nav nav a { font-size:13.5px; font-weight:600; color:#555; }
+    .pr-nav nav a.active { color:#${pal.primaryDark}; }
+
+    .pr-hero { text-align:center; padding:84px 0 60px; background:#${pal.ice}; }
+    .pr-hero .eyebrow { background:#fff; color:#${pal.primaryDark}; margin-bottom:20px; }
+    .pr-hero h1 { font-family:'Frank Ruhl Libre',serif; font-size:44px; font-weight:700; margin:0 0 16px; color:#1E1E1E; }
+    .pr-hero p { font-size:16.5px; color:#555; max-width:520px; margin:0 auto 30px; }
+    .pr-cta { display:inline-block; background:#${pal.primary}; color:#fff; font-weight:800; padding:15px 34px; border-radius:6px; font-size:14.5px; }
+
+    .pr-steps { padding:74px 0; }
+    .pr-steps-head { text-align:center; margin-bottom:50px; }
+    .pr-steps-head .eyebrow { background:#${pal.ice}; color:#${pal.primaryDark}; margin-bottom:14px; }
+    .pr-steps-head h2 { font-family:'Frank Ruhl Libre',serif; font-size:31px; margin:0; color:#1E1E1E; }
+    .pr-timeline { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:0; position:relative; }
+    .pr-step { position:relative; padding:0 20px; text-align:center; }
+    .pr-step .circle { width:52px; height:52px; border-radius:50%; background:#${pal.primary}; color:#fff; font-weight:800; font-size:18px;
+      display:flex; align-items:center; justify-content:center; margin:0 auto 18px; position:relative; z-index:1; }
+    .pr-step h3 { font-size:16.5px; font-weight:700; margin:0 0 8px; color:#1E1E1E; }
+    .pr-step p { font-size:13.5px; color:#666; margin:0; }
+    .pr-step .price { display:block; margin-top:8px; font-weight:800; color:#${pal.primaryDark}; font-size:14px; }
+    .pr-timeline::before { content:""; position:absolute; top:26px; inset-inline-start:8%; inset-inline-end:8%; height:2px; background:#${pal.ice}; z-index:0; }
+    @media (max-width:640px) { .pr-timeline::before { display:none; } }
+
+    .pr-about { background:#${pal.primaryDark}; color:#fff; padding:64px 0; text-align:center; }
+    .pr-about .eyebrow { background:rgba(255,255,255,.15); color:#fff; margin-bottom:16px; }
+    .pr-about p { font-size:17px; max-width:660px; margin:0 auto; line-height:1.75; opacity:.95; }
+
+    .pr-contact { padding:64px 0; text-align:center; }
+    .pr-contact h2 { font-family:'Frank Ruhl Libre',serif; font-size:28px; margin:0 0 22px; color:#1E1E1E; }
+    .pr-contact .line { font-size:15px; color:#555; margin-bottom:6px; }
+    .pr-footer { padding:22px 0; text-align:center; font-size:12px; color:#999; border-top:1px solid #EEE; }
+  `;
+  const header = `
+    <header class="pr-nav"><div class="container row">
+      <div class="biz">${escapeHtmlS(dd.businessName)}</div>
+      ${navLinksHtml ? `<nav>${navLinksHtml}</nav>` : ""}
+    </div></header>`;
+  const footer = `<div class="pr-footer">© ${new Date().getFullYear()} ${escapeHtmlS(dd.businessName)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
+
+  let main;
+  if (page === "about") {
+    main = `
+      <section class="pr-hero" style="padding:70px 0 54px;"><div class="container">
+        <span class="eyebrow">מי אנחנו</span><h1 style="font-size:36px;">${escapeHtmlS(dd.businessName)}</h1>
+      </div></section>
+      <section class="pr-about"><div class="container"><p>${nl2brS(dd.about)}</p></div></section>`;
+  } else if (page === "contact") {
+    main = `
+      <section class="pr-hero" style="padding:70px 0 54px;"><div class="container">
+        <span class="eyebrow">נשמח לשמוע מכם</span><h1 style="font-size:36px;">יצירת קשר</h1>
+      </div></section>
+      <section class="pr-contact"><div class="container">
+        ${dd._hasContact ? `
+          ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
+          ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
+          ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
+        ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת ליצירת קשר.</div>`}
+        ${wa ? `<a class="pr-cta" style="margin-top:14px;" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}
+      </div></section>`;
+  } else {
+    const showSearch = dd._services.length >= 4;
+    main = `
+      <section class="pr-hero"><div class="container">
+        <span class="eyebrow">איך אנחנו עובדים</span>
+        <h1>${escapeHtmlS(dd.businessName)}</h1>
+        <p>${escapeHtmlS(dd.tagline)}</p>
+        ${ctaHtml(cta, "pr-cta")}
+        ${d.heroImage ? `<img class="site-hero-photo" src="${d.heroImage}" alt="">` : ""}
+      </div></section>
+      <section class="pr-steps"><div class="container">
+        <div class="pr-steps-head"><span class="eyebrow">התהליך שלנו</span><h2>שלב אחר שלב</h2>
+        ${showSearch ? searchBoxHtml("#pr-timeline", "חיפוש...") : ""}</div>
+        <div class="pr-timeline" id="pr-timeline">${dd._services.map((s, i) => `
+          <div class="pr-step" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}">
+            <div class="circle">${i + 1}</div>
+            <h3>${escapeHtmlS(s.name)}</h3>
+            ${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}
+            ${s.price ? `<span class="price">${escapeHtmlS(s.price)}</span>` : ""}
+          </div>`).join("")}</div>
+        ${showSearch ? searchScriptHtml() : ""}
+      </div></section>
+      ${embedSrc ? `<div class="container"><div style="padding:0 0 50px;">${videoEmbedHtml(embedSrc)}</div></div>` : ""}
+      ${(!d.pages || !d.pages.about) ? `<section class="pr-about"><div class="container"><span class="eyebrow">מי אנחנו</span><p>${nl2brS(dd.about)}</p></div></section>` : ""}
+      ${(!d.pages || !d.pages.contact) ? `<section class="pr-contact"><div class="container">
+        <h2>יצירת קשר</h2>
+        ${dd._hasContact ? `
+          ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
+          ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
+          ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
+        ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת.</div>`}
+      </div></section>` : ""}
+    `;
+  }
+  const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
+  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${header}${main}${footer}`);
+}
+
 const SITE_CATEGORIES = [
   { slug: "all", label: "הכל" },
   { slug: "service", label: "עסקי שירות" },
   { slug: "personal", label: "תדמית אישית" },
   { slug: "shop", label: "קטלוג ומכירות" },
   { slug: "creative", label: "עיצובי ויצירתי" },
+  { slug: "events", label: "אירועים ובוטיק" },
 ];
 
 const SITE_TEMPLATES = {
@@ -706,4 +940,6 @@ const SITE_TEMPLATES = {
   "catalog": { label: "קטלוג קטן", category: "קטלוג ומכירות", categorySlug: "shop", desc: "רשת מוצרים עם תגי מחיר וניווט עליון", thumb: "images/previews/site-catalog.webp", render: renderCatalogSite },
   "gallery": { label: "גלריה מודרנית", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "תמונה מלאה ברקע, עיצוב עיתונאי ואלגנטי", thumb: "images/previews/site-gallery.webp", render: renderGallerySite },
   "bold": { label: "נועז ומודרני", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "מסגרות עבות, צללים חדים, טיפוגרפיה גדולה", thumb: "images/previews/site-bold.webp", render: renderBoldSite },
+  "elegant": { label: "אלגנטי ומעוצב", category: "אירועים ובוטיק", categorySlug: "events", desc: "טיפוגרפיה עדינה, תמונה מפוצלת, מתאים לאירועים ועסקי בוטיק", thumb: "images/previews/site-elegant.webp", render: renderElegantSite },
+  "process": { label: "תהליך עבודה", category: "עסקי שירות", categorySlug: "service", desc: "ציר זמן ממוספר שמראה איך אתם עובדים, שלב אחר שלב", thumb: "images/previews/site-process.webp", render: renderProcessSite },
 };
