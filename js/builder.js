@@ -60,6 +60,7 @@ function renderPreview() {
   const html = renderCVHtml({ layout: tpl.layout, font, palette, content: state.content, lang: state.lang, textColor });
   document.getElementById("preview-doc").innerHTML = html;
   fitPreviewToContainer();
+  if (typeof scheduleCvSave === "function") scheduleCvSave();
 }
 
 /* The CV doc is always rendered at its true fixed A4 width (794px) so the
