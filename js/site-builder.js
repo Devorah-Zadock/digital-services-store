@@ -194,6 +194,7 @@ function renderSitePreview() {
   renderPreviewTabs();
   document.getElementById("site-preview-frame").srcdoc = currentSiteHtml(previewPage);
   saveSiteState();
+  if (typeof scheduleSiteSave === "function") scheduleSiteSave();
 }
 
 function wireForm() {
@@ -424,7 +425,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   document.getElementById("verify-btn").addEventListener("click", verifySiteLicense);
-  document.getElementById("download-zip-btn").addEventListener("click", downloadSiteZip);
+  document.getElementById("download-zip-btn").addEventListener("click", async () => {
+    if (typeof finalizeSiteProject === "function") await finalizeSiteProject();
+    downloadSiteZip();
+  });
 
   document.getElementById("load-data-file").addEventListener("change", (e) => {
     const file = e.target.files[0];
