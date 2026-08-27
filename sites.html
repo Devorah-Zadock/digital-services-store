@@ -37,6 +37,16 @@
     transition: border-color .15s ease, background .15s ease, color .15s ease;
   }
   .preview-tab-btn.active { border-color: var(--teal); background: var(--ice); color: var(--teal-dark); }
+  .my-sites-list { display: flex; flex-wrap: wrap; gap: 10px; }
+  .my-site-chip {
+    display: flex; align-items: center; gap: 8px; background: var(--white); border: 2px solid #DDE4E1;
+    border-radius: 20px; padding: 7px 14px; font-size: 13px; font-weight: 600; color: var(--dark);
+    text-decoration: none; transition: border-color .15s ease, background .15s ease, color .15s ease;
+  }
+  .my-site-chip:hover { border-color: var(--teal-light); }
+  .my-site-chip.active { border-color: var(--teal); background: var(--ice); color: var(--teal-dark); }
+  .my-site-chip-status { font-size: 11px; font-weight: 700; color: var(--grey); }
+  .my-site-chip.active .my-site-chip-status { color: var(--teal); }
 </style>
 </head>
 <body>
@@ -67,6 +77,13 @@
   <div class="container">
     <h1 style="font-size:26px; margin:6px 0 4px;">בניית אתר עסקי</h1>
     <p style="color:var(--grey); font-size:14px; margin:0;">בוחרים עיצוב, ממלאים את פרטי העסק, ורואים תצוגה חיה. ההורדה של קובצי האתר המוכנים היא בתשלום חד-פעמי — בלי מנוי חודשי.</p>
+  </div>
+</section>
+
+<section class="no-print" id="my-sites-section" style="display:none;">
+  <div class="container">
+    <h3 style="font-size:15px; margin:0 0 10px;">האתרים שלי</h3>
+    <div id="my-sites-list" class="my-sites-list"></div>
   </div>
 </section>
 
