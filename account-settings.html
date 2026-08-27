@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>החשבון שלי — DeskKit</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/builder.css">
+<style>
+  .as-section { max-width: 480px; margin: 0 auto 40px; padding: 28px; background: var(--white); border: 1px solid #EAEDEC; border-radius: var(--radius); box-shadow: var(--shadow); }
+  .as-section h3 { margin: 0 0 6px; color: var(--teal-dark); }
+  .as-section p.sub { font-size: 13.5px; color: var(--grey); margin: 0 0 18px; }
+  .as-danger { border-color: #F0D9D9; }
+  .as-danger h3 { color: #B23333; }
+  .as-msg { color: var(--teal-dark); font-size: 13px; min-height: 18px; margin: 4px 0 8px; }
+  .as-err { color: #B23333; font-size: 13px; min-height: 18px; margin: 4px 0 8px; }
+</style>
+</head>
+<body>
+
+<div id="auth-gate-overlay" class="auth-gate-overlay">
+  <div class="auth-gate-spinner"></div>
+  <p style="color:var(--grey); font-size:14px; margin:0;">בודקים חיבור…</p>
+</div>
+
+<header class="site no-print">
+  <nav class="nav">
+    <a href="index.html" class="brand"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path class="bm-face" d="M6 3H14L18 7V20H6Z"/><path class="bm-fold" d="M14 3L14 7H18Z"/></svg>DeskKit</a>
+    <div class="nav-links">
+      <a href="index.html">בית</a>
+      <a href="products.html">קטלוג</a>
+      <a href="sites.html">בניית אתר</a>
+      <a href="tools.html">כלים לעסק</a>
+      <a href="about.html">אודות</a>
+      <a href="contact.html">צור קשר</a>
+    </div>
+    <a href="account.html?redirect=tools.html" id="nav-login-link" class="nav-login nav-login-pending">כניסה</a>
+    <a href="products.html" class="nav-cta">לצפייה בקטלוג</a>
+    <button class="burger" aria-label="תפריט">☰</button>
+  </nav>
+</header>
+
+<section class="builder-top no-print">
+  <div class="container">
+    <h1 style="font-size:26px; margin:6px 0 4px;">החשבון שלי</h1>
+    <p style="color:var(--grey); font-size:14px; margin:0;">כתובת מייל: <b id="as-current-email" style="color:var(--teal-dark);"></b></p>
+  </div>
+</section>
+
+<div class="container" style="padding:40px 0;">
+  <div class="as-section">
+    <h3>שינוי כתובת מייל</h3>
+    <p class="sub">נשלח מייל אישור לכתובת החדשה לפני שהיא נכנסת לתוקף.</p>
+    <form id="as-email-form" class="builder-form">
+      <div class="field"><label>כתובת מייל חדשה</label><input type="email" id="as-new-email" dir="ltr" required></div>
+      <div class="as-err" id="as-email-err"></div>
+      <div class="as-msg" id="as-email-msg"></div>
+      <button type="submit" class="btn btn-teal" style="width:100%;">עדכון מייל</button>
+    </form>
+  </div>
+
+  <div class="as-section">
+    <h3>שינוי סיסמה</h3>
+    <p class="sub">גם אם נכנסתם עם Google — אפשר להוסיף סיסמה ככניסה חלופית.</p>
+    <form id="as-password-form" class="builder-form">
+      <div class="field"><label>סיסמה חדשה</label><input type="password" id="as-new-password" autocomplete="new-password" required minlength="6"></div>
+      <div class="field"><label>אימות סיסמה</label><input type="password" id="as-new-password-confirm" autocomplete="new-password" required minlength="6"></div>
+      <div class="as-err" id="as-password-err"></div>
+      <div class="as-msg" id="as-password-msg"></div>
+      <button type="submit" class="btn btn-teal" style="width:100%;">עדכון סיסמה</button>
+    </form>
+  </div>
+
+  <div class="as-section as-danger">
+    <h3>מחיקת חשבון</h3>
+    <p class="sub">מחיקת חשבון היא פעולה ידנית כרגע — שולחים בקשה, ואנחנו מוחקים את הפרטים תוך זמן קצר.</p>
+    <a id="as-delete-link" class="btn btn-outline" style="width:100%; box-sizing:border-box; text-align:center; color:#B23333; border-color:#F0D9D9;">בקשת מחיקת חשבון</a>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/nav-auth.js"></script>
+<script src="js/require-auth.js"></script>
+<script src="js/account-settings.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

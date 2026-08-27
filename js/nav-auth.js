@@ -39,6 +39,7 @@ function openNavDropdown(wrap, email) {
   dd.className = "nav-account-dropdown";
   dd.innerHTML = `
     <div class="nav-account-email">${escapeHtmlNav(email)}</div>
+    <a href="account-settings.html" class="nav-account-settings">החשבון שלי</a>
     <button type="button" class="nav-account-logout">התנתקות</button>
     <div class="nav-account-confirm" hidden>
       <p>להתנתק?</p>
