@@ -26,7 +26,7 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; overflow-x: clip; }
+html { scroll-behavior: smooth; overflow-x: clip; overflow-y: scroll; scrollbar-gutter: stable; }
 body {
   margin: 0;
   font-family: 'Heebo', Arial, sans-serif;
