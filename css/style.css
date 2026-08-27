@@ -100,6 +100,23 @@ header.site {
 .nav-login { color: var(--grey); font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: flex-end; gap: 5px; min-width: 92px; transition: color .15s ease; }
 .nav-login.nav-login-pending { visibility: hidden; }
 .nav-login:hover { color: var(--teal-dark); }
+.nav-account-wrap { position: relative; display: inline-flex; }
+.nav-account-dropdown {
+  position: absolute; top: calc(100% + 10px); inset-inline-end: 0;
+  background: var(--white); border: 1px solid #EAEDEC; border-radius: 10px;
+  box-shadow: var(--shadow-lg); padding: 14px; min-width: 220px; z-index: 500;
+}
+.nav-account-email { font-size: 12.5px; color: var(--grey); direction: ltr; text-align: end; margin-bottom: 10px; word-break: break-all; }
+.nav-account-dropdown button {
+  width: 100%; background: none; border: 1px solid #DADFDD; border-radius: 8px; padding: 8px 12px;
+  font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--dark);
+}
+.nav-account-dropdown .nav-account-logout { color: #B23333; border-color: #F0D9D9; }
+.nav-account-dropdown .nav-account-logout:hover { background: #FBEEEE; }
+.nav-account-confirm p { font-size: 13px; margin: 0 0 10px; text-align: center; color: var(--dark); }
+.nav-account-confirm-row { display: flex; gap: 8px; }
+.nav-confirm-yes { background: #B23333 !important; color: #fff !important; border-color: #B23333 !important; }
+.nav-confirm-no { background: var(--grey-light) !important; }
 
 /* ---------- Auth gate overlay ---------- */
 .auth-gate-overlay {
