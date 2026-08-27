@@ -12,12 +12,12 @@ function setAuthMode(mode) {
   document.getElementById("qa-auth-err").textContent = "";
   document.getElementById("qa-auth-msg").textContent = "";
   if (mode === "signup") {
-    document.getElementById("qa-auth-title").textContent = "פתיחת חשבון עסק";
+    document.getElementById("qa-auth-title").textContent = "הרשמה";
     document.getElementById("qa-auth-submit").textContent = "הרשמה";
     document.getElementById("qa-switch-text").textContent = "כבר יש לכם חשבון?";
     document.getElementById("qa-switch-btn").textContent = "להתחברות";
   } else {
-    document.getElementById("qa-auth-title").textContent = "כניסה לחשבון העסק";
+    document.getElementById("qa-auth-title").textContent = "כניסה";
     document.getElementById("qa-auth-submit").textContent = "כניסה";
     document.getElementById("qa-switch-text").textContent = "עדיין אין לכם חשבון?";
     document.getElementById("qa-switch-btn").textContent = "להרשמה";
@@ -31,6 +31,13 @@ function showCheckEmail(email) {
 }
 
 function wireAuth() {
+  document.getElementById("qa-google-btn").addEventListener("click", async () => {
+    await supabaseClient.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin + window.location.pathname + "?redirect=" + encodeURIComponent(redirectTarget) },
+    });
+  });
+
   document.getElementById("qa-switch-btn").addEventListener("click", () => {
     setAuthMode(authMode === "login" ? "signup" : "login");
   });

@@ -41,6 +41,11 @@
 </head>
 <body>
 
+<div id="auth-gate-overlay" class="auth-gate-overlay">
+  <div class="auth-gate-spinner"></div>
+  <p style="color:var(--grey); font-size:14px; margin:0;">בודקים חיבור…</p>
+</div>
+
 <header class="site no-print">
   <nav class="nav">
     <a href="index.html" class="brand"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path class="bm-face" d="M6 3H14L18 7V20H6Z"/><path class="bm-fold" d="M14 3L14 7H18Z"/></svg>DeskKit</a>
@@ -219,6 +224,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>
+<script src="js/require-auth.js"></script>
 <script src="js/main.js"></script>
 <script src="js/widgets.js?v=4"></script>
 </body>

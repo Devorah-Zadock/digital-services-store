@@ -100,6 +100,17 @@ header.site {
 .nav-login { color: var(--grey); font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: flex-end; gap: 5px; min-width: 92px; transition: color .15s ease; }
 .nav-login.nav-login-pending { visibility: hidden; }
 .nav-login:hover { color: var(--teal-dark); }
+
+/* ---------- Auth gate overlay ---------- */
+.auth-gate-overlay {
+  position: fixed; inset: 0; background: var(--white); z-index: 9999;
+  display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px;
+}
+.auth-gate-spinner {
+  width: 32px; height: 32px; border: 3px solid var(--ice); border-top-color: var(--teal);
+  border-radius: 50%; animation: auth-gate-spin .8s linear infinite;
+}
+@keyframes auth-gate-spin { to { transform: rotate(360deg); } }
 .burger { display: none; font-size: 26px; background: none; border: none; cursor: pointer; color: var(--teal-dark); }
 
 /* ---------- Hero ---------- */
