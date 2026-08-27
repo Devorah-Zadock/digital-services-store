@@ -11,6 +11,12 @@
    that instead of product_permalink. */
 const SITE_GUMROAD_CONFIG = { productId: "NUyzNlvxdpU_49TE5nk9fg==", checkoutUrl: "https://dizstudio.gumroad.com/l/rhkfld" };
 const SITE_UNLOCK_KEY = "deskkit_sites_unlocked_" + SITE_GUMROAD_CONFIG.productId;
+/* Scoped per template, not just per product: unlocking one site must not
+   silently unlock a download of a totally different template later —
+   each template is its own purchase (see site-cloud-save.js). */
+function currentUnlockKey() {
+  return SITE_UNLOCK_KEY + "_" + siteState.template;
+}
 /* Persists the customer's own form input (business name, services, etc.) in
    their browser, so returning to edit or re-download later doesn't mean
    retyping everything from scratch — separate from SITE_UNLOCK_KEY, which
@@ -337,33 +343,8 @@ async function downloadSiteZip() {
   URL.revokeObjectURL(url);
 }
 
-function loadDataFromFile(file) {
-  const note = document.getElementById("load-data-note");
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const parsed = JSON.parse(reader.result);
-      if (!parsed || !parsed.data || !SITE_TEMPLATES[parsed.template]) throw new Error("invalid shape");
-      siteState = parsed;
-      ensurePagesShape(siteState.data);
-      previewPage = "index";
-      showWizard();
-      note.textContent = "הנתונים נטענו בהצלחה!";
-      note.style.color = "var(--teal)";
-    } catch (err) {
-      note.textContent = "לא הצלחנו לקרוא את הקובץ הזה. ודאו שזה הקובץ site-data.json שהורדתם מהאתר.";
-      note.style.color = "#B23";
-    }
-  };
-  reader.onerror = () => {
-    note.textContent = "שגיאה בקריאת הקובץ. נסו שוב.";
-    note.style.color = "#B23";
-  };
-  reader.readAsText(file);
-}
-
 function refreshUnlockUI() {
-  const unlocked = localStorage.getItem(SITE_UNLOCK_KEY) === "1";
+  const unlocked = localStorage.getItem(currentUnlockKey()) === "1";
   document.getElementById("unlock-pending").style.display = unlocked ? "none" : "";
   document.getElementById("unlock-done").style.display = unlocked ? "" : "none";
 }
@@ -383,7 +364,7 @@ async function verifySiteLicense() {
     });
     const data = await res.json();
     if (data.success) {
-      localStorage.setItem(SITE_UNLOCK_KEY, "1");
+      localStorage.setItem(currentUnlockKey(), "1");
       note.textContent = "";
       refreshUnlockUI();
     } else {
@@ -428,12 +409,6 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("download-zip-btn").addEventListener("click", async () => {
     if (typeof finalizeSiteProject === "function") await finalizeSiteProject();
     downloadSiteZip();
-  });
-
-  document.getElementById("load-data-file").addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (file) loadDataFromFile(file);
-    e.target.value = "";
   });
 
   // The preview iframe's nav links can't really navigate (see

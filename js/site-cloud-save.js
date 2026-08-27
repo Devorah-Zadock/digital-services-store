@@ -1,10 +1,13 @@
-/* Syncs the site builder's progress to the account (site_projects
-   table) so it's available from any device, and enforces the
-   one-finalized-site-per-purchase rule: once a project is finalized
-   (real files downloaded), its template is locked — building a
-   different template needs a new purchase, exactly like a single-site
-   theme license. Content edits and re-downloads of the SAME template
-   stay free forever, matching how the rest of DeskKit already works. */
+/* Syncs the site builder's progress to the account (site_projects table)
+   so it's available from any device, and enforces the one-finalized-
+   project-per-template rule: once a specific template is finalized (real
+   files downloaded), that exact project stays free to keep editing and
+   re-downloading forever — but a genuinely different template is a
+   separate project of its own, gated by its own Gumroad unlock (see
+   currentUnlockKey() in site-builder.js), exactly like a single-site
+   theme license. Picking a new template from the catalog always starts
+   or resumes THAT template's own project — it never overwrites a
+   different, already-finalized one. */
 
 let siteCurrentUserId = null;
 let siteProjectId = null;
@@ -40,15 +43,8 @@ async function finalizeSiteProject() {
 }
 
 function applyFinalizedLockUI() {
-  const link = document.querySelector('a[href="sites.html?browse=1"]');
-  if (link) {
-    link.textContent = "האתר הזה סופי — לתבנית אחרת נדרשת רכישה חדשה";
-    link.href = "#";
-    link.onclick = (e) => {
-      e.preventDefault();
-      alert("סיימתם כבר להוריד את האתר הזה. כדי לבנות אתר נוסף עם תבנית שונה, נדרשת רכישה חדשה.");
-    };
-  }
+  const note = document.getElementById("finalized-note");
+  if (note) note.style.display = "";
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -58,22 +54,36 @@ document.addEventListener("DOMContentLoaded", () => {
     const user = data.session && data.session.user;
     if (user) {
       siteCurrentUserId = user.id;
-      const { data: rows } = await supabaseClient
-        .from("site_projects").select("*").eq("user_id", user.id)
-        .order("created_at", { ascending: false }).limit(1);
+
+      // A template named explicitly (arriving from a catalog card) means
+      // "resume or start THIS template's own project" — never fall back
+      // to a different, unrelated project. No template in the URL means
+      // "just continue where I left off" — the most recent project of any
+      // template, matching how the builder worked before multiple
+      // projects existed.
+      let query = supabaseClient.from("site_projects").select("*").eq("user_id", user.id);
+      query = urlTemplate
+        ? query.eq("template", urlTemplate).limit(1)
+        : query.order("created_at", { ascending: false }).limit(1);
+      const { data: rows } = await query;
       const row = rows && rows[0];
+
       if (row) {
         siteProjectId = row.id;
         siteIsFinalized = row.status === "finalized";
-        if (siteIsFinalized && urlTemplate && urlTemplate !== row.template) {
-          alert("סיימתם כבר להוריד את האתר שלכם עם תבנית אחרת. כדי לבנות אתר נוסף עם תבנית שונה, נדרשת רכישה חדשה.");
-        }
         siteState.template = row.template;
         siteState.data = row.data;
         ensurePagesShape(siteState.data);
-        if (siteIsFinalized) localStorage.setItem(SITE_UNLOCK_KEY, "1");
+        if (siteIsFinalized) localStorage.setItem(currentUnlockKey(), "1");
         if (typeof showWizard === "function") showWizard();
+        if (typeof refreshUnlockUI === "function") refreshUnlockUI();
         if (siteIsFinalized) applyFinalizedLockUI();
+      } else if (urlTemplate) {
+        // A template with no saved project yet — a fresh, separate
+        // project. siteProjectId stays null so the next save creates a
+        // new row instead of touching any other template's project.
+        siteProjectId = null;
+        siteIsFinalized = false;
       }
     }
     if (window.revealGatedPage) window.revealGatedPage();
