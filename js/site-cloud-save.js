@@ -47,31 +47,42 @@ function applyFinalizedLockUI() {
   if (note) note.style.display = "";
 }
 
+/* A project is named by its own business name (what the customer
+   actually typed in), not by its template — "מרכז המתכונים" means far
+   more to them than "גלריה מודרנית". The template only shows as a small
+   second line, and only once there's a real name to distinguish it
+   from — otherwise it's just noise. */
+function mySiteRowLabel(row) {
+  const t = typeof SITE_TEMPLATES !== "undefined" ? SITE_TEMPLATES[row.template] : null;
+  const tplLabel = t ? t.label : row.template;
+  const bizName = row.data && row.data.businessName && row.data.businessName.trim();
+  return bizName ? { name: bizName, sub: tplLabel } : { name: tplLabel, sub: "" };
+}
+
 /* "האתרים שלי" — every project the account has (draft or finalized),
    one per template, so switching templates never strands an already-
-   built site with no way back to it. Shown on both the catalog and the
-   wizard views (this section sits outside either's show/hide toggle). */
+   built site with no way back to it. Rendered as a plain switchable
+   list (not buttons) into every [data-my-sites-rail] mount on the page
+   — the catalog and wizard views each have their own, so it's visible
+   in both without special-casing which one is showing. */
 function renderMySitesList(rows, activeTemplate) {
-  const section = document.getElementById("my-sites-section");
-  const list = document.getElementById("my-sites-list");
-  if (!section || !list) return;
-  if (!rows.length) {
-    section.style.display = "none";
-    return;
-  }
-  section.style.display = "";
-  list.innerHTML = rows
+  const rails = document.querySelectorAll("[data-my-sites-rail]");
+  const lists = document.querySelectorAll("[data-my-sites-list]");
+  if (!rails.length) return;
+  const show = rows.length > 0;
+  rails.forEach((el) => { el.style.display = show ? "" : "none"; });
+  if (!show) return;
+  const html = rows
     .map((r) => {
-      const t = typeof SITE_TEMPLATES !== "undefined" ? SITE_TEMPLATES[r.template] : null;
-      const label = t ? t.label : r.template;
-      const statusLabel = r.status === "finalized" ? "סופי" : "טיוטה";
+      const { name, sub } = mySiteRowLabel(r);
       const activeClass = r.template === activeTemplate ? " active" : "";
-      return `<a href="sites.html?template=${encodeURIComponent(r.template)}" class="my-site-chip${activeClass}">
-        <span>${escapeHtmlS(label)}</span>
-        <span class="my-site-chip-status">${statusLabel}</span>
+      return `<a href="sites.html?template=${encodeURIComponent(r.template)}" class="my-site-row${activeClass}">
+        <span class="my-site-row-name">${escapeHtmlS(name)}</span>
+        ${sub ? `<span class="my-site-row-tpl">${escapeHtmlS(sub)}</span>` : ""}
       </a>`;
     })
     .join("");
+  lists.forEach((el) => { el.innerHTML = html; });
 }
 
 document.addEventListener("DOMContentLoaded", () => {

@@ -37,16 +37,16 @@
     transition: border-color .15s ease, background .15s ease, color .15s ease;
   }
   .preview-tab-btn.active { border-color: var(--teal); background: var(--ice); color: var(--teal-dark); }
-  .my-sites-list { display: flex; flex-wrap: wrap; gap: 10px; }
-  .my-site-chip {
-    display: flex; align-items: center; gap: 8px; background: var(--white); border: 2px solid #DDE4E1;
-    border-radius: 20px; padding: 7px 14px; font-size: 13px; font-weight: 600; color: var(--dark);
-    text-decoration: none; transition: border-color .15s ease, background .15s ease, color .15s ease;
-  }
-  .my-site-chip:hover { border-color: var(--teal-light); }
-  .my-site-chip.active { border-color: var(--teal); background: var(--ice); color: var(--teal-dark); }
-  .my-site-chip-status { font-size: 11px; font-weight: 700; color: var(--grey); }
-  .my-site-chip.active .my-site-chip-status { color: var(--teal); }
+  .catalog-layout { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 28px; align-items: start; padding-top: 28px; }
+  .my-sites-rail { background: var(--white); border: 1px solid #EAEDEC; border-radius: var(--radius); padding: 14px; margin-bottom: 16px; }
+  .my-sites-rail-title { font-size: 12.5px; font-weight: 700; color: var(--teal-dark); margin: 0 0 8px; }
+  .my-sites-list { display: flex; flex-direction: column; gap: 2px; }
+  .my-site-row { display: block; padding: 8px 10px; border-radius: 8px; text-decoration: none; color: var(--dark); transition: background .15s ease; }
+  .my-site-row:hover { background: var(--grey-light); }
+  .my-site-row.active { background: var(--ice); }
+  .my-site-row-name { display: block; font-size: 13px; font-weight: 600; line-height: 1.4; }
+  .my-site-row-tpl { display: block; font-size: 11px; color: var(--grey); line-height: 1.4; }
+  @media (max-width: 900px) { .catalog-layout { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -80,23 +80,27 @@
   </div>
 </section>
 
-<section class="no-print" id="my-sites-section" style="display:none;">
-  <div class="container">
-    <h3 style="font-size:15px; margin:0 0 10px;">האתרים שלי</h3>
-    <div id="my-sites-list" class="my-sites-list"></div>
-  </div>
-</section>
-
 <section class="no-print" id="tpl-catalog-section">
-  <div class="container">
-    <div class="tabs" id="site-tpl-tabs"></div>
-    <div class="grid" id="site-tpl-grid"></div>
+  <div class="container catalog-layout">
+    <aside class="my-sites-rail" data-my-sites-rail style="display:none;">
+      <h3 class="my-sites-rail-title">האתרים שלי</h3>
+      <div class="my-sites-list" data-my-sites-list></div>
+    </aside>
+    <div class="catalog-main">
+      <div class="tabs" id="site-tpl-tabs"></div>
+      <div class="grid" id="site-tpl-grid"></div>
+    </div>
   </div>
 </section>
 
 <div id="wizard-section" style="display:none;">
 <div class="container builder-wrap">
   <aside class="builder-form no-print">
+    <div class="my-sites-rail" data-my-sites-rail style="display:none;">
+      <h3 class="my-sites-rail-title">האתרים שלי</h3>
+      <div class="my-sites-list" data-my-sites-list></div>
+    </div>
+
     <div class="field">
       <label>עיצוב נבחר</label>
       <div id="current-tpl-info" style="font-size:14px; font-weight:700; color:var(--teal-dark); margin-bottom:6px;"></div>

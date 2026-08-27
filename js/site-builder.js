@@ -363,14 +363,34 @@ async function verifySiteLicense() {
       body: new URLSearchParams({ product_id: SITE_GUMROAD_CONFIG.productId, license_key: key }),
     });
     const data = await res.json();
-    if (data.success) {
-      localStorage.setItem(currentUnlockKey(), "1");
-      note.textContent = "";
-      refreshUnlockUI();
-    } else {
+    if (!data.success) {
       note.textContent = "קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב.";
       note.className = "unlock-note err";
+      return;
     }
+    // A code that's valid for the product doesn't mean it's valid for
+    // THIS template — someone who already spent it finalizing a
+    // different site under this same account shouldn't get a second one
+    // for free. (Only catches reuse within the same account; a real,
+    // account-independent guarantee would need a server-side check —
+    // same "client-side only" caveat as the rest of this gate, see
+    // README.)
+    if (typeof siteCurrentUserId !== "undefined" && siteCurrentUserId) {
+      const { data: reused } = await supabaseClient
+        .from("site_projects").select("id")
+        .eq("user_id", siteCurrentUserId)
+        .eq("gumroad_license_key", key)
+        .neq("template", siteState.template)
+        .limit(1);
+      if (reused && reused.length) {
+        note.textContent = "קוד הרישוי הזה כבר שימש לבניית אתר אחר. לתבנית נוספת נדרשת רכישה נפרדת.";
+        note.className = "unlock-note err";
+        return;
+      }
+    }
+    localStorage.setItem(currentUnlockKey(), "1");
+    note.textContent = "";
+    refreshUnlockUI();
   } catch (err) {
     note.textContent = "שגיאת חיבור לשירות האימות. נסו שוב בעוד רגע.";
     note.className = "unlock-note err";
