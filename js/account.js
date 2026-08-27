@@ -30,6 +30,26 @@ function showCheckEmail(email) {
   document.getElementById("qa-check-email-addr").textContent = email;
 }
 
+function showResetPassword() {
+  document.getElementById("qa-auth-form-wrap").style.display = "none";
+  document.getElementById("qa-check-email").style.display = "none";
+  document.getElementById("qa-reset-password").style.display = "";
+}
+
+function wireResetPassword() {
+  document.getElementById("qa-reset-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const pw = document.getElementById("qa-new-password").value;
+    const pw2 = document.getElementById("qa-new-password-confirm").value;
+    const err = document.getElementById("qa-reset-err");
+    err.textContent = "";
+    if (pw !== pw2) { err.textContent = "הסיסמאות לא תואמות."; return; }
+    const { error } = await supabaseClient.auth.updateUser({ password: pw });
+    if (error) { err.textContent = "העדכון נכשל, נסו שוב."; return; }
+    window.location.href = redirectTarget;
+  });
+}
+
 function wireAuth() {
   document.getElementById("qa-google-btn").addEventListener("click", async () => {
     await supabaseClient.auth.signInWithOAuth({
@@ -84,15 +104,23 @@ function wireAuth() {
   });
 }
 
+let isPasswordRecovery = false;
+
 document.addEventListener("DOMContentLoaded", () => {
   wireAuth();
+  wireResetPassword();
   setAuthMode("login");
 
-  supabaseClient.auth.onAuthStateChange((_event, session) => {
-    if (session && session.user) window.location.href = redirectTarget;
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    if (event === "PASSWORD_RECOVERY") {
+      isPasswordRecovery = true;
+      showResetPassword();
+      return;
+    }
+    if (session && session.user && !isPasswordRecovery) window.location.href = redirectTarget;
   });
 
   supabaseClient.auth.getSession().then(({ data }) => {
-    if (data.session && data.session.user) window.location.href = redirectTarget;
+    if (data.session && data.session.user && !isPasswordRecovery) window.location.href = redirectTarget;
   });
 });
