@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>מוצר — DeskKit</title>
+<title>הצהרת נגישות — DeskKit</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="description" content="תבנית עסקית מוכנה להורדה ועריכה מיידית.">
+<meta name="description" content="הצהרת נגישות של DeskKit.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -20,7 +20,7 @@
     <a href="index.html" class="brand"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path class="bm-face" d="M6 3H14L18 7V20H6Z"/><path class="bm-fold" d="M14 3L14 7H18Z"/></svg>DeskKit</a>
     <div class="nav-links">
       <a href="index.html">בית</a>
-      <a href="products.html" class="active">קטלוג</a>
+      <a href="products.html">קטלוג</a>
       <a href="sites.html?browse=1">בניית אתר</a>
       <a href="tools.html">כלים לעסק</a>
       <a href="about.html">אודות</a>
@@ -32,29 +32,30 @@
   </nav>
 </header>
 
-<div class="container">
-  <div id="product-root"></div>
-</div>
-
-<section class="bg-ice" id="related-section">
-  <div class="container">
-    <div class="section-head">
-      <div class="kicker">אולי גם יעניין אתכם</div>
-      <h2>תבניות נוספות באותה קטגוריה</h2>
-    </div>
-    <div class="grid" id="related-grid"></div>
-  </div>
+<section class="hero" style="padding:60px 24px 70px;">
+  <h1 style="font-size:34px;">הצהרת נגישות</h1>
 </section>
 
 <section>
-  <div class="container">
-    <div class="banner">
-      <div>
-        <h3>צריכים גם אתר עסקי? <span class="badge-free">99 ₪ חד-פעמי</span></h3>
-        <p>בנו אתר עסקי שלם עם תצוגה חיה ועיצוב מקצועי, ותורידו את הקבצים המוכנים תוך דקות.</p>
-      </div>
-      <a href="sites.html?browse=1" class="btn btn-gold">לבניית האתר שלי</a>
-    </div>
+  <div class="container" style="max-width:720px;">
+    <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;">
+      DeskKit רואה חשיבות רבה במתן שירות שוויוני ונגיש לכלל המשתמשים, כולל אנשים עם מוגבלות. אנחנו פועלים להנגשת האתר בהתאם לתקן הישראלי (ת"י 5568) ברמת AA, המבוסס על הנחיות WCAG 2.0 הבינלאומיות.
+    </p>
+
+    <h3 style="color:var(--teal-dark);">מה נעשה עד כה</h3>
+    <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;">
+      טקסט חלופי לתמונות, תיוג ARIA לכפתורי אייקון, תמיכה בניווט מקלדת בתפריטים ובטפסים, ניגודיות צבעים נבדקת, ומבנה HTML סמנטי (כותרות, טפסים מתויגים) לאורך כל העמודים.
+    </p>
+
+    <h3 style="color:var(--teal-dark);">מגבלות ידועות</h3>
+    <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;">
+      האתר בתהליך שיפור מתמיד. ייתכן שחלקים מסוימים — ובפרט תצוגות מקדימות של תבניות שנוצרות דינמית בבילדרים — עדיין אינם נגישים באופן מלא. אנחנו עובדים על כך באופן שוטף.
+    </p>
+
+    <h3 style="color:var(--teal-dark);">נתקלתם בבעיית נגישות?</h3>
+    <p style="font-size:15.5px; color:var(--grey);">
+      נשמח לשמוע ולתקן — <a href="contact.html" style="color:var(--teal); font-weight:600;">צרו קשר</a> או כתבו ל-<a href="mailto:digital.dz.studio@gmail.com" style="color:var(--teal); font-weight:600;">digital.dz.studio@gmail.com</a>, ונחזור אליכם בהקדם האפשרי.
+    </p>
   </div>
 </section>
 
@@ -94,8 +95,6 @@
   </div>
 </footer>
 
-<script src="js/products-data.js"></script>
-<script src="js/catalog.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>
