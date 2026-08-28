@@ -139,7 +139,7 @@ function injectAccessibilityFab() {
   a.className = "fab fab-a11y no-print";
   a.title = "הצהרת נגישות";
   a.setAttribute("aria-label", "הצהרת נגישות");
-  a.textContent = "♿";
+  a.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="4" r="2"/><path d="M12 7c-1.1 0-2 .9-2 2v3.5L6.5 14l1 2 3-1.5V22h3v-6.5l1.5.8 2.5-4-3-1.6V9c0-1.1-.9-2-2-2z"/></svg>';
   document.body.appendChild(a);
 }
 

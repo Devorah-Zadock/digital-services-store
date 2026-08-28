@@ -385,7 +385,12 @@ footer.site { background: linear-gradient(180deg, var(--teal-dark), #102921); co
 .fab:hover { transform: translateY(-3px) scale(1.04); box-shadow: 0 14px 30px rgba(0,0,0,.28); }
 .fab-feedback { left: 24px; background: linear-gradient(135deg, var(--gold-light), var(--gold)); color: var(--teal-dark); }
 .fab-chat { right: 24px; background: linear-gradient(135deg, var(--teal), var(--teal-light)); }
-.fab-a11y { left: 24px; bottom: 90px; width: 44px; height: 44px; font-size: 20px; background: #2C6FB0; text-decoration: none; }
+.fab-a11y {
+  left: 24px; bottom: 92px; width: 38px; height: 38px; box-shadow: 0 6px 16px rgba(0,0,0,.12);
+  background: var(--white); border: 1.5px solid #DDE4E1; color: var(--teal-dark); text-decoration: none;
+}
+.fab-a11y svg { width: 18px; height: 18px; }
+.fab-a11y:hover { border-color: var(--teal); }
 
 .widget-overlay {
   position: fixed; inset: 0; z-index: 300; background: rgba(16,30,25,.5);
