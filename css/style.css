@@ -385,6 +385,7 @@ footer.site { background: linear-gradient(180deg, var(--teal-dark), #102921); co
 .fab:hover { transform: translateY(-3px) scale(1.04); box-shadow: 0 14px 30px rgba(0,0,0,.28); }
 .fab-feedback { left: 24px; background: linear-gradient(135deg, var(--gold-light), var(--gold)); color: var(--teal-dark); }
 .fab-chat { right: 24px; background: linear-gradient(135deg, var(--teal), var(--teal-light)); }
+.fab-chat svg { width: 24px; height: 24px; }
 .fab-a11y {
   left: 24px; bottom: 88px; box-shadow: 0 6px 16px rgba(0,0,0,.12);
   background: var(--white); border: 1.5px solid #DDE4E1; color: var(--teal-dark); text-decoration: none;
