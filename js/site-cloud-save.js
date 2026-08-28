@@ -40,6 +40,37 @@ async function finalizeSiteProject() {
   }).eq("id", siteProjectId);
   siteIsFinalized = true;
   applyFinalizedLockUI();
+  sendPurchaseReceipt();
+}
+
+/* Fires exactly once, right here — never on a later edit or re-download
+   of the same finalized project. Best-effort: a receipt failing to send
+   must never block the actual download the customer is waiting for. */
+async function sendPurchaseReceipt() {
+  try {
+    const { data } = await supabaseClient.auth.getSession();
+    const sessionEmail = data.session && data.session.user && data.session.user.email;
+    const purchase = typeof lastVerifiedPurchase !== "undefined" ? lastVerifiedPurchase : null;
+    const buyerEmail = (purchase && purchase.email) || sessionEmail;
+    if (!buyerEmail) return;
+
+    const tplLabel = typeof SITE_TEMPLATES !== "undefined" && SITE_TEMPLATES[siteState.template]
+      ? SITE_TEMPLATES[siteState.template].label : siteState.template;
+    const bizName = siteState.data && siteState.data.businessName && siteState.data.businessName.trim();
+    const amount = purchase && purchase.price != null ? `${(purchase.price / 100).toFixed(2)} ₪` : null;
+
+    await supabaseClient.functions.invoke("send-receipt", {
+      body: {
+        buyerEmail,
+        buyerName: (purchase && purchase.full_name) || bizName || "",
+        itemDescription: `בניית אתר עסקי — ${escapeHtmlS(tplLabel)}${bizName ? ` (${escapeHtmlS(bizName)})` : ""}`,
+        amount,
+      },
+    });
+  } catch (err) {
+    // silent — a failed receipt email is a support follow-up, not a
+    // reason to interrupt someone who just finished paying
+  }
 }
 
 /* Once a project is paid for, there's no path from inside it back to

@@ -39,6 +39,7 @@ const SITE_DEFAULT = {
 };
 
 let siteState = { template: "local-service", data: JSON.parse(JSON.stringify(SITE_DEFAULT)) };
+let lastVerifiedPurchase = null;
 let previewPage = "index";
 
 /* Older saved/loaded data (from before the multi-page feature existed)
@@ -388,6 +389,10 @@ async function verifySiteLicense() {
         return;
       }
     }
+    // Kept only for the receipt email at finalize time — Gumroad's own
+    // record of what the buyer actually paid, not something we ask them
+    // to re-enter or trust the client for.
+    lastVerifiedPurchase = data.purchase || null;
     localStorage.setItem(currentUnlockKey(), "1");
     note.textContent = "";
     refreshUnlockUI();
