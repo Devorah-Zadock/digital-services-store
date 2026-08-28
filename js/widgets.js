@@ -21,7 +21,7 @@ const CHAT_FAQ = [
     a: "יש שני קבצי Excel מוכנים — תקציב חודשי אישי וחשבונית עסקית, עם נוסחאות אמיתיות (לא מספרים קבועים).",
     link: { href: "products.html?cat=xlsx", label: "לתבניות ה-Excel" } },
   { kw: ["חינם", "כסף", "תשלום", "עולה", "מחיר", "לשלם"],
-    a: "הכול באתר חינמי לגמרי כרגע — בלי הרשמה ובלי כרטיס אשראי." },
+    a: "הכלים חינמיים לגמרי — נדרשת כניסה מהירה עם מייל או Google כדי שהעבודה שלכם תישמר, בלי צורך בכרטיס אשראי." },
   { kw: ["צבע", "גופן", "פונט", "עיצוב", "פלטה"],
     a: "בבילדר אפשר לבחור צבע ראשי וגם גופן מתוך כמה אפשרויות — התצוגה המקדימה מתעדכנת מיד." },
   { kw: ["תמונה", "פרופיל", "אווטאר", "photo", "picture"],
@@ -133,6 +133,16 @@ function injectFeedbackWidget() {
   });
 }
 
+function injectAccessibilityFab() {
+  const a = document.createElement("a");
+  a.href = "accessibility.html";
+  a.className = "fab fab-a11y no-print";
+  a.title = "הצהרת נגישות";
+  a.setAttribute("aria-label", "הצהרת נגישות");
+  a.textContent = "♿";
+  document.body.appendChild(a);
+}
+
 function injectChatWidget() {
   const wrap = document.createElement("div");
   wrap.innerHTML = `
@@ -190,4 +200,5 @@ function injectChatWidget() {
 document.addEventListener("DOMContentLoaded", () => {
   injectFeedbackWidget();
   injectChatWidget();
+  injectAccessibilityFab();
 });

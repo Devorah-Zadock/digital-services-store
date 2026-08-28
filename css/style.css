@@ -385,6 +385,7 @@ footer.site { background: linear-gradient(180deg, var(--teal-dark), #102921); co
 .fab:hover { transform: translateY(-3px) scale(1.04); box-shadow: 0 14px 30px rgba(0,0,0,.28); }
 .fab-feedback { left: 24px; background: linear-gradient(135deg, var(--gold-light), var(--gold)); color: var(--teal-dark); }
 .fab-chat { right: 24px; background: linear-gradient(135deg, var(--teal), var(--teal-light)); }
+.fab-a11y { left: 24px; bottom: 90px; width: 44px; height: 44px; font-size: 20px; background: #2C6FB0; text-decoration: none; }
 
 .widget-overlay {
   position: fixed; inset: 0; z-index: 300; background: rgba(16,30,25,.5);
@@ -446,6 +447,7 @@ footer.site { background: linear-gradient(180deg, var(--teal-dark), #102921); co
   .chat-panel { right: 12px; bottom: 84px; width: calc(100vw - 24px); }
   .fab-chat { right: 14px; }
   .fab-feedback { left: 14px; }
+  .fab-a11y { left: 14px; }
 }
 
 @media print {
