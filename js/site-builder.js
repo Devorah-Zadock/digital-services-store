@@ -431,9 +431,19 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   document.getElementById("verify-btn").addEventListener("click", verifySiteLicense);
-  document.getElementById("download-zip-btn").addEventListener("click", async () => {
-    if (typeof finalizeSiteProject === "function") await finalizeSiteProject();
-    downloadSiteZip();
+  document.getElementById("download-zip-btn").addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    if (btn.disabled) return;
+    const originalLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "מכינים את הקבצים...";
+    try {
+      if (typeof finalizeSiteProject === "function") await finalizeSiteProject();
+      downloadSiteZip();
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalLabel;
+    }
   });
 
   // The preview iframe's nav links can't really navigate (see

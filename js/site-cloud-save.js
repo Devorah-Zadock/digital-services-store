@@ -30,15 +30,19 @@ async function saveSiteNow() {
 
 async function finalizeSiteProject() {
   if (!siteCurrentUserId || siteIsFinalized) return;
+  // Set before any await: a fast double-click fires this twice before the
+  // first call's network requests resolve, so checking siteIsFinalized only
+  // at the end (as it used to) let both calls race past the guard — that's
+  // exactly what sent two receipt emails for one download.
+  siteIsFinalized = true;
   if (!siteProjectId) await saveSiteNow();
-  if (!siteProjectId) return;
+  if (!siteProjectId) { siteIsFinalized = false; return; }
   const licenseInput = document.getElementById("license-input");
   await supabaseClient.from("site_projects").update({
     status: "finalized",
     finalized_at: new Date().toISOString(),
     gumroad_license_key: licenseInput ? licenseInput.value.trim() : null,
   }).eq("id", siteProjectId);
-  siteIsFinalized = true;
   applyFinalizedLockUI();
   sendPurchaseReceipt();
 }
