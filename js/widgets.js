@@ -197,8 +197,31 @@ function injectChatWidget() {
   });
 }
 
+/* Not a legal requirement here (Israel has no EU-style mandatory
+   consent banner, and the site sets no tracking cookies of its own —
+   see terms.html "עוגיות ואחסון מקומי") — a simple non-blocking
+   disclosure, dismissed once and remembered, as an extra precaution. */
+const COOKIE_NOTICE_KEY = "deskkit_cookie_notice_dismissed";
+function injectCookieNotice() {
+  if (localStorage.getItem(COOKIE_NOTICE_KEY) === "1") return;
+  const bar = document.createElement("div");
+  bar.className = "cookie-notice no-print";
+  bar.innerHTML = `
+    <p>האתר משתמש באחסון מקומי בדפדפן כדי לשמור עבודה שטרם נשמרה בחשבון. פרטים נוספים ב<a href="terms.html">מדיניות הפרטיות</a>.</p>
+    <button type="button" class="btn btn-teal" id="cookie-notice-ok">הבנתי</button>
+  `;
+  document.body.appendChild(bar);
+  document.body.classList.add("cookie-notice-active");
+  document.getElementById("cookie-notice-ok").addEventListener("click", () => {
+    localStorage.setItem(COOKIE_NOTICE_KEY, "1");
+    bar.remove();
+    document.body.classList.remove("cookie-notice-active");
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   injectFeedbackWidget();
   injectChatWidget();
   injectAccessibilityFab();
+  injectCookieNotice();
 });

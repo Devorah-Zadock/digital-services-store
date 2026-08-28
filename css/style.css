@@ -449,6 +449,17 @@ footer.site { background: linear-gradient(180deg, var(--teal-dark), #102921); co
 }
 .chat-input-row button { padding: 9px 18px; font-size: 13px; }
 
+.cookie-notice {
+  position: fixed; inset-inline: 0; bottom: 0; z-index: 250;
+  background: var(--teal-dark); color: var(--white);
+  display: flex; align-items: center; justify-content: center; gap: 18px; flex-wrap: wrap;
+  padding: 12px 24px; box-shadow: 0 -6px 20px rgba(0,0,0,.15);
+}
+.cookie-notice p { margin: 0; font-size: 13px; max-width: 560px; }
+.cookie-notice a { color: var(--gold-light); text-decoration: underline; }
+.cookie-notice button { padding: 8px 20px; font-size: 13px; flex: none; }
+body.cookie-notice-active .fab { display: none; }
+
 @media (max-width: 480px) {
   .chat-panel { right: 12px; bottom: 84px; width: calc(100vw - 24px); }
   .fab-chat { right: 14px; }
