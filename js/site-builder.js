@@ -344,50 +344,68 @@ async function downloadSiteZip() {
   URL.revokeObjectURL(url);
 }
 
+/* The purchase panel used to be visible from the very first moment someone
+   opened the wizard — before they'd typed a word of their own content. The
+   "finish gate" (a single explicit button + a note explaining exactly what
+   locks and what stays free forever) exists so committing to buy is a
+   deliberate step, not something that greets you on arrival. Once a
+   template is actually unlocked there's nothing left to gate — always show
+   unlock-done for it, on this visit and every future one. */
+let financeGateOpened = false;
+
 function refreshUnlockUI() {
   const unlocked = localStorage.getItem(currentUnlockKey()) === "1";
-  document.getElementById("unlock-pending").style.display = unlocked ? "none" : "";
-  document.getElementById("unlock-done").style.display = unlocked ? "" : "none";
+  const gate = document.getElementById("finish-gate");
+  const pending = document.getElementById("unlock-pending");
+  const done = document.getElementById("unlock-done");
+  if (unlocked) {
+    gate.style.display = "none";
+    pending.style.display = "none";
+    done.style.display = "";
+    return;
+  }
+  done.style.display = "none";
+  gate.style.display = financeGateOpened ? "none" : "";
+  pending.style.display = financeGateOpened ? "" : "none";
 }
 
+/* Verification itself happens server-side, in the redeem-license Edge
+   Function — Gumroad's own verify endpoint is meant to be called
+   repeatedly and never consumes a key, so a purely client-side check (the
+   old approach) couldn't stop the same purchased key from being typed
+   into a second, unrelated account and unlocking a second site for free.
+   The Edge Function atomically claims the key in a table only it can
+   write to, so a key can finalize exactly one (account, template) pair,
+   full stop — not just "not reused by this same signed-in account",
+   which is all a client-side check could ever guarantee. */
 async function verifySiteLicense() {
   const input = document.getElementById("license-input");
   const note = document.getElementById("license-note");
   const key = input.value.trim();
   if (!key) { note.textContent = "יש להזין קוד רישוי."; note.className = "unlock-note err"; return; }
+  if (!siteCurrentUserId) { note.textContent = "יש להתחבר לחשבון כדי לפתוח את ההורדה."; note.className = "unlock-note err"; return; }
   note.textContent = "בודקים...";
   note.className = "unlock-note";
   try {
-    const res = await fetch("https://api.gumroad.com/v2/licenses/verify", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ product_id: SITE_GUMROAD_CONFIG.productId, license_key: key }),
+    const { data, error } = await supabaseClient.functions.invoke("redeem-license", {
+      body: {
+        licenseKey: key,
+        productId: SITE_GUMROAD_CONFIG.productId,
+        userId: siteCurrentUserId,
+        template: siteState.template,
+      },
     });
-    const data = await res.json();
-    if (!data.success) {
-      note.textContent = "קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב.";
+    if (error || !data) {
+      note.textContent = "שגיאת חיבור לשירות האימות. נסו שוב בעוד רגע.";
       note.className = "unlock-note err";
       return;
     }
-    // A code that's valid for the product doesn't mean it's valid for
-    // THIS template — someone who already spent it finalizing a
-    // different site under this same account shouldn't get a second one
-    // for free. (Only catches reuse within the same account; a real,
-    // account-independent guarantee would need a server-side check —
-    // same "client-side only" caveat as the rest of this gate, see
-    // README.)
-    if (typeof siteCurrentUserId !== "undefined" && siteCurrentUserId) {
-      const { data: reused } = await supabaseClient
-        .from("site_projects").select("id")
-        .eq("user_id", siteCurrentUserId)
-        .eq("gumroad_license_key", key)
-        .neq("template", siteState.template)
-        .limit(1);
-      if (reused && reused.length) {
-        note.textContent = "קוד הרישוי הזה כבר שימש לבניית אתר אחר. לתבנית נוספת נדרשת רכישה נפרדת.";
-        note.className = "unlock-note err";
-        return;
-      }
+    if (!data.success) {
+      note.textContent = data.reason === "redeemed-elsewhere" || data.reason === "different-template"
+        ? "קוד הרישוי הזה כבר שימש לפתיחת אתר אחר. לתבנית נוספת נדרשת רכישה נפרדת."
+        : "קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב.";
+      note.className = "unlock-note err";
+      return;
     }
     // Kept only for the receipt email at finalize time — Gumroad's own
     // record of what the buyer actually paid, not something we ask them
@@ -406,6 +424,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const params = new URLSearchParams(location.search);
   const urlTemplate = params.get("template");
   const forceBrowse = params.get("browse") === "1";
+  const isFullPreview = params.get("fullpreview") === "1";
 
   const saved = loadSiteState();
   if (saved) siteState = saved;
@@ -429,6 +448,35 @@ document.addEventListener("DOMContentLoaded", () => {
   } else {
     showCatalog();
   }
+
+  if (isFullPreview) {
+    document.body.classList.add("preview-focus");
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.id = "close-preview-btn";
+    closeBtn.textContent = "✕ סגירת תצוגה";
+    // Opened via window.open() from the wizard tab, so this tab is safe to
+    // self-close; if a visitor opened the URL directly (no opener), closing
+    // would be silently refused by the browser — falling back to the
+    // catalog keeps the button useful either way.
+    closeBtn.addEventListener("click", () => {
+      window.close();
+      setTimeout(() => { location.href = "sites.html?browse=1"; }, 300);
+    });
+    document.body.appendChild(closeBtn);
+  }
+
+  document.getElementById("full-preview-btn").addEventListener("click", () => {
+    const url = new URL(location.href);
+    url.searchParams.set("template", siteState.template);
+    url.searchParams.set("fullpreview", "1");
+    window.open(url.toString(), "_blank", "noopener");
+  });
+
+  document.getElementById("finish-btn").addEventListener("click", () => {
+    financeGateOpened = true;
+    refreshUnlockUI();
+  });
 
   document.getElementById("verify-btn").addEventListener("click", verifySiteLicense);
   document.getElementById("download-zip-btn").addEventListener("click", async (e) => {

@@ -39,6 +39,22 @@
   .preview-tab-btn.active { border-color: var(--teal); background: var(--ice); color: var(--teal-dark); }
   .catalog-layout { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 28px; align-items: start; padding-top: 28px; }
   @media (max-width: 900px) { .catalog-layout { grid-template-columns: 1fr; } }
+  .finish-gate-note { font-size: 12px; color: var(--grey); margin: 10px 0 0; line-height: 1.65; }
+  body.preview-focus header.site,
+  body.preview-focus .builder-top,
+  body.preview-focus .builder-form,
+  body.preview-focus .export-panel,
+  body.preview-focus footer.site,
+  body.preview-focus #full-preview-btn { display: none !important; }
+  body.preview-focus .builder-wrap { grid-template-columns: 1fr; }
+  body.preview-focus .preview-sticky { position: static; }
+  body.preview-focus #site-preview-frame { height: 90vh; }
+  #close-preview-btn {
+    position: fixed; top: 14px; inset-inline-end: 14px; z-index: 50;
+    background: var(--teal-dark); color: #fff; border: none; border-radius: 8px;
+    padding: 10px 16px; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 8px 20px rgba(0,0,0,.2);
+  }
 </style>
 </head>
 <body>
@@ -154,9 +170,14 @@
     <div class="preview-sticky">
       <div class="preview-tabs no-print" id="preview-tabs" style="display:none;"></div>
       <iframe id="site-preview-frame" title="תצוגה מקדימה של האתר"></iframe>
+      <button type="button" class="btn-mini no-print" id="full-preview-btn" style="margin-top:10px;">תצוגה מלאה במסך חדש ⤢</button>
 
       <div class="export-panel no-print" style="margin-top:20px;">
-        <div id="unlock-pending">
+        <div id="finish-gate">
+          <button type="button" class="btn btn-gold" id="finish-btn" style="width:100%;">סיימתי לערוך, רוצה להוריד את האתר</button>
+          <p class="finish-gate-note">לפני שממשיכים: התבנית שנבחרה תינעל לפרויקט הזה בלבד. עריכת התוכן, הצבע והתמונות תישאר <b>חינמית וללא הגבלה לתמיד</b> — רק מעבר לתבנית אחרת דורש רכישה נפרדת.</p>
+        </div>
+        <div id="unlock-pending" style="display:none;">
           <p style="margin:0 0 12px; font-size:14px; font-weight:600; color:var(--teal-dark);">האתר מוכן — נשאר רק לפתוח את ההורדה.</p>
           <a href="#" id="buy-link" target="_blank" rel="noopener" class="btn btn-gold" style="width:100%; box-sizing:border-box; text-align:center; display:block; margin-bottom:14px;">רכישת קוד פתיחה</a>
           <div class="unlock-box">

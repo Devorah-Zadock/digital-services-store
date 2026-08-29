@@ -40,6 +40,12 @@
   .admin-status { font-size: 13px; font-weight: 600; padding: 8px 12px; border-radius: 8px; margin-bottom: 16px; display: inline-block; }
   .admin-status.connected { background: #E4F2EC; color: var(--teal-dark); }
   .admin-status.pending { background: #FBF1DD; color: #8A6212; }
+  #stats-card { max-width: 760px; }
+  .stats-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+  .stats-table th, .stats-table td { text-align: right; padding: 8px 10px; border-bottom: 1px solid #EEF1EF; }
+  .stats-table th { color: var(--teal-dark); font-size: 12px; }
+  .stats-table-wrap { overflow-x: auto; }
+  #stats-err { color: #B23; font-size: 13px; min-height: 16px; }
 </style>
 </head>
 <body>
@@ -80,8 +86,27 @@
     </ol>
     <p style="margin-bottom:0;">אחרי זה, כל הודעה שנשלחת דרך האתר גם מגיעה מייד למייל שלך וגם נשמרת בלוח הבקרה — קבועה, לא נמחקת, ונגישה רק לך דרך ההתחברות לחשבון ה-formspree שלך.</p>
   </div>
+
+  <div class="admin-card" id="stats-card" style="display:none;">
+    <h2>לקוחות ושימוש</h2>
+    <div id="stats-err"></div>
+    <div id="stats-summary"></div>
+    <div class="stats-table-wrap" id="stats-users-table"></div>
+    <button type="button" class="btn btn-teal" id="stats-load-btn" style="margin-top:14px;">רענון נתונים</button>
+  </div>
+  <div class="admin-card" id="stats-setup-card" style="display:none;">
+    <h2>לקוחות ושימוש — עוד לא חובר</h2>
+    <p>כדי לראות כאן כל משתמש שנרשם ובאיזה כלים באתר הוא השתמש בפועל (איזו תבנית אתר, האם הוריד, האם השתמש בבניית קורות חיים), יש להריץ הגדרה חד-פעמית:</p>
+    <ol>
+      <li>ב-Supabase Dashboard → SQL Editor, מריצים את הקובץ <code>supabase/sql/profiles.sql</code> מתוך הריפו — זה יוצר טבלת <code>profiles</code> שמתמלאת אוטומטית בכל הרשמה חדשה.</li>
+      <li>פורסים את הפונקציה <code>supabase functions deploy admin-stats</code> (או מדביקים את <code>supabase/functions/admin-stats/index.ts</code> ב-Dashboard → Edge Functions → New Function).</li>
+      <li>ב-Dashboard → Edge Functions → admin-stats → Secrets, מוסיפים סוד בשם <code>ADMIN_STATS_KEY</code> עם כל מחרוזת שרוצים (למשל סיסמה אקראית).</li>
+      <li>מדביקים את אותה מחרוזת בדיוק בקבוע <code>ADMIN_STATS_KEY</code> בקובץ <code>js/admin.js</code>.</li>
+    </ol>
+  </div>
 </div>
 
-<script src="js/admin.js?v=6"></script>
+<script src="js/site-templates.js"></script>
+<script src="js/admin.js?v=7"></script>
 </body>
 </html>
