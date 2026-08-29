@@ -112,6 +112,18 @@ header.site {
 .my-site-row.active { background: var(--ice); }
 .my-site-row-name { display: block; font-size: 13px; font-weight: 600; line-height: 1.4; }
 .my-site-row-tpl { display: block; font-size: 11px; color: var(--grey); line-height: 1.4; }
+
+/* account-settings.html's content dashboard only — a delete button sits
+   beside the link (never inside it, so its click never also fires the
+   link's navigation). */
+.my-content-row { display: flex; align-items: center; gap: 4px; }
+.my-content-row .my-site-row { flex: 1; min-width: 0; }
+.my-content-delete-btn {
+  flex-shrink: 0; background: none; border: none; cursor: pointer; font-size: 15px;
+  padding: 8px 10px; border-radius: 8px; opacity: .55; transition: opacity .15s ease, background .15s ease;
+}
+.my-content-delete-btn:hover { opacity: 1; background: #FBEAEA; }
+.my-content-delete-btn:disabled { opacity: .3; cursor: default; }
 .nav-account-wrap { position: relative; display: inline-flex; }
 .nav-account-dropdown {
   position: absolute; top: calc(100% + 10px); inset-inline-end: 0;

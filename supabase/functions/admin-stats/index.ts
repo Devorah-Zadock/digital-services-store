@@ -6,8 +6,9 @@
 //
 // Runs entirely with the service-role key Supabase injects into every Edge
 // Function automatically (no secret to configure for that part) — RLS on
-// profiles/site_projects/cv_saves has no public policies, so this is the
-// only place that can read across every user's rows at once.
+// customer_profiles has no public policies at all, and site_projects/
+// cv_saves only allow each user to read their own row, so this is the only
+// place that can read across every user's rows at once.
 //
 // Gated by a static shared token rather than real auth, matching every
 // other admin-only surface in this codebase (see admin.js's own comment):
@@ -50,7 +51,7 @@ Deno.serve(async (req: Request) => {
 
     const [{ data: profiles, error: profilesErr }, { data: projects, error: projectsErr }, { data: cvSaves, error: cvErr }] =
       await Promise.all([
-        admin.from("profiles").select("id, email, created_at").order("created_at", { ascending: false }),
+        admin.from("customer_profiles").select("id, email, created_at").order("created_at", { ascending: false }),
         admin.from("site_projects").select("user_id, template, status, created_at"),
         admin.from("cv_saves").select("user_id"),
       ]);

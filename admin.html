@@ -98,7 +98,7 @@
     <h2>לקוחות ושימוש — עוד לא חובר</h2>
     <p>כדי לראות כאן כל משתמש שנרשם ובאיזה כלים באתר הוא השתמש בפועל (איזו תבנית אתר, האם הוריד, האם השתמש בבניית קורות חיים), יש להריץ הגדרה חד-פעמית:</p>
     <ol>
-      <li>ב-Supabase Dashboard → SQL Editor, מריצים את הקובץ <code>supabase/sql/profiles.sql</code> מתוך הריפו — זה יוצר טבלת <code>profiles</code> שמתמלאת אוטומטית בכל הרשמה חדשה.</li>
+      <li>ב-Supabase Dashboard → SQL Editor, מריצים את הקובץ <code>supabase/sql/customer_profiles.sql</code> מתוך הריפו — זה יוצר טבלת <code>customer_profiles</code> שמתמלאת אוטומטית בכל הרשמה חדשה.</li>
       <li>פורסים את הפונקציה <code>supabase functions deploy admin-stats</code> (או מדביקים את <code>supabase/functions/admin-stats/index.ts</code> ב-Dashboard → Edge Functions → New Function).</li>
       <li>ב-Dashboard → Edge Functions → admin-stats → Secrets, מוסיפים סוד בשם <code>ADMIN_STATS_KEY</code> עם כל מחרוזת שרוצים (למשל סיסמה אקראית).</li>
       <li>מדביקים את אותה מחרוזת בדיוק בקבוע <code>ADMIN_STATS_KEY</code> בקובץ <code>js/admin.js</code>.</li>
