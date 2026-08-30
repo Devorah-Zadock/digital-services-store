@@ -146,7 +146,7 @@ body.has-sites-rail .nav-account-wrap { display: none; }
 /* Laid out like a real app rail: brand pinned top, account pinned
    bottom, content in between scrolls on its own. */
 .my-panel-brand {
-  display: flex; align-items: center; gap: 7px; padding: 18px 16px 14px; flex-shrink: 0;
+  display: flex; align-items: center; gap: 7px; padding: 9px 16px 14px; flex-shrink: 0;
   font-size: 22px; font-weight: 700; color: var(--teal-dark); text-decoration: none;
   border-bottom: 1px solid #E2E7E4;
 }
@@ -183,6 +183,12 @@ body.has-sites-rail .nav-account-wrap { display: none; }
 .my-site-row.active { background: var(--ice); box-shadow: inset 2px 0 0 var(--teal); }
 .my-site-row-name { display: block; font-size: 13px; font-weight: 600; line-height: 1.4; }
 .my-site-row-tpl { display: block; font-size: 11px; color: var(--grey); line-height: 1.4; }
+
+/* Not-built-yet placeholder: reads as a plain line of text with one
+   inline link at the end, not a whole row that lights up like a button. */
+.my-panel-empty-row { padding: 8px 10px; font-size: 13px; font-weight: 600; color: var(--dark); line-height: 1.4; }
+.my-panel-empty-link { color: var(--cat-dev); text-decoration: none; }
+.my-panel-empty-link:hover { text-decoration: underline; }
 
 /* A delete button sits beside the link (never inside it, so its click
    never also fires the link's navigation) — used both by the global

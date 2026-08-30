@@ -92,6 +92,14 @@ function openPanelAccountMenu(wrap, email) {
   setTimeout(() => document.addEventListener("click", onPanelAccountOutsideClick, true), 0);
 }
 
+/* Not-built-yet state: plain text, not a row that looks clickable
+   everywhere — only the trailing call-to-action reads as a link. */
+function myPanelEmptyRowHtml(opts) {
+  return `<div class="my-panel-empty-row">
+    ${myPanelEscapeHtml(opts.text)} <a href="${opts.href}" class="my-panel-empty-link">${myPanelEscapeHtml(opts.linkText)}</a>
+  </div>`;
+}
+
 function myPanelRowHtml(opts) {
   const del = opts.deleteAttr
     ? `<button type="button" class="my-content-delete-btn" data-panel-delete="${opts.deleteAttr}" title="מחיקה" aria-label="מחיקה">${myPanelTrashIcon()}</button>`
@@ -151,7 +159,7 @@ async function loadMyPanel(user) {
       });
     }).join("");
   } else {
-    sitesList.innerHTML = myPanelRowHtml({ href: "sites.html?browse=1", name: "עדיין לא בנית אתר — לבניה" });
+    sitesList.innerHTML = myPanelEmptyRowHtml({ href: "sites.html?browse=1", text: "עדיין לא בנית אתר —", linkText: "לבניה" });
   }
 
   const { data: cv } = await supabaseClient.from("cv_saves").select("data").eq("user_id", user.id).maybeSingle();
@@ -164,7 +172,7 @@ async function loadMyPanel(user) {
       active: !!(ctx && ctx.kind === "cv"),
     });
   } else {
-    cvList.innerHTML = myPanelRowHtml({ href: "builder.html", name: "עדיין לא ערכת קורות חיים — לעריכה" });
+    cvList.innerHTML = myPanelEmptyRowHtml({ href: "builder.html", text: "עדיין לא ערכת קורות חיים —", linkText: "לעריכה" });
   }
 }
 
