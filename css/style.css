@@ -229,6 +229,14 @@ section { padding: 88px 0; }
 .tab:hover { border-color: var(--teal); transform: translateY(-1px); }
 .tab.active { background: linear-gradient(135deg, var(--teal), var(--teal-light)); border-color: var(--teal); color: var(--white); }
 
+/* Primary (document type) vs. secondary (profession, CV-only) filter
+   rows on the catalog — visually distinct so they read as two different
+   kinds of choice, not one flat list of equal-weight buttons. */
+.tabs-primary .tab { font-size: 15px; font-weight: 700; padding: 11px 26px; }
+.tabs-sub { margin-top: -22px; margin-bottom: 34px; }
+.tabs-sub .tab { font-size: 12.5px; font-weight: 600; padding: 6px 16px; border-color: #E7EBE9; color: var(--grey); }
+.tabs-sub .tab.active { background: var(--ice); color: var(--teal-dark); border-color: var(--teal-light); }
+
 /* ---------- Product grid / cards ---------- */
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
 .grid.grid-2 { grid-template-columns: repeat(2, 1fr); }

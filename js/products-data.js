@@ -407,12 +407,27 @@ const PRODUCTS = [
   },
 ];
 
-const CATEGORIES = [
+/* Two real axes, not one flat list: WHAT KIND of document (top-level
+   type — every product belongs to exactly one), and for CVs specifically,
+   WHICH PROFESSION they're written for (a second, narrower filter that
+   only makes sense once "קורות חיים" is already selected — a deck or a
+   spreadsheet was never "for developers" the way a CV is). Mixing both
+   axes into one row of pills (the old CATEGORIES array) is exactly what
+   read as cluttered: "כללי" and "מצגות" look like peers but aren't. */
+const PRODUCT_TYPES = [
+  { slug: "cv", label: "קורות חיים" },
+  { slug: "deck", label: "מצגות עסקיות" },
+  { slug: "xlsx", label: "גיליונות Excel" },
+];
+const CV_PROFESSIONS = [
   { slug: "all", label: "הכל" },
   { slug: "general", label: "כללי" },
   { slug: "dev", label: "תכנות" },
   { slug: "design", label: "עיצוב" },
   { slug: "accounting", label: "הנהלת חשבונות" },
-  { slug: "deck", label: "מצגות" },
-  { slug: "xlsx", label: "גיליונות" },
 ];
+function productType(p) {
+  if (p.categorySlug === "deck") return "deck";
+  if (p.categorySlug === "xlsx") return "xlsx";
+  return "cv";
+}
