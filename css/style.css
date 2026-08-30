@@ -192,6 +192,49 @@ header.site {
 }
 .hero p.lead { font-size: 18px; color: #DCEBE5; max-width: 620px; margin: 0 auto 34px; animation: fadeUp .6s .08s ease both; }
 .hero .cta-row { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; animation: fadeUp .6s .16s ease both; }
+
+/* ---------- Homepage hero (asymmetric, own layout — not the shared
+   centered .hero used by inner pages) ---------- */
+.home-hero { position: relative; overflow: hidden; background: var(--ice); padding: 90px 24px 76px; }
+.home-hero-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 48px; align-items: center; }
+.home-hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px; background: var(--white); border: 1px solid #DCE9E4;
+  padding: 7px 16px; border-radius: 20px; font-size: 12.5px; font-weight: 700; color: var(--teal-dark); margin-bottom: 22px;
+}
+.home-hero h1 { font-size: 52px; font-weight: 800; line-height: 1.08; letter-spacing: -.02em; margin: 0 0 20px; color: var(--dark); }
+.home-hero h1 .accent { color: var(--teal); }
+.home-hero p.lead { font-size: 17px; color: var(--grey); max-width: 460px; margin: 0 0 30px; }
+.home-hero .cta-row { display: flex; gap: 14px; flex-wrap: wrap; }
+.btn-outline-dark { background: transparent; color: var(--teal-dark); border: 1.5px solid var(--teal-dark); }
+.btn-outline-dark:hover { background: var(--teal-dark); color: var(--white); transform: translateY(-2px); }
+
+.home-hero-visual { position: relative; height: 380px; }
+.home-hero-mark { position: absolute; inset: 12% 16%; width: 68%; height: 68%; opacity: .1; }
+.home-hero-mark .bm-face { fill: var(--teal); }
+.home-hero-mark .bm-fold { fill: var(--gold); }
+.home-hero-card {
+  position: absolute; background: var(--white); border: 1px solid #E4E9E7; border-radius: 16px;
+  box-shadow: 0 20px 44px rgba(15, 51, 43, .14); padding: 16px 20px;
+}
+.home-hero-card.card-a { top: 6%; inset-inline-start: 2%; width: 220px; transform: rotate(-4deg); }
+.home-hero-card.card-b {
+  bottom: 12%; inset-inline-end: 0; width: 140px; text-align: center; transform: rotate(3deg);
+  background: linear-gradient(135deg, var(--gold-light), var(--gold)); border: none;
+}
+.home-hero-card.card-c { top: 44%; inset-inline-start: 30%; width: 200px; transform: rotate(2deg); }
+.hhc-tag { display: inline-block; background: var(--ice); color: var(--teal-dark); font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 14px; margin-bottom: 10px; }
+.hhc-tag.alt { background: #FBF1DD; color: #8A6212; }
+.hhc-bar { height: 8px; border-radius: 4px; background: #EEF1EF; margin-bottom: 7px; }
+.hhc-bar.short { width: 60%; }
+.hhc-price { font-size: 26px; font-weight: 800; color: var(--teal-dark); }
+.hhc-price-note { font-size: 11.5px; color: var(--teal-dark); opacity: .85; }
+@media (max-width: 900px) {
+  .home-hero-grid { grid-template-columns: 1fr; }
+  .home-hero h1 { font-size: 36px; }
+  .home-hero-visual { height: 260px; margin-top: 10px; }
+  .home-hero-card.card-a { width: 180px; }
+  .home-hero-card.card-c { width: 170px; inset-inline-start: 20%; }
+}
 .btn {
   display: inline-block; padding: 14px 30px; border-radius: 30px;
   font-weight: 600; font-size: 15px; cursor: pointer; border: none;
