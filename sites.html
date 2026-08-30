@@ -37,21 +37,6 @@
     transition: border-color .15s ease, background .15s ease, color .15s ease;
   }
   .preview-tab-btn.active { border-color: var(--teal); background: var(--ice); color: var(--teal-dark); }
-  /* A real, viewport-pinned sidebar — not a card floating inside the
-     centered .container (that read as "a card with buttons", not as
-     page chrome, and could never actually reach the browser edge no
-     matter how it was styled). One single mount, reused for both the
-     catalog and wizard views instead of duplicating it per view. */
-  .my-sites-rail {
-    position: fixed; top: var(--header-h, 70px); bottom: 0; inset-inline-start: 0;
-    width: 220px; overflow-y: auto; background: var(--grey-light);
-    border-inline-end: 1px solid #E2E7E4; padding: 20px 16px; z-index: 30;
-  }
-  body.has-sites-rail .container { padding-inline-start: 244px; }
-  @media (max-width: 900px) {
-    .my-sites-rail { position: static; width: 100%; height: auto; border-inline-end: none; border-bottom: 1px solid #E2E7E4; margin-bottom: 16px; }
-    body.has-sites-rail .container { padding-inline-start: 24px; }
-  }
   .finish-gate-note { font-size: 12px; color: var(--grey); margin: 10px 0 0; line-height: 1.65; }
   body.preview-focus header.site,
   body.preview-focus .my-sites-rail,
@@ -60,7 +45,7 @@
   body.preview-focus .export-panel,
   body.preview-focus footer.site,
   body.preview-focus #full-preview-btn { display: none !important; }
-  body.preview-focus .container { padding-inline-start: 24px !important; }
+  body.preview-focus { margin-inline-start: 0 !important; }
   body.preview-focus .builder-wrap { grid-template-columns: 1fr; }
   body.preview-focus .preview-sticky { position: static; }
   body.preview-focus #site-preview-frame { height: 90vh; }
@@ -95,17 +80,6 @@
     <button class="burger" aria-label="תפריט">☰</button>
   </nav>
 </header>
-<script>
-  (function () {
-    var h = document.querySelector("header.site");
-    if (h) document.documentElement.style.setProperty("--header-h", h.offsetHeight + "px");
-  })();
-</script>
-
-<aside class="my-sites-rail" data-my-sites-rail style="display:none;">
-  <h3 class="my-sites-rail-title">האתרים שלי</h3>
-  <div class="my-sites-list" data-my-sites-list></div>
-</aside>
 
 <section class="builder-top no-print">
   <div class="container">
@@ -263,6 +237,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>
+<script src="js/my-panel.js"></script>
 <script src="js/require-auth.js"></script>
 <script src="js/site-cloud-save.js"></script>
 <script src="js/main.js"></script>

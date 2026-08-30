@@ -109,18 +109,28 @@ header.site {
 .nav-login:hover { color: var(--teal-dark); }
 .nav-login-email { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: ltr; text-align: right; }
 
-/* Shared "switchable list" widget — the sites rail on sites.html and the
-   content dashboard on account-settings.html both use it. On sites.html
-   it's a true persistent sidebar (sticky, own column) rather than
-   scrolling away inside the long form — see .wizard-outer below. */
+/* Shared "switchable list" widget. .my-sites-rail itself is the global
+   "my content" panel (js/my-panel.js) mounted on every logged-in page —
+   a real fixed sidebar flush to the browser edge, not a card floating
+   inside the centered .container (that read as "a card with buttons,"
+   not as page chrome, and could never actually reach the edge). The
+   plain .my-sites-list/.my-site-row styling below is reused as-is by
+   account-settings.html's own content dashboard, which isn't a fixed
+   panel — just a list inside its own card there. */
 .my-sites-rail {
-  background: var(--white); border: 1px solid #EAEDEC; border-radius: var(--radius); padding: 14px; margin-bottom: 16px;
-  position: sticky; top: 90px; max-height: calc(100vh - 110px); overflow-y: auto;
+  position: fixed; top: var(--header-h, 70px); bottom: 0; inset-inline-start: 0;
+  width: 220px; overflow-y: auto; background: var(--grey-light);
+  border-inline-end: 1px solid #E2E7E4; padding: 20px 16px; z-index: 30;
+}
+body.has-sites-rail { margin-inline-start: 220px; }
+@media (max-width: 900px) {
+  .my-sites-rail { position: static; width: 100%; height: auto; border-inline-end: none; border-bottom: 1px solid #E2E7E4; margin-bottom: 16px; }
+  body.has-sites-rail { margin-inline-start: 0; }
 }
 .my-sites-rail-title { font-size: 12.5px; font-weight: 700; color: var(--teal-dark); margin: 0 0 8px; }
 .my-sites-list { display: flex; flex-direction: column; gap: 2px; }
 .my-site-row { display: block; padding: 8px 10px; border-radius: 8px; text-decoration: none; color: var(--dark); transition: background .15s ease; }
-.my-site-row:hover { background: var(--grey-light); }
+.my-site-row:hover { background: var(--white); }
 .my-site-row.active { background: var(--ice); }
 .my-site-row-name { display: block; font-size: 13px; font-weight: 600; line-height: 1.4; }
 .my-site-row-tpl { display: block; font-size: 11px; color: var(--grey); line-height: 1.4; }
