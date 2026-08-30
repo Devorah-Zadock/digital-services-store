@@ -122,6 +122,21 @@ body.has-sites-rail { margin-inline-start: 220px; }
   body.has-sites-rail { margin-inline-start: 0; }
 }
 
+/* The rail is fixed to the same physical edge as the cookie notice and the
+   feedback/chat FABs, on a lower z-index — without this, any of them
+   painting on top silently hides the rail's account/logout footer (the
+   cookie notice, shown by default to new visitors, did exactly that).
+   Push them clear of the rail's width whenever it's actually fixed
+   (i.e. above the same 900px breakpoint the rail itself uses). */
+body.has-sites-rail .cookie-notice { inset-inline-start: 220px; }
+@media (min-width: 901px) {
+  body.has-sites-rail .fab-chat,
+  body.has-sites-rail .chat-panel { right: 244px; }
+}
+@media (max-width: 900px) {
+  body.has-sites-rail .cookie-notice { inset-inline-start: 0; }
+}
+
 /* Laid out like a real app rail: brand pinned top, account pinned
    bottom, content in between scrolls on its own. */
 .my-panel-brand {
