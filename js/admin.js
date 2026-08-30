@@ -59,12 +59,14 @@ function renderCustomerStats(data) {
 
   const userRows = data.users
     .map((u) => {
-      const sitesLabel = u.sites.length
-        ? u.sites.map((s) => `${escapeHtml(templateLabel(s.template))}${s.status === "finalized" ? " ✓" : " (טיוטה)"}`).join(", ")
+      const sitesHtml = u.sites.length
+        ? u.sites.map((s) => `<span class="stats-chip">${escapeHtml(templateLabel(s.template))}${s.status === "finalized" ? " ✓" : " (טיוטה)"}<button type="button" class="stats-del-btn" data-del="site:${s.id}" title="מחיקת האתר הזה">✕</button></span>`).join("")
         : "—";
-      const cvLabel = u.usedCvBuilder ? "כן" : "—";
+      const cvHtml = u.usedCvBuilder
+        ? `<span class="stats-chip">כן<button type="button" class="stats-del-btn" data-del="cv:${u.id}" title="מחיקת קורות החיים">✕</button></span>`
+        : "—";
       const date = u.createdAt ? new Date(u.createdAt).toLocaleDateString("he-IL") : "—";
-      return `<tr><td>${escapeHtml(u.email || u.id)}</td><td>${date}</td><td>${sitesLabel}</td><td>${cvLabel}</td></tr>`;
+      return `<tr><td>${escapeHtml(u.email || u.id)}</td><td>${date}</td><td>${sitesHtml}</td><td>${cvHtml}</td></tr>`;
     })
     .join("");
 
@@ -75,6 +77,17 @@ function renderCustomerStats(data) {
     </table>`;
 }
 
+async function callAdminStats(body) {
+  const res = await fetch(ADMIN_SUPABASE_URL + "/functions/v1/admin-stats", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + ADMIN_SUPABASE_ANON_KEY },
+    body: JSON.stringify(Object.assign({ adminKey: ADMIN_STATS_KEY }, body)),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || String(res.status));
+  return data;
+}
+
 async function loadCustomerStats() {
   const btn = document.getElementById("stats-load-btn");
   const err = document.getElementById("stats-err");
@@ -82,22 +95,37 @@ async function loadCustomerStats() {
   btn.disabled = true;
   btn.textContent = "טוענים...";
   try {
-    const res = await fetch(ADMIN_SUPABASE_URL + "/functions/v1/admin-stats", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer " + ADMIN_SUPABASE_ANON_KEY },
-      body: JSON.stringify({ adminKey: ADMIN_STATS_KEY }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      err.textContent = "שגיאה בטעינת הנתונים: " + (data.error || res.status);
-      return;
-    }
+    const data = await callAdminStats({ action: "stats" });
     renderCustomerStats(data);
   } catch (e) {
-    err.textContent = "שגיאת חיבור. נסו שוב בעוד רגע.";
+    err.textContent = "שגיאה בטעינת הנתונים: " + e.message;
   } finally {
     btn.disabled = false;
     btn.textContent = "רענון נתונים";
+  }
+}
+
+/* Deletion is admin-only reach into another customer's data — worth a
+   real confirmation, not a silent click. The Edge Function returns fresh
+   stats right after the delete, so the table re-renders from that
+   response instead of firing a second round-trip. */
+async function handleStatsDeleteClick(e) {
+  const btn = e.target.closest("[data-del]");
+  if (!btn) return;
+  const [kind, id] = btn.dataset.del.split(":");
+  const label = kind === "cv" ? "את קורות החיים של הלקוח הזה" : "את האתר הזה של הלקוח";
+  if (!confirm(`למחוק ${label}? הפעולה בלתי הפיכה.`)) return;
+  const err = document.getElementById("stats-err");
+  err.textContent = "";
+  btn.disabled = true;
+  try {
+    const data = kind === "cv"
+      ? await callAdminStats({ action: "delete-cv", userId: id })
+      : await callAdminStats({ action: "delete-site", siteId: id });
+    renderCustomerStats(data);
+  } catch (e2) {
+    err.textContent = "שגיאה במחיקה: " + e2.message;
+    btn.disabled = false;
   }
 }
 
@@ -112,6 +140,7 @@ function showCustomerStatsCard() {
   setup.style.display = "none";
   card.style.display = "";
   document.getElementById("stats-load-btn").addEventListener("click", loadCustomerStats);
+  document.getElementById("stats-users-table").addEventListener("click", handleStatsDeleteClick);
   loadCustomerStats();
 }
 
