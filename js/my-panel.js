@@ -36,6 +36,62 @@ function myPanelChevronIcon() {
   return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>';
 }
 
+function myPanelAccountIcon() {
+  return '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="flex:none;"><path d="M12 12c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0 2c-3.33 0-10 1.67-10 5v3h20v-3c0-3.33-6.67-5-10-5z"/></svg>';
+}
+
+/* Same dropdown as the header's own account menu (js/nav-auth.js) —
+   reused class names so it inherits that styling as-is, just opened
+   upward ("dropup") since this trigger sits at the very bottom of the
+   rail instead of at the top of the header. */
+function closePanelAccountMenu() {
+  const dd = document.querySelector(".my-panel-account .nav-account-dropdown");
+  if (dd) dd.remove();
+  document.removeEventListener("click", onPanelAccountOutsideClick, true);
+}
+
+function onPanelAccountOutsideClick(e) {
+  const dd = document.querySelector(".my-panel-account .nav-account-dropdown");
+  const toggle = document.getElementById("my-panel-account-toggle");
+  if (dd && !dd.contains(e.target) && toggle && !toggle.contains(e.target)) {
+    closePanelAccountMenu();
+  }
+}
+
+function openPanelAccountMenu(wrap, email) {
+  closePanelAccountMenu();
+  const dd = document.createElement("div");
+  dd.className = "nav-account-dropdown dropup";
+  dd.innerHTML = `
+    <div class="nav-account-email">${myPanelEscapeHtml(email)}</div>
+    <a href="account-settings.html" class="nav-account-settings">החשבון שלי</a>
+    <button type="button" class="nav-account-logout">התנתקות</button>
+    <div class="nav-account-confirm" hidden>
+      <p>להתנתק?</p>
+      <div class="nav-account-confirm-row">
+        <button type="button" class="nav-confirm-yes">כן, להתנתק</button>
+        <button type="button" class="nav-confirm-no">ביטול</button>
+      </div>
+    </div>
+  `;
+  wrap.appendChild(dd);
+
+  dd.querySelector(".nav-account-logout").addEventListener("click", () => {
+    dd.querySelector(".nav-account-logout").hidden = true;
+    dd.querySelector(".nav-account-confirm").hidden = false;
+  });
+  dd.querySelector(".nav-confirm-no").addEventListener("click", () => {
+    dd.querySelector(".nav-account-confirm").hidden = true;
+    dd.querySelector(".nav-account-logout").hidden = false;
+  });
+  dd.querySelector(".nav-confirm-yes").addEventListener("click", async () => {
+    await supabaseClient.auth.signOut();
+    window.location.reload();
+  });
+
+  setTimeout(() => document.addEventListener("click", onPanelAccountOutsideClick, true), 0);
+}
+
 function myPanelRowHtml(opts) {
   const del = opts.deleteAttr
     ? `<button type="button" class="my-content-delete-btn" data-panel-delete="${opts.deleteAttr}" title="מחיקה" aria-label="מחיקה">${myPanelTrashIcon()}</button>`
@@ -156,8 +212,10 @@ function mountMyPanel() {
     <div class="my-panel-subtitle">התבניות שלי</div>
     <div class="my-panel-body">${myPanelSectionsHtml()}</div>
     <div class="my-panel-account">
-      <span class="my-panel-account-email"></span>
-      <button type="button" class="my-panel-logout">התנתקות</button>
+      <button type="button" class="my-panel-account-toggle" id="my-panel-account-toggle">
+        ${myPanelAccountIcon()}
+        <span class="my-panel-account-email"></span>
+      </button>
     </div>
   `;
   document.body.appendChild(aside);
@@ -182,14 +240,20 @@ function mountMyPanel() {
     deleteMyPanelItem(kind, id, btn);
   });
 
-  aside.querySelector(".my-panel-logout").addEventListener("click", async () => {
-    if (!confirm("להתנתק?")) return;
-    await supabaseClient.auth.signOut();
-    window.location.reload();
+  aside.querySelector("#my-panel-account-toggle").addEventListener("click", (e) => {
+    e.stopPropagation();
+    const wrap = aside.querySelector(".my-panel-account");
+    if (wrap.querySelector(".nav-account-dropdown")) {
+      closePanelAccountMenu();
+      return;
+    }
+    const email = aside.querySelector(".my-panel-account-email").textContent;
+    openPanelAccountMenu(wrap, email);
   });
 }
 
 function unmountMyPanel() {
+  closePanelAccountMenu();
   const aside = document.getElementById("my-panel");
   if (aside) aside.remove();
   document.body.classList.remove("has-sites-rail");
