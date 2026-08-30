@@ -137,11 +137,14 @@ body.has-sites-rail .cookie-notice { inset-inline-start: 220px; }
   body.has-sites-rail .cookie-notice { inset-inline-start: 0; }
 }
 
-/* The rail carries its own brand mark (top) and account control
-   (bottom) — once it's mounted, the header's copies of both are a
-   redundant second logo and second account menu, not extra chrome. */
-body.has-sites-rail header.site .brand,
+/* The rail carries its own account control (bottom) — once it's
+   mounted, the header's copy is a redundant second account menu.
+   The header's own brand mark stays (just its "DeskKit" wordmark
+   hidden, so it isn't a second full logo) — it's what actually sits
+   in the header's own white strip above the rail; the rail's brand
+   row is a second, separate thing directly below it. */
 body.has-sites-rail .nav-account-wrap { display: none; }
+body.has-sites-rail header.site .brand .brand-text { display: none; }
 
 /* Laid out like a real app rail: brand pinned top, account pinned
    bottom, content in between scrolls on its own. */
