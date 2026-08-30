@@ -1235,6 +1235,150 @@ function renderNoirSite(d, page) {
   return siteDoc({ title: titles[page], description: dd.tagline, css }, `${header}${main}${footer}`).replace("<body>", '<body class="nr-body">');
 }
 
+/* Small reveal-on-scroll used only by this template: headings/cards start
+   faded + shifted down and settle into place the first time they cross
+   into view. Respects prefers-reduced-motion by simply never hiding
+   anything in the first place, rather than hiding then trying to detect
+   the media query in JS. */
+function scrollRevealScript() {
+  return `<script>
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches && "IntersectionObserver" in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) { entry.target.classList.add("ag-in"); io.unobserve(entry.target); }
+        });
+      }, { threshold: 0.2 });
+      document.querySelectorAll(".ag-reveal").forEach(function (el) { io.observe(el); });
+    }
+  </script>`;
+}
+
+/* ---------- Template 11: creative studio (asymmetric split hero, dark) ---------- */
+function renderStudioSite(d, page) {
+  page = page || "index";
+  const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const dd = withFallback(d);
+  const wa = waLink(d.whatsapp || d.phone);
+  const navLinksHtml = siteNavLinks(d, page);
+  const embedSrc = videoEmbedSrc(d.videoUrl);
+  const inPageRail = !navLinksHtml && page === "index";
+  const railLinks = navLinksHtml
+    ? navLinksHtml
+    : inPageRail
+      ? `<a href="#ag-services">שירותים</a><a href="#ag-about">אודות</a>${dd._hasContact || wa ? `<a href="#ag-contact">יצירת קשר</a>` : ""}`
+      : "";
+  const css = `
+    body.ag-body { background:#0C0C0E; color:#F1F0EC; scroll-behavior:smooth; }
+    .ag-rail { position:fixed; top:0; bottom:0; inset-inline-start:0; width:52px; z-index:40; display:flex; align-items:center; justify-content:center; }
+    .ag-rail-inner { display:flex; flex-direction:column; gap:26px; }
+    .ag-rail a { writing-mode:vertical-rl; text-orientation:mixed; font-size:11.5px; font-weight:700; letter-spacing:.08em; color:#8C8C88; }
+    .ag-rail a.active, .ag-rail a:hover { color:#${pal.ice}; }
+    @media (max-width:760px) { .ag-rail { display:none; } }
+
+    .ag-hero { min-height:88vh; display:grid; grid-template-columns:1fr 1fr; align-items:stretch; }
+    .ag-hero-art { position:relative; overflow:hidden; background:#111; min-height:340px; }
+    .ag-hero-art img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+    .ag-hero-art .ag-blob {
+      position:absolute; inset:-20%; opacity:.9;
+      background: radial-gradient(circle at 30% 30%, #${pal.primary}, transparent 55%),
+                  radial-gradient(circle at 70% 70%, #${pal.primaryDark}, transparent 60%),
+                  radial-gradient(circle at 60% 20%, #${pal.ice}55, transparent 50%);
+      filter: blur(40px); animation: ag-spin 22s linear infinite;
+    }
+    @media (prefers-reduced-motion: reduce) { .ag-hero-art .ag-blob { animation:none; } }
+    @keyframes ag-spin { from { transform:rotate(0deg) scale(1.15); } to { transform:rotate(360deg) scale(1.15); } }
+    .ag-hero-text { display:flex; flex-direction:column; justify-content:center; padding:60px 56px 60px 24px; }
+    .ag-avatar { width:52px; height:52px; border-radius:50%; overflow:hidden; border:2px solid #${pal.primary}; margin-bottom:26px; }
+    .ag-avatar img { width:100%; height:100%; object-fit:cover; }
+    .ag-hero-text .kicker { font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:#${pal.ice}; margin-bottom:14px; }
+    .ag-hero-text h1 { font-size:58px; font-weight:800; letter-spacing:-.02em; line-height:1.02; margin:0 0 14px; }
+    .ag-hero-text p { font-size:15.5px; color:#B7B6B0; max-width:380px; margin:0 0 30px; }
+    .ag-cta { display:inline-flex; align-items:center; gap:8px; background:#${pal.primary}; color:#0C0C0E; font-weight:800; padding:13px 26px; border-radius:30px; font-size:14px; width:fit-content; }
+    @media (max-width:760px) { .ag-hero { grid-template-columns:1fr; } .ag-hero-text { padding:48px 24px; } .ag-hero-text h1 { font-size:38px; } .ag-hero-art { min-height:260px; } }
+
+    .ag-reveal { opacity:0; transform:translateY(18px); transition:opacity .7s ease, transform .7s ease; }
+    .ag-reveal.ag-in { opacity:1; transform:translateY(0); }
+
+    .ag-section { padding:80px 0; border-top:1px solid #232321; }
+    .ag-kicker { font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#${pal.ice}; }
+    .ag-section h2 { font-size:32px; font-weight:800; letter-spacing:-.01em; margin:12px 0 0; max-width:640px; }
+    .ag-about-body { font-size:16.5px; color:#C8C7C1; line-height:1.85; max-width:640px; margin-top:22px; }
+
+    .ag-grid { margin-top:40px; display:grid; grid-template-columns:repeat(2,1fr); border-top:1px solid #232321; border-inline-start:1px solid #232321; }
+    .ag-cell { border-bottom:1px solid #232321; border-inline-end:1px solid #232321; padding:30px 28px; }
+    .ag-cell h3 { margin:0 0 8px; font-size:17px; font-weight:700; }
+    .ag-cell p { margin:0; font-size:13.5px; color:#9C9B96; line-height:1.6; }
+    .ag-cell .price { display:block; margin-top:10px; font-size:12.5px; font-weight:700; color:#${pal.ice}; }
+    @media (max-width:600px) { .ag-grid { grid-template-columns:1fr; } }
+
+    .ag-contact-lines { margin-top:22px; }
+    .ag-contact-lines .line { font-size:14.5px; color:#C8C7C1; margin-bottom:8px; }
+    .ag-footer { border-top:1px solid #232321; padding:26px 0; text-align:center; font-size:11.5px; letter-spacing:.03em; color:#7A7975; }
+  `;
+  const rail = railLinks ? `<div class="ag-rail"><div class="ag-rail-inner">${railLinks}</div></div>` : "";
+  const footer = `<div class="ag-footer">© ${new Date().getFullYear()} ${escapeHtmlS(dd.businessName)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}${scrollRevealScript()}`;
+
+  function contactBlock(heading) {
+    return `
+      <section class="ag-section" id="ag-contact"><div class="container ag-reveal">
+        <span class="ag-kicker">נשמח לשמוע מכם</span>
+        <h2>${heading}</h2>
+        <div class="ag-contact-lines">
+          ${dd._hasContact ? `
+            ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
+            ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
+            ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
+          ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת ליצירת קשר.</div>`}
+        </div>
+        ${wa ? `<a class="ag-cta" style="margin-top:20px;" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}
+      </div></section>`;
+  }
+
+  let main;
+  if (page === "about") {
+    main = `
+      <section class="ag-section" style="border-top:none; padding-top:64px;"><div class="container ag-reveal">
+        <span class="ag-kicker">נעים להכיר</span>
+        <h2>${escapeHtmlS(dd.businessName)}</h2>
+        <p class="ag-about-body">${nl2brS(dd.about)}</p>
+      </div></section>`;
+  } else if (page === "contact") {
+    main = contactBlock("יצירת קשר").replace('style="border-top:none;', 'style="border-top:none; padding-top:64px;');
+  } else {
+    const services = dd._services;
+    main = `
+      <section class="ag-hero">
+        <div class="ag-hero-art">
+          ${d.heroImage ? `<img src="${d.heroImage}" alt="">` : `<div class="ag-blob"></div>`}
+        </div>
+        <div class="ag-hero-text">
+          ${d.heroImage ? `<div class="ag-avatar"><img src="${d.heroImage}" alt=""></div>` : ""}
+          <span class="kicker">${dd.tagline ? "ברוכים הבאים" : "סטודיו יצירתי"}</span>
+          <h1>${escapeHtmlS(dd.businessName)}</h1>
+          <p>${escapeHtmlS(dd.tagline)}</p>
+          <a class="ag-cta" href="${wa || (d.email ? "mailto:" + d.email : inPageRail ? "#ag-contact" : "#")}"${wa ? ' target="_blank" rel="noopener"' : ""}>רוצה להכיר יותר? ‹</a>
+        </div>
+      </section>
+      <section class="ag-section" id="ag-services" style="border-top:none;"><div class="container ag-reveal">
+        <span class="ag-kicker">זה מה שהעסק שלך מקבל</span>
+        <h2>השירותים שלנו</h2>
+        <div class="ag-grid">${services.map((s) => `
+          <div class="ag-cell"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<span class="price">${escapeHtmlS(s.price)}</span>` : ""}</div>`).join("")}</div>
+      </div></section>
+      ${embedSrc ? `<section class="ag-section"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : ""}
+      ${(!d.pages || !d.pages.about) ? `
+      <section class="ag-section" id="ag-about"><div class="container ag-reveal">
+        <span class="ag-kicker">נעים להכיר</span>
+        <h2>${escapeHtmlS(dd.businessName)}</h2>
+        <p class="ag-about-body">${nl2brS(dd.about)}</p>
+      </div></section>` : ""}
+      ${(!d.pages || !d.pages.contact) ? contactBlock("יצירת קשר") : ""}
+    `;
+  }
+  const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
+  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${rail}${main}${footer}`).replace("<body>", '<body class="ag-body">');
+}
+
 const SITE_CATEGORIES = [
   { slug: "all", label: "הכל" },
   { slug: "service", label: "עסקי שירות" },
@@ -1255,4 +1399,5 @@ const SITE_TEMPLATES = {
   "portfolio": { label: "תיק עבודות יצירתי", category: "תדמית אישית", categorySlug: "personal", desc: "כותרת אישית גדולה ורשימת עבודות ממוספרת, בסגנון פורטפוליו", thumb: "images/previews/site-portfolio.webp", render: renderPortfolioSite },
   "boutique": { label: "חנות בוטיק", category: "קטלוג ומכירות", categorySlug: "shop", desc: "מוצר מומלץ בכרטיס גדול, ואחריו רשת המוצרים הנוספים", thumb: "images/previews/site-boutique.webp", render: renderBoutiqueSite },
   "noir": { label: "יוקרתי כהה", category: "אירועים ובוטיק", categorySlug: "events", desc: "רקע כהה, טיפוגרפיה איטלקית עדינה, ורשימת שירותים בסגנון תפריט", thumb: "images/previews/site-noir.webp", render: renderNoirSite },
+  "studio": { label: "סטודיו קריאייטיב", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "הירו א-סימטרי כהה, ניווט צדי אנכי, וטקסטים שנכנסים באנימציה בגלילה", thumb: "images/previews/site-studio.webp", render: renderStudioSite },
 };
