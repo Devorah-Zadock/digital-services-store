@@ -10,7 +10,7 @@
 <meta name="description" content="בנו אתר עסקי שלם תוך דקות, ראו תצוגה חיה, והורידו את הקבצים המוכנים.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/builder.css">
 <style>
@@ -37,22 +37,30 @@
     transition: border-color .15s ease, background .15s ease, color .15s ease;
   }
   .preview-tab-btn.active { border-color: var(--teal); background: var(--ice); color: var(--teal-dark); }
-  .catalog-layout { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 28px; align-items: start; padding-top: 28px; }
-  @media (max-width: 900px) { .catalog-layout { grid-template-columns: 1fr; } }
-  .wizard-outer { display: flex; align-items: flex-start; gap: 24px; padding: 32px 24px 0; }
-  .wizard-outer > .my-sites-rail { width: 200px; flex-shrink: 0; }
-  .wizard-outer > .builder-wrap { flex: 1; min-width: 0; padding: 0 0 60px; }
+  /* A real, viewport-pinned sidebar — not a card floating inside the
+     centered .container (that read as "a card with buttons", not as
+     page chrome, and could never actually reach the browser edge no
+     matter how it was styled). One single mount, reused for both the
+     catalog and wizard views instead of duplicating it per view. */
+  .my-sites-rail {
+    position: fixed; top: var(--header-h, 70px); bottom: 0; inset-inline-start: 0;
+    width: 220px; overflow-y: auto; background: var(--grey-light);
+    border-inline-end: 1px solid #E2E7E4; padding: 20px 16px; z-index: 30;
+  }
+  body.has-sites-rail .container { padding-inline-start: 244px; }
   @media (max-width: 900px) {
-    .wizard-outer { flex-direction: column; padding: 24px 24px 0; }
-    .wizard-outer > .my-sites-rail { width: 100%; position: static; max-height: none; }
+    .my-sites-rail { position: static; width: 100%; height: auto; border-inline-end: none; border-bottom: 1px solid #E2E7E4; margin-bottom: 16px; }
+    body.has-sites-rail .container { padding-inline-start: 24px; }
   }
   .finish-gate-note { font-size: 12px; color: var(--grey); margin: 10px 0 0; line-height: 1.65; }
   body.preview-focus header.site,
+  body.preview-focus .my-sites-rail,
   body.preview-focus .builder-top,
   body.preview-focus .builder-form,
   body.preview-focus .export-panel,
   body.preview-focus footer.site,
   body.preview-focus #full-preview-btn { display: none !important; }
+  body.preview-focus .container { padding-inline-start: 24px !important; }
   body.preview-focus .builder-wrap { grid-template-columns: 1fr; }
   body.preview-focus .preview-sticky { position: static; }
   body.preview-focus #site-preview-frame { height: 90vh; }
@@ -87,6 +95,17 @@
     <button class="burger" aria-label="תפריט">☰</button>
   </nav>
 </header>
+<script>
+  (function () {
+    var h = document.querySelector("header.site");
+    if (h) document.documentElement.style.setProperty("--header-h", h.offsetHeight + "px");
+  })();
+</script>
+
+<aside class="my-sites-rail" data-my-sites-rail style="display:none;">
+  <h3 class="my-sites-rail-title">האתרים שלי</h3>
+  <div class="my-sites-list" data-my-sites-list></div>
+</aside>
 
 <section class="builder-top no-print">
   <div class="container">
@@ -96,25 +115,14 @@
 </section>
 
 <section class="no-print" id="tpl-catalog-section">
-  <div class="container catalog-layout">
-    <aside class="my-sites-rail" data-my-sites-rail style="display:none;">
-      <h3 class="my-sites-rail-title">האתרים שלי</h3>
-      <div class="my-sites-list" data-my-sites-list></div>
-    </aside>
-    <div class="catalog-main">
-      <div class="tabs" id="site-tpl-tabs"></div>
-      <div class="grid" id="site-tpl-grid"></div>
-    </div>
+  <div class="container">
+    <div class="tabs" id="site-tpl-tabs"></div>
+    <div class="grid" id="site-tpl-grid"></div>
   </div>
 </section>
 
 <div id="wizard-section" style="display:none;">
-<div class="container wizard-outer">
-  <aside class="my-sites-rail" data-my-sites-rail style="display:none;">
-    <h3 class="my-sites-rail-title">האתרים שלי</h3>
-    <div class="my-sites-list" data-my-sites-list></div>
-  </aside>
-  <div class="builder-wrap">
+<div class="container builder-wrap">
   <aside class="builder-form no-print">
     <div class="field">
       <label>עיצוב נבחר</label>
@@ -209,7 +217,6 @@
       </div>
     </div>
   </main>
-  </div>
 </div>
 </div>
 

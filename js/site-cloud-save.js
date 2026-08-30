@@ -105,29 +105,65 @@ function mySiteRowLabel(row) {
 
 /* "האתרים שלי" — every project the account has (draft or finalized),
    one per template, so switching templates never strands an already-
-   built site with no way back to it. Rendered as a plain switchable
-   list (not buttons) into every [data-my-sites-rail] mount on the page
-   — the catalog and wizard views each have their own, so it's visible
-   in both without special-casing which one is showing. */
+   built site with no way back to it. Rendered into the single
+   [data-my-sites-rail] mount (a real fixed sidebar — see sites.html —
+   not a card floating inside the page column), with a delete button on
+   every row: this is the customer removing their OWN project, not the
+   admin-side delete in admin.html. */
 function renderMySitesList(rows, activeTemplate) {
   const rails = document.querySelectorAll("[data-my-sites-rail]");
   const lists = document.querySelectorAll("[data-my-sites-list]");
   if (!rails.length) return;
   const show = rows.length > 0;
   rails.forEach((el) => { el.style.display = show ? "" : "none"; });
+  document.body.classList.toggle("has-sites-rail", show);
   if (!show) return;
   const html = rows
     .map((r) => {
       const { name, sub } = mySiteRowLabel(r);
       const activeClass = r.template === activeTemplate ? " active" : "";
-      return `<a href="sites.html?template=${encodeURIComponent(r.template)}" class="my-site-row${activeClass}">
-        <span class="my-site-row-name">${escapeHtmlS(name)}</span>
-        ${sub ? `<span class="my-site-row-tpl">${escapeHtmlS(sub)}</span>` : ""}
-      </a>`;
+      return `<div class="my-content-row">
+        <a href="sites.html?template=${encodeURIComponent(r.template)}" class="my-site-row${activeClass}">
+          <span class="my-site-row-name">${escapeHtmlS(name)}</span>
+          ${sub ? `<span class="my-site-row-tpl">${escapeHtmlS(sub)}</span>` : ""}
+        </a>
+        <button type="button" class="my-content-delete-btn" data-delete-site="${r.id}" title="מחיקת האתר הזה" aria-label="מחיקה">🗑</button>
+      </div>`;
     })
     .join("");
   lists.forEach((el) => { el.innerHTML = html; });
 }
+
+async function deleteMySite(siteId, button) {
+  if (!confirm("למחוק את האתר הזה לצמיתות? הפעולה בלתי הפיכה (הרכישה עצמה לא מוחזרת).")) return;
+  button.disabled = true;
+  const { error } = await supabaseClient.from("site_projects").delete().eq("id", siteId).eq("user_id", siteCurrentUserId);
+  if (error) {
+    alert("שגיאה במחיקה: " + error.message);
+    button.disabled = false;
+    return;
+  }
+  if (siteId === siteProjectId) {
+    // The project on screen right now no longer exists — nothing left to
+    // safely keep editing here (the next autosave would just silently
+    // recreate it as a new row). Send them back to the catalog instead
+    // of leaving stale content on screen.
+    localStorage.removeItem(currentUnlockKey());
+    location.href = "sites.html?browse=1";
+    return;
+  }
+  const { data: rows } = await supabaseClient
+    .from("site_projects").select("*").eq("user_id", siteCurrentUserId)
+    .order("created_at", { ascending: false });
+  renderMySitesList(rows || [], siteState.template);
+}
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-delete-site]");
+  if (!btn) return;
+  e.preventDefault();
+  deleteMySite(btn.dataset.deleteSite, btn);
+});
 
 document.addEventListener("DOMContentLoaded", () => {
   const params = new URLSearchParams(location.search);

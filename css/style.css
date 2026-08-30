@@ -27,6 +27,13 @@
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; overflow-x: clip; overflow-y: scroll; scrollbar-gutter: stable; }
+/* Heebo everywhere (including headings) is exactly the generic-template
+   look — it's the single most common Hebrew webfont, so a page built
+   entirely in it reads as "default choice, never revisited." Rubik
+   carries the headings instead: still clean and highly legible, but a
+   distinct enough rhythm from Heebo that the two together read as a
+   considered pairing rather than one safe default. */
+h1, h2, h3, h4, .brand { font-family: 'Rubik', 'Heebo', Arial, sans-serif; }
 body {
   margin: 0;
   font-family: 'Heebo', Arial, sans-serif;
@@ -83,7 +90,12 @@ header.site {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 24px; max-width: var(--max); margin: 0 auto;
 }
-.brand { font-size: 22px; font-weight: 700; color: var(--teal-dark); display: flex; align-items: center; gap: 7px; letter-spacing: -.01em; }
+/* order pushes it to the end of the flex row, which in this RTL nav
+   means the visual LEFT — matching how most polished Hebrew SaaS
+   products place the logo (global top-left convention wins out over
+   RTL reading order here), rather than the right where the current
+   folded-document mark was easy to mistake for stock/template chrome. */
+.brand { font-size: 22px; font-weight: 700; color: var(--teal-dark); display: flex; align-items: center; gap: 7px; letter-spacing: -.01em; order: 5; }
 .brand .brand-mark { width: 17px; height: 17px; flex: none; }
 .brand .brand-mark .bm-face { fill: var(--gold); }
 .brand .brand-mark .bm-fold { fill: var(--gold-light); }
