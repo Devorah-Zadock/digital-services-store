@@ -21,7 +21,18 @@ function currentUnlockKey() {
    their browser, so returning to edit or re-download later doesn't mean
    retyping everything from scratch — separate from SITE_UNLOCK_KEY, which
    only remembers whether the license was verified. */
+/* Keyed per-template (deskkit_sites_data_v1_<template>), not one shared
+   key — a shared key meant that picking a genuinely new template
+   pre-filled the form with whatever OTHER template's content happened to
+   be cached last, before the (async) Supabase check even had a chance to
+   correct it. SITE_LAST_TEMPLATE_KEY remembers which template's key to
+   read when arriving with no ?template= at all (plain "continue where I
+   left off"). */
 const SITE_DATA_KEY = "deskkit_sites_data_v1";
+const SITE_LAST_TEMPLATE_KEY = "deskkit_sites_last_template";
+function siteDataKey(template) {
+  return SITE_DATA_KEY + "_" + template;
+}
 
 const SITE_DEFAULT = {
   businessName: "",
@@ -184,12 +195,20 @@ function renderPreviewTabs() {
 }
 
 function saveSiteState() {
-  try { localStorage.setItem(SITE_DATA_KEY, JSON.stringify(siteState)); } catch (err) { /* storage unavailable — not fatal, just won't persist */ }
+  try {
+    localStorage.setItem(siteDataKey(siteState.template), JSON.stringify(siteState));
+    localStorage.setItem(SITE_LAST_TEMPLATE_KEY, siteState.template);
+  } catch (err) { /* storage unavailable — not fatal, just won't persist */ }
 }
 
-function loadSiteState() {
+/* Pass a template to load THAT template's own cache only (never falls
+   back to a different one — a blank result here means a genuinely fresh
+   project). Pass nothing to resume the most recently active template,
+   whichever one that was. */
+function loadSiteState(template) {
   try {
-    const raw = localStorage.getItem(SITE_DATA_KEY);
+    const key = template ? siteDataKey(template) : siteDataKey(localStorage.getItem(SITE_LAST_TEMPLATE_KEY) || "");
+    const raw = localStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (parsed && parsed.data && SITE_TEMPLATES[parsed.template]) return parsed;
@@ -426,8 +445,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const forceBrowse = params.get("browse") === "1";
   const isFullPreview = params.get("fullpreview") === "1";
 
-  const saved = loadSiteState();
-  if (saved) siteState = saved;
+  const saved = loadSiteState(urlTemplate || null);
+  if (saved) {
+    siteState = saved;
+  } else if (urlTemplate && SITE_TEMPLATES[urlTemplate]) {
+    // A specific, valid template with no cache of its own yet — a
+    // genuinely fresh project. Never inherit whatever a DIFFERENT
+    // template's cache happens to hold.
+    siteState = { template: urlTemplate, data: JSON.parse(JSON.stringify(SITE_DEFAULT)) };
+  }
   ensurePagesShape(siteState.data);
   const hasSavedContent = !!(saved && (saved.data.businessName || (saved.data.services || []).some((s) => s.name)));
 

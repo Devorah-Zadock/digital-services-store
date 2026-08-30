@@ -103,8 +103,13 @@ header.site {
 .nav-login-email { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: ltr; text-align: right; }
 
 /* Shared "switchable list" widget — the sites rail on sites.html and the
-   content dashboard on account-settings.html both use it. */
-.my-sites-rail { background: var(--white); border: 1px solid #EAEDEC; border-radius: var(--radius); padding: 14px; margin-bottom: 16px; }
+   content dashboard on account-settings.html both use it. On sites.html
+   it's a true persistent sidebar (sticky, own column) rather than
+   scrolling away inside the long form — see .wizard-outer below. */
+.my-sites-rail {
+  background: var(--white); border: 1px solid #EAEDEC; border-radius: var(--radius); padding: 14px; margin-bottom: 16px;
+  position: sticky; top: 90px; max-height: calc(100vh - 110px); overflow-y: auto;
+}
 .my-sites-rail-title { font-size: 12.5px; font-weight: 700; color: var(--teal-dark); margin: 0 0 8px; }
 .my-sites-list { display: flex; flex-direction: column; gap: 2px; }
 .my-site-row { display: block; padding: 8px 10px; border-radius: 8px; text-decoration: none; color: var(--dark); transition: background .15s ease; }
