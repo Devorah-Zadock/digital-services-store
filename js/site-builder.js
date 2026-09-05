@@ -363,6 +363,40 @@ async function downloadSiteZip() {
   URL.revokeObjectURL(url);
 }
 
+/* One click to a live URL, via the publish-site Edge Function (see
+   supabase/functions/publish-site) — no ZIP, no dragging files to
+   Netlify Drop by hand. The download button above stays too: the
+   customer still gets to keep their own copy of the files either way. */
+async function publishSite() {
+  const btn = document.getElementById("publish-site-btn");
+  const note = document.getElementById("publish-note");
+  if (!siteCurrentUserId || !siteProjectId) {
+    note.textContent = "שומרים קודם את האתר... נסו שוב בעוד רגע.";
+    return;
+  }
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "מפרסמים...";
+  note.textContent = "";
+  try {
+    const pages = {};
+    enabledSitePages().forEach((page) => { pages[page] = currentSiteHtml(page); });
+    const { data, error } = await supabaseClient.functions.invoke("publish-site", {
+      body: { siteProjectId, userId: siteCurrentUserId, pages },
+    });
+    if (error || !data || !data.success) {
+      note.textContent = "הפרסום נכשל. נסו שוב בעוד רגע.";
+      return;
+    }
+    note.innerHTML = `האתר חי! <a href="${data.url}" target="_blank" rel="noopener">${data.url}</a>`;
+  } catch (err) {
+    note.textContent = "הפרסום נכשל: " + String(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+}
+
 /* The purchase panel used to be visible from the very first moment someone
    opened the wizard — before they'd typed a word of their own content. The
    "finish gate" (a single explicit button + a note explaining exactly what
@@ -505,6 +539,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.getElementById("verify-btn").addEventListener("click", verifySiteLicense);
+  document.getElementById("publish-site-btn").addEventListener("click", publishSite);
   document.getElementById("download-zip-btn").addEventListener("click", async (e) => {
     const btn = e.currentTarget;
     if (btn.disabled) return;

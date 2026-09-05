@@ -177,15 +177,13 @@
         </div>
         <div id="unlock-done" style="display:none;">
           <p style="margin:0 0 4px; font-size:15px; font-weight:700; color:var(--teal-dark);">תודה שרכשתם ב-DeskKit!</p>
-          <p style="margin:0 0 12px; font-size:13px; color:var(--grey);">קבלה על הרכישה נשלחת אליכם למייל מ-Gumroad. מורידים את קובצי האתר:</p>
-          <button type="button" class="btn btn-gold" id="download-zip-btn" style="width:100%;">הורדת קובצי האתר (ZIP)</button>
-          <div class="go-live-box">
-            <b>איך מעלים את זה לאוויר (בעצמכם, תוך כמה דקות):</b><br>
-            נכנסים ל־<a href="https://app.netlify.com/drop" target="_blank" rel="noopener">app.netlify.com/drop</a>, גוררים את התיקייה המחולצת מה-ZIP לתוך העמוד — ומקבלים כתובת אתר מיד. <b>חשוב:</b> בלי הרשמה, האתר נשאר עם סיסמה זמנית ונמחק תוך שעה. לוחצים על הכפתור "Sign up for free" שמופיע בעמוד (חינמי, בלי כרטיס אשראי) כדי "לתפוס" את האתר לצמיתות ולהסיר את הסיסמה.
-          </div>
+          <p style="margin:0 0 12px; font-size:13px; color:var(--grey);">קבלה על הרכישה נשלחת אליכם למייל מ-Gumroad.</p>
+          <button type="button" class="btn btn-gold" id="publish-site-btn" style="width:100%;">פרסום — קבלת קישור חי</button>
+          <p class="finish-gate-note" id="publish-note"></p>
+          <button type="button" class="btn-mini" id="download-zip-btn" style="width:100%; margin-top:14px;">הורדת קובצי האתר (ZIP) — לשמור עותק אצלכם</button>
           <div class="go-live-box">
             <b>איך אנשים ימצאו את האתר בגוגל, לא רק מי שיש לו קישור?</b><br>
-            שני דברים עוזרים הכי הרבה: לרשום את העסק בחינם ב־<a href="https://www.google.com/business/" target="_blank" rel="noopener">Google עסקים שלי</a> — זה מה שמשפיע הכי הרבה על עסק מקומי/קטן, ולחבר דומיין משלכם (כ-60–150 ₪ לשנה) — עושה רושם הרבה יותר מקצועי. אף אחד מהשניים לא קורה אוטומטית עם כתובת ה-Netlify החינמית לבד.
+            שני דברים עוזרים הכי הרבה: לרשום את העסק בחינם ב־<a href="https://www.google.com/business/" target="_blank" rel="noopener">Google עסקים שלי</a> — זה מה שמשפיע הכי הרבה על עסק מקומי/קטן, ולחבר דומיין משלכם (כ-60–150 ₪ לשנה) — עושה רושם הרבה יותר מקצועי.
           </div>
         </div>
       </div>
@@ -232,7 +230,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="js/color-utils.js"></script>
 <script src="js/site-templates.js"></script>
-<script src="js/site-builder.js"></script>
+<script src="js/site-builder.js?v=2"></script>
 <script>window.deferReveal = true;</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
