@@ -96,7 +96,11 @@ function applyNavAuthState(session) {
       else openNavDropdown(wrap, session.user.email);
     };
   } else {
-    const here = location.pathname.split("/").pop() || "tools.html";
+    // pathname.split("/").pop() is "" for the bare root ("/" or the
+    // domain with no path at all) — that's index.html, not a missing
+    // page, so falling back to tools.html there sent a visitor logging
+    // in from the homepage somewhere else entirely.
+    const here = location.pathname.split("/").pop() || "index.html";
     link.href = "account.html?redirect=" + encodeURIComponent(here);
     link.removeAttribute("title");
     link.innerHTML = navIconSvg() + "<span>כניסה</span>";

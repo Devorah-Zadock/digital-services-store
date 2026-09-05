@@ -1,7 +1,9 @@
 /* Global "my content" side panel — every logged-in page gets it, laid
-   out like a real app rail (brand at the top, account at the bottom,
-   content grouped and collapsible in between — see js/nav-auth.js for
-   the account dropdown this borrows the sign-out flow from).
+   out like a real app rail (account pinned at the bottom, content
+   grouped and collapsible above it — see js/nav-auth.js for the
+   account dropdown this borrows the sign-out flow from). The brand
+   itself lives only in the page header, same as every other page —
+   the rail doesn't repeat it.
 
    Self-contained on purpose: pages that include this script don't all
    load site-templates.js, so a small local label map stands in for it —
@@ -228,10 +230,6 @@ function mountMyPanel() {
   aside.id = "my-panel";
   aside.className = "my-sites-rail no-print";
   aside.innerHTML = `
-    <a href="index.html" class="my-panel-brand">
-      <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><rect class="bm-fold" x="3" y="9" width="13" height="13" rx="3.5"/><rect class="bm-face" x="8" y="4" width="13" height="13" rx="3.5"/></svg>
-      DeskKit
-    </a>
     <div class="my-panel-subtitle">התבניות שלי</div>
     <div class="my-panel-body">${myPanelSectionsHtml()}</div>
     <div class="my-panel-account">
