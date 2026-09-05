@@ -100,15 +100,20 @@ python3 -m http.server 8000
 
 **מי מארח את זה?** עד עכשיו — אף אחד; הלקוח קיבל קבצים בלבד והעלה אותם לבד (גרירה ל-[app.netlify.com/drop](https://app.netlify.com/drop)), עם כל החיכוך שזה דורש ממישהי שלא "מתעסקת עם קבצי HTML" — כולל מדיניות Netlify מאוגוסט 2026 שמוחקת תוך שעה אתר שלא "נתפס" בהרשמה חינמית.
 
-**עדכון:** נוסף כפתור **"פרסום"** אמיתי (`sites.html` אחרי פתיחת הרכישה) — קורא ל-Edge Function חדש, `publish-site`, שמעלה את האתר ל-Netlify ומחזיר כתובת חיה תוך שניות, בלי שהלקוח נוגע בקובץ אחד. קובץ ה-ZIP נשאר זמין גם הוא כאופציה שנייה ("לשמור עותק אצלכם") — הבעלות על הקבצים לא הולכת לשום מקום, רק הדרך להעלות אותם לאוויר נהייתה אוטומטית. ר' "הגדרת פרסום אוטומטי" למטה — **הפונקציה עצמה עדיין לא מחוברת בפועל ל-API של Netlify** (הקריאה החסרה מסומנת ב-`deployToNetlify()` בקובץ `supabase/functions/publish-site/index.ts`), כי זה נכתב בסביבה בלי גישת רשת ל-Netlify כדי לוודא את הצורה המדויקת של ה-API שלהם. שאר הפונקציה (בדיקת בעלות, בניית ה-zip, עדכון הדאטהבייס) מוכן ונבדק.
+**עדכון:** נוסף כפתור **"פרסום"** אמיתי (`sites.html` אחרי פתיחת הרכישה) — קורא ל-Edge Function `publish-site`, שיוצר אתר Netlify תחת חשבון DeskKit, מעלה אליו את קובצי האתר, ומחזיר כתובת חיה תוך שניות, בלי שהלקוח נוגע בקובץ אחד. לצד הכתובת מוצג גם כפתור **"תפיסת האתר בחשבון Netlify שלכם"** — קישור "claim" חתום (JWT) שמעביר את הבעלות על האתר לחשבון Netlify **של הלקוח עצמו**, לא של DeskKit. זה בדיוק מה ששומר על ה"בלי מנוי, בלי נעילה, הקבצים שלכם לתמיד" — בלי הכפתור הזה DeskKit הייתה הופכת בפועל למארחת קבועה של כל אתר שנבנה, בדיוק מה שרצינו להימנע ממנו. קובץ ה-ZIP נשאר זמין גם הוא כאופציה שנייה. הפונקציה בנויה לפי המדריך הרשמי של Netlify ל"deploying sites from your AI tool" (developers.netlify.com/guides/deploying-sites-from-ai-tools).
 
 ### הגדרת פרסום אוטומטי (Netlify)
 
 1. מריצים את `supabase/sql/site_projects_publish.sql` ב-Supabase Dashboard → SQL Editor (מוסיף לטבלת `site_projects` את העמודות `published_url`, `netlify_site_id`, `published_at`).
-2. פותחים חשבון חינמי ב-[netlify.com](https://www.netlify.com) (בלי כרטיס אשראי) ויוצרים API access token אישי (Netlify → User settings → Applications → New access token).
-3. שומרים אותו כ-secret בפרויקט ה-Supabase: `supabase secrets set NETLIFY_AUTH_TOKEN=...` (או Dashboard → Edge Functions → Secrets).
-4. פורסים את הפונקציה: `supabase functions deploy publish-site`.
-5. ה-`deployToNetlify()` בתוך `index.ts` עדיין זרוק (`throw`) בכוונה — צריך למלא אותו בקריאת ה-API האמיתית ל-Netlify (deploy דרך zip, ומנגנון "תפיסת" האתר לחשבון Netlify של הלקוח עצמו — לא של DeskKit, כדי לא ליצור התחייבות אירוח מתמשכת לכל אתר שנבנה) לפני שהכפתור עובד בפועל מול לקוחות אמיתיים.
+2. פותחים חשבון חינמי ב-[netlify.com](https://www.netlify.com) (בלי כרטיס אשראי).
+3. **Personal access token** — Netlify → User settings → Applications → Personal access tokens → New access token. **חשוב: לבחור "No expiration"**, אחרת הפרסום יפסיק לעבוד כשהטוקן יפוג ויידרש להחליף אותו ידנית.
+4. **Team slug** — Netlify → Team settings → General, מעתיקים את ה-slug של הצוות.
+5. **OAuth app** (בשביל מנגנון ה"תפיסה") — Netlify → User settings → Applications → OAuth applications → New application. אין צורך ב-redirect URI לצורך הזה. מעתיקים את ה-Client ID וה-Secret שנוצרים.
+6. שומרים ארבעה secrets בפרויקט ה-Supabase (Dashboard → Edge Functions → Secrets, או `supabase secrets set NAME=value`):
+   - `NETLIFY_AUTH_TOKEN` — הטוקן משלב 3.
+   - `NETLIFY_TEAM_SLUG` — מ-שלב 4.
+   - `NETLIFY_OAUTH_CLIENT_ID` ו-`NETLIFY_OAUTH_CLIENT_SECRET` — משלב 5.
+7. פורסים את הפונקציה: `supabase functions deploy publish-site` (או מדביקים את הקוד ידנית ב-Dashboard → Edge Functions → New Function, כמו עם `redeem-license`).
 
 **איך מגדירים את התשלום עם Gumroad**:
 1. יוצרים ב-[Gumroad](https://gumroad.com) מוצר חדש מסוג "License Key" (חשוב — לא מוצר רגיל, כדי שכל רכישה תייצר קוד רישוי ייחודי) ומגדירים מחיר.

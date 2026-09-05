@@ -388,9 +388,13 @@ async function publishSite() {
       note.textContent = "הפרסום נכשל. נסו שוב בעוד רגע.";
       return;
     }
-    note.innerHTML = `האתר חי! <a href="${data.url}" target="_blank" rel="noopener">${data.url}</a>`;
+    note.innerHTML = `
+      <div>האתר חי! <a href="${data.url}" target="_blank" rel="noopener">${data.url}</a></div>
+      ${data.claimUrl ? `<a href="${data.claimUrl}" target="_blank" rel="noopener" class="btn btn-teal" style="width:100%; box-sizing:border-box; text-align:center; display:block; margin-top:10px;">תפיסת האתר בחשבון Netlify שלכם (חינם)</a>
+      <p style="font-size:12px; color:var(--grey); margin:8px 0 0;">חשוב: בלי הצעד הזה האתר יישאר תחת החשבון שלנו — לוחצים כדי שהאתר יהיה שלכם לצמיתות.</p>` : ""}
+    `;
   } catch (err) {
-    note.textContent = "הפרסום נכשל: " + String(err);
+    note.textContent = "הפרסום נכשל. נסו שוב בעוד רגע.";
   } finally {
     btn.disabled = false;
     btn.textContent = originalLabel;
