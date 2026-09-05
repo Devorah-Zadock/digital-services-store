@@ -187,6 +187,27 @@ body.has-sites-rail header.site .brand .brand-text { display: none; }
 .my-site-row-name { display: block; font-size: 13px; font-weight: 600; line-height: 1.4; }
 .my-site-row-tpl { display: block; font-size: 11px; color: var(--grey); line-height: 1.4; }
 
+/* The rail's own row treatment — a small thumbnail + text, closer to a
+   card than a plain link, so "my content" reads as things you made
+   rather than a menu. Kept separate from .my-site-row above (still
+   used as-is by account-settings.html's own dashboard) since this one
+   needs the extra thumbnail element the simpler list doesn't have. */
+.my-panel-card {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px;
+  padding: 7px 8px; border-radius: 10px; text-decoration: none; color: var(--dark);
+  transition: background .15s ease;
+}
+.my-panel-card:hover { background: var(--white); }
+.my-panel-card.active { background: var(--ice); box-shadow: inset 2px 0 0 var(--teal); }
+.my-panel-card-thumb {
+  flex: none; width: 34px; height: 34px; border-radius: 9px;
+  background: var(--ice); color: var(--teal); display: flex; align-items: center; justify-content: center;
+}
+.my-panel-card-thumb-cv { background: #FBF2E0; color: var(--gold); }
+.my-panel-card-info { min-width: 0; }
+.my-panel-card-name { display: block; font-size: 13px; font-weight: 600; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.my-panel-card-tpl { display: block; font-size: 11px; color: var(--grey); line-height: 1.4; }
+
 /* Not-built-yet placeholder: reads as a plain line of text with one
    inline link at the end, not a whole row that lights up like a button. */
 .my-panel-empty-row { padding: 8px 10px; font-size: 13px; font-weight: 600; color: var(--dark); line-height: 1.4; }

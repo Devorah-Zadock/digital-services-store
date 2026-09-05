@@ -40,6 +40,14 @@ function myPanelAccountIcon() {
   return '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="flex:none;"><path d="M12 12c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0 2c-3.33 0-10 1.67-10 5v3h20v-3c0-3.33-6.67-5-10-5z"/></svg>';
 }
 
+function myPanelSiteIcon() {
+  return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.3 2.5 3.6 5.5 3.6 9s-1.3 6.5-3.6 9c-2.3-2.5-3.6-5.5-3.6-9s1.3-6.5 3.6-9z"/></svg>';
+}
+
+function myPanelCvIcon() {
+  return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M9.5 13h5M9.5 16.5h5"/></svg>';
+}
+
 /* Same dropdown as the header's own account menu (js/nav-auth.js) —
    reused class names so it inherits that styling as-is, just opened
    upward ("dropup") since this trigger sits at the very bottom of the
@@ -105,10 +113,15 @@ function myPanelRowHtml(opts) {
     ? `<button type="button" class="my-content-delete-btn" data-panel-delete="${opts.deleteAttr}" title="מחיקה" aria-label="מחיקה">${myPanelTrashIcon()}</button>`
     : "";
   const activeClass = opts.active ? " active" : "";
+  const thumbClass = opts.kind === "cv" ? " my-panel-card-thumb-cv" : "";
+  const icon = opts.kind === "cv" ? myPanelCvIcon() : myPanelSiteIcon();
   return `<div class="my-content-row">
-    <a href="${opts.href}" class="my-site-row${activeClass}">
-      <span class="my-site-row-name">${myPanelEscapeHtml(opts.name)}</span>
-      ${opts.sub ? `<span class="my-site-row-tpl">${myPanelEscapeHtml(opts.sub)}</span>` : ""}
+    <a href="${opts.href}" class="my-panel-card${activeClass}">
+      <span class="my-panel-card-thumb${thumbClass}">${icon}</span>
+      <span class="my-panel-card-info">
+        <span class="my-panel-card-name">${myPanelEscapeHtml(opts.name)}</span>
+        ${opts.sub ? `<span class="my-panel-card-tpl">${myPanelEscapeHtml(opts.sub)}</span>` : ""}
+      </span>
     </a>${del}
   </div>`;
 }
@@ -151,6 +164,7 @@ async function loadMyPanel(user) {
     sitesList.innerHTML = dedupedSites.map((s) => {
       const bizName = s.data && s.data.businessName && s.data.businessName.trim();
       return myPanelRowHtml({
+        kind: "site",
         href: "sites.html?template=" + encodeURIComponent(s.template),
         name: bizName || "אתר עסקי (ללא שם)",
         sub: MY_PANEL_TEMPLATE_LABELS[s.template] || s.template,
@@ -166,6 +180,7 @@ async function loadMyPanel(user) {
   const cvName = cv && cv.data && cv.data.content && cv.data.content.name && cv.data.content.name.trim();
   if (cv) {
     cvList.innerHTML = myPanelRowHtml({
+      kind: "cv",
       href: "builder.html",
       name: cvName || "קורות חיים (ללא שם)",
       deleteAttr: "cv",
