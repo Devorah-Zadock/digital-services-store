@@ -11,8 +11,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=14">
-<link rel="stylesheet" href="css/builder.css?v=1">
+<link rel="stylesheet" href="css/style.css?v=15">
+<link rel="stylesheet" href="css/builder.css?v=2">
 <style>
   .qa-err { color: #B23; font-size: 13px; min-height: 18px; margin: 4px 0 8px; }
   .qa-topbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
@@ -116,10 +116,16 @@
         <h1 style="font-size:26px; margin:6px 0 4px;">הצעת מחיר חדשה</h1>
         <p style="color:var(--grey); font-size:14px; margin:0;">פרטי העסק כבר מולאו — משלימים את פרטי האירוע ורואים תצוגה חיה.</p>
       </div>
-      <div class="qa-account">
-        <a href="index.html">← לעמוד הבית</a>
-        <span>·</span>
-        <button type="button" id="qa-edit-profile">עריכת פרטי העסק</button>
+      <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+        <div class="qa-account">
+          <a href="index.html">← לעמוד הבית</a>
+          <span>·</span>
+          <button type="button" id="qa-edit-profile">עריכת פרטי העסק</button>
+        </div>
+        <div class="builder-save-ctrl" id="quote-save-ctrl" style="display:none;">
+          <span class="builder-save-status" id="quote-save-status"></span>
+          <button type="button" class="btn-mini builder-save-btn" id="quote-save-btn">שמירה</button>
+        </div>
       </div>
     </div>
   </section>
@@ -168,8 +174,9 @@
 <script src="js/quote-render.js?v=1"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>
-<script src="js/my-panel.js?v=6"></script>
+<script src="js/my-panel.js?v=7"></script>
 <script src="js/main.js"></script>
-<script src="js/quote-app.js?v=1"></script>
+<script src="js/quote-cloud-save.js?v=1"></script>
+<script src="js/quote-app.js?v=2"></script>
 </body>
 </html>

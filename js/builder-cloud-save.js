@@ -50,4 +50,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (window.revealGatedPage) window.revealGatedPage();
   });
+
+  const btn = document.getElementById("cv-save-btn");
+  const status = document.getElementById("cv-save-status");
+  if (btn) {
+    btn.addEventListener("click", async () => {
+      if (!cvCurrentUserId) { window.location.href = "account.html?redirect=builder.html"; return; }
+      btn.disabled = true;
+      clearTimeout(cvSaveTimer);
+      await saveCvNow();
+      btn.disabled = false;
+      status.textContent = "נשמר ✓";
+      status.classList.add("ok");
+      if (window.refreshMyPanel) window.refreshMyPanel();
+      setTimeout(() => { status.textContent = ""; status.classList.remove("ok"); }, 2500);
+    });
+  }
 });

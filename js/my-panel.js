@@ -62,6 +62,10 @@ function myPanelCvIcon() {
   return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M9.5 13h5M9.5 16.5h5"/></svg>';
 }
 
+function myPanelQuoteIcon() {
+  return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v3h3"/><path d="M9 12h6M9 16h6"/><circle cx="17" cy="19" r="3.2" fill="currentColor" stroke="none" opacity=".18"/><path d="M15.8 19l.9.9 1.6-1.7"/></svg>';
+}
+
 /* Same dropdown as the header's own account menu (js/nav-auth.js) —
    reused class names so it inherits that styling as-is, just opened
    upward ("dropup") since this trigger sits at the very bottom of the
@@ -127,8 +131,8 @@ function myPanelRowHtml(opts) {
     ? `<button type="button" class="my-content-delete-btn" data-panel-delete="${opts.deleteAttr}" title="מחיקה" aria-label="מחיקה">${myPanelTrashIcon()}</button>`
     : "";
   const activeClass = opts.active ? " active" : "";
-  const thumbClass = opts.kind === "cv" ? " my-panel-card-thumb-cv" : "";
-  const icon = opts.kind === "cv" ? myPanelCvIcon() : myPanelSiteIcon();
+  const thumbClass = opts.kind === "cv" ? " my-panel-card-thumb-cv" : opts.kind === "quote" ? " my-panel-card-thumb-quote" : "";
+  const icon = opts.kind === "cv" ? myPanelCvIcon() : opts.kind === "quote" ? myPanelQuoteIcon() : myPanelSiteIcon();
   return `<div class="my-content-row">
     <a href="${opts.href}" class="my-panel-card${activeClass}">
       <span class="my-panel-card-thumb${thumbClass}">${icon}</span>
@@ -150,12 +154,17 @@ function myPanelCurrentContext() {
     return t ? { kind: "site", template: t } : null;
   }
   if (path === "builder.html") return { kind: "cv" };
+  if (path === "quote-app.html") {
+    const q = new URLSearchParams(location.search).get("quote");
+    return q ? { kind: "quote", id: q } : null;
+  }
   return null;
 }
 
 async function loadMyPanel(user) {
   const sitesList = document.getElementById("my-panel-sites");
   const cvList = document.getElementById("my-panel-cv");
+  const quotesList = document.getElementById("my-panel-quotes");
   if (!sitesList || !cvList) return;
   const ctx = myPanelCurrentContext();
 
@@ -203,10 +212,32 @@ async function loadMyPanel(user) {
   } else {
     cvList.innerHTML = myPanelEmptyRowHtml({ href: "builder.html", text: "עדיין לא ערכת קורות חיים —", linkText: "לעריכה" });
   }
+
+  if (quotesList) {
+    const { data: quotes } = await supabaseClient
+      .from("quote_saves").select("id, data")
+      .eq("user_id", user.id).order("updated_at", { ascending: false });
+    if (quotes && quotes.length) {
+      quotesList.innerHTML = quotes.map((q) => {
+        const d = q.data || {};
+        const label = (d.recipient && d.recipient.trim()) || (d.eventName && d.eventName.trim());
+        return myPanelRowHtml({
+          kind: "quote",
+          href: "quote-app.html?quote=" + encodeURIComponent(q.id),
+          name: label || "הצעת מחיר (ללא שם)",
+          sub: d.eventName && d.recipient ? d.eventName : "",
+          deleteAttr: "quote:" + q.id,
+          active: !!(ctx && ctx.kind === "quote" && ctx.id === q.id),
+        });
+      }).join("");
+    } else {
+      quotesList.innerHTML = myPanelEmptyRowHtml({ href: "quote-app.html", text: "עדיין לא שמרתם הצעת מחיר —", linkText: "ליצירה" });
+    }
+  }
 }
 
 async function deleteMyPanelItem(kind, id, button) {
-  const label = kind === "cv" ? "את קורות החיים שלכם" : "את האתר הזה";
+  const label = kind === "cv" ? "את קורות החיים שלכם" : kind === "quote" ? "את הצעת המחיר הזו" : "את האתר הזה";
   if (!confirm(`למחוק לצמיתות ${label}? הפעולה בלתי הפיכה.`)) return;
   button.disabled = true;
   const { data } = await supabaseClient.auth.getSession();
@@ -216,6 +247,8 @@ async function deleteMyPanelItem(kind, id, button) {
     await supabaseClient.from("site_projects").delete().eq("id", id).eq("user_id", user.id);
   } else if (kind === "cv") {
     await supabaseClient.from("cv_saves").delete().eq("user_id", user.id);
+  } else if (kind === "quote") {
+    await supabaseClient.from("quote_saves").delete().eq("id", id).eq("user_id", user.id);
   }
   await loadMyPanel(user);
 }
@@ -230,7 +263,7 @@ function myPanelSectionsHtml() {
       </button>
       <div class="my-panel-section-list" id="${listId}"></div>
     </div>`;
-  return section("sites", "אתרים", "my-panel-sites") + section("cv", "קורות חיים", "my-panel-cv");
+  return section("sites", "אתרים", "my-panel-sites") + section("cv", "קורות חיים", "my-panel-cv") + section("quotes", "הצעות מחיר", "my-panel-quotes");
 }
 
 /* Reads back the width/collapsed state the pre-paint inline script (first
@@ -355,6 +388,17 @@ function updatePanelAccountEmail(email) {
   const el = document.querySelector("#my-panel .my-panel-account-email");
   if (el) el.textContent = email || "";
 }
+
+/* Called by the explicit "שמירה" buttons in builder.html/sites.html/
+   quote-app.html right after a manual save, so a first-ever save (or a
+   name change) shows up in the rail immediately instead of waiting for
+   the next page load. */
+window.refreshMyPanel = function refreshMyPanel() {
+  supabaseClient.auth.getSession().then(({ data }) => {
+    const user = data.session && data.session.user;
+    if (user) loadMyPanel(user);
+  });
+};
 
 document.addEventListener("DOMContentLoaded", () => {
   supabaseClient.auth.onAuthStateChange((_event, session) => {

@@ -1,6 +1,15 @@
 .builder-top { background: var(--ice); padding: 22px 0; border-bottom: 1px solid #DCE9E4; }
 .builder-top-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
 
+/* Same save control in the same spot (the builder-top row) across all
+   three builders — CV, sites, quotes — so "שמירה" is never somewhere
+   different depending on what you're editing. Separate from any
+   publish/finalize/download action, which stays where it already was. */
+.builder-save-ctrl { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.builder-save-status { font-size: 12.5px; color: var(--grey); white-space: nowrap; min-width: 0; }
+.builder-save-status.ok { color: var(--teal); font-weight: 700; }
+.builder-save-btn:disabled { opacity: .6; cursor: default; }
+
 .builder-wrap {
   display: grid;
   grid-template-columns: minmax(0, 440px) minmax(0, 1fr);

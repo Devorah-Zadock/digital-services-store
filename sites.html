@@ -11,8 +11,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=14">
-<link rel="stylesheet" href="css/builder.css?v=1">
+<link rel="stylesheet" href="css/style.css?v=15">
+<link rel="stylesheet" href="css/builder.css?v=2">
 <style>
   .services-item { border: 1px solid #EDEFEE; border-radius: 8px; padding: 12px; margin-bottom: 12px; display: grid; gap: 8px; }
   .services-item-head { display: flex; justify-content: space-between; align-items: center; }
@@ -109,9 +109,15 @@
 </header>
 
 <section class="builder-top no-print">
-  <div class="container">
-    <h1 style="font-size:26px; margin:6px 0 4px;">בניית אתר עסקי</h1>
-    <p style="color:var(--grey); font-size:14px; margin:0;">בוחרים עיצוב, ממלאים את פרטי העסק, ורואים תצוגה חיה. ההורדה של קובצי האתר המוכנים היא בתשלום חד-פעמי — בלי מנוי חודשי.</p>
+  <div class="container builder-top-row">
+    <div>
+      <h1 style="font-size:26px; margin:6px 0 4px;">בניית אתר עסקי</h1>
+      <p style="color:var(--grey); font-size:14px; margin:0;">בוחרים עיצוב, ממלאים את פרטי העסק, ורואים תצוגה חיה. ההורדה של קובצי האתר המוכנים היא בתשלום חד-פעמי — בלי מנוי חודשי.</p>
+    </div>
+    <div class="builder-save-ctrl" id="site-save-ctrl" style="display:none;">
+      <span class="builder-save-status" id="site-save-status"></span>
+      <button type="button" class="btn-mini builder-save-btn" id="site-save-btn">שמירה</button>
+    </div>
   </div>
 </section>
 
@@ -256,12 +262,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="js/color-utils.js"></script>
 <script src="js/site-templates.js"></script>
-<script src="js/site-builder.js?v=5"></script>
+<script src="js/site-builder.js?v=6"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>
-<script src="js/my-panel.js?v=6"></script>
-<script src="js/site-cloud-save.js"></script>
+<script src="js/my-panel.js?v=7"></script>
+<script src="js/site-cloud-save.js?v=1"></script>
 <script src="js/main.js"></script>
 <script src="js/widgets.js?v=5"></script>
 </body>

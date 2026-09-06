@@ -143,6 +143,7 @@ function mergedQuoteState() {
 function renderQuotePreviewQA() {
   document.getElementById("quote-preview").innerHTML = renderQuoteHtml(mergedQuoteState());
   fitQuotePreviewToContainer();
+  if (typeof scheduleQuoteSave === "function") scheduleQuoteSave();
 }
 
 function dateBlockHtmlQA(date, i, total) {
@@ -205,12 +206,13 @@ function wireQuoteFormQA() {
   document.getElementById("qa-edit-profile").addEventListener("click", showProfileEditor);
 }
 
-function showQuoteBuilder() {
+function showQuoteBuilder(loadedState) {
   showSection("qa-app");
-  quoteEventState = emptyQuoteEventState();
+  quoteEventState = loadedState || emptyQuoteEventState();
   renderQuoteFormQA();
   renderQuotePreviewQA();
   document.getElementById("qa-demo-banner").style.display = currentUser ? "none" : "";
+  document.getElementById("quote-save-ctrl").style.display = currentUser ? "" : "none";
 }
 
 function showProfileEditor() {
@@ -227,10 +229,13 @@ function goToLoginQA() {
 
 async function routeAfterAuth(user) {
   currentUser = user;
+  quoteCurrentUserId = user.id;
   const { data } = await supabaseClient.from("profiles").select("*").eq("id", user.id).maybeSingle();
   if (data) {
     currentProfile = data;
-    showQuoteBuilder();
+    const qid = new URLSearchParams(location.search).get("quote");
+    const loaded = qid ? await loadQuoteById(qid, user.id) : null;
+    showQuoteBuilder(loaded);
   } else {
     currentProfile = null;
     showSection("qa-profile");
@@ -245,6 +250,8 @@ async function routeAfterAuth(user) {
    editing an existing profile requires signing in. */
 function routeAsGuest() {
   currentUser = null;
+  quoteCurrentUserId = null;
+  quoteSavedId = null;
   currentProfile = demoProfileQA();
   showQuoteBuilder();
 }

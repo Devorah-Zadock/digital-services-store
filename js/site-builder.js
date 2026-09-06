@@ -128,12 +128,14 @@ function renderCurrentTplInfo() {
 function showCatalog() {
   document.getElementById("tpl-catalog-section").style.display = "";
   document.getElementById("wizard-section").style.display = "none";
+  document.getElementById("site-save-ctrl").style.display = "none";
   renderTplCatalog();
 }
 
 function showWizard() {
   document.getElementById("tpl-catalog-section").style.display = "none";
   document.getElementById("wizard-section").style.display = "";
+  document.getElementById("site-save-ctrl").style.display = "";
   renderCurrentTplInfo();
   renderFormValues();
   renderSitePreview();
