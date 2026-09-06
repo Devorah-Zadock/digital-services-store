@@ -86,11 +86,21 @@ header.site {
   -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid #ECECEC;
 }
+/* The rest of the nav lives inside .nav's centered, max-width-capped
+   container — same as every other page section. The brand is pinned
+   separately, straight to the true edge of the browser window (not just
+   "first/rightmost inside the centered bar", which on any screen wider
+   than --max still leaves visible empty margin past it). header.site's
+   own sticky positioning gives this its containing block. padding-inline-end
+   reserves room so the rest of the nav never runs under the pinned brand. */
 .nav {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 24px; max-width: var(--max); margin: 0 auto;
+  padding: 16px 24px; padding-inline-start: 190px; max-width: var(--max); margin: 0 auto;
 }
-.brand { font-size: 23px; font-weight: 800; color: var(--teal-dark); display: flex; align-items: center; gap: 11px; letter-spacing: -.01em; }
+.brand {
+  position: absolute; top: 50%; inset-inline-start: 24px; transform: translateY(-50%);
+  font-size: 23px; font-weight: 800; color: var(--teal-dark); display: flex; align-items: center; gap: 11px; letter-spacing: -.01em;
+}
 .brand-badge {
   width: 36px; height: 36px; border-radius: 11px; flex: none;
   background: linear-gradient(145deg, var(--teal), var(--gold));
