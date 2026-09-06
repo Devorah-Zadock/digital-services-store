@@ -512,13 +512,24 @@ document.addEventListener("DOMContentLoaded", () => {
   // Same discovery flow as the CV catalog: browse a real catalog of
   // templates first, land straight in the wizard only when arriving via
   // a template link or continuing a session that already has content.
-  if (urlTemplate && SITE_TEMPLATES[urlTemplate]) {
-    siteState.template = urlTemplate;
-    showWizard();
-  } else if (forceBrowse) {
-    showCatalog();
-  } else if (hasSavedContent) {
-    showWizard();
+  // Browsing itself never needs an account — same as products.html ->
+  // builder.html — only entering the wizard (an actual template chosen,
+  // ready to customize) does, so the auth check sits right here rather
+  // than gating the whole page.
+  const wantsWizard = (urlTemplate && SITE_TEMPLATES[urlTemplate]) || (!forceBrowse && hasSavedContent);
+  if (wantsWizard) {
+    const overlay = document.getElementById("auth-gate-overlay");
+    if (overlay) overlay.style.display = "flex";
+    supabaseClient.auth.getSession().then(({ data }) => {
+      if (data.session && data.session.user) {
+        if (urlTemplate && SITE_TEMPLATES[urlTemplate]) siteState.template = urlTemplate;
+        showWizard();
+        if (overlay) overlay.remove();
+      } else {
+        const here = location.pathname.split("/").pop() + location.search;
+        location.href = "account.html?redirect=" + encodeURIComponent(here);
+      }
+    });
   } else {
     showCatalog();
   }

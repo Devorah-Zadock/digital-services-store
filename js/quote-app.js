@@ -9,6 +9,17 @@ let currentProfile = null;
 let pendingLogoUrl = null; // set once a newly-picked logo finishes uploading
 let quoteEventState = null;
 
+/* Shown to a signed-out visitor so they can try the tool immediately —
+   real business details (and saving them) require an account, same as
+   viewing-vs-editing everywhere else on the site. */
+function demoProfileQA() {
+  return {
+    business_name: "שם העסק שלכם", tagline1: "", tagline2: "",
+    email: "", id_number: "", phone: "", fax: "", signer_name: "",
+    vat_rate: "18", logo_url: null,
+  };
+}
+
 function todayHebrewQA() {
   const d = new Date();
   const dd = String(d.getDate()).padStart(2, "0");
@@ -198,12 +209,17 @@ function showQuoteBuilder() {
   quoteEventState = emptyQuoteEventState();
   renderQuoteFormQA();
   renderQuotePreviewQA();
-  wireQuoteFormQA();
+  document.getElementById("qa-demo-banner").style.display = currentUser ? "none" : "";
 }
 
 function showProfileEditor() {
+  if (!currentUser) { goToLoginQA(); return; }
   showSection("qa-profile");
   fillProfileForm(currentProfile);
+}
+
+function goToLoginQA() {
+  window.location.href = "account.html?redirect=quote-app.html";
 }
 
 /* ---------- Boot / auth state routing ---------- */
@@ -221,14 +237,29 @@ async function routeAfterAuth(user) {
   }
 }
 
+/* Trying the tool never needs an account — same as viewing a template
+   anywhere else on the site. A signed-out visitor gets the quote
+   builder straight away with placeholder business details (see
+   demoProfileQA); only saving their REAL details (qa-profile-form) or
+   editing an existing profile requires signing in. */
+function routeAsGuest() {
+  currentUser = null;
+  currentProfile = demoProfileQA();
+  showQuoteBuilder();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   wireProfileForm();
+  wireQuoteFormQA();
+  document.getElementById("qa-demo-login").addEventListener("click", (e) => { e.preventDefault(); goToLoginQA(); });
 
   supabaseClient.auth.onAuthStateChange((_event, session) => {
     if (session && session.user) {
       routeAfterAuth(session.user);
     } else {
-      window.location.href = "account.html?redirect=quote-app.html";
+      // Signed out (or never signed in) — drop back to the guest demo
+      // rather than yanking them off the page entirely.
+      routeAsGuest();
     }
   });
 
@@ -236,7 +267,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (data.session && data.session.user) {
       routeAfterAuth(data.session.user);
     } else {
-      window.location.href = "account.html?redirect=quote-app.html";
+      routeAsGuest();
     }
   });
 });

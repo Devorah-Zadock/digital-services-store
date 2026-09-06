@@ -6,19 +6,6 @@ document.addEventListener("DOMContentLoaded", () => {
     links.querySelectorAll("a").forEach((a) => a.addEventListener("click", () => links.classList.remove("open")));
   }
 
-  document.querySelectorAll(".nav-dropdown-trigger").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const dd = btn.closest(".nav-dropdown");
-      const wasOpen = dd.classList.contains("open");
-      document.querySelectorAll(".nav-dropdown.open").forEach((o) => o.classList.remove("open"));
-      if (!wasOpen) dd.classList.add("open");
-    });
-  });
-  document.addEventListener("click", () => {
-    document.querySelectorAll(".nav-dropdown.open").forEach((o) => o.classList.remove("open"));
-  });
-
   const form = document.querySelector("form.contact-form");
   if (form) {
     form.addEventListener("submit", (e) => {

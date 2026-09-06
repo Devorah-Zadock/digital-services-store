@@ -81,7 +81,7 @@ async function sendPurchaseReceipt() {
    "pick a different template" — that's exactly the loophole that let
    someone keep the same content and freely try (and fully preview) a
    new template after only ever paying once. A genuinely different site
-   only starts from the top-level "אתרים" nav link (inside "קטלוג"), which always
+   only starts from the top-level "אתרים" nav link, which always
    opens the full catalog fresh (see the site-wide ?browse=1 links) and
    the "האתרים שלי" rail there to get back to any existing project. */
 function applyFinalizedLockUI() {

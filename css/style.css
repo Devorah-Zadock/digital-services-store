@@ -90,34 +90,6 @@ header.site {
 .nav-links { display: flex; align-items: center; gap: 28px; font-size: 15px; font-weight: 500; }
 .nav-links a { color: var(--dark); opacity: .85; padding: 6px 0; border-bottom: 2px solid transparent; transition: opacity .15s ease, border-color .15s ease; }
 .nav-links a:hover, .nav-links a.active { opacity: 1; border-color: var(--gold); }
-
-/* "קטלוג" groups the catalog and the site-builder under one menu instead
-   of two flat top-level items — otherwise the nav reads as a pile of
-   unrelated buttons rather than a small set of destinations. */
-.nav-dropdown { position: relative; }
-.nav-dropdown-trigger {
-  display: flex; align-items: center; gap: 4px; background: none; border: none; cursor: pointer;
-  font: inherit; color: var(--dark); opacity: .85; padding: 6px 0; border-bottom: 2px solid transparent;
-  transition: opacity .15s ease, border-color .15s ease;
-}
-.nav-dropdown-caret { width: 10px; height: 10px; flex: none; transition: transform .15s ease; }
-.nav-dropdown-trigger:hover, .nav-dropdown.open .nav-dropdown-trigger, .nav-dropdown.has-active .nav-dropdown-trigger { opacity: 1; border-color: var(--gold); }
-.nav-dropdown.open .nav-dropdown-caret { transform: rotate(180deg); }
-.nav-dropdown-menu {
-  position: absolute; top: 100%; inset-inline-end: 0; margin-top: 12px; z-index: 50;
-  background: var(--white); border: 1px solid #EAEDEC; border-radius: 12px;
-  box-shadow: 0 12px 30px rgba(0,0,0,.1); padding: 6px; min-width: 170px; display: none;
-}
-.nav-dropdown.open .nav-dropdown-menu { display: block; }
-.nav-dropdown-menu a {
-  display: block; padding: 9px 12px; border-radius: 8px; font-size: 14px; font-weight: 500;
-  color: var(--dark); opacity: .9; transition: background .15s ease, opacity .15s ease;
-}
-.nav-dropdown-menu a:hover { background: var(--grey-light); opacity: 1; }
-.nav-dropdown-menu a.active { opacity: 1; color: var(--teal-dark); background: var(--ice); }
-@media (max-width: 860px) {
-  .nav-dropdown-menu { position: static; margin-top: 4px; margin-inline-start: 12px; border: none; box-shadow: none; padding: 0; }
-}
 .nav-cta {
   background: linear-gradient(135deg, var(--teal), var(--teal-light)); color: var(--white); padding: 10px 22px;
   border-radius: 30px; font-size: 14px; font-weight: 600;
