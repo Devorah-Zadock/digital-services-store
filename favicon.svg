@@ -1,7 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="7" fill="#163F35"/>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1F5C4E"/>
+      <stop offset="1" stop-color="#C99A3B"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="8" fill="url(#g)"/>
   <g transform="translate(4,4)">
-    <rect fill="#E3BE6E" x="3" y="9" width="13" height="13" rx="3.5"/>
-    <rect fill="#C99A3B" x="8" y="4" width="13" height="13" rx="3.5"/>
+    <rect fill="#fff" x="6" y="4" width="4.5" height="16" rx="2.25"/>
+    <path fill="#fff" d="M9.5,4 H13.5 A8,8 0 0 1 13.5,20 H9.5 Z"/>
   </g>
 </svg>
