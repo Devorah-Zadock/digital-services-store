@@ -60,7 +60,6 @@ function renderPreview() {
   const html = renderCVHtml({ layout: tpl.layout, font, palette, content: state.content, lang: state.lang, textColor });
   document.getElementById("preview-doc").innerHTML = html;
   fitPreviewToContainer();
-  if (typeof scheduleCvSave === "function") scheduleCvSave();
 }
 
 /* The CV doc is always rendered at its true fixed A4 width (794px) so the
@@ -74,6 +73,18 @@ function fitPreviewToContainer() {
   const wrap = document.getElementById("preview-doc");
   const doc = wrap.querySelector(".cv-doc");
   if (!doc) return;
+  // renderPreview() replaces #preview-doc's innerHTML on every single edit,
+  // and .cv-doc has a CSS transition on transform (css/builder.css). Reset
+  // to transform:none to measure the natural size, then forcing a layout
+  // read (getBoundingClientRect) before reapplying the scaled transform,
+  // let the browser's transition engine treat that momentary untransformed
+  // state as a real animation start point — so every keystroke visibly
+  // flashed the preview to full size before animating back down. Turning
+  // the transition off for this reset-measure-reapply sequence, then
+  // restoring it only after the final transform is committed, keeps the
+  // animation for real changes (a window resize) without it firing here.
+  const prevTransition = doc.style.transition;
+  doc.style.transition = "none";
   doc.style.transform = "none";
   doc.style.margin = "0";
   wrap.style.height = "auto";
@@ -92,6 +103,8 @@ function fitPreviewToContainer() {
   doc.style.transformOrigin = "top left";
   doc.style.transform = `translateX(${translateX}px) scale(${scale})`;
   wrap.style.height = (doc.offsetHeight * scale) + "px";
+  doc.offsetHeight; // commit the no-transition transform before restoring it
+  doc.style.transition = prevTransition;
 }
 
 window.addEventListener("resize", () => {

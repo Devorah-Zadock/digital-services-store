@@ -7,17 +7,14 @@
 
    quoteCurrentUserId/quoteSavedId are set by quote-app.js (routeAfterAuth /
    routeAsGuest / loadQuoteById below) — plain shared globals, same pattern
-   already used for quoteEventState between quote-app.js and quote-render.js. */
+   already used for quoteEventState between quote-app.js and quote-render.js.
+
+   Explicit-save only: saveQuoteNow only runs from #quote-save-btn below —
+   editing was silently creating a new saved quote before anyone chose to
+   keep anything. */
 
 let quoteCurrentUserId = null;
 let quoteSavedId = null;
-let quoteSaveTimer = null;
-
-function scheduleQuoteSave() {
-  if (!quoteCurrentUserId) return;
-  clearTimeout(quoteSaveTimer);
-  quoteSaveTimer = setTimeout(() => { saveQuoteNow(); }, 1200);
-}
 
 async function saveQuoteNow() {
   if (!quoteCurrentUserId || !quoteEventState) return "no-user";
@@ -51,7 +48,6 @@ document.addEventListener("DOMContentLoaded", () => {
   btn.addEventListener("click", async () => {
     if (!quoteCurrentUserId) { window.location.href = "account.html?redirect=quote-app.html"; return; }
     btn.disabled = true;
-    clearTimeout(quoteSaveTimer);
     const err = await saveQuoteNow();
     btn.disabled = false;
     status.classList.remove("ok");

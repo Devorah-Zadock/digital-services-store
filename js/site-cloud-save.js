@@ -7,18 +7,16 @@
    currentUnlockKey() in site-builder.js), exactly like a single-site
    theme license. Picking a new template from the catalog always starts
    or resumes THAT template's own project — it never overwrites a
-   different, already-finalized one. */
+   different, already-finalized one.
+
+   Explicit-save only: saveSiteNow only runs from #site-save-btn (or from
+   finalizeSiteProject, which needs a real project id to attach the
+   purchase to) — editing was silently creating/overwriting a saved
+   project before anyone chose to keep anything. */
 
 let siteCurrentUserId = null;
 let siteProjectId = null;
 let siteIsFinalized = false;
-let siteSaveTimer = null;
-
-function scheduleSiteSave() {
-  if (!siteCurrentUserId) return;
-  clearTimeout(siteSaveTimer);
-  siteSaveTimer = setTimeout(saveSiteNow, 1200);
-}
 
 async function saveSiteNow() {
   if (!siteCurrentUserId) return;
@@ -148,7 +146,6 @@ document.addEventListener("DOMContentLoaded", () => {
     btn.addEventListener("click", async () => {
       if (!siteCurrentUserId) { window.location.href = "account.html?redirect=" + encodeURIComponent(location.pathname + location.search); return; }
       btn.disabled = true;
-      clearTimeout(siteSaveTimer);
       await saveSiteNow();
       btn.disabled = false;
       status.textContent = "נשמר ✓";

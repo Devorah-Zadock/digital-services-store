@@ -1,17 +1,11 @@
-/* Auto-saves the CV builder's state to the signed-in user's account
-   (cv_saves table) and restores it on load instead of starting from
-   the default template — so it's the same CV from any device.
-   Hooks into renderPreview(), which builder.js already calls after
-   every single edit, so no per-field wiring is needed here. */
+/* Saves the CV builder's state to the signed-in user's account (cv_saves
+   table) and restores it on load instead of starting from the default
+   template — so it's the same CV from any device. Explicit-save only:
+   nothing here runs on every edit, only when #cv-save-btn is clicked —
+   editing a CV (or just looking at one) was silently creating/overwriting
+   a save before a person ever chose to keep anything. */
 
 let cvCurrentUserId = null;
-let cvSaveTimer = null;
-
-function scheduleCvSave() {
-  if (!cvCurrentUserId) return;
-  clearTimeout(cvSaveTimer);
-  cvSaveTimer = setTimeout(saveCvNow, 1200);
-}
 
 async function saveCvNow() {
   if (!cvCurrentUserId || !state.content) return;
@@ -46,7 +40,19 @@ document.addEventListener("DOMContentLoaded", () => {
     if (user) {
       cvCurrentUserId = user.id;
       const { data: row } = await supabaseClient.from("cv_saves").select("data").eq("user_id", user.id).maybeSingle();
-      if (row && row.data && row.data.content) applyCvSnapshot(row.data);
+      // Only resume the saved CV if nothing more specific was asked for —
+      // a plain builder.html link (nav, "my content" rail) means "continue
+      // where I left off", same as the saved template. But a catalog card
+      // for a DIFFERENT template links to builder.html?template=<slug>,
+      // and builder.js's own DOMContentLoaded handler already loaded that
+      // exact template fresh (synchronously, before this async check
+      // resolves) — restoring the old save on top of it here silently
+      // discarded that choice and made "pick a different template" not
+      // actually work.
+      const urlTemplate = new URLSearchParams(location.search).get("template");
+      if (row && row.data && row.data.content && (!urlTemplate || urlTemplate === row.data.slug)) {
+        applyCvSnapshot(row.data);
+      }
     }
     if (window.revealGatedPage) window.revealGatedPage();
   });
@@ -57,7 +63,6 @@ document.addEventListener("DOMContentLoaded", () => {
     btn.addEventListener("click", async () => {
       if (!cvCurrentUserId) { window.location.href = "account.html?redirect=builder.html"; return; }
       btn.disabled = true;
-      clearTimeout(cvSaveTimer);
       await saveCvNow();
       btn.disabled = false;
       status.textContent = "נשמר ✓";

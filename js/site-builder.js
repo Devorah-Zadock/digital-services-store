@@ -222,7 +222,6 @@ function renderSitePreview() {
   renderPreviewTabs();
   document.getElementById("site-preview-frame").srcdoc = currentSiteHtml(previewPage);
   saveSiteState();
-  if (typeof scheduleSiteSave === "function") scheduleSiteSave();
 }
 
 function wireForm() {
