@@ -31,7 +31,7 @@ async function loadMyContent(user, list) {
   if (sites && sites.length) {
     sites.forEach((s) => {
       const bizName = s.data && s.data.businessName && s.data.businessName.trim();
-      rows.push(myContentRowHtml("sites.html?template=" + encodeURIComponent(s.template), bizName || "אתר עסקי", "בניית אתר", "site:" + s.id));
+      rows.push(myContentRowHtml("sites.html?template=" + encodeURIComponent(s.template), bizName || "אתר עסקי", "אתר", "site:" + s.id));
     });
   } else {
     rows.push(myContentRowHtml("sites.html?browse=1", "עדיין לא בניתם אתר", "בניית אתר — להתחלה"));
