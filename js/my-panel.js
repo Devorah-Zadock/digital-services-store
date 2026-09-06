@@ -25,6 +25,11 @@ const MY_PANEL_TEMPLATE_LABELS = {
 };
 
 const MY_PANEL_COLLAPSE_KEY = "deskkit_panel_collapsed";
+const MY_PANEL_RAIL_W_KEY = "deskkit_rail_w";
+const MY_PANEL_RAIL_COLLAPSED_KEY = "deskkit_rail_collapsed";
+const MY_PANEL_RAIL_W_DEFAULT = 220;
+const MY_PANEL_RAIL_W_MIN = 190;
+const MY_PANEL_RAIL_W_MAX = 420;
 
 function myPanelEscapeHtml(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -36,6 +41,13 @@ function myPanelTrashIcon() {
 
 function myPanelChevronIcon() {
   return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>';
+}
+
+/* Points at the true edge the rail collapses toward — sideways, not up/down
+   like myPanelChevronIcon (that one's for the expand/collapse section
+   arrows). .my-panel-reopen flips it 180deg via CSS for the reopen state. */
+function myPanelCollapseIcon() {
+  return '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4v16M15 8l4 4-4 4"/></svg>';
 }
 
 function myPanelAccountIcon() {
@@ -221,16 +233,38 @@ function myPanelSectionsHtml() {
   return section("sites", "אתרים", "my-panel-sites") + section("cv", "קורות חיים", "my-panel-cv");
 }
 
+/* Reads back the width/collapsed state the pre-paint inline script (first
+   line of <body> on every page that mounts this rail) already applied to
+   --rail-w before first paint, so this doesn't fight it or cause a flash. */
+function myPanelRailWidth() {
+  const saved = parseInt(localStorage.getItem(MY_PANEL_RAIL_W_KEY), 10);
+  if (Number.isFinite(saved)) return Math.min(MY_PANEL_RAIL_W_MAX, Math.max(MY_PANEL_RAIL_W_MIN, saved));
+  return MY_PANEL_RAIL_W_DEFAULT;
+}
+function myPanelIsCollapsed() {
+  return localStorage.getItem(MY_PANEL_RAIL_COLLAPSED_KEY) === "1";
+}
+function myPanelSetCollapsed(collapsed) {
+  document.body.classList.toggle("rail-collapsed", collapsed);
+  document.documentElement.style.setProperty("--rail-w", collapsed ? "0px" : myPanelRailWidth() + "px");
+  try { localStorage.setItem(MY_PANEL_RAIL_COLLAPSED_KEY, collapsed ? "1" : "0"); } catch (err) { /* ignore */ }
+}
+
 function mountMyPanel() {
   if (document.getElementById("my-panel")) return;
   const header = document.querySelector("header.site");
   if (header) document.documentElement.style.setProperty("--header-h", header.offsetHeight + "px");
+  document.documentElement.style.setProperty("--rail-w", (myPanelIsCollapsed() ? 0 : myPanelRailWidth()) + "px");
 
   const aside = document.createElement("aside");
   aside.id = "my-panel";
   aside.className = "my-sites-rail no-print";
   aside.innerHTML = `
-    <div class="my-panel-subtitle">התבניות שלי</div>
+    <div class="my-panel-resize-handle" id="my-panel-resize-handle"></div>
+    <div class="my-panel-head">
+      <div class="my-panel-subtitle">התבניות שלי</div>
+      <button type="button" class="my-panel-collapse" id="my-panel-collapse-btn" title="הסתרת הסרגל" aria-label="הסתרת הסרגל">${myPanelCollapseIcon()}</button>
+    </div>
     <div class="my-panel-body">${myPanelSectionsHtml()}</div>
     <div class="my-panel-account">
       <button type="button" class="my-panel-account-toggle" id="my-panel-account-toggle">
@@ -241,6 +275,41 @@ function mountMyPanel() {
   `;
   document.body.appendChild(aside);
   document.body.classList.add("has-sites-rail");
+
+  if (!document.getElementById("my-panel-reopen")) {
+    const reopen = document.createElement("button");
+    reopen.type = "button";
+    reopen.id = "my-panel-reopen";
+    reopen.className = "my-panel-reopen no-print";
+    reopen.title = "הצגת הסרגל";
+    reopen.setAttribute("aria-label", "הצגת הסרגל");
+    reopen.innerHTML = myPanelCollapseIcon();
+    reopen.addEventListener("click", () => myPanelSetCollapsed(false));
+    document.body.appendChild(reopen);
+  }
+
+  aside.querySelector("#my-panel-collapse-btn").addEventListener("click", () => myPanelSetCollapsed(true));
+
+  const handle = aside.querySelector("#my-panel-resize-handle");
+  handle.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    handle.classList.add("dragging");
+    document.body.style.userSelect = "none";
+    const onMove = (ev) => {
+      const w = Math.min(MY_PANEL_RAIL_W_MAX, Math.max(MY_PANEL_RAIL_W_MIN, window.innerWidth - ev.clientX));
+      document.documentElement.style.setProperty("--rail-w", w + "px");
+    };
+    const onUp = () => {
+      handle.classList.remove("dragging");
+      document.body.style.userSelect = "";
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      const finalW = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--rail-w"), 10);
+      if (Number.isFinite(finalW)) { try { localStorage.setItem(MY_PANEL_RAIL_W_KEY, finalW); } catch (err) { /* ignore */ } }
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  });
 
   aside.querySelectorAll(".my-panel-section-head").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -277,7 +346,9 @@ function unmountMyPanel() {
   closePanelAccountMenu();
   const aside = document.getElementById("my-panel");
   if (aside) aside.remove();
-  document.body.classList.remove("has-sites-rail");
+  const reopen = document.getElementById("my-panel-reopen");
+  if (reopen) reopen.remove();
+  document.body.classList.remove("has-sites-rail", "rail-collapsed");
 }
 
 function updatePanelAccountEmail(email) {

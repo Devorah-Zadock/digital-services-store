@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=13">
+<link rel="stylesheet" href="css/style.css?v=14">
 <link rel="stylesheet" href="css/builder.css?v=1">
 <style>
   .services-item { border: 1px solid #EDEFEE; border-radius: 8px; padding: 12px; margin-bottom: 12px; display: grid; gap: 8px; }
@@ -76,6 +76,12 @@
         document.body.classList.add("has-sites-rail");
         break;
       }
+    }
+    var rw = localStorage.getItem("deskkit_rail_w");
+    if (rw) document.documentElement.style.setProperty("--rail-w", rw + "px");
+    if (localStorage.getItem("deskkit_rail_collapsed") === "1") {
+      document.documentElement.style.setProperty("--rail-w", "0px");
+      document.body.classList.add("rail-collapsed");
     }
   } catch (e) {}
 </script>
@@ -254,7 +260,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>
-<script src="js/my-panel.js?v=5"></script>
+<script src="js/my-panel.js?v=6"></script>
 <script src="js/site-cloud-save.js"></script>
 <script src="js/main.js"></script>
 <script src="js/widgets.js?v=5"></script>

@@ -86,6 +86,17 @@ header.site {
   -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid #ECECEC;
 }
+/* When the "my content" rail is mounted, body gets a margin-inline-start
+   to make room for it (see body.has-sites-rail below) — but header.site
+   is a normal body child too, so without this it would get pushed along
+   with everything else, landing the pinned .brand 220px short of the true
+   browser edge instead of flush against it. Counteract exactly that much
+   margin + width so the header (and the brand pinned inside it) always
+   spans the full viewport, with the rail sitting visually below it. */
+body.has-sites-rail header.site {
+  margin-inline-start: calc(-1 * var(--rail-w, 220px));
+  width: calc(100% + var(--rail-w, 220px));
+}
 /* The rest of the nav lives inside .nav's centered, max-width-capped
    container — same as every other page section. The brand is pinned
    separately, straight to the true edge of the browser window (not just
@@ -134,15 +145,49 @@ header.site {
    panel — just a list inside its own card there. */
 .my-sites-rail {
   position: fixed; top: var(--header-h, 70px); bottom: 0; inset-inline-start: 0;
-  width: 220px; overflow: hidden; background: var(--grey-light);
+  width: var(--rail-w, 220px); overflow: hidden; background: var(--grey-light);
   border-inline-end: 1px solid #E2E7E4; z-index: 30;
   display: flex; flex-direction: column;
 }
-body.has-sites-rail { margin-inline-start: 220px; }
+/* padding, not margin: body itself must stay full viewport width (its
+   own overflow-x:clip above clips at ITS OWN border box) so header.site's
+   counter-negative-margin trick below actually has room to reach the true
+   edge instead of getting clipped at a shrunk body box. */
+body.has-sites-rail { padding-inline-start: var(--rail-w, 220px); }
 @media (max-width: 900px) {
   .my-sites-rail { position: static; width: 100%; height: auto; border-inline-end: none; border-bottom: 1px solid #E2E7E4; margin-bottom: 16px; }
-  body.has-sites-rail { margin-inline-start: 0; }
+  body.has-sites-rail { padding-inline-start: 0; }
+  body.has-sites-rail header.site { margin-inline-start: 0; width: 100%; }
 }
+
+/* Collapsed: --rail-w drops to 0 (see js/my-panel.js), which alone already
+   frees up the margin/header math above — this just hides the now-empty
+   strip's border/shadow and swaps in the little pinned tab to reopen it. */
+body.rail-collapsed .my-sites-rail { border-inline-end: none; box-shadow: none; }
+.my-panel-reopen {
+  display: none; position: fixed; top: calc(var(--header-h, 70px) + 14px); inset-inline-start: 14px; z-index: 30;
+  width: 34px; height: 34px; border-radius: 10px; border: 1px solid #E2E7E4; background: var(--white);
+  align-items: center; justify-content: center; cursor: pointer; box-shadow: var(--shadow);
+  color: var(--teal-dark); transition: transform .15s ease, background .15s ease;
+}
+.my-panel-reopen:hover { background: var(--ice); transform: translateY(-1px); }
+.my-panel-reopen svg { transform: rotate(180deg); }
+body.rail-collapsed .my-panel-reopen { display: flex; }
+@media (max-width: 900px) { .my-panel-reopen { display: none !important; } }
+
+/* Drag handle on the rail's content-facing edge to resize --rail-w.
+   A plain 6px hit target would be too thin to grab reliably, so it's
+   widened with a transparent halo and only the 2px center line paints. */
+.my-panel-resize-handle {
+  position: absolute; top: 0; bottom: 0; inset-inline-end: -4px; width: 9px;
+  cursor: ew-resize; z-index: 31; background: transparent;
+}
+.my-panel-resize-handle::after {
+  content: ""; position: absolute; top: 0; bottom: 0; inset-inline-start: 4px; width: 2px;
+  background: transparent; transition: background .15s ease;
+}
+.my-panel-resize-handle:hover::after, .my-panel-resize-handle.dragging::after { background: var(--teal-light); }
+@media (max-width: 900px) { .my-panel-resize-handle { display: none; } }
 
 /* The rail is fixed to the same physical edge as the cookie notice and the
    feedback/chat FABs, on a lower z-index — without this, any of them
@@ -150,10 +195,10 @@ body.has-sites-rail { margin-inline-start: 220px; }
    cookie notice, shown by default to new visitors, did exactly that).
    Push them clear of the rail's width whenever it's actually fixed
    (i.e. above the same 900px breakpoint the rail itself uses). */
-body.has-sites-rail .cookie-notice { inset-inline-start: 220px; }
+body.has-sites-rail .cookie-notice { inset-inline-start: var(--rail-w, 220px); }
 @media (min-width: 901px) {
   body.has-sites-rail .fab-chat,
-  body.has-sites-rail .chat-panel { right: 244px; }
+  body.has-sites-rail .chat-panel { right: calc(var(--rail-w, 220px) + 24px); }
 }
 @media (max-width: 900px) {
   body.has-sites-rail .cookie-notice { inset-inline-start: 0; }
@@ -166,7 +211,14 @@ body.has-sites-rail .cookie-notice { inset-inline-start: 220px; }
    repeat it. */
 body.has-sites-rail .nav-account-wrap { display: none; }
 
-.my-panel-subtitle { font-size: 16px; font-weight: 800; letter-spacing: -.01em; color: var(--teal-dark); padding: 18px 16px 6px; flex-shrink: 0; }
+.my-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-shrink: 0; padding-inline-end: 8px; }
+.my-panel-subtitle { font-size: 16px; font-weight: 800; letter-spacing: -.01em; color: var(--teal-dark); padding: 18px 16px 6px; }
+.my-panel-collapse {
+  width: 28px; height: 28px; border-radius: 8px; border: none; background: transparent;
+  color: var(--grey); display: flex; align-items: center; justify-content: center; cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.my-panel-collapse:hover { background: var(--white); color: var(--teal-dark); }
 .my-panel-body { flex: 1; overflow-y: auto; padding: 4px 16px 16px; }
 .my-panel-account { flex-shrink: 0; position: relative; border-top: 1px solid #E2E7E4; background: var(--grey-light); }
 .my-panel-account-toggle {
