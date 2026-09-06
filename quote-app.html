@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=9">
-<link rel="stylesheet" href="css/builder.css">
+<link rel="stylesheet" href="css/builder.css?v=1">
 <style>
   .qa-err { color: #B23; font-size: 13px; min-height: 18px; margin: 4px 0 8px; }
   .qa-topbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
@@ -21,6 +21,23 @@
 </style>
 </head>
 <body>
+<script>
+  /* Guesses, synchronously and before first paint, whether "my content"
+     will end up mounted (js/my-panel.js only knows for sure after an
+     async Supabase check) — reserves its 220px margin immediately so
+     the whole page doesn't visibly jump sideways once the real check
+     resolves a beat later. A wrong guess (stale/expired token) just
+     falls back to the old behavior for that one navigation. */
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf("sb-") === 0 && k.indexOf("-auth-token") !== -1 && localStorage.getItem(k)) {
+        document.body.classList.add("has-sites-rail");
+        break;
+      }
+    }
+  } catch (e) {}
+</script>
 
 <header class="site no-print">
   <nav class="nav">
@@ -142,11 +159,11 @@
   </div>
 </div>
 
-<script src="js/quote-render.js"></script>
+<script src="js/quote-render.js?v=1"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>
 <script src="js/my-panel.js?v=5"></script>
 <script src="js/main.js"></script>
-<script src="js/quote-app.js"></script>
+<script src="js/quote-app.js?v=1"></script>
 </body>
 </html>

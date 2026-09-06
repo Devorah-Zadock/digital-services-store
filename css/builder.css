@@ -60,6 +60,8 @@
 .preview-sticky { position: sticky; top: 90px; }
 #preview-doc { margin-bottom: 20px; overflow: hidden; }
 #preview-doc .cv-doc { transition: transform .15s ease; }
+#quote-preview { overflow: hidden; }
+#quote-preview .quote-doc { transition: transform .15s ease; }
 
 .export-panel { background: var(--ice); border-radius: var(--radius); padding: 22px; }
 

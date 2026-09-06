@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=9">
-<link rel="stylesheet" href="css/builder.css">
+<link rel="stylesheet" href="css/builder.css?v=1">
 <style>
   .as-section { max-width: 480px; margin: 0 auto 40px; padding: 28px; background: var(--white); border: 1px solid #EAEDEC; border-radius: var(--radius); box-shadow: var(--shadow); }
   .as-section h3 { margin: 0 0 6px; color: var(--teal-dark); }
@@ -24,6 +24,23 @@
 </style>
 </head>
 <body>
+<script>
+  /* Guesses, synchronously and before first paint, whether "my content"
+     will end up mounted (js/my-panel.js only knows for sure after an
+     async Supabase check) — reserves its 220px margin immediately so
+     the whole page doesn't visibly jump sideways once the real check
+     resolves a beat later. A wrong guess (stale/expired token) just
+     falls back to the old behavior for that one navigation. */
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf("sb-") === 0 && k.indexOf("-auth-token") !== -1 && localStorage.getItem(k)) {
+        document.body.classList.add("has-sites-rail");
+        break;
+      }
+    }
+  } catch (e) {}
+</script>
 
 <div id="auth-gate-overlay" class="auth-gate-overlay">
   <div class="auth-gate-spinner"></div>

@@ -95,3 +95,44 @@ function renderQuoteHtml(q) {
     <div class="footer-note">נא לאשר בפקס: ${escapeHtmlQ(q.fax)} &nbsp;&nbsp;או במייל חוזר</div>
   </div>`;
 }
+
+/* .quote-doc is always rendered at its true fixed A4-ish width (794px) so
+   the letter's proportions exactly match the printed PDF. On any narrower
+   preview column — which is most of the time, since the wizard's form
+   panel already claims real estate — the fixed-width box overflowed its
+   shrunk grid column with no bound on the overflow, which in this RTL
+   layout bled out past the browser's left edge instead of the right,
+   reading as "the page is cut off". Scaling it down visually (same
+   technique as the CV builder's fitPreviewToContainer) keeps the whole
+   letter in view and legible instead. The print stylesheet resets this
+   transform, so exported/printed output is never affected. Shared by
+   both quote-app.js and quote-builder.js, which each call this right
+   after setting #quote-preview's innerHTML. */
+function fitQuotePreviewToContainer() {
+  const wrap = document.getElementById("quote-preview");
+  const doc = wrap && wrap.querySelector(".quote-doc");
+  if (!doc) return;
+  doc.style.transform = "none";
+  doc.style.margin = "0";
+  wrap.style.height = "auto";
+  const wrapRect = wrap.getBoundingClientRect();
+  const docRect = doc.getBoundingClientRect(); // natural, pre-transform position
+  const available = wrapRect.width;
+  const natural = doc.offsetWidth;
+  const scale = available < natural ? available / natural : 1;
+  // Measure rather than assume where the browser naturally places an
+  // over-width block in this RTL container (it doesn't reliably sit flush
+  // at the container's own start edge), then compute the exact shift
+  // needed to land it centered after scaling.
+  const preTransformLeft = docRect.left - wrapRect.left;
+  const desiredLeft = (available - natural * scale) / 2;
+  const translateX = desiredLeft - preTransformLeft;
+  doc.style.transformOrigin = "top left";
+  doc.style.transform = `translateX(${translateX}px) scale(${scale})`;
+  wrap.style.height = (doc.offsetHeight * scale) + "px";
+}
+
+window.addEventListener("resize", () => {
+  clearTimeout(window._fitQuotePreviewTimer);
+  window._fitQuotePreviewTimer = setTimeout(fitQuotePreviewToContainer, 150);
+});

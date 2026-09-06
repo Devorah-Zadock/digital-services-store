@@ -27,6 +27,7 @@ function deepCloneQ(o) { return JSON.parse(JSON.stringify(o)); }
 
 function renderQuotePreview() {
   document.getElementById("quote-preview").innerHTML = renderQuoteHtml(quoteState);
+  fitQuotePreviewToContainer();
 }
 
 function dateBlockHtml(date, i, total) {

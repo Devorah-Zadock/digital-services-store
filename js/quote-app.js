@@ -142,6 +142,7 @@ function mergedQuoteState() {
 
 function renderQuotePreviewQA() {
   document.getElementById("quote-preview").innerHTML = renderQuoteHtml(mergedQuoteState());
+  fitQuotePreviewToContainer();
 }
 
 function dateBlockHtmlQA(date, i, total) {

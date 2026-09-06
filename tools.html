@@ -20,6 +20,23 @@
 </style>
 </head>
 <body>
+<script>
+  /* Guesses, synchronously and before first paint, whether "my content"
+     will end up mounted (js/my-panel.js only knows for sure after an
+     async Supabase check) — reserves its 220px margin immediately so
+     the whole page doesn't visibly jump sideways once the real check
+     resolves a beat later. A wrong guess (stale/expired token) just
+     falls back to the old behavior for that one navigation. */
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf("sb-") === 0 && k.indexOf("-auth-token") !== -1 && localStorage.getItem(k)) {
+        document.body.classList.add("has-sites-rail");
+        break;
+      }
+    }
+  } catch (e) {}
+</script>
 
 <header class="site no-print">
   <nav class="nav">
