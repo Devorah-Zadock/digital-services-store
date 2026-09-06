@@ -112,7 +112,7 @@ function initProductPage() {
         <div class="format-badges">${p.formatBadges.map((b) => `<span class="format-badge">${b}</span>`).join("")}</div>
         <div class="price-block">
           <span class="price">${money(p.price)}</span>
-          <span style="color:var(--grey); font-size:14px;">${p.downloadUrl ? "הורדה מיידית, בלי הרשמה" : "הורדת PDF חינמית תמיד"}</span>
+          ${p.downloadUrl ? `<span style="color:var(--grey); font-size:14px;">הורדה מיידית, בלי הרשמה</span>` : ""}
         </div>
         <ul class="checklist">${p.checklist.map((c) => `<li>${c}</li>`).join("")}</ul>
         ${p.downloadUrl ? `

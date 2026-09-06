@@ -97,20 +97,30 @@ body.has-sites-rail header.site {
   margin-inline-start: calc(-1 * var(--rail-w, 220px));
   width: calc(100% + var(--rail-w, 220px));
 }
-/* The rest of the nav lives inside .nav's centered, max-width-capped
-   container — same as every other page section. The brand is pinned
-   separately, straight to the true edge of the browser window (not just
-   "first/rightmost inside the centered bar", which on any screen wider
-   than --max still leaves visible empty margin past it). header.site's
-   own sticky positioning gives this its containing block. padding-inline-end
-   reserves room so the rest of the nav never runs under the pinned brand. */
+/* .nav-links is the only thing that actually lives in .nav's own centered
+   flex flow now — both .brand and .nav-end-group (login + catalog CTA)
+   are pinned straight to the true edges of header.site instead, the same
+   reasoning as the brand: "first/last inside the centered, max-width-capped
+   bar" still leaves visible empty margin past it on any screen wider than
+   --max. That leaves justify-content:center free to actually center the
+   links on the real viewport instead of just within the bar. The
+   padding-inline-* reserve room on both sides so links never run under
+   either pinned group. */
 .nav {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 24px; padding-inline-start: 190px; max-width: var(--max); margin: 0 auto;
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px 24px; padding-inline-start: 190px; padding-inline-end: 210px; max-width: var(--max); margin: 0 auto;
 }
 .brand {
   position: absolute; top: 50%; inset-inline-start: 24px; transform: translateY(-50%);
   font-size: 23px; font-weight: 800; color: var(--teal-dark); display: flex; align-items: center; gap: 11px; letter-spacing: -.01em;
+}
+.nav-end-group {
+  position: absolute; top: 50%; inset-inline-end: 24px; transform: translateY(-50%);
+  display: flex; align-items: center; gap: 14px;
+}
+@media (max-width: 860px) {
+  .nav { justify-content: space-between; padding-inline-end: 24px; }
+  .nav-end-group { position: static; transform: none; }
 }
 .brand-badge {
   width: 36px; height: 36px; border-radius: 11px; flex: none;
@@ -236,8 +246,8 @@ body.has-sites-rail .nav-account-wrap { display: none; }
 .my-panel-section { margin-bottom: 4px; }
 .my-panel-section-head {
   width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  background: none; border: none; cursor: pointer; padding: 10px 6px 6px; font-family: inherit;
-  font-size: 11.5px; font-weight: 700; letter-spacing: .03em; color: var(--teal-dark);
+  background: none; border: none; cursor: pointer; padding: 12px 6px 8px; font-family: inherit;
+  font-size: 15px; font-weight: 800; letter-spacing: -.01em; color: var(--teal-dark);
 }
 .my-panel-section-head svg { transition: transform .15s ease; }
 .my-panel-section.collapsed .my-panel-section-head svg { transform: rotate(180deg); }

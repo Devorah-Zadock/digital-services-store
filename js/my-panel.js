@@ -196,7 +196,7 @@ async function loadMyPanel(user) {
       });
     }).join("");
   } else {
-    sitesList.innerHTML = myPanelEmptyRowHtml({ href: "sites.html?browse=1", text: "עדיין לא בנית אתר —", linkText: "לבניה" });
+    sitesList.innerHTML = myPanelEmptyRowHtml({ href: "sites.html?browse=1", text: "עדיין לא בנית אתר —", linkText: "ליצירה" });
   }
 
   const { data: cv } = await supabaseClient.from("cv_saves").select("data").eq("user_id", user.id).maybeSingle();
@@ -210,7 +210,7 @@ async function loadMyPanel(user) {
       active: !!(ctx && ctx.kind === "cv"),
     });
   } else {
-    cvList.innerHTML = myPanelEmptyRowHtml({ href: "builder.html", text: "עדיין לא ערכת קורות חיים —", linkText: "לעריכה" });
+    cvList.innerHTML = myPanelEmptyRowHtml({ href: "builder.html", text: "עדיין לא ערכת קורות חיים —", linkText: "ליצירה" });
   }
 
   if (quotesList) {

@@ -112,6 +112,20 @@ function fitQuotePreviewToContainer() {
   const wrap = document.getElementById("quote-preview");
   const doc = wrap && wrap.querySelector(".quote-doc");
   if (!doc) return;
+  // Every keystroke replaces #quote-preview's innerHTML wholesale (see
+  // renderQuotePreviewQA), so this runs on every single character typed —
+  // and .quote-doc has a CSS transition on `transform` for the resize case
+  // below. Resetting to transform:none and then immediately reading its
+  // layout (getBoundingClientRect, needed to measure the natural size)
+  // forces a reflow that locks that untransformed "full size" in as the
+  // transition's start point — so every keystroke visibly flashed to full
+  // size and animated back down instead of just quietly rescaling. Turning
+  // the transition off for this reset-measure-reapply sequence, then
+  // restoring it only after the final transform is already committed,
+  // keeps the animation for real changes (like a window resize) without
+  // it firing on every keystroke.
+  const prevTransition = doc.style.transition;
+  doc.style.transition = "none";
   doc.style.transform = "none";
   doc.style.margin = "0";
   wrap.style.height = "auto";
@@ -130,6 +144,8 @@ function fitQuotePreviewToContainer() {
   doc.style.transformOrigin = "top left";
   doc.style.transform = `translateX(${translateX}px) scale(${scale})`;
   wrap.style.height = (doc.offsetHeight * scale) + "px";
+  doc.offsetHeight; // commit the no-transition transform before restoring it
+  doc.style.transition = prevTransition;
 }
 
 window.addEventListener("resize", () => {

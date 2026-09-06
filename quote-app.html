@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=15">
+<link rel="stylesheet" href="css/style.css?v=16">
 <link rel="stylesheet" href="css/builder.css?v=2">
 <style>
   .qa-err { color: #B23; font-size: 13px; min-height: 18px; margin: 4px 0 8px; }
@@ -56,8 +56,10 @@
       <a href="about.html">אודות</a>
       <a href="contact.html">צור קשר</a>
     </div>
-    <a href="#" id="nav-login-link" class="nav-login nav-login-pending">כניסה</a>
-    <a href="products.html" class="nav-cta">לצפייה בקטלוג</a>
+    <div class="nav-end-group">
+      <a href="#" id="nav-login-link" class="nav-login nav-login-pending">כניסה</a>
+      <a href="products.html" class="nav-cta">לצפייה בקטלוג</a>
+    </div>
     <button class="burger" aria-label="תפריט">☰</button>
   </nav>
 </header>
@@ -124,7 +126,7 @@
         </div>
         <div class="builder-save-ctrl" id="quote-save-ctrl" style="display:none;">
           <span class="builder-save-status" id="quote-save-status"></span>
-          <button type="button" class="btn-mini builder-save-btn" id="quote-save-btn">שמירה</button>
+          <button type="button" class="btn btn-teal builder-save-btn" id="quote-save-btn">שמירה</button>
         </div>
       </div>
     </div>
@@ -171,10 +173,10 @@
   </div>
 </div>
 
-<script src="js/quote-render.js?v=1"></script>
+<script src="js/quote-render.js?v=2"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>
-<script src="js/my-panel.js?v=7"></script>
+<script src="js/my-panel.js?v=8"></script>
 <script src="js/main.js"></script>
 <script src="js/quote-cloud-save.js?v=1"></script>
 <script src="js/quote-app.js?v=2"></script>
