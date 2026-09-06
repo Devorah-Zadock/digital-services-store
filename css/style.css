@@ -83,10 +83,16 @@ header.site {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 24px; max-width: var(--max); margin: 0 auto;
 }
-.brand { font-size: 22px; font-weight: 700; color: var(--teal-dark); display: flex; align-items: center; gap: 7px; letter-spacing: -.01em; }
-.brand .brand-mark { width: 17px; height: 17px; flex: none; }
-.brand .brand-mark .bm-face { fill: var(--gold); }
-.brand .brand-mark .bm-fold { fill: var(--gold-light); }
+.brand { font-size: 23px; font-weight: 800; color: var(--teal-dark); display: flex; align-items: center; gap: 11px; letter-spacing: -.01em; }
+.brand-badge {
+  width: 36px; height: 36px; border-radius: 11px; flex: none;
+  background: linear-gradient(145deg, var(--teal), var(--gold));
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 16px rgba(31, 92, 78, .3);
+}
+.brand .brand-mark { width: 19px; height: 19px; flex: none; }
+.brand .brand-mark .bm-face { fill: #fff; }
+.brand .brand-mark .bm-fold { fill: rgba(255, 255, 255, .55); }
 .nav-links { display: flex; align-items: center; gap: 28px; font-size: 15px; font-weight: 500; }
 .nav-links a { color: var(--dark); opacity: .85; padding: 6px 0; border-bottom: 2px solid transparent; transition: opacity .15s ease, border-color .15s ease; }
 .nav-links a:hover, .nav-links a.active { opacity: 1; border-color: var(--gold); }
