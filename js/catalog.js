@@ -167,30 +167,29 @@ function toolboxRowHtml(label, allHref, cardsHtml) {
     </div>`;
 }
 
-/* Ordered by priority (paid flagship product first, then the other free
-   tools), not alphabetically or by data-structure order — this is the
-   one page that shows every DeskKit tool side by side, so the order
-   itself is a statement about what matters most. */
+/* Ordered so the free tools come first — the paid one (אתרים) sits last
+   rather than leading, so the very first thing anyone sees browsing the
+   whole toolbox isn't something that costs money. */
 function initToolboxPage() {
   const root = document.getElementById("toolbox-rows");
   if (!root) return;
 
   const rows = [];
 
-  if (typeof SITE_TEMPLATES !== "undefined") {
-    const cards = Object.entries(SITE_TEMPLATES).map(([key, t]) => `<div class="toolbox-card-wrap">${siteCardHtmlForToolbox(key, t)}</div>`).join("");
-    rows.push(toolboxRowHtml("אתרים", "sites.html?browse=1", cards));
-  }
-  if (typeof QUOTE_TEMPLATES !== "undefined") {
-    const cards = Object.entries(QUOTE_TEMPLATES).map(([key, t]) => `<div class="toolbox-card-wrap">${quoteCardHtmlForToolbox(key, t)}</div>`).join("");
-    rows.push(toolboxRowHtml("הצעות מחיר", "quote-app.html", cards));
-  }
   PRODUCT_TYPES.forEach((t) => {
     const items = PRODUCTS.filter((p) => productType(p) === t.slug);
     if (!items.length) return;
     const cards = items.map((p) => `<div class="toolbox-card-wrap">${cardHtml(p)}</div>`).join("");
     rows.push(toolboxRowHtml(t.label, `products.html?type=${t.slug}`, cards));
   });
+  if (typeof QUOTE_TEMPLATES !== "undefined") {
+    const cards = Object.entries(QUOTE_TEMPLATES).map(([key, t]) => `<div class="toolbox-card-wrap">${quoteCardHtmlForToolbox(key, t)}</div>`).join("");
+    rows.push(toolboxRowHtml("הצעות מחיר", "quote-app.html", cards));
+  }
+  if (typeof SITE_TEMPLATES !== "undefined") {
+    const cards = Object.entries(SITE_TEMPLATES).map(([key, t]) => `<div class="toolbox-card-wrap">${siteCardHtmlForToolbox(key, t)}</div>`).join("");
+    rows.push(toolboxRowHtml("אתרים", "sites.html?browse=1", cards));
+  }
 
   root.innerHTML = rows.join("");
 
