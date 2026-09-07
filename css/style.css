@@ -459,11 +459,7 @@ section { padding: 88px 0; }
 .tab:hover { border-color: var(--teal); transform: translateY(-1px); }
 .tab.active { background: linear-gradient(135deg, var(--teal), var(--teal-light)); border-color: var(--teal); color: var(--white); }
 
-/* Primary (document type) vs. secondary (profession, CV-only) filter
-   rows on the catalog — visually distinct so they read as two different
-   kinds of choice, not one flat list of equal-weight buttons. */
-.tabs-primary .tab { font-size: 15px; font-weight: 700; padding: 11px 26px; }
-.tabs-sub { margin-top: -22px; margin-bottom: 34px; }
+.tabs-sub { margin-bottom: 34px; }
 .tabs-sub .tab { font-size: 12.5px; font-weight: 600; padding: 6px 16px; border-color: #E7EBE9; color: var(--grey); }
 .tabs-sub .tab.active { background: var(--ice); color: var(--teal-dark); border-color: var(--teal-light); }
 
@@ -806,3 +802,18 @@ body.cookie-notice-active .fab { display: none; }
 .preview-sheet-table td { padding: 7px 10px; border-bottom: 1px solid #EEF1EF; border-inline-start: 1px solid #F4F6F5; }
 .preview-sheet-table tr:first-child td { background: var(--teal-dark); color: #fff; font-weight: 700; }
 .preview-sheet-table tr:nth-child(even) td { background: #FAFBFA; }
+
+/* ---------- Toolbox overview (catalog.html) — every product type as its
+   own horizontally-scrolling row, instead of merging them into one
+   filtered grid (that's what products.html?type=X is for). ---------- */
+.toolbox-row { margin-bottom: 44px; }
+.toolbox-row-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; gap: 12px; }
+.toolbox-row-head h2 { font-size: 20px; color: var(--teal-dark); margin: 0; }
+.toolbox-row-all { font-size: 13.5px; font-weight: 700; color: var(--teal); white-space: nowrap; }
+.toolbox-row-all:hover { text-decoration: underline; }
+.toolbox-scroll {
+  display: flex; gap: 20px; overflow-x: auto; padding: 4px 4px 14px;
+  scroll-snap-type: x proximity;
+}
+.toolbox-card-wrap { flex: 0 0 auto; width: 250px; scroll-snap-align: start; }
+.toolbox-card-wrap .card { height: 100%; }

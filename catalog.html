@@ -3,21 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>כלים לעסק — DeskKit</title>
+<title>ארגז הכלים — DeskKit</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="description" content="הצעות מחיר, ובעתיד עוד כלים לניהול העסק — כולם במקום אחד, עם חשבון אחד.">
+<meta name="description" content="כל התבניות של DeskKit במקום אחד — קורות חיים, מצגות עסקיות וגיליונות Excel.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=18">
-<style>
-  .tool-card { position: relative; }
-  .tool-card .btn-mini { margin-top: 14px; }
-  .tool-card.soon { opacity: .55; }
-  .tool-card.soon .icon { filter: grayscale(1); }
-</style>
 </head>
 <body>
 <script>
@@ -44,16 +38,16 @@
   } catch (e) {}
 </script>
 
-<header class="site no-print">
+<header class="site">
   <nav class="nav">
     <a href="index.html" class="brand"><span class="brand-badge"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><rect class="bm-fold" x="6" y="4" width="4" height="16" rx="2"/><path class="bm-face" d="M9,4 H13 A8,8 0 0 1 13,20 H9 Z"/></svg></span><span class="brand-text">DeskKit</span></a>
     <div class="nav-links">
       <a href="index.html">בית</a>
       <a href="sites.html?browse=1">אתרים</a>
       <a href="quote-app.html">הצעות מחיר</a>
-      <a href="products.html?type=cv">קורות חיים</a>
-      <a href="products.html?type=deck">מצגות</a>
-      <a href="products.html?type=xlsx">גליונות</a>
+      <a href="products.html?type=cv" data-nav-type="cv">קורות חיים</a>
+      <a href="products.html?type=deck" data-nav-type="deck">מצגות</a>
+      <a href="products.html?type=xlsx" data-nav-type="xlsx">גליונות</a>
       <a href="about.html">אודות</a>
       <a href="contact.html">צור קשר</a>
     </div>
@@ -66,25 +60,25 @@
 </header>
 
 <section class="hero" style="padding:60px 24px 70px;">
-  <h1 style="font-size:34px;">כלים לעסק שלכם</h1>
-  <p class="lead">חשבון אחד, וכל כלי הניהול העסקיים במקום אחד — מתחילים בהצעות מחיר, ומכאן והלאה.</p>
+  <h1 style="font-size:34px;">ארגז הכלים</h1>
+  <p class="lead">כל התבניות של DeskKit במקום אחד — קורות חיים, מצגות עסקיות וגיליונות Excel. לחיפוש וסינון בתוך כל סוג, כדאי להיכנס לדף הייעודי שלו.</p>
 </section>
 
 <section>
   <div class="container">
-    <div class="features">
-      <div class="feature tool-card">
-        <div class="icon">🧾</div>
-        <h4>הצעות מחיר</h4>
-        <p>נרשמים פעם אחת, שומרים את פרטי העסק והלוגו שלכם, ויוצרים הצעת מחיר מוכנה תוך דקה.</p>
-        <a href="quote-app.html" class="btn btn-teal btn-mini">כניסה</a>
+    <div class="banner">
+      <div>
+        <h3>מחפשים אתר עסקי? <span class="badge-free">99 ₪ חד-פעמי</span></h3>
+        <p>כל התבניות כאן חינמיות — אבל אם אתם צריכים נוכחות דיגיטלית שלמה, בנו אתר עסקי מוכן להעלאה תוך דקות.</p>
       </div>
-      <div class="feature tool-card soon">
-        <div class="icon">📄</div>
-        <h4>חשבוניות</h4>
-        <p>בעבודה — יתווסף כאן בהמשך.</p>
-      </div>
+      <a href="sites.html?browse=1" class="btn btn-gold">לבניית האתר שלי</a>
     </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div id="toolbox-rows"></div>
   </div>
 </section>
 
@@ -127,6 +121,8 @@
   </div>
 </footer>
 
+<script src="js/products-data.js?v=2"></script>
+<script src="js/catalog.js?v=6"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>

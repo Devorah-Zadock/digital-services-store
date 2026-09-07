@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=17">
+<link rel="stylesheet" href="css/style.css?v=18">
 </head>
 <body>
 <script>
@@ -53,15 +53,15 @@
     </div>
     <div class="nav-end-group">
       <a href="account.html?redirect=tools.html" id="nav-login-link" class="nav-login nav-login-pending">כניסה</a>
-      <a href="products.html" class="nav-cta">לצפייה בקטלוג</a>
+      <a href="catalog.html" class="nav-cta">לצפייה בקטלוג</a>
     </div>
     <button class="burger" aria-label="תפריט">☰</button>
   </nav>
 </header>
 
 <section class="hero" style="padding:60px 24px 70px;">
-  <h1 style="font-size:34px;">קטלוג המוצרים</h1>
-  <p class="lead">תבניות מוכנות, בעיצוב מקצועי — לבחירה, הורדה והתאמה אישית תוך דקות. קורות חיים מותאמים לפי מקצוע, ומצגות עסקיות.</p>
+  <h1 id="products-hero-title" style="font-size:34px;">קורות חיים</h1>
+  <p class="lead" id="products-hero-lead">תבניות קורות חיים מוכנות, בעיצוב מקצועי — ממלאים פרטים ורואים תוצאה חיה, לפי מקצוע.</p>
 </section>
 
 <section>
@@ -84,7 +84,6 @@
         <input type="search" id="product-search" class="tpl-search" placeholder="חיפוש תבנית לפי שם...">
       </div>
     </div>
-    <div class="tabs tabs-primary" id="type-tabs"></div>
     <div class="tabs tabs-sub" id="subcat-tabs"></div>
     <div class="grid" id="product-grid"></div>
   </div>
@@ -100,7 +99,10 @@
       <div>
         <h5>ניווט</h5>
         <ul>
-          <li><a href="products.html">קטלוג מוצרים</a></li>
+          <li><a href="catalog.html">קטלוג מוצרים</a></li>
+          <li><a href="products.html?type=cv">קורות חיים</a></li>
+          <li><a href="products.html?type=deck">מצגות</a></li>
+          <li><a href="products.html?type=xlsx">גליונות</a></li>
           <li><a href="sites.html?browse=1">אתרים</a></li>
           <li><a href="quote-app.html">הצעות מחיר</a></li>
           <li><a href="about.html">אודות</a></li>
@@ -126,8 +128,8 @@
   </div>
 </footer>
 
-<script src="js/products-data.js?v=1"></script>
-<script src="js/catalog.js?v=5"></script>
+<script src="js/products-data.js?v=2"></script>
+<script src="js/catalog.js?v=6"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>

@@ -25,41 +25,51 @@ function renderGrid(el, products) {
     : `<p style="grid-column:1/-1; text-align:center; color:var(--grey);">אין עדיין מוצרים בקטגוריה הזו.</p>`;
 }
 
-/* Two-tier: pick a document TYPE first (big pills — though since each type
-   now also has its own top-nav link straight into products.html?type=X,
-   this mostly just confirms which one you're on), then a second, narrower
-   row of sub-topic pills for THAT type (profession for CV, topic for
-   decks/spreadsheets — see TYPE_SUBTOPICS). ?cat= is kept working for old
-   links (the chatbot widget links to products.html?cat=cv / ?cat=deck /
-   ?cat=xlsx) by treating those three as type-level, and any other slug as
-   a sub-topic filter within whichever type is active. */
+/* products.html is one page reused per ?type= (קורות חיים / מצגות /
+   גליונות), each reached from its own top-nav link — so the type itself
+   is fixed for the page's whole visit (no in-page type switcher; that
+   would just duplicate the top nav). What IS shown here is a row of
+   sub-topic pills for THAT type only (profession for CV, topic for
+   decks/spreadsheets — see TYPE_SUBTOPICS), plus search. ?cat= is kept
+   working for old links (the chatbot widget links to
+   products.html?cat=cv / ?cat=deck / ?cat=xlsx) by treating those three
+   as type-level too, same as ?type=. */
 function initProductsPage() {
   const grid = document.getElementById("product-grid");
-  const typeTabsEl = document.getElementById("type-tabs");
   const subTabsEl = document.getElementById("subcat-tabs");
   const searchEl = document.getElementById("product-search");
-  if (!grid || !typeTabsEl || !subTabsEl) return;
+  const heroTitleEl = document.getElementById("products-hero-title");
+  const heroLeadEl = document.getElementById("products-hero-lead");
+  if (!grid || !subTabsEl) return;
 
   const params = new URLSearchParams(location.search);
   const catParam = params.get("cat");
   const typeParam = params.get("type");
 
-  let activeType = typeParam || (["deck", "xlsx"].includes(catParam) ? catParam : "cv");
-  if (!PRODUCT_TYPES.some((t) => t.slug === activeType)) activeType = "cv";
-  let activeSub = (TYPE_SUBTOPICS[activeType] || []).some((c) => c.slug === catParam) ? catParam : "all";
+  const activeType = typeParam || (["deck", "xlsx"].includes(catParam) ? catParam : "cv");
+  const type = PRODUCT_TYPES.some((t) => t.slug === activeType) ? activeType : "cv";
+  let activeSub = (TYPE_SUBTOPICS[type] || []).some((c) => c.slug === catParam) ? catParam : "all";
   let searchTerm = "";
 
-  typeTabsEl.innerHTML = PRODUCT_TYPES.map((t) => `<button class="tab" data-type="${t.slug}">${t.label}</button>`).join("");
+  const hero = TYPE_HERO[type];
+  if (hero) {
+    if (heroTitleEl) heroTitleEl.textContent = hero.title;
+    if (heroLeadEl) heroLeadEl.textContent = hero.lead;
+    document.title = hero.title + " — קטלוג — DeskKit";
+  }
+  document.querySelectorAll(".nav-links a[data-nav-type]").forEach((a) => {
+    a.classList.toggle("active", a.dataset.navType === type);
+  });
 
   function updateUrl() {
     const url = new URL(location.href);
-    url.searchParams.set("type", activeType);
+    url.searchParams.set("type", type);
     if (activeSub !== "all") url.searchParams.set("cat", activeSub); else url.searchParams.delete("cat");
     history.replaceState(null, "", url);
   }
 
   function renderSubTabs() {
-    const topics = TYPE_SUBTOPICS[activeType] || [];
+    const topics = TYPE_SUBTOPICS[type] || [];
     if (!topics.length) { subTabsEl.style.display = "none"; subTabsEl.innerHTML = ""; return; }
     subTabsEl.style.display = "";
     subTabsEl.innerHTML = topics.map((c) => `<button class="tab tab-sub${c.slug === activeSub ? " active" : ""}" data-prof="${c.slug}">${c.label}</button>`).join("");
@@ -73,20 +83,10 @@ function initProductsPage() {
   }
 
   function apply() {
-    typeTabsEl.querySelectorAll(".tab").forEach((btn) => btn.classList.toggle("active", btn.dataset.type === activeType));
-    // The top header nav also has direct קורות חיים/מצגות/גליונות links
-    // (same page, different ?type=) — without this they'd need their own
-    // static "active" class, which can only ever match ONE of the three
-    // no matter which type is actually showing (products.html is a single
-    // page reused for all three), making the header look stuck on
-    // whichever type happened to be hardcoded.
-    document.querySelectorAll(".nav-links a[data-nav-type]").forEach((a) => {
-      a.classList.toggle("active", a.dataset.navType === activeType);
-    });
     renderSubTabs();
     const term = searchTerm.trim();
     const list = PRODUCTS.filter((p) => {
-      if (productType(p) !== activeType) return false;
+      if (productType(p) !== type) return false;
       if (activeSub !== "all" && productSubtopic(p) !== activeSub) return false;
       if (term && !p.title.toLowerCase().includes(term.toLowerCase())) return false;
       return true;
@@ -98,14 +98,7 @@ function initProductsPage() {
     }
   }
 
-  typeTabsEl.querySelectorAll(".tab").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      activeType = btn.dataset.type;
-      activeSub = "all";
-      updateUrl();
-      apply();
-    });
-  });
+  updateUrl();
 
   if (searchEl) {
     searchEl.addEventListener("input", () => {
@@ -115,6 +108,30 @@ function initProductsPage() {
   }
 
   apply();
+}
+
+/* "ארגז הכלים" (catalog.html) — the one place that shows every product
+   TYPE together, each as its own horizontally-scrolling row with a "לכל
+   ה-X" link into that type's own dedicated page (products.html?type=X).
+   Unlike products.html, this page never filters by sub-topic — it's an
+   overview, not a browsing tool. */
+function initToolboxPage() {
+  const root = document.getElementById("toolbox-rows");
+  if (!root) return;
+  root.innerHTML = PRODUCT_TYPES.map((t) => {
+    const items = PRODUCTS.filter((p) => productType(p) === t.slug);
+    if (!items.length) return "";
+    return `
+      <section class="toolbox-row">
+        <div class="toolbox-row-head">
+          <h2>${t.label}</h2>
+          <a href="products.html?type=${t.slug}" class="toolbox-row-all">לכל ${t.label} ←</a>
+        </div>
+        <div class="toolbox-scroll">
+          ${items.map((p) => `<div class="toolbox-card-wrap">${cardHtml(p)}</div>`).join("")}
+        </div>
+      </section>`;
+  }).join("");
 }
 
 function initFeatured() {
@@ -130,11 +147,13 @@ function initProductPage() {
   const p = PRODUCTS.find((x) => x.slug === slug) || PRODUCTS[0];
 
   document.title = p.title + " — DeskKit";
+  const pType = productType(p);
+  const pTypeLabel = (PRODUCT_TYPES.find((t) => t.slug === pType) || {}).label || "קטלוג";
   root.innerHTML = `
     <div class="product-hero">
       <div class="thumb"><img src="images/previews/${p.image}" alt="תצוגה מקדימה של ${p.title}"></div>
       <div>
-        <div class="breadcrumb"><a href="products.html">קטלוג</a> / ${p.title}</div>
+        <div class="breadcrumb"><a href="products.html?type=${pType}">${pTypeLabel}</a> / ${p.title}</div>
         <h1>${p.title}</h1>
         <p class="desc">${p.heroDesc}</p>
         <div class="format-badges">${p.formatBadges.map((b) => `<span class="format-badge">${b}</span>`).join("")}</div>
@@ -262,4 +281,5 @@ document.addEventListener("DOMContentLoaded", () => {
   initProductsPage();
   initFeatured();
   initProductPage();
+  initToolboxPage();
 });

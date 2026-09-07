@@ -466,6 +466,15 @@ const PRODUCT_TYPES = [
   { slug: "deck", label: "מצגות עסקיות" },
   { slug: "xlsx", label: "גיליונות Excel" },
 ];
+/* products.html is one page reused per ?type= — each type gets its own
+   dedicated-feeling hero (title + lead), the same way sites.html has its
+   own, instead of one generic "קטלוג המוצרים" header regardless of which
+   type is actually showing. */
+const TYPE_HERO = {
+  cv: { title: "קורות חיים", lead: "תבניות קורות חיים מוכנות, בעיצוב מקצועי — ממלאים פרטים ורואים תוצאה חיה, לפי מקצוע." },
+  deck: { title: "מצגות עסקיות", lead: "תבניות PowerPoint מוכנות להורדה ועריכה — לכל צורך: פרופיל חברה, השקת מוצר, גיוס משקיעים ועוד." },
+  xlsx: { title: "גיליונות Excel", lead: "כלי ניהול מוכנים להורדה — תקציב, חשבוניות, מעקב הוצאות ולקוחות." },
+};
 const CV_PROFESSIONS = [
   { slug: "all", label: "הכל" },
   { slug: "general", label: "כללי" },
