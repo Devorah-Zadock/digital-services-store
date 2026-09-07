@@ -62,16 +62,25 @@ function renderCustomerStats(data) {
 
   const siteProjectCount = Object.values(data.templateCounts).reduce((a, b) => a + b, 0);
   const finalizedCount = Object.values(data.finalizedTemplateCounts).reduce((a, b) => a + b, 0);
+  // usage_events-backed tiles show "—" instead of a real 0 when the table
+  // itself isn't set up yet — a bare 0 there is indistinguishable from
+  // "genuinely zero downloads so far", which reads as broken/wrong once
+  // someone who actually downloaded things looks at it.
+  const usageOn = data.usageEventsAvailable !== false;
+  const usageTile = (num, label) => usageOn
+    ? `<div class="admin-stat-tile"><div class="admin-stat-num">${num}</div><div class="admin-stat-label">${label}</div></div>`
+    : `<div class="admin-stat-tile admin-stat-tile-pending"><div class="admin-stat-num">—</div><div class="admin-stat-label">${label} (לא הופעל)</div></div>`;
   summary.innerHTML = `
     <div class="admin-stat-tiles">
       <div class="admin-stat-tile"><div class="admin-stat-num">${data.userCount}</div><div class="admin-stat-label">משתמשים רשומים</div></div>
       <div class="admin-stat-tile"><div class="admin-stat-num">${data.cvBuilderUserCount}</div><div class="admin-stat-label">השתמשו בקורות חיים</div></div>
-      <div class="admin-stat-tile"><div class="admin-stat-num">${data.quoteBuilderUserCount ?? 0}</div><div class="admin-stat-label">השתמשו בהצעות מחיר</div></div>
+      ${usageTile(data.quoteBuilderUserCount ?? 0, "השתמשו בהצעות מחיר")}
       <div class="admin-stat-tile"><div class="admin-stat-num">${siteProjectCount}</div><div class="admin-stat-label">אתרים נפתחו</div></div>
       <div class="admin-stat-tile admin-stat-tile-gold"><div class="admin-stat-num">${finalizedCount}</div><div class="admin-stat-label">אתרים שולמו והורדו</div></div>
-      <div class="admin-stat-tile"><div class="admin-stat-num">${data.deckDownloadCount ?? 0}</div><div class="admin-stat-label">מצגות הורדו</div></div>
-      <div class="admin-stat-tile"><div class="admin-stat-num">${data.xlsxDownloadCount ?? 0}</div><div class="admin-stat-label">גליונות הורדו</div></div>
+      ${usageTile(data.deckDownloadCount ?? 0, "מצגות הורדו")}
+      ${usageTile(data.xlsxDownloadCount ?? 0, "גליונות הורדו")}
     </div>
+    ${usageOn ? "" : `<p style="font-size:12.5px; color:#8A6212; background:#FBF2E0; border-radius:8px; padding:8px 12px; margin:0 0 16px;">שלושת האריחים המסומנים "לא הופעל" ידווחו נתונים אמיתיים לאחר הרצת קובץ ה-SQL <code>supabase/sql/usage_events.sql</code> (חד-פעמי) — עד אז הם לא באמת אפס, פשוט עוד לא נמדדים.</p>`}
     <table class="stats-table">
       <thead><tr><th>תבנית אתר</th><th>פרויקטים שנפתחו</th><th>מתוכם הורדו בפועל</th></tr></thead>
       <tbody>${templateRows || '<tr><td colspan="3">עדיין אין נתונים</td></tr>'}</tbody>

@@ -53,8 +53,10 @@
   .admin-stat-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 4px 0 20px; }
   .admin-stat-tile { background: var(--ice); border-radius: 12px; padding: 16px 14px; text-align: center; }
   .admin-stat-tile-gold { background: #FBF2E0; }
+  .admin-stat-tile-pending { background: var(--grey-light); }
   .admin-stat-num { font-size: 24px; font-weight: 800; color: var(--teal-dark); line-height: 1.2; }
   .admin-stat-tile-gold .admin-stat-num { color: #8A6212; }
+  .admin-stat-tile-pending .admin-stat-num { color: var(--grey); }
   .admin-stat-label { font-size: 11.5px; color: var(--grey); margin-top: 4px; font-weight: 600; }
   @media (max-width: 640px) { .admin-stat-tiles { grid-template-columns: repeat(2, 1fr); } }
 
@@ -100,6 +102,20 @@
 <header class="site no-print">
   <nav class="nav">
     <a href="index.html" class="brand"><span class="brand-badge"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><rect class="bm-fold" x="6" y="4" width="4" height="16" rx="2"/><path class="bm-face" d="M9,4 H13 A8,8 0 0 1 13,20 H9 Z"/></svg></span><span class="brand-text">DeskKit</span></a>
+    <div class="nav-links">
+      <a href="index.html">בית</a>
+      <a href="sites.html?browse=1">אתרים</a>
+      <a href="quote-app.html">הצעות מחיר</a>
+      <a href="products.html?type=cv">קורות חיים</a>
+      <a href="products.html?type=deck">מצגות</a>
+      <a href="products.html?type=xlsx">גליונות</a>
+      <a href="about.html">אודות</a>
+      <a href="contact.html">צור קשר</a>
+    </div>
+    <div class="nav-end-group">
+      <a href="catalog.html" class="nav-cta">לצפייה בקטלוג</a>
+    </div>
+    <button class="burger" aria-label="תפריט">☰</button>
   </nav>
 </header>
 
@@ -144,7 +160,6 @@
   <section class="admin-section">
     <div class="admin-section-title"><span class="admin-section-num">2</span><h2>לקוחות ושימוש</h2></div>
     <div class="admin-card" id="stats-card" style="display:none;">
-      <p style="font-size:12px; color:var(--grey); margin:0 0 14px;">"השתמשו בהצעות מחיר", "מצגות הורדו" ו"גליונות הורדו" למטה יציגו 0 עד שמריצים פעם אחת (ב-Supabase Dashboard → SQL Editor) את הקובץ <code>supabase/sql/usage_events.sql</code> מתוך הריפו — חד-פעמי, לא תלוי בשום דבר שכבר הגדרת.</p>
       <div id="stats-err"></div>
       <div id="stats-summary"></div>
       <p style="font-size:12px; color:var(--grey); margin:0 0 4px;">לחיצה על ✕ ליד אתר או קורות חיים מוחקת אותם לצמיתות מהחשבון של הלקוח.</p>
@@ -165,8 +180,48 @@
   </section>
 </div>
 
+<footer class="site">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <h5>DeskKit</h5>
+        <p style="font-size:14px; max-width:320px;">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
+      </div>
+      <div>
+        <h5>ניווט</h5>
+        <ul>
+          <li><a href="catalog.html">קטלוג מוצרים</a></li>
+          <li><a href="products.html?type=cv">קורות חיים</a></li>
+          <li><a href="products.html?type=deck">מצגות</a></li>
+          <li><a href="products.html?type=xlsx">גליונות</a></li>
+          <li><a href="sites.html?browse=1">אתרים</a></li>
+          <li><a href="quote-app.html">הצעות מחיר</a></li>
+          <li><a href="about.html">אודות</a></li>
+          <li><a href="contact.html">צור קשר</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>מידע</h5>
+        <ul>
+          <li><a href="admin.html">ניהול</a></li>
+          <li><a href="terms.html">מדיניות</a></li>
+          <li><a href="accessibility.html">נגישות</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>צור קשר</h5>
+        <ul>
+          <li>digital.dz.studio@gmail.com</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">© 2026 DeskKit. כל הזכויות שמורות.</div>
+  </div>
+</footer>
+
 <script src="js/site-templates.js"></script>
 <script src="js/products-data.js?v=2"></script>
-<script src="js/admin.js?v=9"></script>
+<script src="js/main.js"></script>
+<script src="js/admin.js?v=10"></script>
 </body>
 </html>

@@ -49,7 +49,11 @@ async function loadStats(admin: ReturnType<typeof createClient>) {
   // usage_events may not exist yet on a site that hasn't run the one-time
   // SQL setup (supabase/sql/usage_events.sql) — treated as "no usage data
   // yet" rather than failing the whole stats card, same as every other
-  // optional table this function reads.
+  // optional table this function reads. usageEventsAvailable lets the
+  // admin UI show "not set up" instead of a bare 0, which otherwise looks
+  // identical to "genuinely zero downloads so far" — a real, confusing
+  // distinction once someone actually starts using the site.
+  const usageEventsAvailable = !eventsErr;
   const usageEvents = eventsErr ? [] : (events || []);
 
   const cvUsers = new Set((cvSaves || []).map((r) => r.user_id));
@@ -99,7 +103,7 @@ async function loadStats(admin: ReturnType<typeof createClient>) {
 
   return {
     userCount: users.length, cvBuilderUserCount: cvUsers.size, quoteBuilderUserCount: quoteUsers.size,
-    deckDownloadCount, xlsxDownloadCount, deckDownloadCounts, xlsxDownloadCounts,
+    deckDownloadCount, xlsxDownloadCount, deckDownloadCounts, xlsxDownloadCounts, usageEventsAvailable,
     templateCounts, finalizedTemplateCounts, users,
   };
 }
