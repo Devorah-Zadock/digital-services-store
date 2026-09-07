@@ -50,8 +50,15 @@ function renderCustomerStats(data) {
     .map((slug) => `<tr><td>${escapeHtml(templateLabel(slug))}</td><td>${data.templateCounts[slug]}</td><td>${data.finalizedTemplateCounts[slug] || 0}</td></tr>`)
     .join("");
 
+  const siteProjectCount = Object.values(data.templateCounts).reduce((a, b) => a + b, 0);
+  const finalizedCount = Object.values(data.finalizedTemplateCounts).reduce((a, b) => a + b, 0);
   summary.innerHTML = `
-    <p style="margin:0 0 10px;"><b>${data.userCount}</b> משתמשים רשומים · <b>${data.cvBuilderUserCount}</b> מהם השתמשו בבניית קורות חיים.</p>
+    <div class="admin-stat-tiles">
+      <div class="admin-stat-tile"><div class="admin-stat-num">${data.userCount}</div><div class="admin-stat-label">משתמשים רשומים</div></div>
+      <div class="admin-stat-tile"><div class="admin-stat-num">${data.cvBuilderUserCount}</div><div class="admin-stat-label">השתמשו בקורות חיים</div></div>
+      <div class="admin-stat-tile"><div class="admin-stat-num">${siteProjectCount}</div><div class="admin-stat-label">אתרים נפתחו</div></div>
+      <div class="admin-stat-tile admin-stat-tile-gold"><div class="admin-stat-num">${finalizedCount}</div><div class="admin-stat-label">אתרים שולמו והורדו</div></div>
+    </div>
     <table class="stats-table">
       <thead><tr><th>תבנית אתר</th><th>פרויקטים שנפתחו</th><th>מתוכם הורדו בפועל</th></tr></thead>
       <tbody>${templateRows || '<tr><td colspan="3">עדיין אין נתונים</td></tr>'}</tbody>
@@ -66,7 +73,9 @@ function renderCustomerStats(data) {
         ? `<span class="stats-chip">כן<button type="button" class="stats-del-btn" data-del="cv:${u.id}" title="מחיקת קורות החיים">✕</button></span>`
         : "—";
       const date = u.createdAt ? new Date(u.createdAt).toLocaleDateString("he-IL") : "—";
-      return `<tr><td>${escapeHtml(u.email || u.id)}</td><td>${date}</td><td>${sitesHtml}</td><td>${cvHtml}</td></tr>`;
+      const email = u.email || u.id;
+      const initial = email.trim().charAt(0).toUpperCase() || "?";
+      return `<tr><td><span class="admin-user-cell"><span class="admin-user-avatar">${escapeHtml(initial)}</span>${escapeHtml(email)}</span></td><td>${date}</td><td>${sitesHtml}</td><td>${cvHtml}</td></tr>`;
     })
     .join("");
 
@@ -161,8 +170,18 @@ function showPanel() {
 
   if (ADMIN_INBOX_URL) {
     status.innerHTML = `<span class="admin-status connected">מחובר</span>`;
-    explain.textContent = "הודעות שנשלחות דרך טופס המשוב באתר נשמרות כאן לצמיתות, ולא נעלמות עם רענון — כי הן מאוחסנות בשרת חיצוני, לא בדפדפן. הכפתור למטה נוחת ישר על טבלה עם כל ההודעות — אם כבר מחוברים ל-formspree בדפדפן הזה, זה לא יבקש התחברות נוספת.";
-    action.innerHTML = `<a href="${ADMIN_INBOX_URL}" target="_blank" rel="noopener" class="btn btn-gold">פתיחת תיבת ההודעות</a>`;
+    explain.textContent = "הודעות שנשלחות דרך טופס המשוב באתר נשמרות כאן לצמיתות, ולא נעלמות עם רענון — כי הן מאוחסנות בשרת חיצוני, לא בדפדפן. הרשימה למטה טוענת ישירות מ-formspree; אם היא לא נטענת (למשל אם התנתקת מ-formspree בדפדפן הזה), אפשר לפתוח את התיבה בלשונית נפרדת בכפתור.";
+    // Embedded straight from Formspree's own dashboard URL — if this browser
+    // already has an active formspree.io session (same login used to set up
+    // the form), the iframe shows the real, live submissions list, no extra
+    // login step. If Formspree blocks being framed (common for account
+    // pages, to prevent clickjacking) the iframe area just stays blank —
+    // the button below is the guaranteed-to-work fallback either way.
+    action.innerHTML = `
+      <div class="admin-inbox-frame-wrap">
+        <iframe src="${ADMIN_INBOX_URL}" title="הודעות משוב" loading="lazy"></iframe>
+      </div>
+      <a href="${ADMIN_INBOX_URL}" target="_blank" rel="noopener" class="btn btn-gold" style="margin-top:14px;">פתיחת תיבת ההודעות בלשונית נפרדת</a>`;
     setupCard.style.display = "none";
   } else {
     status.innerHTML = `<span class="admin-status pending">עוד לא חובר</span>`;

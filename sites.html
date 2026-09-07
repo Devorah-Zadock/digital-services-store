@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=16">
+<link rel="stylesheet" href="css/style.css?v=17">
 <link rel="stylesheet" href="css/builder.css?v=2">
 <style>
   .services-item { border: 1px solid #EDEFEE; border-radius: 8px; padding: 12px; margin-bottom: 12px; display: grid; gap: 8px; }
@@ -40,12 +40,18 @@
   .finish-gate-note { font-size: 12px; color: var(--grey); margin: 10px 0 0; line-height: 1.65; }
   body.preview-focus header.site,
   body.preview-focus .my-sites-rail,
+  body.preview-focus .my-panel-reopen,
   body.preview-focus .builder-top,
   body.preview-focus .builder-form,
   body.preview-focus .export-panel,
   body.preview-focus footer.site,
   body.preview-focus .preview-tabs,
-  body.preview-focus #full-preview-btn { display: none !important; }
+  body.preview-focus #full-preview-btn,
+  body.preview-focus .fab-chat,
+  body.preview-focus .chat-panel,
+  body.preview-focus .fab-feedback,
+  body.preview-focus .fab-a11y,
+  body.preview-focus .cookie-notice { display: none !important; }
   body.preview-focus { margin-inline-start: 0 !important; }
   /* .container's own max-width otherwise still caps this at 1120px —
      "full preview" should mean the customer's real, edge-to-edge width,
@@ -127,6 +133,12 @@
 
 <section class="no-print" id="tpl-catalog-section">
   <div class="container">
+    <div class="tpl-search-row">
+      <div class="tpl-search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="search" id="site-tpl-search" class="tpl-search" placeholder="חיפוש עיצוב לפי שם...">
+      </div>
+    </div>
     <div class="tabs" id="site-tpl-tabs"></div>
     <div class="grid" id="site-tpl-grid"></div>
   </div>
@@ -266,7 +278,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="js/color-utils.js"></script>
 <script src="js/site-templates.js"></script>
-<script src="js/site-builder.js?v=7"></script>
+<script src="js/site-builder.js?v=8"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>

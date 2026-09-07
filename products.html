@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=16">
+<link rel="stylesheet" href="css/style.css?v=17">
 </head>
 <body>
 <script>
@@ -78,6 +78,12 @@
 
 <section>
   <div class="container">
+    <div class="tpl-search-row">
+      <div class="tpl-search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="search" id="product-search" class="tpl-search" placeholder="חיפוש תבנית לפי שם...">
+      </div>
+    </div>
     <div class="tabs tabs-primary" id="type-tabs"></div>
     <div class="tabs tabs-sub" id="subcat-tabs"></div>
     <div class="grid" id="product-grid"></div>
@@ -121,7 +127,7 @@
 </footer>
 
 <script src="js/products-data.js?v=1"></script>
-<script src="js/catalog.js?v=3"></script>
+<script src="js/catalog.js?v=4"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>

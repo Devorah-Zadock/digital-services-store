@@ -1,4 +1,7 @@
 function money(n) { return n === 0 ? "חינם" : "₪" + n; }
+function escapeHtmlC(s) {
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
 
 function cardHtml(p) {
   const actionLabel = p.downloadUrl ? "להורדה" : (p.price === 0 ? "לעריכה" : "לצפייה");
@@ -34,6 +37,7 @@ function initProductsPage() {
   const grid = document.getElementById("product-grid");
   const typeTabsEl = document.getElementById("type-tabs");
   const subTabsEl = document.getElementById("subcat-tabs");
+  const searchEl = document.getElementById("product-search");
   if (!grid || !typeTabsEl || !subTabsEl) return;
 
   const params = new URLSearchParams(location.search);
@@ -43,6 +47,7 @@ function initProductsPage() {
   let activeType = typeParam || (["deck", "xlsx"].includes(catParam) ? catParam : "cv");
   if (!PRODUCT_TYPES.some((t) => t.slug === activeType)) activeType = "cv";
   let activeSub = (TYPE_SUBTOPICS[activeType] || []).some((c) => c.slug === catParam) ? catParam : "all";
+  let searchTerm = "";
 
   typeTabsEl.innerHTML = PRODUCT_TYPES.map((t) => `<button class="tab" data-type="${t.slug}">${t.label}</button>`).join("");
 
@@ -70,12 +75,18 @@ function initProductsPage() {
   function apply() {
     typeTabsEl.querySelectorAll(".tab").forEach((btn) => btn.classList.toggle("active", btn.dataset.type === activeType));
     renderSubTabs();
+    const term = searchTerm.trim();
     const list = PRODUCTS.filter((p) => {
       if (productType(p) !== activeType) return false;
       if (activeSub !== "all" && productSubtopic(p) !== activeSub) return false;
+      if (term && !p.title.toLowerCase().includes(term.toLowerCase())) return false;
       return true;
     });
-    renderGrid(grid, list);
+    if (term && !list.length) {
+      grid.innerHTML = `<p class="tpl-search-empty">אין תבניות שמתאימות לחיפוש "${escapeHtmlC(term)}".</p>`;
+    } else {
+      renderGrid(grid, list);
+    }
   }
 
   typeTabsEl.querySelectorAll(".tab").forEach((btn) => {
@@ -86,6 +97,13 @@ function initProductsPage() {
       apply();
     });
   });
+
+  if (searchEl) {
+    searchEl.addEventListener("input", () => {
+      searchTerm = searchEl.value;
+      apply();
+    });
+  }
 
   apply();
 }

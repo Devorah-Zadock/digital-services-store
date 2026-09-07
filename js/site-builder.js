@@ -107,16 +107,23 @@ function siteTplCardHtml(key, t) {
 function renderTplCatalog() {
   const tabsEl = document.getElementById("site-tpl-tabs");
   const gridEl = document.getElementById("site-tpl-grid");
+  const searchEl = document.getElementById("site-tpl-search");
   tabsEl.innerHTML = SITE_CATEGORIES.map((c) => `<button class="tab" data-cat="${c.slug}">${escapeHtmlS(c.label)}</button>`).join("");
   let active = "all";
+  let term = "";
   function apply() {
     tabsEl.querySelectorAll(".tab").forEach((btn) => btn.classList.toggle("active", btn.dataset.cat === active));
-    const entries = Object.entries(SITE_TEMPLATES).filter(([, t]) => active === "all" || t.categorySlug === active);
-    gridEl.innerHTML = entries.map(([key, t]) => siteTplCardHtml(key, t)).join("");
+    const q = term.trim().toLowerCase();
+    const entries = Object.entries(SITE_TEMPLATES).filter(([, t]) =>
+      (active === "all" || t.categorySlug === active) && (!q || t.label.toLowerCase().includes(q)));
+    gridEl.innerHTML = entries.length
+      ? entries.map(([key, t]) => siteTplCardHtml(key, t)).join("")
+      : `<p class="tpl-search-empty">אין עיצובים שמתאימים לחיפוש "${escapeHtmlS(term.trim())}".</p>`;
   }
   tabsEl.querySelectorAll(".tab").forEach((btn) => {
     btn.addEventListener("click", () => { active = btn.dataset.cat; apply(); });
   });
+  if (searchEl) searchEl.addEventListener("input", () => { term = searchEl.value; apply(); });
   apply();
 }
 
