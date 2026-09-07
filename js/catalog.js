@@ -115,23 +115,91 @@ function initProductsPage() {
    ה-X" link into that type's own dedicated page (products.html?type=X).
    Unlike products.html, this page never filters by sub-topic — it's an
    overview, not a browsing tool. */
+function siteCardHtmlForToolbox(key, t) {
+  return `
+    <div class="card" data-cat="${t.categorySlug}">
+      <div class="thumb"><img src="${t.thumb}" alt="${escapeHtmlC(t.label)}" loading="lazy"></div>
+      <div class="body">
+        <div class="card-meta">
+          <span class="tag">${escapeHtmlC(t.category)}</span>
+          <span class="price">99 ₪</span>
+        </div>
+        <h3>${escapeHtmlC(t.label)}</h3>
+        <a href="sites.html?template=${key}" class="btn btn-teal card-cta">בחירה ועריכה</a>
+      </div>
+    </div>`;
+}
+
+function quoteCardHtmlForToolbox(key, t) {
+  return `
+    <div class="card" data-cat="${t.categorySlug}">
+      <div class="thumb"><img src="images/previews/quote-${key}.webp" alt="${escapeHtmlC(t.label)}" loading="lazy"></div>
+      <div class="body">
+        <div class="card-meta">
+          <span class="tag">${escapeHtmlC(t.category)}</span>
+          <span class="tag tag-free">חינם</span>
+        </div>
+        <h3>${escapeHtmlC(t.label)}</h3>
+        <a href="quote-app.html?template=${key}" class="btn btn-teal card-cta">בחירה ועריכה</a>
+      </div>
+    </div>`;
+}
+
+/* One label per row, no "לכל" prefix (reads oddly in Hebrew ahead of a
+   plain noun like "קורות חיים") — just the type name and an arrow. */
+function toolboxRowHtml(label, allHref, cardsHtml) {
+  return `
+    <section class="toolbox-row">
+      <div class="toolbox-row-head">
+        <h2>${label}</h2>
+        <a href="${allHref}" class="toolbox-row-all">${label} ←</a>
+      </div>
+      <div class="toolbox-scroll-wrap">
+        <button type="button" class="toolbox-arrow toolbox-arrow-start" aria-label="גלילה קודמת">›</button>
+        <div class="toolbox-scroll">${cardsHtml}</div>
+        <button type="button" class="toolbox-arrow toolbox-arrow-end" aria-label="גלילה הבאה">‹</button>
+      </div>
+    </section>`;
+}
+
+/* Ordered by priority (paid flagship product first, then the other free
+   tools), not alphabetically or by data-structure order — this is the
+   one page that shows every DeskKit tool side by side, so the order
+   itself is a statement about what matters most. */
 function initToolboxPage() {
   const root = document.getElementById("toolbox-rows");
   if (!root) return;
-  root.innerHTML = PRODUCT_TYPES.map((t) => {
+
+  const rows = [];
+
+  if (typeof SITE_TEMPLATES !== "undefined") {
+    const cards = Object.entries(SITE_TEMPLATES).map(([key, t]) => `<div class="toolbox-card-wrap">${siteCardHtmlForToolbox(key, t)}</div>`).join("");
+    rows.push(toolboxRowHtml("אתרים", "sites.html?browse=1", cards));
+  }
+  if (typeof QUOTE_TEMPLATES !== "undefined") {
+    const cards = Object.entries(QUOTE_TEMPLATES).map(([key, t]) => `<div class="toolbox-card-wrap">${quoteCardHtmlForToolbox(key, t)}</div>`).join("");
+    rows.push(toolboxRowHtml("הצעות מחיר", "quote-app.html", cards));
+  }
+  PRODUCT_TYPES.forEach((t) => {
     const items = PRODUCTS.filter((p) => productType(p) === t.slug);
-    if (!items.length) return "";
-    return `
-      <section class="toolbox-row">
-        <div class="toolbox-row-head">
-          <h2>${t.label}</h2>
-          <a href="products.html?type=${t.slug}" class="toolbox-row-all">לכל ${t.label} ←</a>
-        </div>
-        <div class="toolbox-scroll">
-          ${items.map((p) => `<div class="toolbox-card-wrap">${cardHtml(p)}</div>`).join("")}
-        </div>
-      </section>`;
-  }).join("");
+    if (!items.length) return;
+    const cards = items.map((p) => `<div class="toolbox-card-wrap">${cardHtml(p)}</div>`).join("");
+    rows.push(toolboxRowHtml(t.label, `products.html?type=${t.slug}`, cards));
+  });
+
+  root.innerHTML = rows.join("");
+
+  root.querySelectorAll(".toolbox-scroll-wrap").forEach((wrap) => {
+    const scroller = wrap.querySelector(".toolbox-scroll");
+    const startBtn = wrap.querySelector(".toolbox-arrow-start");
+    const endBtn = wrap.querySelector(".toolbox-arrow-end");
+    const step = () => Math.min(scroller.clientWidth * 0.8, 600);
+    // RTL: scrollLeft moves negative going "forward" (start→end) in most
+    // browsers — "start" arrow (visually right, reading-direction start)
+    // should move toward more-negative scrollLeft, "end" the opposite.
+    startBtn.addEventListener("click", () => scroller.scrollBy({ left: step(), behavior: "smooth" }));
+    endBtn.addEventListener("click", () => scroller.scrollBy({ left: -step(), behavior: "smooth" }));
+  });
 }
 
 function initFeatured() {
