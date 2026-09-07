@@ -146,10 +146,15 @@ function quoteCardHtmlForToolbox(key, t) {
 }
 
 /* One label per row, no "לכל" prefix (reads oddly in Hebrew ahead of a
-   plain noun like "קורות חיים") — just the type name and an arrow. */
+   plain noun like "קורות חיים") — just the type name and an arrow.
+   A <div>, not a <section> — the bare "section { padding: 88px 0 }"
+   site-wide rule would otherwise apply to EVERY row (this is a repeating
+   list item inside one page section, not a page-level section itself),
+   stacking 88px of empty top+bottom padding on each and reading as a
+   huge dead gap between "אתרים" and the next row. */
 function toolboxRowHtml(label, allHref, cardsHtml) {
   return `
-    <section class="toolbox-row">
+    <div class="toolbox-row">
       <div class="toolbox-row-head">
         <h2>${label}</h2>
         <a href="${allHref}" class="toolbox-row-all">${label} ←</a>
@@ -159,7 +164,7 @@ function toolboxRowHtml(label, allHref, cardsHtml) {
         <div class="toolbox-scroll">${cardsHtml}</div>
         <button type="button" class="toolbox-arrow toolbox-arrow-end" aria-label="גלילה הבאה">‹</button>
       </div>
-    </section>`;
+    </div>`;
 }
 
 /* Ordered by priority (paid flagship product first, then the other free
