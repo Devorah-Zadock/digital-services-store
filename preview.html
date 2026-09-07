@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>תצוגה מלאה — DeskKit</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=19">
+<style>
+  .pv-topbar {
+    background: var(--white); border-bottom: 1px solid #EAEDEC; padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    position: sticky; top: 0; z-index: 50;
+  }
+  .pv-topbar .pv-title { font-size: 14.5px; font-weight: 700; color: var(--teal-dark); }
+  .pv-topbar .pv-sub { font-size: 12px; color: var(--grey); margin-top: 2px; }
+  .pv-back { font-size: 13.5px; font-weight: 600; color: var(--teal); }
+  .pv-back:hover { text-decoration: underline; }
+  .pv-wrap { max-width: 900px; margin: 0 auto; padding: 36px 20px 70px; }
+  .pv-viewonly-note {
+    text-align: center; font-size: 12.5px; color: var(--grey); margin-bottom: 20px;
+  }
+
+  /* Deck slide viewer — full-bleed colored card matching the real
+     slide's own background/text colors and relative font sizes, so it
+     reads as "the actual slide" rather than a generic content list. */
+  .pv-slide-card {
+    border-radius: 14px; overflow: hidden; box-shadow: 0 16px 40px rgba(0,0,0,.14);
+    min-height: 420px; display: flex; flex-direction: column; justify-content: center;
+    padding: 60px 56px; gap: 14px; text-align: center;
+  }
+  .pv-slide-card .pv-line { line-height: 1.5; }
+  .pv-slide-nav {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 20px;
+  }
+  .pv-slide-nav button {
+    background: var(--white); border: 1.5px solid #DDE4E1; border-radius: 22px; padding: 9px 20px;
+    font-size: 13.5px; font-weight: 700; color: var(--teal-dark); cursor: pointer; font-family: inherit;
+  }
+  .pv-slide-nav button:disabled { opacity: .35; cursor: default; }
+  .pv-slide-counter { font-size: 13px; color: var(--grey); }
+  .pv-slide-dots { display: flex; justify-content: center; gap: 6px; margin-top: 16px; }
+  .pv-slide-dots span { width: 7px; height: 7px; border-radius: 50%; background: #DADFDD; cursor: pointer; }
+  .pv-slide-dots span.active { background: var(--teal); width: 20px; border-radius: 4px; }
+
+  /* Sheet viewer — full styled table using the real file's own fills
+     (teal header, yellow editable cells, gold totals). */
+  .pv-sheet-box {
+    background: var(--white); border-radius: 14px; box-shadow: 0 16px 40px rgba(0,0,0,.14);
+    overflow: hidden;
+  }
+  .pv-sheet-table-wrap { overflow-x: auto; }
+  .pv-sheet-table { width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap; }
+  .pv-sheet-table td { padding: 9px 14px; border-bottom: 1px solid #EEF1EF; }
+</style>
+</head>
+<body>
+
+<div class="pv-topbar">
+  <div>
+    <div class="pv-title" id="pv-title">תצוגה מלאה</div>
+    <div class="pv-sub" id="pv-sub"></div>
+  </div>
+  <a href="products.html" id="pv-back" class="pv-back">← חזרה למוצר</a>
+</div>
+
+<div class="pv-wrap">
+  <p class="pv-viewonly-note">זו תצוגה בלבד — כל התוכן האמיתי, בלי אפשרות הורדה. לרכישה/הורדה חוזרים לעמוד המוצר.</p>
+  <div id="pv-content"></div>
+</div>
+
+<script src="js/products-data.js?v=2"></script>
+<script src="js/product-preview-data.js?v=2"></script>
+<script src="js/preview-page.js?v=1"></script>
+</body>
+</html>

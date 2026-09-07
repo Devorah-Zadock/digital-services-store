@@ -163,7 +163,7 @@ function initProductPage() {
         <ul class="checklist">${p.checklist.map((c) => `<li>${c}</li>`).join("")}</ul>
         ${p.downloadUrl ? `
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <button type="button" id="preview-full-btn" class="btn btn-outline-dark">צפייה מלאה בתוכן</button>
+          <a href="preview.html?slug=${p.slug}" class="btn btn-outline-dark">צפייה מלאה בתוכן</a>
           <button type="button" id="download-file-btn" class="btn btn-gold">הורדת הקובץ — חינם</button>
         </div>
         <div class="note-box">קובץ מלא, מוכן לעריכה. אפשר לצפות בכל התוכן לפני שמורידים. ההורדה עצמה דורשת התחברות (חשבון פשוט וחינמי) כדי שתישאר לכם גישה קבועה. יש שאלה? <a href="contact.html" style="color:var(--teal); font-weight:600;">כתבו לנו</a> ונשמח לעזור.</div>
@@ -175,9 +175,7 @@ function initProductPage() {
     </div>`;
 
   if (p.downloadUrl) {
-    const previewBtn = document.getElementById("preview-full-btn");
     const downloadBtn = document.getElementById("download-file-btn");
-    if (previewBtn) previewBtn.addEventListener("click", () => openContentPreviewModal(p));
     if (downloadBtn) downloadBtn.addEventListener("click", () => handleGatedDownload(p));
   }
 
@@ -212,69 +210,6 @@ function handleGatedDownload(p) {
     a.click();
     a.remove();
   });
-}
-
-/* Viewing the full content stays free — same as browsing anything else
-   on the site — since it's what helps someone DECIDE whether to bother
-   downloading (and signing up) in the first place. Not a pixel-accurate
-   copy of the real file's design (there's no way to render an actual
-   .pptx/.xlsx to an image here) but every slide/row's real content, in
-   full — see js/product-preview-data.js for how it was extracted. */
-function openContentPreviewModal(p) {
-  const data = (typeof PRODUCT_PREVIEW_DATA !== "undefined") && PRODUCT_PREVIEW_DATA[p.slug];
-  if (!data) return;
-  const overlay = document.createElement("div");
-  overlay.className = "preview-modal-overlay";
-  overlay.innerHTML = `
-    <div class="preview-modal-box">
-      <div class="preview-modal-head">
-        <h3>${escapeHtmlC(p.title)} — תצוגה מלאה</h3>
-        <button type="button" class="preview-modal-close" aria-label="סגירה">✕</button>
-      </div>
-      <div class="preview-modal-body" id="preview-modal-body"></div>
-    </div>`;
-  document.body.appendChild(overlay);
-  const close = () => overlay.remove();
-  overlay.querySelector(".preview-modal-close").addEventListener("click", close);
-  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
-
-  const body = overlay.querySelector("#preview-modal-body");
-  if (data.type === "deck") {
-    renderDeckPreview(body, data.slides);
-  } else {
-    renderSheetPreview(body, data.rows);
-  }
-}
-
-function renderDeckPreview(body, slides) {
-  let idx = 0;
-  function render() {
-    const lines = slides[idx];
-    body.innerHTML = `
-      <div class="preview-slide-card">
-        <div class="ps-title">${escapeHtmlC(lines[0])}</div>
-        ${lines.slice(1).map((l) => `<div class="ps-line">${escapeHtmlC(l)}</div>`).join("")}
-      </div>
-      <div class="preview-slide-nav">
-        <button type="button" id="ps-prev"${idx === 0 ? " disabled" : ""}>הקודם</button>
-        <span class="preview-slide-counter">שקופית ${idx + 1} מתוך ${slides.length}</span>
-        <button type="button" id="ps-next"${idx === slides.length - 1 ? " disabled" : ""}>הבא</button>
-      </div>`;
-    const prev = body.querySelector("#ps-prev");
-    const next = body.querySelector("#ps-next");
-    if (prev) prev.addEventListener("click", () => { if (idx > 0) { idx--; render(); } });
-    if (next) next.addEventListener("click", () => { if (idx < slides.length - 1) { idx++; render(); } });
-  }
-  render();
-}
-
-function renderSheetPreview(body, rows) {
-  body.innerHTML = `
-    <div class="preview-sheet-table-wrap">
-      <table class="preview-sheet-table">
-        ${rows.map((r) => `<tr>${r.map((c) => `<td>${escapeHtmlC(String(c))}</td>`).join("")}</tr>`).join("")}
-      </table>
-    </div>`;
 }
 
 document.addEventListener("DOMContentLoaded", () => {
