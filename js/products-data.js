@@ -274,6 +274,7 @@ const PRODUCTS = [
     slug: "biz-deck-profile",
     category: "מצגות",
     categorySlug: "deck",
+    topicSlug: "business",
     title: "תבנית פרופיל חברה",
     shortDesc: "מצגת PowerPoint מלאה בת 7 שקפים בעיצוב אחיד. חינם.",
     price: 0,
@@ -293,6 +294,7 @@ const PRODUCTS = [
     slug: "deck-product-launch",
     category: "מצגות",
     categorySlug: "deck",
+    topicSlug: "marketing",
     title: "תבנית הצגת מוצר",
     shortDesc: "מצגת PowerPoint להשקת מוצר — בעיה, תכונות, תמחור. חינם.",
     price: 0,
@@ -313,6 +315,7 @@ const PRODUCTS = [
     slug: "deck-content-webinar",
     category: "מצגות",
     categorySlug: "deck",
+    topicSlug: "marketing",
     title: "תבנית תוכן / וובינר",
     shortDesc: "מצגת PowerPoint להרצאה, וובינר או שיעור. חינם.",
     price: 0,
@@ -332,6 +335,7 @@ const PRODUCTS = [
     slug: "deck-investor-pitch",
     category: "מצגות",
     categorySlug: "deck",
+    topicSlug: "business",
     title: "תבנית פיץ' למשקיעים",
     shortDesc: "מצגת PowerPoint לגיוס — בעיה, שוק, טרקשן, בקשה. חינם.",
     price: 0,
@@ -351,6 +355,7 @@ const PRODUCTS = [
     slug: "deck-creative-portfolio",
     category: "מצגות",
     categorySlug: "deck",
+    topicSlug: "creative",
     title: "תבנית פורטפוליו יצירתי",
     shortDesc: "מצגת PowerPoint להצגת עבודות ופרויקטים. חינם.",
     price: 0,
@@ -370,6 +375,7 @@ const PRODUCTS = [
     slug: "xlsx-budget",
     category: "גיליונות",
     categorySlug: "xlsx",
+    topicSlug: "finance",
     title: "תבנית תקציב חודשי",
     shortDesc: "גיליון Excel למעקב הכנסות והוצאות עם סיכום אוטומטי. חינם.",
     price: 0,
@@ -390,6 +396,7 @@ const PRODUCTS = [
     slug: "xlsx-invoice",
     category: "גיליונות",
     categorySlug: "xlsx",
+    topicSlug: "finance",
     title: "תבנית חשבונית עסקית",
     shortDesc: "גיליון Excel לחשבונית עם חישוב מע\"מ אוטומטי. חינם.",
     price: 0,
@@ -409,6 +416,7 @@ const PRODUCTS = [
     slug: "xlsx-expense",
     category: "גיליונות",
     categorySlug: "xlsx",
+    topicSlug: "finance",
     title: "תבנית מעקב הוצאות עסק",
     shortDesc: "גיליון Excel למעקב הוצאות עסקיות לפי קטגוריה וספק, עם סיכומים אוטומטיים. חינם.",
     price: 0,
@@ -428,6 +436,7 @@ const PRODUCTS = [
     slug: "xlsx-clients",
     category: "גיליונות",
     categorySlug: "xlsx",
+    topicSlug: "customers",
     title: "תבנית מעקב לקוחות",
     shortDesc: "גיליון Excel פשוט למעקב לידים ולקוחות — פרטי קשר, סטטוס והערות. חינם.",
     price: 0,
@@ -464,8 +473,30 @@ const CV_PROFESSIONS = [
   { slug: "design", label: "עיצוב" },
   { slug: "accounting", label: "הנהלת חשבונות" },
 ];
+const DECK_TOPICS = [
+  { slug: "all", label: "הכל" },
+  { slug: "business", label: "עסקי" },
+  { slug: "marketing", label: "שיווק ותוכן" },
+  { slug: "creative", label: "יצירתי" },
+];
+const XLSX_TOPICS = [
+  { slug: "all", label: "הכל" },
+  { slug: "finance", label: "ניהול כספים" },
+  { slug: "customers", label: "ניהול לקוחות" },
+];
+/* One lookup per type instead of a parallel if/else chain everywhere a
+   type's sub-topic list is needed (catalog.js's initProductsPage). */
+const TYPE_SUBTOPICS = { cv: CV_PROFESSIONS, deck: DECK_TOPICS, xlsx: XLSX_TOPICS };
+
 function productType(p) {
   if (p.categorySlug === "deck") return "deck";
   if (p.categorySlug === "xlsx") return "xlsx";
   return "cv";
+}
+/* CV items already carry their sub-topic (profession) in categorySlug —
+   decks/spreadsheets use a separate topicSlug field instead, since their
+   categorySlug already means "deck"/"xlsx" (the type itself). */
+function productSubtopic(p) {
+  if (p.categorySlug === "deck" || p.categorySlug === "xlsx") return p.topicSlug || "";
+  return p.categorySlug;
 }

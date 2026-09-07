@@ -10,7 +10,7 @@
 <meta name="description" content="נרשמים פעם אחת, ובכל כניסה מקבלים הצעת מחיר מוכנה עם פרטי העסק והלוגו שלכם.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&family=Rubik:wght@500;600;700;900&family=Frank+Ruhl+Libre:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=16">
 <link rel="stylesheet" href="css/builder.css?v=2">
 <style>
@@ -52,7 +52,9 @@
       <a href="index.html">בית</a>
       <a href="sites.html?browse=1">אתרים</a>
       <a href="quote-app.html" class="active">הצעות מחיר</a>
-      <a href="products.html">קטלוג</a>
+      <a href="products.html?type=cv">קורות חיים</a>
+      <a href="products.html?type=deck">מצגות</a>
+      <a href="products.html?type=xlsx">גליונות</a>
       <a href="about.html">אודות</a>
       <a href="contact.html">צור קשר</a>
     </div>
@@ -65,6 +67,22 @@
 </header>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+<!-- Design catalog -->
+<div id="qa-catalog" style="display:none;">
+  <section class="builder-top no-print">
+    <div class="container">
+      <h1 style="font-size:26px; margin:6px 0 4px;">הצעות מחיר לעסק שלכם</h1>
+      <p style="color:var(--grey); font-size:14px; margin:0;">בוחרים עיצוב, ממלאים פרטים ורואים תצוגה חיה — חינם לגמרי.</p>
+    </div>
+  </section>
+  <section class="no-print">
+    <div class="container">
+      <div class="tabs" id="qa-tpl-tabs"></div>
+      <div class="grid" id="qa-tpl-grid"></div>
+    </div>
+  </section>
+</div>
 
 <!-- Business profile setup -->
 <div id="qa-profile" style="display:none;">
@@ -122,6 +140,8 @@
         <div class="qa-account">
           <a href="index.html">← לעמוד הבית</a>
           <span>·</span>
+          <a href="quote-app.html">שינוי עיצוב</a>
+          <span>·</span>
           <button type="button" id="qa-edit-profile">עריכת פרטי העסק</button>
         </div>
         <div class="builder-save-ctrl" id="quote-save-ctrl" style="display:none;">
@@ -173,12 +193,12 @@
   </div>
 </div>
 
-<script src="js/quote-render.js?v=2"></script>
+<script src="js/quote-render.js?v=3"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>
 <script src="js/my-panel.js?v=8"></script>
 <script src="js/main.js"></script>
 <script src="js/quote-cloud-save.js?v=2"></script>
-<script src="js/quote-app.js?v=3"></script>
+<script src="js/quote-app.js?v=4"></script>
 </body>
 </html>

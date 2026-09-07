@@ -1,6 +1,15 @@
 /* Renders a price-quote letter as an HTML string, mirroring the real
    template supplied by the user (letterhead, horizontal rule, body,
-   signature). Shared by the live preview and the print/PDF output. */
+   signature). Shared by the live preview and the print/PDF output.
+
+   Multiple visual designs ("skins") share this exact same content
+   structure and fields — a quote letter's data model doesn't change
+   between designs, only how it looks — so unlike the CV/site catalogs
+   (genuinely different layouts, hence separate render functions per
+   template), quote templates are implemented as one shared render()
+   plus a per-skin CSS block selected by q.template. QUOTE_TEMPLATES
+   is the catalog metadata (label/category/thumb) quote-app.html's
+   picker reads; QUOTE_SKIN_CSS is the actual look. */
 function escapeHtmlQ(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
@@ -18,9 +27,26 @@ function formatILS(n) {
   return n.toLocaleString("en-US", { maximumFractionDigits: 2 });
 }
 
+const QUOTE_CATEGORIES = [
+  { slug: "business", label: "עסקי כללי" },
+  { slug: "events", label: "אירועים ובוטיק" },
+];
+
+const QUOTE_TEMPLATES = {
+  classic: { label: "קלאסי", category: "עסקי כללי", categorySlug: "business", desc: "נקי ומסודר, כותרת מרכזית וקו מפריד עדין — מתאים לכל עסק" },
+  modern: { label: "מודרני", category: "עסקי כללי", categorySlug: "business", desc: "רצועת כותרת צבעונית ובולטת, טיפוגרפיה עבה וביטחון עסקי" },
+  elegant: { label: "אלגנטי", category: "אירועים ובוטיק", categorySlug: "events", desc: "גופן סריפי מעודן וקו זהב — לעסקי אירועים ובוטיק" },
+  noir: { label: "יוקרתי כהה", category: "אירועים ובוטיק", categorySlug: "events", desc: "רצועת כותרת כהה ומינימליסטית, מרשימה ומדויקת" },
+};
+const QUOTE_TEMPLATE_DEFAULT = "classic";
+
+/* Structural CSS only — sizing, spacing, positions — identical across
+   every skin. Per-skin colors/fonts/decorative treatment come from
+   QUOTE_SKIN_CSS below and are additive on top of this. */
 const QUOTE_CSS = `
-  .quote-doc { font-family: 'Heebo', Arial, sans-serif; background:#fff; color:#1E1E1E; width:794px; margin:0 auto; box-shadow:0 10px 30px rgba(0,0,0,.12); padding:50px 56px; overflow-wrap:break-word; }
-  .quote-doc .bsd { font-size:12px; color:#6B6B6B; margin-bottom:6px; }
+  .quote-doc { font-family: 'Heebo', Arial, sans-serif; background:#fff; color:#1E1E1E; width:794px; margin:0 auto; box-shadow:0 10px 30px rgba(0,0,0,.12); overflow-wrap:break-word; overflow:hidden; }
+  .quote-doc .qd-inner { padding:0 56px 50px; }
+  .quote-doc .bsd { font-size:12px; color:#6B6B6B; padding:14px 56px 0; }
   .quote-doc .letterhead { text-align:center; margin-bottom:18px; }
   .quote-doc .letterhead-logo { max-height:64px; max-width:220px; margin:0 auto 10px; display:block; }
   .quote-doc .biz-name { font-size:20px; font-weight:700; color:#163F35; margin-bottom:4px; }
@@ -42,7 +68,44 @@ const QUOTE_CSS = `
   .quote-doc .footer-note { font-size:12px; color:#6B6B6B; margin-top:24px; border-top:1px solid #eee; padding-top:14px; }
 `;
 
+/* Per-skin overrides. "classic" is deliberately empty — it's exactly the
+   original, single design this tool shipped with, kept as the default so
+   existing saved quotes (no q.template yet) render unchanged. */
+const QUOTE_SKIN_CSS = {
+  classic: ``,
+  modern: `
+    .quote-doc.skin-modern { padding-top:0; }
+    .quote-doc.skin-modern .letterhead { background:linear-gradient(135deg, #1F5C4E, #2A7D68); padding:34px 40px 26px; margin-bottom:0; }
+    .quote-doc.skin-modern .biz-name { color:#fff; font-family:'Rubik', 'Heebo', Arial, sans-serif; font-weight:900; font-size:24px; letter-spacing:-.01em; }
+    .quote-doc.skin-modern .tagline { color:rgba(255,255,255,.85); }
+    .quote-doc.skin-modern .contact-line { color:rgba(255,255,255,.75); }
+    .quote-doc.skin-modern hr { display:none; }
+    .quote-doc.skin-modern .qd-inner { padding-top:30px; }
+    .quote-doc.skin-modern .subject { color:#1F5C4E; }
+    .quote-doc.skin-modern .price-line { color:#1F5C4E; }
+  `,
+  elegant: `
+    .quote-doc.skin-elegant { background:#FDFBF6; }
+    .quote-doc.skin-elegant .biz-name { font-family:'Frank Ruhl Libre', Georgia, serif; font-weight:700; font-size:23px; color:#7A5A1E; letter-spacing:.01em; }
+    .quote-doc.skin-elegant .subject, .quote-doc.skin-elegant .recipient { font-family:'Frank Ruhl Libre', Georgia, serif; }
+    .quote-doc.skin-elegant hr { border-top:1.5px solid #C99A3B; }
+    .quote-doc.skin-elegant .price-line { color:#7A5A1E; }
+    .quote-doc.skin-elegant .footer-note { border-top-color:#EEE3CC; }
+  `,
+  noir: `
+    .quote-doc.skin-noir { padding-top:0; }
+    .quote-doc.skin-noir .letterhead { background:#14201C; padding:34px 40px 26px; margin-bottom:0; }
+    .quote-doc.skin-noir .biz-name { color:#fff; font-weight:300; letter-spacing:.06em; text-transform:uppercase; font-size:19px; }
+    .quote-doc.skin-noir .tagline { color:rgba(255,255,255,.7); }
+    .quote-doc.skin-noir .contact-line { color:rgba(255,255,255,.55); }
+    .quote-doc.skin-noir hr { display:none; }
+    .quote-doc.skin-noir .qd-inner { padding-top:30px; }
+    .quote-doc.skin-noir .subject { letter-spacing:.02em; }
+  `,
+};
+
 function renderQuoteHtml(q) {
+  const skin = QUOTE_TEMPLATES[q.template] ? q.template : QUOTE_TEMPLATE_DEFAULT;
   const validDates = (q.eventDates || []).filter(Boolean);
   const isMulti = validDates.length > 1;
 
@@ -68,8 +131,8 @@ function renderQuoteHtml(q) {
         : "");
 
   return `
-  <style>${QUOTE_CSS}</style>
-  <div class="quote-doc" dir="rtl">
+  <style>${QUOTE_CSS}${QUOTE_SKIN_CSS[skin] || ""}</style>
+  <div class="quote-doc skin-${skin}" dir="rtl">
     <div class="bsd">בס"ד</div>
     <div class="letterhead">
       ${q.logoUrl ? `<img class="letterhead-logo" src="${escapeHtmlQ(q.logoUrl)}" alt="">` : ""}
@@ -79,20 +142,22 @@ function renderQuoteHtml(q) {
       <div class="contact-line">${escapeHtmlQ(q.email)} &nbsp;&nbsp;•&nbsp;&nbsp; ${escapeHtmlQ(q.businessNumber)}</div>
     </div>
     <hr>
-    <div class="date-row">${escapeHtmlQ(q.today)}</div>
-    <div class="recipient">לכבוד ${escapeHtmlQ(q.recipient)}</div>
-    <div class="greeting">שלום רב,</div>
-    ${subjectHtml}
-    <div class="description">${escapeHtmlQ(q.description)}</div>
-    <div class="price-line">${priceLabel}: ${escapeHtmlQ(q.price)} ₪.</div>
-    ${vatLineHtml}
-    <div class="police-note">${escapeHtmlQ(q.policeNote)}</div>
-    <div class="signature">
-      בברכה,<br>
-      <span class="signer">${escapeHtmlQ(q.signerName)}</span><br>
-      ${escapeHtmlQ(q.phone)}
+    <div class="qd-inner">
+      <div class="date-row">${escapeHtmlQ(q.today)}</div>
+      <div class="recipient">לכבוד ${escapeHtmlQ(q.recipient)}</div>
+      <div class="greeting">שלום רב,</div>
+      ${subjectHtml}
+      <div class="description">${escapeHtmlQ(q.description)}</div>
+      <div class="price-line">${priceLabel}: ${escapeHtmlQ(q.price)} ₪.</div>
+      ${vatLineHtml}
+      <div class="police-note">${escapeHtmlQ(q.policeNote)}</div>
+      <div class="signature">
+        בברכה,<br>
+        <span class="signer">${escapeHtmlQ(q.signerName)}</span><br>
+        ${escapeHtmlQ(q.phone)}
+      </div>
+      <div class="footer-note">נא לאשר בפקס: ${escapeHtmlQ(q.fax)} &nbsp;&nbsp;או במייל חוזר</div>
     </div>
-    <div class="footer-note">נא לאשר בפקס: ${escapeHtmlQ(q.fax)} &nbsp;&nbsp;או במייל חוזר</div>
   </div>`;
 }
 

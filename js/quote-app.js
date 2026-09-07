@@ -8,6 +8,10 @@ let currentUser = null;
 let currentProfile = null;
 let pendingLogoUrl = null; // set once a newly-picked logo finishes uploading
 let quoteEventState = null;
+// Set the moment a template is picked (catalog card, or ?template= in the
+// URL) but the builder can't be shown yet (still creating a profile) —
+// showQuoteBuilder() picks it up once it actually runs.
+let pendingTemplate = null;
 
 /* Shown to a signed-out visitor so they can try the tool immediately —
    real business details (and saving them) require an account, same as
@@ -29,6 +33,7 @@ function todayHebrewQA() {
 
 function emptyQuoteEventState() {
   return {
+    template: QUOTE_TEMPLATE_DEFAULT,
     today: todayHebrewQA(),
     recipient: "",
     eventName: "",
@@ -41,9 +46,45 @@ function emptyQuoteEventState() {
 }
 
 function showSection(id) {
-  ["qa-profile", "qa-app"].forEach((s) => {
+  ["qa-catalog", "qa-profile", "qa-app"].forEach((s) => {
     document.getElementById(s).style.display = s === id ? "" : "none";
   });
+}
+
+/* ---------- Template catalog ---------- */
+
+function quoteTplCardHtml(key, t) {
+  return `
+    <div class="card" data-cat="${t.categorySlug}">
+      <div class="thumb"><img src="images/previews/quote-${key}.webp" alt="${escapeHtmlQ(t.label)}" loading="lazy"></div>
+      <div class="body">
+        <div class="card-meta">
+          <span class="tag">${escapeHtmlQ(t.category)}</span>
+          <span class="tag tag-free">חינם</span>
+        </div>
+        <h3>${escapeHtmlQ(t.label)}</h3>
+        <p style="font-size:13px; color:var(--grey); margin:0; flex:1;">${escapeHtmlQ(t.desc)}</p>
+        <a href="quote-app.html?template=${key}" class="btn btn-teal card-cta">בחירה ועריכה</a>
+      </div>
+    </div>`;
+}
+
+function renderQuoteTplCatalog() {
+  const tabsEl = document.getElementById("qa-tpl-tabs");
+  const gridEl = document.getElementById("qa-tpl-grid");
+  if (!tabsEl || !gridEl) return;
+  tabsEl.innerHTML = `<button class="tab active" data-cat="all">הכל</button>` +
+    QUOTE_CATEGORIES.map((c) => `<button class="tab" data-cat="${c.slug}">${escapeHtmlQ(c.label)}</button>`).join("");
+  let active = "all";
+  function apply() {
+    tabsEl.querySelectorAll(".tab").forEach((btn) => btn.classList.toggle("active", btn.dataset.cat === active));
+    const entries = Object.entries(QUOTE_TEMPLATES).filter(([, t]) => active === "all" || t.categorySlug === active);
+    gridEl.innerHTML = entries.map(([key, t]) => quoteTplCardHtml(key, t)).join("");
+  }
+  tabsEl.querySelectorAll(".tab").forEach((btn) => {
+    btn.addEventListener("click", () => { active = btn.dataset.cat; apply(); });
+  });
+  apply();
 }
 
 /* ---------- Business profile ---------- */
@@ -208,6 +249,8 @@ function wireQuoteFormQA() {
 function showQuoteBuilder(loadedState) {
   showSection("qa-app");
   quoteEventState = loadedState || emptyQuoteEventState();
+  if (!loadedState && pendingTemplate) quoteEventState.template = pendingTemplate;
+  pendingTemplate = null;
   renderQuoteFormQA();
   renderQuotePreviewQA();
   document.getElementById("qa-demo-banner").style.display = currentUser ? "none" : "";
@@ -226,13 +269,28 @@ function goToLoginQA() {
 
 /* ---------- Boot / auth state routing ---------- */
 
+/* No ?quote= and no ?template= in the URL means a genuinely fresh visit
+   (the nav link, or the rail's empty-state "ליצירה" link) — show the
+   design catalog first, same as "אתרים" always opens its template
+   catalog rather than assuming a design. A specific ?template= (a
+   catalog card) or ?quote= (an existing saved quote, which already
+   carries its own template) skips straight past it. */
+function pickedTemplateFromUrl() {
+  const t = new URLSearchParams(location.search).get("template");
+  return QUOTE_TEMPLATES[t] ? t : null;
+}
+
 async function routeAfterAuth(user) {
   currentUser = user;
   quoteCurrentUserId = user.id;
+  const qid = new URLSearchParams(location.search).get("quote");
+  const tpl = pickedTemplateFromUrl();
+  if (!qid && !tpl) { showQuoteCatalog(); return; }
+  pendingTemplate = tpl;
+
   const { data } = await supabaseClient.from("profiles").select("*").eq("id", user.id).maybeSingle();
   if (data) {
     currentProfile = data;
-    const qid = new URLSearchParams(location.search).get("quote");
     const loaded = qid ? await loadQuoteById(qid, user.id) : null;
     showQuoteBuilder(loaded);
   } else {
@@ -251,13 +309,21 @@ function routeAsGuest() {
   currentUser = null;
   quoteCurrentUserId = null;
   quoteSavedId = null;
+  const tpl = pickedTemplateFromUrl();
+  if (!tpl) { showQuoteCatalog(); return; }
+  pendingTemplate = tpl;
   currentProfile = demoProfileQA();
   showQuoteBuilder();
+}
+
+function showQuoteCatalog() {
+  showSection("qa-catalog");
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   wireProfileForm();
   wireQuoteFormQA();
+  renderQuoteTplCatalog();
   document.getElementById("qa-demo-login").addEventListener("click", (e) => { e.preventDefault(); goToLoginQA(); });
 
   supabaseClient.auth.onAuthStateChange((_event, session) => {

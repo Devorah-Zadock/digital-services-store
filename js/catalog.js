@@ -22,14 +22,14 @@ function renderGrid(el, products) {
     : `<p style="grid-column:1/-1; text-align:center; color:var(--grey);">אין עדיין מוצרים בקטגוריה הזו.</p>`;
 }
 
-/* Two-tier: pick a document TYPE first (big pills), and only once "קורות
-   חיים" is the active type does a second, narrower row of profession
-   pills appear — a deck or a spreadsheet never had a profession filter
-   to begin with, so hiding that row for them isn't a missing feature,
-   it's not applicable. ?cat= is kept working for old links (the chatbot
-   widget links to products.html?cat=cv / ?cat=deck / ?cat=xlsx) by
-   treating those three as type-level, and any profession slug
-   (general/dev/design/accounting) as a sub-filter within "cv". */
+/* Two-tier: pick a document TYPE first (big pills — though since each type
+   now also has its own top-nav link straight into products.html?type=X,
+   this mostly just confirms which one you're on), then a second, narrower
+   row of sub-topic pills for THAT type (profession for CV, topic for
+   decks/spreadsheets — see TYPE_SUBTOPICS). ?cat= is kept working for old
+   links (the chatbot widget links to products.html?cat=cv / ?cat=deck /
+   ?cat=xlsx) by treating those three as type-level, and any other slug as
+   a sub-topic filter within whichever type is active. */
 function initProductsPage() {
   const grid = document.getElementById("product-grid");
   const typeTabsEl = document.getElementById("type-tabs");
@@ -42,24 +42,25 @@ function initProductsPage() {
 
   let activeType = typeParam || (["deck", "xlsx"].includes(catParam) ? catParam : "cv");
   if (!PRODUCT_TYPES.some((t) => t.slug === activeType)) activeType = "cv";
-  let activeProf = CV_PROFESSIONS.some((c) => c.slug === catParam) ? catParam : "all";
+  let activeSub = (TYPE_SUBTOPICS[activeType] || []).some((c) => c.slug === catParam) ? catParam : "all";
 
   typeTabsEl.innerHTML = PRODUCT_TYPES.map((t) => `<button class="tab" data-type="${t.slug}">${t.label}</button>`).join("");
 
   function updateUrl() {
     const url = new URL(location.href);
     url.searchParams.set("type", activeType);
-    if (activeType === "cv" && activeProf !== "all") url.searchParams.set("cat", activeProf); else url.searchParams.delete("cat");
+    if (activeSub !== "all") url.searchParams.set("cat", activeSub); else url.searchParams.delete("cat");
     history.replaceState(null, "", url);
   }
 
   function renderSubTabs() {
-    if (activeType !== "cv") { subTabsEl.style.display = "none"; subTabsEl.innerHTML = ""; return; }
+    const topics = TYPE_SUBTOPICS[activeType] || [];
+    if (!topics.length) { subTabsEl.style.display = "none"; subTabsEl.innerHTML = ""; return; }
     subTabsEl.style.display = "";
-    subTabsEl.innerHTML = CV_PROFESSIONS.map((c) => `<button class="tab tab-sub${c.slug === activeProf ? " active" : ""}" data-prof="${c.slug}">${c.label}</button>`).join("");
+    subTabsEl.innerHTML = topics.map((c) => `<button class="tab tab-sub${c.slug === activeSub ? " active" : ""}" data-prof="${c.slug}">${c.label}</button>`).join("");
     subTabsEl.querySelectorAll(".tab").forEach((btn) => {
       btn.addEventListener("click", () => {
-        activeProf = btn.dataset.prof;
+        activeSub = btn.dataset.prof;
         updateUrl();
         apply();
       });
@@ -71,7 +72,7 @@ function initProductsPage() {
     renderSubTabs();
     const list = PRODUCTS.filter((p) => {
       if (productType(p) !== activeType) return false;
-      if (activeType === "cv" && activeProf !== "all" && p.categorySlug !== activeProf) return false;
+      if (activeSub !== "all" && productSubtopic(p) !== activeSub) return false;
       return true;
     });
     renderGrid(grid, list);
@@ -80,7 +81,7 @@ function initProductsPage() {
   typeTabsEl.querySelectorAll(".tab").forEach((btn) => {
     btn.addEventListener("click", () => {
       activeType = btn.dataset.type;
-      activeProf = "all";
+      activeSub = "all";
       updateUrl();
       apply();
     });
