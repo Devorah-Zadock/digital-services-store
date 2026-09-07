@@ -53,6 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (row && row.data && row.data.content && (!urlTemplate || urlTemplate === row.data.slug)) {
         applyCvSnapshot(row.data);
       }
+      logUsageEvent("cv", state.slug, "edit");
     }
     if (window.revealGatedPage) window.revealGatedPage();
   });

@@ -13,17 +13,6 @@ let quoteEventState = null;
 // showQuoteBuilder() picks it up once it actually runs.
 let pendingTemplate = null;
 
-/* Shown to a signed-out visitor so they can try the tool immediately —
-   real business details (and saving them) require an account, same as
-   viewing-vs-editing everywhere else on the site. */
-function demoProfileQA() {
-  return {
-    business_name: "שם העסק שלכם", tagline1: "", tagline2: "",
-    email: "", id_number: "", phone: "", fax: "", signer_name: "",
-    vat_rate: "18", logo_url: null,
-  };
-}
-
 function todayHebrewQA() {
   const d = new Date();
   const dd = String(d.getDate()).padStart(2, "0");
@@ -260,8 +249,7 @@ function showQuoteBuilder(loadedState) {
   pendingTemplate = null;
   renderQuoteFormQA();
   renderQuotePreviewQA();
-  document.getElementById("qa-demo-banner").style.display = currentUser ? "none" : "";
-  document.getElementById("quote-save-ctrl").style.display = currentUser ? "" : "none";
+  logUsageEvent("quote", quoteEventState.template, "edit");
 }
 
 function showProfileEditor() {
@@ -307,20 +295,20 @@ async function routeAfterAuth(user) {
   }
 }
 
-/* Trying the tool never needs an account — same as viewing a template
-   anywhere else on the site. A signed-out visitor gets the quote
-   builder straight away with placeholder business details (see
-   demoProfileQA); only saving their REAL details (qa-profile-form) or
-   editing an existing profile requires signing in. */
+/* Browsing the design catalog never needs an account — same as every
+   other catalog on the site. But actually opening the builder (a
+   template picked, or an existing saved quote) is real tool usage, so a
+   signed-out visitor gets sent to log in first, same as the CV builder
+   and the site builder's wizard. */
 function routeAsGuest() {
   currentUser = null;
   quoteCurrentUserId = null;
   quoteSavedId = null;
+  const qid = new URLSearchParams(location.search).get("quote");
   const tpl = pickedTemplateFromUrl();
-  if (!tpl) { showQuoteCatalog(); return; }
-  pendingTemplate = tpl;
-  currentProfile = demoProfileQA();
-  showQuoteBuilder();
+  if (!qid && !tpl) { showQuoteCatalog(); return; }
+  const here = location.pathname.split("/").pop() + location.search;
+  window.location.href = "account.html?redirect=" + encodeURIComponent(here);
 }
 
 function showQuoteCatalog() {
@@ -331,14 +319,11 @@ document.addEventListener("DOMContentLoaded", () => {
   wireProfileForm();
   wireQuoteFormQA();
   renderQuoteTplCatalog();
-  document.getElementById("qa-demo-login").addEventListener("click", (e) => { e.preventDefault(); goToLoginQA(); });
 
   supabaseClient.auth.onAuthStateChange((_event, session) => {
     if (session && session.user) {
       routeAfterAuth(session.user);
     } else {
-      // Signed out (or never signed in) — drop back to the guest demo
-      // rather than yanking them off the page entirely.
       routeAsGuest();
     }
   });

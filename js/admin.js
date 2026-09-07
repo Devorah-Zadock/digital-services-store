@@ -41,6 +41,11 @@ function templateLabel(slug) {
   return (typeof SITE_TEMPLATES !== "undefined" && SITE_TEMPLATES[slug]) ? SITE_TEMPLATES[slug].label : slug;
 }
 
+function productLabel(slug) {
+  const p = (typeof PRODUCTS !== "undefined") && PRODUCTS.find((x) => x.slug === slug);
+  return p ? p.title : slug;
+}
+
 function renderCustomerStats(data) {
   const summary = document.getElementById("stats-summary");
   const table = document.getElementById("stats-users-table");
@@ -50,18 +55,30 @@ function renderCustomerStats(data) {
     .map((slug) => `<tr><td>${escapeHtml(templateLabel(slug))}</td><td>${data.templateCounts[slug]}</td><td>${data.finalizedTemplateCounts[slug] || 0}</td></tr>`)
     .join("");
 
+  const downloadRows = Object.entries(Object.assign({}, data.deckDownloadCounts, data.xlsxDownloadCounts))
+    .sort((a, b) => b[1] - a[1])
+    .map(([slug, count]) => `<tr><td>${escapeHtml(productLabel(slug))}</td><td>${count}</td></tr>`)
+    .join("");
+
   const siteProjectCount = Object.values(data.templateCounts).reduce((a, b) => a + b, 0);
   const finalizedCount = Object.values(data.finalizedTemplateCounts).reduce((a, b) => a + b, 0);
   summary.innerHTML = `
     <div class="admin-stat-tiles">
       <div class="admin-stat-tile"><div class="admin-stat-num">${data.userCount}</div><div class="admin-stat-label">משתמשים רשומים</div></div>
       <div class="admin-stat-tile"><div class="admin-stat-num">${data.cvBuilderUserCount}</div><div class="admin-stat-label">השתמשו בקורות חיים</div></div>
+      <div class="admin-stat-tile"><div class="admin-stat-num">${data.quoteBuilderUserCount ?? 0}</div><div class="admin-stat-label">השתמשו בהצעות מחיר</div></div>
       <div class="admin-stat-tile"><div class="admin-stat-num">${siteProjectCount}</div><div class="admin-stat-label">אתרים נפתחו</div></div>
       <div class="admin-stat-tile admin-stat-tile-gold"><div class="admin-stat-num">${finalizedCount}</div><div class="admin-stat-label">אתרים שולמו והורדו</div></div>
+      <div class="admin-stat-tile"><div class="admin-stat-num">${data.deckDownloadCount ?? 0}</div><div class="admin-stat-label">מצגות הורדו</div></div>
+      <div class="admin-stat-tile"><div class="admin-stat-num">${data.xlsxDownloadCount ?? 0}</div><div class="admin-stat-label">גליונות הורדו</div></div>
     </div>
     <table class="stats-table">
       <thead><tr><th>תבנית אתר</th><th>פרויקטים שנפתחו</th><th>מתוכם הורדו בפועל</th></tr></thead>
       <tbody>${templateRows || '<tr><td colspan="3">עדיין אין נתונים</td></tr>'}</tbody>
+    </table>
+    <table class="stats-table" style="margin-top:18px;">
+      <thead><tr><th>מצגת / גיליון</th><th>הורדות</th></tr></thead>
+      <tbody>${downloadRows || '<tr><td colspan="2">עדיין אין הורדות</td></tr>'}</tbody>
     </table>`;
 
   const userRows = data.users
@@ -72,17 +89,21 @@ function renderCustomerStats(data) {
       const cvHtml = u.usedCvBuilder
         ? `<span class="stats-chip">כן<button type="button" class="stats-del-btn" data-del="cv:${u.id}" title="מחיקת קורות החיים">✕</button></span>`
         : "—";
+      const usageHtml = [
+        u.usedQuoteBuilder ? `<span class="stats-chip">הצעות מחיר</span>` : "",
+        u.downloads ? `<span class="stats-chip">${u.downloads} הורדות</span>` : "",
+      ].filter(Boolean).join("") || "—";
       const date = u.createdAt ? new Date(u.createdAt).toLocaleDateString("he-IL") : "—";
       const email = u.email || u.id;
       const initial = email.trim().charAt(0).toUpperCase() || "?";
-      return `<tr><td><span class="admin-user-cell"><span class="admin-user-avatar">${escapeHtml(initial)}</span>${escapeHtml(email)}</span></td><td>${date}</td><td>${sitesHtml}</td><td>${cvHtml}</td></tr>`;
+      return `<tr><td><span class="admin-user-cell"><span class="admin-user-avatar">${escapeHtml(initial)}</span>${escapeHtml(email)}</span></td><td>${date}</td><td>${sitesHtml}</td><td>${cvHtml}</td><td>${usageHtml}</td></tr>`;
     })
     .join("");
 
   table.innerHTML = `
     <table class="stats-table">
-      <thead><tr><th>מייל</th><th>נרשם בתאריך</th><th>אתרים</th><th>קורות חיים</th></tr></thead>
-      <tbody>${userRows || '<tr><td colspan="4">עדיין אין משתמשים</td></tr>'}</tbody>
+      <thead><tr><th>מייל</th><th>נרשם בתאריך</th><th>אתרים</th><th>קורות חיים</th><th>שימוש נוסף</th></tr></thead>
+      <tbody>${userRows || '<tr><td colspan="5">עדיין אין משתמשים</td></tr>'}</tbody>
     </table>`;
 }
 

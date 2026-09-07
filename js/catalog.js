@@ -74,6 +74,15 @@ function initProductsPage() {
 
   function apply() {
     typeTabsEl.querySelectorAll(".tab").forEach((btn) => btn.classList.toggle("active", btn.dataset.type === activeType));
+    // The top header nav also has direct קורות חיים/מצגות/גליונות links
+    // (same page, different ?type=) — without this they'd need their own
+    // static "active" class, which can only ever match ONE of the three
+    // no matter which type is actually showing (products.html is a single
+    // page reused for all three), making the header look stuck on
+    // whichever type happened to be hardcoded.
+    document.querySelectorAll(".nav-links a[data-nav-type]").forEach((a) => {
+      a.classList.toggle("active", a.dataset.navType === activeType);
+    });
     renderSubTabs();
     const term = searchTerm.trim();
     const list = PRODUCTS.filter((p) => {
@@ -131,18 +140,27 @@ function initProductPage() {
         <div class="format-badges">${p.formatBadges.map((b) => `<span class="format-badge">${b}</span>`).join("")}</div>
         <div class="price-block">
           <span class="price">${money(p.price)}</span>
-          ${p.downloadUrl ? `<span style="color:var(--grey); font-size:14px;">הורדה מיידית, בלי הרשמה</span>` : ""}
         </div>
         <ul class="checklist">${p.checklist.map((c) => `<li>${c}</li>`).join("")}</ul>
         ${p.downloadUrl ? `
-        <a href="${p.downloadUrl}" download class="btn btn-gold">הורדת הקובץ — חינם</a>
-        <div class="note-box">קובץ מלא, מוכן לעריכה. יש שאלה? <a href="contact.html" style="color:var(--teal); font-weight:600;">כתבו לנו</a> ונשמח לעזור.</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button type="button" id="preview-full-btn" class="btn btn-outline-dark">צפייה מלאה בתוכן</button>
+          <button type="button" id="download-file-btn" class="btn btn-gold">הורדת הקובץ — חינם</button>
+        </div>
+        <div class="note-box">קובץ מלא, מוכן לעריכה. אפשר לצפות בכל התוכן לפני שמורידים. ההורדה עצמה דורשת התחברות (חשבון פשוט וחינמי) כדי שתישאר לכם גישה קבועה. יש שאלה? <a href="contact.html" style="color:var(--teal); font-weight:600;">כתבו לנו</a> ונשמח לעזור.</div>
         ` : `
         <a href="builder.html?template=${p.slug}" class="btn btn-gold">עריכה והורדה — חינם</a>
-        <div class="note-box">ממלאים את הפרטים שלכם ורואים תוצאה חיה, בעברית או באנגלית. הורדת PDF חינמית לגמרי.</div>
+        <div class="note-box">ממלאים את הפרטים שלכם ורואים תוצאה חיה, בעברית או באנגלית. עריכה חינמית לגמרי — רק צריך להתחבר כדי להיכנס לעורך.</div>
         `}
       </div>
     </div>`;
+
+  if (p.downloadUrl) {
+    const previewBtn = document.getElementById("preview-full-btn");
+    const downloadBtn = document.getElementById("download-file-btn");
+    if (previewBtn) previewBtn.addEventListener("click", () => openContentPreviewModal(p));
+    if (downloadBtn) downloadBtn.addEventListener("click", () => handleGatedDownload(p));
+  }
 
   const related = document.getElementById("related-grid");
   if (related) {
@@ -153,6 +171,91 @@ function initProductPage() {
       document.getElementById("related-section")?.remove();
     }
   }
+}
+
+/* Downloading is real usage (same bar as editing a CV/quote), so it
+   requires an account — same "account.html?redirect=" pattern used
+   everywhere else on the site a page is gated behind login. Logs the
+   download too, best-effort, so it shows up in the admin usage stats. */
+function handleGatedDownload(p) {
+  supabaseClient.auth.getSession().then(({ data }) => {
+    const user = data.session && data.session.user;
+    if (!user) {
+      const here = location.pathname.split("/").pop() + location.search;
+      window.location.href = "account.html?redirect=" + encodeURIComponent(here);
+      return;
+    }
+    if (window.logUsageEvent) logUsageEvent(productType(p), p.slug, "download");
+    const a = document.createElement("a");
+    a.href = p.downloadUrl;
+    a.download = "";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  });
+}
+
+/* Viewing the full content stays free — same as browsing anything else
+   on the site — since it's what helps someone DECIDE whether to bother
+   downloading (and signing up) in the first place. Not a pixel-accurate
+   copy of the real file's design (there's no way to render an actual
+   .pptx/.xlsx to an image here) but every slide/row's real content, in
+   full — see js/product-preview-data.js for how it was extracted. */
+function openContentPreviewModal(p) {
+  const data = (typeof PRODUCT_PREVIEW_DATA !== "undefined") && PRODUCT_PREVIEW_DATA[p.slug];
+  if (!data) return;
+  const overlay = document.createElement("div");
+  overlay.className = "preview-modal-overlay";
+  overlay.innerHTML = `
+    <div class="preview-modal-box">
+      <div class="preview-modal-head">
+        <h3>${escapeHtmlC(p.title)} — תצוגה מלאה</h3>
+        <button type="button" class="preview-modal-close" aria-label="סגירה">✕</button>
+      </div>
+      <div class="preview-modal-body" id="preview-modal-body"></div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  overlay.querySelector(".preview-modal-close").addEventListener("click", close);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+
+  const body = overlay.querySelector("#preview-modal-body");
+  if (data.type === "deck") {
+    renderDeckPreview(body, data.slides);
+  } else {
+    renderSheetPreview(body, data.rows);
+  }
+}
+
+function renderDeckPreview(body, slides) {
+  let idx = 0;
+  function render() {
+    const lines = slides[idx];
+    body.innerHTML = `
+      <div class="preview-slide-card">
+        <div class="ps-title">${escapeHtmlC(lines[0])}</div>
+        ${lines.slice(1).map((l) => `<div class="ps-line">${escapeHtmlC(l)}</div>`).join("")}
+      </div>
+      <div class="preview-slide-nav">
+        <button type="button" id="ps-prev"${idx === 0 ? " disabled" : ""}>הקודם</button>
+        <span class="preview-slide-counter">שקופית ${idx + 1} מתוך ${slides.length}</span>
+        <button type="button" id="ps-next"${idx === slides.length - 1 ? " disabled" : ""}>הבא</button>
+      </div>`;
+    const prev = body.querySelector("#ps-prev");
+    const next = body.querySelector("#ps-next");
+    if (prev) prev.addEventListener("click", () => { if (idx > 0) { idx--; render(); } });
+    if (next) next.addEventListener("click", () => { if (idx < slides.length - 1) { idx++; render(); } });
+  }
+  render();
+}
+
+function renderSheetPreview(body, rows) {
+  body.innerHTML = `
+    <div class="preview-sheet-table-wrap">
+      <table class="preview-sheet-table">
+        ${rows.map((r) => `<tr>${r.map((c) => `<td>${escapeHtmlC(String(c))}</td>`).join("")}</tr>`).join("")}
+      </table>
+    </div>`;
 }
 
 document.addEventListener("DOMContentLoaded", () => {

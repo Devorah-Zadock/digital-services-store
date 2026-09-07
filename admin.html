@@ -144,6 +144,7 @@
   <section class="admin-section">
     <div class="admin-section-title"><span class="admin-section-num">2</span><h2>לקוחות ושימוש</h2></div>
     <div class="admin-card" id="stats-card" style="display:none;">
+      <p style="font-size:12px; color:var(--grey); margin:0 0 14px;">"השתמשו בהצעות מחיר", "מצגות הורדו" ו"גליונות הורדו" למטה יציגו 0 עד שמריצים פעם אחת (ב-Supabase Dashboard → SQL Editor) את הקובץ <code>supabase/sql/usage_events.sql</code> מתוך הריפו — חד-פעמי, לא תלוי בשום דבר שכבר הגדרת.</p>
       <div id="stats-err"></div>
       <div id="stats-summary"></div>
       <p style="font-size:12px; color:var(--grey); margin:0 0 4px;">לחיצה על ✕ ליד אתר או קורות חיים מוחקת אותם לצמיתות מהחשבון של הלקוח.</p>
@@ -158,12 +159,14 @@
         <li>פורסים את הפונקציה <code>supabase functions deploy admin-stats</code> (או מדביקים את <code>supabase/functions/admin-stats/index.ts</code> ב-Dashboard → Edge Functions → New Function).</li>
         <li>ב-Dashboard → Edge Functions → admin-stats → Secrets, מוסיפים סוד בשם <code>ADMIN_STATS_KEY</code> עם כל מחרוזת שרוצים (למשל סיסמה אקראית).</li>
         <li>מדביקים את אותה מחרוזת בדיוק בקבוע <code>ADMIN_STATS_KEY</code> בקובץ <code>js/admin.js</code>.</li>
+        <li>בנוסף, כדי לראות כאן גם שימוש בהצעות מחיר והורדות של מצגות/גליונות: ב-SQL Editor מריצים גם את <code>supabase/sql/usage_events.sql</code> מתוך הריפו (חד-פעמי, לא תלוי בשלבים הקודמים).</li>
       </ol>
     </div>
   </section>
 </div>
 
 <script src="js/site-templates.js"></script>
-<script src="js/admin.js?v=8"></script>
+<script src="js/products-data.js?v=1"></script>
+<script src="js/admin.js?v=9"></script>
 </body>
 </html>

@@ -761,3 +761,48 @@ body.cookie-notice-active .fab { display: none; }
   .hero h1 { font-size: 32px; }
   .banner { flex-direction: column; text-align: center; }
 }
+
+/* ---------- Full deck/sheet content preview (product.html, free — no
+   login needed just to look, same as browsing anywhere else on the site;
+   only actually downloading the file requires an account, see catalog.js) --------- */
+.preview-modal-overlay {
+  position: fixed; inset: 0; background: rgba(15,25,22,.55); z-index: 500;
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+.preview-modal-box {
+  background: var(--white); border-radius: 16px; width: 100%; max-width: 640px; max-height: 86vh;
+  display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 30px 70px rgba(0,0,0,.35);
+}
+.preview-modal-head {
+  display: flex; align-items: center; justify-content: space-between; padding: 16px 20px;
+  border-bottom: 1px solid #EEF1EF; flex-shrink: 0;
+}
+.preview-modal-head h3 { font-size: 15px; color: var(--teal-dark); margin: 0; }
+.preview-modal-close {
+  background: var(--grey-light); border: none; border-radius: 50%; width: 30px; height: 30px;
+  font-size: 16px; cursor: pointer; color: var(--dark); line-height: 1; flex-shrink: 0;
+}
+.preview-modal-close:hover { background: #DFE5E2; }
+.preview-modal-body { padding: 20px; overflow-y: auto; }
+
+.preview-slide-card {
+  background: var(--teal-dark); color: #fff; border-radius: 12px; padding: 28px 26px;
+  min-height: 220px; display: flex; flex-direction: column; justify-content: center; gap: 10px;
+}
+.preview-slide-card .ps-title { font-size: 17px; font-weight: 800; margin: 0 0 4px; }
+.preview-slide-card .ps-line { font-size: 13.5px; color: rgba(255,255,255,.88); line-height: 1.6; }
+.preview-slide-nav {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px;
+}
+.preview-slide-nav button {
+  background: var(--ice); border: none; border-radius: 20px; padding: 7px 16px; font-size: 13px;
+  font-weight: 600; color: var(--teal-dark); cursor: pointer; font-family: inherit;
+}
+.preview-slide-nav button:disabled { opacity: .35; cursor: default; }
+.preview-slide-counter { font-size: 12.5px; color: var(--grey); }
+
+.preview-sheet-table-wrap { overflow-x: auto; border: 1px solid #EEF1EF; border-radius: 10px; }
+.preview-sheet-table { width: 100%; border-collapse: collapse; font-size: 12.5px; white-space: nowrap; }
+.preview-sheet-table td { padding: 7px 10px; border-bottom: 1px solid #EEF1EF; border-inline-start: 1px solid #F4F6F5; }
+.preview-sheet-table tr:first-child td { background: var(--teal-dark); color: #fff; font-weight: 700; }
+.preview-sheet-table tr:nth-child(even) td { background: #FAFBFA; }
