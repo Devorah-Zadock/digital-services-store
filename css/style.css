@@ -749,6 +749,7 @@ footer.site { background: linear-gradient(180deg, var(--teal-dark), #102921); co
   padding: 12px 24px; box-shadow: 0 -6px 20px rgba(0,0,0,.1);
 }
 .cookie-notice p { margin: 0; font-size: 13px; max-width: 560px; color: var(--grey); }
+.cookie-notice p a { color: var(--teal); font-weight: 600; text-decoration: underline; }
 .cookie-notice button { padding: 8px 20px; font-size: 13px; flex: none; }
 body.cookie-notice-active .fab { display: none; }
 

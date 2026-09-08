@@ -207,7 +207,7 @@ function injectCookieNotice() {
   const bar = document.createElement("div");
   bar.className = "cookie-notice no-print";
   bar.innerHTML = `
-    <p>האתר משתמש באחסון מקומי בדפדפן כדי לשמור עבודה שטרם נשמרה בחשבון.</p>
+    <p>האתר משתמש בעוגיות ואחסון מקומי כדי לשמור את העבודה שלכם. פרטים ב<a href="terms.html#privacy">מדיניות הפרטיות</a>.</p>
     <button type="button" class="btn btn-teal" id="cookie-notice-ok">הבנתי</button>
   `;
   document.body.appendChild(bar);
