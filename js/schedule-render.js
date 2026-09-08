@@ -34,6 +34,37 @@ function scheduleIsUnlocked() {
   return localStorage.getItem(SCHEDULE_UNLOCK_KEY) === "1";
 }
 
+let scheduleLastVerifiedPurchase = null;
+let scheduleVerifying = false;
+
+/* Same send-receipt Edge Function the site builder already uses (email +
+   attached PDF, via Resend/PDFShift — see that function's own comment
+   for the two secrets it needs) — just not wired up here until now.
+   Best-effort and silent on failure, same as the site builder's version:
+   a receipt email failing must never block someone who just paid and is
+   waiting to actually use the tool. */
+async function sendSchedulePurchaseReceipt() {
+  try {
+    const { data } = await supabaseClient.auth.getSession();
+    const sessionEmail = data.session && data.session.user && data.session.user.email;
+    const purchase = scheduleLastVerifiedPurchase;
+    const buyerEmail = (purchase && purchase.email) || sessionEmail;
+    if (!buyerEmail) return;
+    const amount = purchase && purchase.price != null ? `${(purchase.price / 100).toFixed(2)} ₪` : "499.00 ₪";
+    await supabaseClient.functions.invoke("send-receipt", {
+      body: {
+        buyerEmail,
+        buyerName: (purchase && purchase.full_name) || "",
+        itemDescription: "בונה מערכת שעות לבית ספר — DeskKit",
+        amount,
+      },
+    });
+  } catch (err) {
+    // silent — a failed receipt email is a support follow-up, not a
+    // reason to interrupt someone who just finished paying
+  }
+}
+
 function refreshScheduleUnlockUi() {
   const unlocked = scheduleIsUnlocked();
   document.getElementById("sched-unlock-gate").hidden = unlocked;
@@ -45,11 +76,13 @@ function refreshScheduleUnlockUi() {
    and atomically claims it against this account, so the same purchased
    key can't unlock a second, unrelated account. */
 async function verifyScheduleLicense() {
+  if (scheduleVerifying) return;
   const input = document.getElementById("sched-license-input");
   const note = document.getElementById("sched-license-note");
   const key = input.value.trim();
   if (!key) { note.textContent = "יש להזין קוד רישוי."; note.className = "unlock-note err"; return; }
   if (!scheduleCurrentUserId) { note.textContent = "יש להתחבר לחשבון כדי לפתוח את הכלי."; note.className = "unlock-note err"; return; }
+  scheduleVerifying = true;
   note.textContent = "בודקים...";
   note.className = "unlock-note";
   try {
@@ -67,13 +100,17 @@ async function verifyScheduleLicense() {
       note.className = "unlock-note err";
       return;
     }
+    scheduleLastVerifiedPurchase = data.purchase || null;
     localStorage.setItem(SCHEDULE_UNLOCK_KEY, "1");
     note.textContent = "נפתח בהצלחה!";
     note.className = "unlock-note ok";
     refreshScheduleUnlockUi();
+    sendSchedulePurchaseReceipt();
   } catch (err) {
     note.textContent = "שגיאת חיבור לשירות האימות. נסו שוב בעוד רגע.";
     note.className = "unlock-note err";
+  } finally {
+    scheduleVerifying = false;
   }
 }
 
