@@ -33,9 +33,10 @@ function quoteTemplateLabel(slug) {
 /* A count + small inline bar inside one table cell, so a per-template row
    carries its own mini "graph" instead of being a bare number next to N
    other bare numbers. */
-function tplBarCell(count, max) {
+function tplBarCell(count, max, note) {
   const pct = max > 0 ? Math.max(4, Math.round((count / max) * 100)) : 4;
-  return `<div class="tpl-count-cell"><span class="tpl-num">${count}</span><div class="tpl-bar-track"><div class="tpl-bar" style="width:${pct}%"></div></div></div>`;
+  const noteHtml = note ? `<span class="tpl-note">${note}</span>` : "";
+  return `<div class="tpl-count-cell"><span class="tpl-num">${count}</span><div class="tpl-bar-track"><div class="tpl-bar" style="width:${pct}%"></div></div>${noteHtml}</div>`;
 }
 
 /* A subheaded table of {label -> count}, used identically for site
@@ -138,23 +139,25 @@ function renderCustomerStats(data) {
   summary.innerHTML = `
     <div class="admin-chart-card"><canvas id="kpi-chart-canvas" height="230"></canvas></div>
     ${usageOn ? "" : `<p style="font-size:12.5px; color:#8A6212; background:#FBF2E0; border-radius:8px; padding:8px 12px; margin:0 0 20px;">השורות המסומנות "לא הופעל" ידווחו נתונים אמיתיים לאחר הרצת קובץ ה-SQL <code>supabase/sql/usage_events.sql</code> (חד-פעמי) — עד אז הן לא באמת אפס, פשוט עוד לא נמדדות.</p>`}
-    <div class="admin-subhead">תבניות אתר</div>
+    <div class="admin-subhead">אתרים</div>
     <table class="stats-table">
-      <thead><tr><th>תבנית</th><th>פרויקטים שנפתחו</th><th>מתוכם הורדו בפועל</th></tr></thead>
+      <thead><tr><th>תבנית</th><th>שימושים</th></tr></thead>
       <tbody>${
         Object.keys(data.templateCounts).length
           ? Object.keys(data.templateCounts)
               .sort((a, b) => data.templateCounts[b] - data.templateCounts[a])
               .map((slug) => {
                 const openMax = Math.max(1, ...Object.values(data.templateCounts));
-                return `<tr><td>${escapeHtml(templateLabel(slug))}</td><td>${tplBarCell(data.templateCounts[slug], openMax)}</td><td>${data.finalizedTemplateCounts[slug] || 0}</td></tr>`;
+                const finalized = data.finalizedTemplateCounts[slug] || 0;
+                const note = finalized ? `מתוכם ${finalized} שולמו והורדו` : "";
+                return `<tr><td>${escapeHtml(templateLabel(slug))}</td><td>${tplBarCell(data.templateCounts[slug], openMax, note)}</td></tr>`;
               })
               .join("")
-          : '<tr><td colspan="3">עדיין אין נתונים</td></tr>'
+          : '<tr><td colspan="2">עדיין אין נתונים</td></tr>'
       }</tbody>
     </table>
-    ${renderCountTable("תבניות קורות חיים", "תבנית", data.cvTemplateCounts, productLabel, usageOn ? "עדיין אין שימוש" : "לא הופעל")}
-    ${renderCountTable("תבניות הצעות מחיר", "תבנית", data.quoteTemplateCounts, quoteTemplateLabel, usageOn ? "עדיין אין שימוש" : "לא הופעל")}
+    ${renderCountTable("קורות חיים", "תבנית", data.cvTemplateCounts, productLabel, usageOn ? "עדיין אין שימוש" : "לא הופעל")}
+    ${renderCountTable("הצעות מחיר", "תבנית", data.quoteTemplateCounts, quoteTemplateLabel, usageOn ? "עדיין אין שימוש" : "לא הופעל")}
     ${renderCountTable("מצגות שהורדו", "מצגת", data.deckDownloadCounts, productLabel, usageOn ? "עדיין אין הורדות" : "לא הופעל")}
     ${renderCountTable("גליונות שהורדו", "גיליון", data.xlsxDownloadCounts, productLabel, usageOn ? "עדיין אין הורדות" : "לא הופעל")}`;
 

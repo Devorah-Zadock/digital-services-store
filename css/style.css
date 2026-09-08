@@ -527,7 +527,18 @@ section { padding: 88px 0; }
 .card[data-cat="deck"] { --cat-c: var(--cat-deck); --cat-bg: var(--cat-deck-bg); }
 .card[data-cat="xlsx"] { --cat-c: var(--cat-xlsx); --cat-bg: var(--cat-xlsx-bg); }
 .card h3 { margin: 0; font-size: 16.5px; color: var(--dark); line-height: 1.35; }
-.card .card-cta { margin-top: 2px; text-align: center; padding: 9px 20px; font-size: 13.5px; }
+.card .card-cta { margin-top: auto; text-align: center; padding: 9px 20px; font-size: 13.5px; }
+/* Small "new" indicator as a corner dot over the thumbnail, instead of a
+   full pill taking up its own line in the card body — keeps every card's
+   body starting at the same point regardless of whether it happens to be
+   new, which is what actually keeps a row of cards' CTA buttons aligned. */
+.card-new-badge {
+  position: absolute; top: 10px; inset-inline-end: 10px; z-index: 1;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--teal-light), var(--teal));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; box-shadow: 0 4px 10px rgba(22,63,53,.25);
+}
 .price { font-size: 16px; font-weight: 700; color: var(--teal-dark); }
 .price small { font-size: 13px; color: var(--grey); font-weight: 400; }
 
