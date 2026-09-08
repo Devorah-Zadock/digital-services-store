@@ -70,44 +70,69 @@ function renderCountTable(subhead, headerLabel, counts, labelFn, emptyMsg) {
   return `<div class="admin-subhead">${subhead}</div><table class="stats-table"><thead><tr><th>${headerLabel}</th><th>שימושים</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
-/* Real SVG bar chart for the 7 top-line KPI numbers — one hue (single
-   series needs no legend), rounded bars, a hairline baseline, and the
-   value labeled at each bar's own tip rather than a bare grid of boxes.
-   `pending` renders a flat grey sliver + "—" for a metric that isn't
-   measured yet (usage_events not set up), so a real 0 is never confused
-   with "not tracked at all". */
-function renderKpiChart(items) {
-  const width = 760, rowH = 32, barH = 20, labelW = 150, valueW = 44, pad = 10;
-  const barStart = valueW + pad;
-  const barEnd = width - labelW - pad;
-  const barMaxW = Math.max(10, barEnd - barStart);
-  const height = items.length * rowH + 8;
+/* Real Chart.js charts instead of hand-drawn bars — an actual axis,
+   gridlines and legend, so this reads as a real chart rather than styled
+   divs. Colors mirror the site's own --teal/--gold/--cat-* CSS tokens
+   (Chart.js can't read CSS custom properties from a canvas context, so
+   they're duplicated here as plain hex — keep them in sync by hand if
+   the tokens in css/style.css ever change). */
+const ADMIN_CHART_COLORS = {
+  teal: "#1F5C4E", gold: "#C99A3B", pending: "#DADFDD", grid: "#EEF1EF",
+  categorical: ["#1F5C4E", "#2B6CB0", "#C2622D", "#6B46C1", "#B83280", "#2F855A"],
+};
+let kpiChartInstance = null;
+let templatePieChartInstance = null;
 
-  const rows = items.map((it, i) => {
-    const cy = i * rowH + rowH / 2 + 4;
-    const barY = cy - barH / 2;
-    const track = `<rect class="kpi-bar-track-rect" x="${barStart}" y="${barY}" width="${barMaxW}" height="${barH}" rx="4"></rect>`;
-    if (it.pending) {
-      const barW = Math.max(10, barMaxW * 0.07);
-      const barX = barEnd - barW;
-      return `${track}
-        <rect class="kpi-bar-rect kpi-bar-rect-pending" x="${barX}" y="${barY}" width="${barW}" height="${barH}" rx="4"></rect>
-        <text class="kpi-bar-value kpi-bar-value-pending" x="${barX - 8}" y="${cy + 4}" text-anchor="end">—</text>
-        <text class="kpi-bar-label kpi-bar-label-pending" x="${width}" y="${cy + 4}" text-anchor="end">${escapeHtml(it.label)} (לא הופעל)</text>`;
-    }
-    const pct = it.max > 0 ? Math.max(0.04, it.value / it.max) : 0.04;
-    const barW = Math.max(6, barMaxW * pct);
-    const barX = barEnd - barW;
-    return `${track}
-      <rect class="kpi-bar-rect${it.gold ? " kpi-bar-rect-gold" : ""}" x="${barX}" y="${barY}" width="${barW}" height="${barH}" rx="4"><title>${escapeHtml(it.label)}: ${it.value}</title></rect>
-      <text class="kpi-bar-value" x="${barX - 8}" y="${cy + 4}" text-anchor="end">${it.value}</text>
-      <text class="kpi-bar-label" x="${width}" y="${cy + 4}" text-anchor="end">${escapeHtml(it.label)}</text>`;
-  }).join("");
+/* The 7 top-line KPI numbers as a horizontal bar chart. `pending` renders
+   a flat grey bar labeled "—" for a metric that isn't measured yet
+   (usage_events not set up), so a real 0 is never confused with "not
+   tracked at all". */
+function renderKpiChart(canvasId, items) {
+  if (kpiChartInstance) { kpiChartInstance.destroy(); kpiChartInstance = null; }
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || typeof Chart === "undefined") return;
+  const labels = items.map((it) => it.pending ? `${it.label} (לא הופעל)` : it.label);
+  const values = items.map((it) => it.pending ? 0 : it.value);
+  const colors = items.map((it) => it.pending ? ADMIN_CHART_COLORS.pending : (it.gold ? ADMIN_CHART_COLORS.gold : ADMIN_CHART_COLORS.teal));
+  kpiChartInstance = new Chart(canvas, {
+    type: "bar",
+    data: { labels, datasets: [{ data: values, backgroundColor: colors, borderRadius: 4, maxBarThickness: 22 }] },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (ctx) => items[ctx.dataIndex].pending ? "לא הופעל" : String(ctx.parsed.x) } },
+      },
+      scales: {
+        x: { beginAtZero: true, ticks: { precision: 0, font: { family: "Heebo" } }, grid: { color: ADMIN_CHART_COLORS.grid } },
+        y: { grid: { display: false }, ticks: { font: { family: "Heebo", size: 12 } } },
+      },
+    },
+  });
+}
 
-  return `<div class="kpi-chart-wrap"><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="גרף סטטיסטיקות לקוחות">
-    <line class="kpi-baseline" x1="${barEnd}" y1="0" x2="${barEnd}" y2="${height}"></line>
-    ${rows}
-  </svg></div>`;
+/* Doughnut chart for one {label -> count} distribution — used for site
+   template popularity, the one breakdown that's a genuine part-of-whole
+   (every count here is "a site project", the same unit). */
+function renderDistributionChart(canvasId, counts, labelFn) {
+  if (templatePieChartInstance) { templatePieChartInstance.destroy(); templatePieChartInstance = null; }
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || typeof Chart === "undefined") return;
+  const entries = Object.entries(counts || {}).sort((a, b) => b[1] - a[1]);
+  if (!entries.length) return;
+  const labels = entries.map(([slug]) => labelFn(slug));
+  const values = entries.map(([, c]) => c);
+  templatePieChartInstance = new Chart(canvas, {
+    type: "doughnut",
+    data: { labels, datasets: [{ data: values, backgroundColor: labels.map((_, i) => ADMIN_CHART_COLORS.categorical[i % ADMIN_CHART_COLORS.categorical.length]) }] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: "bottom", labels: { font: { family: "Heebo", size: 12 }, padding: 12 } } },
+    },
+  });
 }
 
 const USAGE_KIND_LABELS = { cv: "קורות חיים", deck: "מצגת", xlsx: "גיליון", quote: "הצעת מחיר" };
@@ -147,10 +172,7 @@ function renderCustomerStats(data) {
     usageOn ? { label: "גליונות הורדו", value: xlsxCount, max: kpiMax } : { label: "גליונות הורדו", pending: true },
   ];
 
-  summary.innerHTML = `
-    ${renderKpiChart(kpiItems)}
-    ${usageOn ? "" : `<p style="font-size:12.5px; color:#8A6212; background:#FBF2E0; border-radius:8px; padding:8px 12px; margin:0 0 20px;">השורות המסומנות "לא הופעל" ידווחו נתונים אמיתיים לאחר הרצת קובץ ה-SQL <code>supabase/sql/usage_events.sql</code> (חד-פעמי) — עד אז הן לא באמת אפס, פשוט עוד לא נמדדות.</p>`}
-    <div class="admin-subhead">תבניות אתר</div>
+  const siteTemplatesTable = `
     <table class="stats-table">
       <thead><tr><th>תבנית</th><th>פרויקטים שנפתחו</th><th>מתוכם הורדו בפועל</th></tr></thead>
       <tbody>${
@@ -164,11 +186,23 @@ function renderCustomerStats(data) {
               .join("")
           : '<tr><td colspan="3">עדיין אין נתונים</td></tr>'
       }</tbody>
-    </table>
+    </table>`;
+
+  summary.innerHTML = `
+    <div class="admin-chart-card"><canvas id="kpi-chart-canvas" height="230"></canvas></div>
+    ${usageOn ? "" : `<p style="font-size:12.5px; color:#8A6212; background:#FBF2E0; border-radius:8px; padding:8px 12px; margin:0 0 20px;">השורות המסומנות "לא הופעל" ידווחו נתונים אמיתיים לאחר הרצת קובץ ה-SQL <code>supabase/sql/usage_events.sql</code> (חד-פעמי) — עד אז הן לא באמת אפס, פשוט עוד לא נמדדות.</p>`}
+    <div class="admin-subhead">תבניות אתר</div>
+    <div class="admin-charts-row">
+      <div class="admin-chart-card"><h3>התפלגות תבניות אתר שנפתחו</h3><canvas id="template-pie-canvas" height="220"></canvas></div>
+      <div class="stats-table-wrap">${siteTemplatesTable}</div>
+    </div>
     ${renderCountTable("תבניות קורות חיים", "תבנית", data.cvTemplateCounts, productLabel, usageOn ? "עדיין אין שימוש" : "לא הופעל")}
     ${renderCountTable("תבניות הצעות מחיר", "תבנית", data.quoteTemplateCounts, quoteTemplateLabel, usageOn ? "עדיין אין שימוש" : "לא הופעל")}
     ${renderCountTable("מצגות שהורדו", "מצגת", data.deckDownloadCounts, productLabel, usageOn ? "עדיין אין הורדות" : "לא הופעל")}
     ${renderCountTable("גליונות שהורדו", "גיליון", data.xlsxDownloadCounts, productLabel, usageOn ? "עדיין אין הורדות" : "לא הופעל")}`;
+
+  renderKpiChart("kpi-chart-canvas", kpiItems);
+  renderDistributionChart("template-pie-canvas", data.templateCounts, templateLabel);
 
   // Each user is two rows: a compact summary row (click to expand) and a
   // detail row that starts hidden — full site list, CV/quote usage, a
@@ -303,6 +337,13 @@ function wireAdminTopTabs() {
     if (key !== "feedback") {
       innerCustomers.style.display = key === "customers" ? "" : "none";
       innerCharts.style.display = key === "templates" ? "" : "none";
+    }
+    // Chart.js sizes each canvas from its container's current width, so a
+    // chart built while its tab was hidden (display:none => 0 width)
+    // needs an explicit resize once that tab actually becomes visible.
+    if (key === "templates") {
+      if (kpiChartInstance) kpiChartInstance.resize();
+      if (templatePieChartInstance) templatePieChartInstance.resize();
     }
   }
 

@@ -47,20 +47,15 @@
   .admin-status.connected { background: #E4F2EC; color: var(--teal-dark); }
   .admin-status.pending { background: #FBF1DD; color: #8A6212; }
 
-  /* KPI numbers as a real SVG bar chart — one hue (single series, so no
-     legend needed per dataviz convention), rounded bar ends, a hairline
-     baseline, and the value labeled at each bar's tip. */
-  .kpi-chart-wrap { margin: 4px 0 8px; }
-  .kpi-chart-wrap svg { width: 100%; height: auto; display: block; overflow: visible; }
-  .kpi-bar-label { font-size: 12px; fill: var(--dark); font-weight: 600; }
-  .kpi-bar-label-pending { fill: var(--grey); }
-  .kpi-bar-value { font-size: 13px; font-weight: 800; fill: var(--teal-dark); }
-  .kpi-bar-value-pending { fill: var(--grey); }
-  .kpi-bar-rect { fill: var(--teal); }
-  .kpi-bar-rect-gold { fill: var(--gold); }
-  .kpi-bar-rect-pending { fill: #DADFDD; }
-  .kpi-bar-track-rect { fill: var(--grey-light); }
-  .kpi-baseline { stroke: #DDE4E1; stroke-width: 1; }
+  /* KPI numbers and the template breakdown as real Chart.js charts —
+     an actual axis, gridlines and legend instead of hand-drawn bars, so
+     they read as real charts rather than styled divs. */
+  .admin-chart-card { background: var(--grey-light); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+  .admin-chart-card h3 { font-size: 13px; color: var(--teal-dark); margin: 0 0 14px; font-weight: 700; }
+  .admin-chart-card canvas { max-width: 100%; }
+  .admin-charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 760px) { .admin-charts-row { grid-template-columns: 1fr; } }
+  .admin-charts-row .stats-table-wrap { margin: 0; }
 
   /* Top-level navigation between the three panels — plain underline
      tabs (label + bottom border on the active one), not numbered
@@ -267,10 +262,11 @@
   </div>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="js/site-templates.js"></script>
 <script src="js/quote-render.js?v=3"></script>
 <script src="js/products-data.js?v=2"></script>
 <script src="js/main.js"></script>
-<script src="js/admin.js?v=14"></script>
+<script src="js/admin.js?v=15"></script>
 </body>
 </html>
