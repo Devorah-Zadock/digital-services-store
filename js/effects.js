@@ -31,4 +31,19 @@ document.addEventListener("DOMContentLoaded", () => {
       card.addEventListener("mouseleave", () => { card.style.transform = ""; });
     });
   }
+
+  // Homepage hero circle: crossfades between real template previews so the
+  // hero shows "what you get" across the tools, not one static mockup.
+  const heroSlides = document.querySelectorAll("#hero-carousel .hhv-slide");
+  const heroDots = document.querySelectorAll("#hero-carousel-dots span");
+  if (heroSlides.length > 1 && !(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches)) {
+    let heroIdx = 0;
+    setInterval(() => {
+      heroSlides[heroIdx].classList.remove("active");
+      if (heroDots[heroIdx]) heroDots[heroIdx].classList.remove("active");
+      heroIdx = (heroIdx + 1) % heroSlides.length;
+      heroSlides[heroIdx].classList.add("active");
+      if (heroDots[heroIdx]) heroDots[heroIdx].classList.add("active");
+    }, 3600);
+  }
 });
