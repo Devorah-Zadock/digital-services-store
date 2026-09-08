@@ -13,13 +13,15 @@
 // cv_saves only allow each user to read their own row, so this is the only
 // place that can read or write across every user's rows at once.
 //
-// Gated by a static shared token rather than real auth, matching every
-// other admin-only surface in this codebase (see admin.js's own comment):
-// admin.html itself is only a client-side password gate, so a stronger
-// check here wouldn't actually raise the bar — same honest caveat, not
-// real DRM. Set ADMIN_STATS_KEY in Supabase Dashboard → Edge Functions →
-// admin-stats → Secrets to any string, then paste the same string into
-// ADMIN_STATS_KEY in js/admin.js.
+// Gated by real auth: the caller sends their own Supabase session token
+// (their normal signed-in access_token, not the public anon key) in
+// Authorization, this function verifies it's a genuine signed-in user via
+// admin.auth.getUser(token), and then checks that user's email against
+// ADMIN_EMAILS below — a real server-side allowlist nothing client-side
+// can bypass, unlike the shared-secret string this used to compare
+// against. Set ADMIN_EMAILS in Supabase Dashboard → Edge Functions →
+// admin-stats → Secrets to the site owner's email (comma-separate for
+// more than one admin, no spaces).
 //
 // Deploy: `supabase functions deploy admin-stats` (or paste into Supabase
 // Dashboard → Edge Functions → New Function).
@@ -28,7 +30,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const ADMIN_STATS_KEY = Deno.env.get("ADMIN_STATS_KEY");
+const ADMIN_EMAILS = (Deno.env.get("ADMIN_EMAILS") || "")
+  .split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -124,17 +127,32 @@ Deno.serve(async (req: Request) => {
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "method not allowed" }), { status: 405, headers: corsHeaders });
   }
-  if (!ADMIN_STATS_KEY) {
-    return new Response(JSON.stringify({ error: "ADMIN_STATS_KEY not configured" }), { status: 500, headers: corsHeaders });
+
+  const authHeader = req.headers.get("Authorization") || "";
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (!token) {
+    return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: corsHeaders });
+  }
+
+  const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+  // admin.auth.getUser(token) hits Supabase's own auth server to verify
+  // the token is a real, currently-valid session — this is what actually
+  // stops a forged/expired/tampered token, not just a string comparison.
+  const { data: userData, error: userErr } = await admin.auth.getUser(token);
+  if (userErr || !userData.user) {
+    return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: corsHeaders });
+  }
+  if (!ADMIN_EMAILS.length) {
+    return new Response(JSON.stringify({ error: "ADMIN_EMAILS not configured" }), { status: 500, headers: corsHeaders });
+  }
+  const callerEmail = (userData.user.email || "").toLowerCase();
+  if (!ADMIN_EMAILS.includes(callerEmail)) {
+    return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: corsHeaders });
   }
 
   try {
     const body = await req.json();
-    if (body.adminKey !== ADMIN_STATS_KEY) {
-      return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: corsHeaders });
-    }
-
-    const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
     const action = body.action || "stats";
 
     if (action === "delete-site") {
