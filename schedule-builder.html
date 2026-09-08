@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>בונה מערכת שעות — DeskKit</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="description" content="בונים מערכת שעות לבית ספר עם שיבוץ אוטומטי חכם לפי אילוצים — בלי התנגשויות, עם עריכה ידנית והדפסה.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=22">
+<link rel="stylesheet" href="css/builder.css?v=2">
+<link rel="stylesheet" href="css/schedule.css?v=1">
+</head>
+<body>
+<script>
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf("sb-") === 0 && k.indexOf("-auth-token") !== -1 && localStorage.getItem(k)) {
+        document.body.classList.add("has-sites-rail");
+        break;
+      }
+    }
+    var rw = localStorage.getItem("deskkit_rail_w");
+    if (rw) document.documentElement.style.setProperty("--rail-w", rw + "px");
+    if (localStorage.getItem("deskkit_rail_collapsed") === "1") {
+      document.documentElement.style.setProperty("--rail-w", "0px");
+      document.body.classList.add("rail-collapsed");
+    }
+  } catch (e) {}
+</script>
+
+<div id="auth-gate-overlay" class="auth-gate-overlay">
+  <div class="auth-gate-spinner"></div>
+  <p style="color:var(--grey); font-size:14px; margin:0;">בודקים חיבור…</p>
+</div>
+
+<header class="site no-print">
+  <nav class="nav">
+    <a href="index.html" class="brand"><span class="brand-badge"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><rect class="bm-fold" x="6" y="4" width="4" height="16" rx="2"/><path class="bm-face" d="M9,4 H13 A8,8 0 0 1 13,20 H9 Z"/></svg></span><span class="brand-text">DeskKit</span></a>
+    <div class="nav-links">
+      <a href="index.html">בית</a>
+      <a href="sites.html?browse=1">אתרים</a>
+      <a href="quote-app.html">הצעות מחיר</a>
+      <a href="products.html?type=cv">קורות חיים</a>
+      <a href="products.html?type=deck">מצגות</a>
+      <a href="products.html?type=xlsx">גליונות</a>
+      <a href="about.html">אודות</a>
+      <a href="contact.html">צור קשר</a>
+    </div>
+    <div class="nav-end-group">
+      <a href="account.html?redirect=schedule-builder.html" id="nav-login-link" class="nav-login nav-login-pending">כניסה</a>
+      <a href="catalog.html" class="nav-cta">לצפייה בקטלוג</a>
+    </div>
+    <button class="burger" aria-label="תפריט">☰</button>
+  </nav>
+</header>
+
+<section class="builder-top no-print">
+  <div class="container builder-top-row">
+    <div class="sched-name-wrap">
+      <div class="breadcrumb"><a href="tools.html">כלים לעסק</a> / בונה מערכת שעות</div>
+      <input type="text" id="sched-name-input" class="sched-name-input" placeholder="שם הפרויקט (למשל: תשפ״ו סמסטר א׳)">
+    </div>
+    <div class="builder-save-ctrl">
+      <span class="builder-save-status" id="schedule-save-status"></span>
+      <button type="button" class="btn btn-teal builder-save-btn" id="schedule-save-btn">שמירה</button>
+    </div>
+  </div>
+</section>
+
+<div class="container sched-tabs-nav no-print" role="tablist">
+  <button type="button" class="sched-tab-btn active" data-tab="settings">הגדרות</button>
+  <button type="button" class="sched-tab-btn" data-tab="subjects">מקצועות</button>
+  <button type="button" class="sched-tab-btn" data-tab="classes">כיתות</button>
+  <button type="button" class="sched-tab-btn" data-tab="teachers">מורים</button>
+  <button type="button" class="sched-tab-btn" data-tab="rooms">חדרים מיוחדים</button>
+  <button type="button" class="sched-tab-btn" data-tab="assignments">שיבוצי הוראה</button>
+  <button type="button" class="sched-tab-btn" data-tab="result">תוצאה</button>
+</div>
+
+<div class="container sched-main">
+
+  <div class="sched-tab-panel active no-print" data-tab-panel="settings">
+    <div class="sched-card">
+      <h3>הגדרות בית הספר</h3>
+      <div class="field">
+        <label for="sched-days-select">ימי לימוד</label>
+        <select id="sched-days-select">
+          <option value="5">א׳–ה׳ (5 ימים)</option>
+          <option value="6">א׳–ו׳ (6 ימים)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="sched-periods-input">שיעורים ביום</label>
+        <input type="number" id="sched-periods-input" min="1" max="12" style="max-width:120px;">
+      </div>
+      <p class="sched-hint">שינוי בהגדרות אלו יאפס מערכת שעות שכבר נוצרה (השיבוצים והאילוצים שהזנתם נשארים).</p>
+    </div>
+  </div>
+
+  <div class="sched-tab-panel no-print" data-tab-panel="subjects">
+    <div class="sched-card">
+      <div class="sched-card-head">
+        <h3>מקצועות</h3>
+        <button type="button" class="btn-mini" id="sched-add-subject">+ הוספת מקצוע</button>
+      </div>
+      <div class="sched-col-labels sched-subject-cols"><span>צבע</span><span>שם המקצוע</span><span>חדר נדרש</span><span></span></div>
+      <div id="sched-subjects-list"></div>
+    </div>
+  </div>
+
+  <div class="sched-tab-panel no-print" data-tab-panel="classes">
+    <div class="sched-card">
+      <div class="sched-card-head">
+        <h3>כיתות</h3>
+        <button type="button" class="btn-mini" id="sched-add-class">+ הוספת כיתה</button>
+      </div>
+      <div id="sched-classes-list"></div>
+    </div>
+  </div>
+
+  <div class="sched-tab-panel no-print" data-tab-panel="teachers">
+    <div class="sched-card">
+      <div class="sched-card-head">
+        <h3>מורים</h3>
+        <button type="button" class="btn-mini" id="sched-add-teacher">+ הוספת מורה</button>
+      </div>
+      <div id="sched-teachers-list"></div>
+    </div>
+  </div>
+
+  <div class="sched-tab-panel no-print" data-tab-panel="rooms">
+    <div class="sched-card">
+      <div class="sched-card-head">
+        <h3>חדרים מיוחדים</h3>
+        <button type="button" class="btn-mini" id="sched-add-room">+ הוספת חדר</button>
+      </div>
+      <p class="sched-hint">רק חדרים עם מספר מוגבל (מעבדת מחשבים, אולם ספורט וכד׳) — כיתת אם רגילה לא צריכה חדר כאן.</p>
+      <div class="sched-col-labels sched-room-cols"><span>שם החדר</span><span>כמות זהה</span><span></span></div>
+      <div id="sched-rooms-list"></div>
+    </div>
+  </div>
+
+  <div class="sched-tab-panel no-print" data-tab-panel="assignments">
+    <div class="sched-card">
+      <div class="sched-card-head">
+        <h3>שיבוצי הוראה</h3>
+        <button type="button" class="btn-mini" id="sched-add-assignment">+ הוספת שיבוץ</button>
+      </div>
+      <p class="sched-hint">מי מלמד איזה מקצוע באיזו כיתה, וכמה שעות בשבוע.</p>
+      <div class="sched-col-labels sched-assign-cols"><span>כיתה</span><span>מקצוע</span><span>מורה</span><span>שעות/שבוע</span><span></span></div>
+      <div id="sched-assignments-list"></div>
+    </div>
+  </div>
+
+  <div class="sched-tab-panel" data-tab-panel="result">
+    <div class="sched-card no-print" id="sched-result-controls">
+      <div class="sched-result-head">
+        <h3>יצירת מערכת שעות</h3>
+        <div class="sched-result-actions">
+          <button type="button" class="btn btn-gold" id="sched-generate-btn">🎲 צור מערכת שעות</button>
+          <button type="button" class="btn-mini" id="sched-improve-btn" hidden>המשך לשפר</button>
+        </div>
+      </div>
+      <div id="sched-solver-status" class="sched-solver-status"></div>
+    </div>
+
+    <div id="sched-result-view" hidden>
+      <div class="sched-card no-print">
+        <div class="sched-result-viewbar">
+          <div class="sched-view-toggle">
+            <button type="button" class="sched-view-btn active" data-view-kind="class">לפי כיתה</button>
+            <button type="button" class="sched-view-btn" data-view-kind="teacher">לפי מורה</button>
+          </div>
+          <select id="sched-entity-select"></select>
+          <span id="sched-conflict-badge" class="sched-conflict-badge" hidden></span>
+          <div class="sched-result-export">
+            <button type="button" class="btn-mini" id="sched-print-current">הדפסת התצוגה הנוכחית</button>
+            <button type="button" class="btn-mini" id="sched-print-all">הדפסת כל הכיתות</button>
+            <button type="button" class="btn-mini" id="sched-export-csv">ייצוא ל-CSV</button>
+          </div>
+        </div>
+      </div>
+      <div class="sched-card" id="sched-result-grid-wrap"></div>
+    </div>
+  </div>
+
+</div>
+
+<div id="sched-print-all-holder"></div>
+
+<footer class="site no-print">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <h5>DeskKit</h5>
+        <p style="font-size:14px; max-width:320px;">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
+      </div>
+      <div>
+        <h5>ניווט</h5>
+        <ul>
+          <li><a href="catalog.html">קטלוג מוצרים</a></li>
+          <li><a href="products.html?type=cv">קורות חיים</a></li>
+          <li><a href="products.html?type=deck">מצגות</a></li>
+          <li><a href="products.html?type=xlsx">גליונות</a></li>
+          <li><a href="sites.html?browse=1">אתרים</a></li>
+          <li><a href="tools.html">כלים לעסק</a></li>
+          <li><a href="about.html">אודות</a></li>
+          <li><a href="contact.html">צור קשר</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>מידע</h5>
+        <ul>
+          <li><a href="admin.html">ניהול</a></li>
+          <li><a href="terms.html">מדיניות</a></li>
+          <li><a href="accessibility.html">נגישות</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>צור קשר</h5>
+        <ul>
+          <li>digital.dz.studio@gmail.com</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">© 2026 DeskKit. כל הזכויות שמורות.</div>
+  </div>
+</footer>
+
+<script src="js/schedule-content.js"></script>
+<script src="js/schedule-render.js"></script>
+<script>window.deferReveal = true;</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/nav-auth.js"></script>
+<script src="js/my-panel.js?v=9"></script>
+<script src="js/require-auth.js"></script>
+<script src="js/usage-log.js?v=1"></script>
+<script src="js/schedule-cloud-save.js"></script>
+<script src="js/main.js"></script>
+<script src="js/widgets.js?v=6"></script>
+<script src="js/effects.js"></script>
+</body>
+</html>

@@ -45,6 +45,18 @@ async function loadMyContent(user, list) {
   const cvName = cv && cv.data && cv.data.content && cv.data.content.name && cv.data.content.name.trim();
   rows.push(myContentRowHtml("builder.html", cvName || "עדיין לא יצרתם קורות חיים", "קורות חיים", cv ? "cv" : null));
 
+  const { data: schedules } = await supabaseClient
+    .from("schedule_projects").select("id, data")
+    .eq("user_id", user.id).order("created_at", { ascending: false });
+  if (schedules && schedules.length) {
+    schedules.forEach((s) => {
+      const projName = s.data && s.data.name && s.data.name.trim();
+      rows.push(myContentRowHtml("schedule-builder.html?schedule=" + encodeURIComponent(s.id), projName || "מערכת שעות", "מערכת שעות", "schedule:" + s.id));
+    });
+  } else {
+    rows.push(myContentRowHtml("schedule-builder.html", "עדיין לא בניתם מערכת שעות", "מערכת שעות — להתחלה"));
+  }
+
   list.innerHTML = rows.join("");
 }
 
@@ -63,6 +75,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const [kind, id] = btn.dataset.delete.split(":");
       const confirmMsg = kind === "cv"
         ? "למחוק את קורות החיים השמורים שלכם? הפעולה בלתי הפיכה."
+        : kind === "schedule"
+        ? "למחוק את מערכת השעות הזו? הפעולה בלתי הפיכה."
         : "למחוק את האתר הזה? הפעולה בלתי הפיכה — התוכן שהזנתם יימחק לצמיתות (הרכישה עצמה לא מוחזרת).";
       if (!confirm(confirmMsg)) return;
       btn.disabled = true;
@@ -70,6 +84,8 @@ document.addEventListener("DOMContentLoaded", () => {
         await supabaseClient.from("site_projects").delete().eq("id", id).eq("user_id", user.id);
       } else if (kind === "cv") {
         await supabaseClient.from("cv_saves").delete().eq("user_id", user.id);
+      } else if (kind === "schedule") {
+        await supabaseClient.from("schedule_projects").delete().eq("id", id).eq("user_id", user.id);
       }
       await loadMyContent(user, list);
     });

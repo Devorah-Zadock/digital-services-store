@@ -285,6 +285,7 @@ body.has-sites-rail .nav-account-wrap { display: none; }
 }
 .my-panel-card-thumb-cv { background: #FBF2E0; color: var(--gold); }
 .my-panel-card-thumb-quote { background: #EDE7F9; color: #6B46C1; }
+.my-panel-card-thumb-schedule { background: #E3F0FB; color: #1D6FA5; }
 .my-panel-card-info { min-width: 0; }
 .my-panel-card-name { display: block; font-size: 13px; font-weight: 600; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .my-panel-card-tpl { display: block; font-size: 11px; color: var(--grey); line-height: 1.4; }
