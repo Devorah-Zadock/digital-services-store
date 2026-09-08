@@ -56,6 +56,10 @@ function initProductsPage() {
     if (heroTitleEl) heroTitleEl.textContent = hero.title;
     if (heroLeadEl) heroLeadEl.textContent = hero.lead;
     document.title = hero.title + " — קטלוג — DeskKit";
+    const descTag = document.querySelector('meta[name="description"]');
+    if (descTag) descTag.setAttribute("content", hero.lead);
+    const canonicalTag = document.querySelector('link[rel="canonical"]');
+    if (canonicalTag) canonicalTag.setAttribute("href", "https://deskkit.co.il/products.html?type=" + type);
   }
   document.querySelectorAll(".nav-links a[data-nav-type]").forEach((a) => {
     a.classList.toggle("active", a.dataset.navType === type);
@@ -219,6 +223,14 @@ function initProductPage() {
   const p = PRODUCTS.find((x) => x.slug === slug) || PRODUCTS[0];
 
   document.title = p.title + " — DeskKit";
+  // Every product shares one static product.html shell (?slug=...), so
+  // without this every single product would show Google the same generic
+  // title/description/canonical — worst case, Google picks one slug as
+  // "the" canonical and never indexes the rest at all.
+  const descTag = document.querySelector('meta[name="description"]');
+  if (descTag) descTag.setAttribute("content", p.heroDesc);
+  const canonicalTag = document.querySelector('link[rel="canonical"]');
+  if (canonicalTag) canonicalTag.setAttribute("href", "https://deskkit.co.il/product.html?slug=" + p.slug);
   const pType = productType(p);
   const pTypeLabel = (PRODUCT_TYPES.find((t) => t.slug === pType) || {}).label || "קטלוג";
   root.innerHTML = `
