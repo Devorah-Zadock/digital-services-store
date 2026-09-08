@@ -15,15 +15,16 @@ function schedEsc(s) {
 }
 
 /* ---------- paywall (Gumroad license, same pattern as js/site-builder.js) ----------
-   IMPORTANT: placeholder product ID/checkout link — see README ("בונה מערכת
-   שעות — הגדרת Gumroad") before going live. Filling in every setup tab
-   (subjects/classes/teachers/rooms/assignments) stays free and
-   unlimited; only actually running the solver ("🎲 צור מערכת שעות" /
-   "המשך לשפר") requires a redeemed license — same "honest caveat" as
-   everywhere else on this site: a client-side check against Gumroad's
-   API, not real DRM, but the same barrier the CV/sites builders already
-   used successfully before the CV one went free. */
-const SCHEDULE_GUMROAD_CONFIG = { productId: "REPLACE_ME_PRODUCT_ID", checkoutUrl: "https://REPLACE_ME.gumroad.com/l/REPLACE_ME" };
+   Filling in every setup tab (subjects/classes/teachers/rooms/
+   assignments) stays free and unlimited; only actually running the
+   solver ("🎲 צור מערכת שעות" / "המשך לשפר") requires a redeemed
+   license — same "honest caveat" as everywhere else on this site: a
+   client-side check against Gumroad's API, not real DRM, but the same
+   barrier the CV/sites builders already used successfully before the CV
+   one went free.
+   checkoutUrl is still a placeholder — see README ("בונה מערכת שעות —
+   הגדרת Gumroad") for where to copy the real one from. */
+const SCHEDULE_GUMROAD_CONFIG = { productId: "K122yL6VSdTui67Be5ZiYw==", checkoutUrl: "https://REPLACE_ME.gumroad.com/l/REPLACE_ME" };
 const SCHEDULE_UNLOCK_KEY = "deskkit_schedule_unlocked_" + SCHEDULE_GUMROAD_CONFIG.productId;
 /* Fixed, not per-project like site templates: there's only one version
    of this tool, so one purchase should unlock every project this account
