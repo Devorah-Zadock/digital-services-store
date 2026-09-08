@@ -1,0 +1,114 @@
+/* School schedule builder: setup tabs, availability grid, and the
+   drag-to-edit result timetable grid. Reuses .field/.builder-form input
+   styling and CSS variables from builder.css / style.css. */
+
+.sched-name-wrap { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.sched-name-input {
+  font-size: 20px; font-weight: 700; color: var(--teal-dark); border: none; background: none;
+  padding: 2px 0; min-width: 260px; font-family: inherit;
+}
+.sched-name-input:focus { outline: none; border-bottom: 2px solid var(--teal); }
+
+.sched-tabs-nav { display: flex; gap: 6px; flex-wrap: wrap; padding: 18px 24px 0; }
+.sched-tab-btn {
+  background: var(--ice); color: var(--teal-dark); border: none; padding: 9px 18px; border-radius: 20px 20px 0 0;
+  font-size: 13.5px; font-weight: 700; cursor: pointer; font-family: inherit; opacity: .65;
+}
+.sched-tab-btn.active { opacity: 1; background: var(--white); box-shadow: 0 -2px 0 var(--teal) inset; }
+
+.sched-main { padding: 20px 24px 70px; }
+.sched-tab-panel { display: none; }
+.sched-tab-panel.active { display: block; }
+
+.sched-card {
+  background: var(--white); border: 1px solid #EAEDEC; border-radius: var(--radius); padding: 22px; margin-bottom: 18px;
+}
+.sched-card h3 { margin: 0 0 14px; font-size: 17px; color: var(--teal-dark); }
+.sched-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.sched-card-head h3 { margin: 0; }
+.sched-hint { font-size: 12.5px; color: var(--grey); margin: 6px 0 10px; }
+
+.sched-col-labels { display: grid; gap: 10px; padding: 0 6px 6px; font-size: 11.5px; font-weight: 700; color: var(--grey); }
+.sched-subject-cols { grid-template-columns: 46px 1fr 200px 34px; align-items: center; }
+.sched-class-cols { grid-template-columns: 1fr 34px; align-items: center; }
+.sched-room-cols { grid-template-columns: 1fr 120px 34px; align-items: center; }
+.sched-assign-cols { grid-template-columns: 1fr 1fr 1fr 110px 34px; align-items: center; }
+
+.sched-row {
+  display: grid; gap: 10px; align-items: center; padding: 8px 6px; border-radius: 8px;
+}
+.sched-row:hover { background: var(--ice); }
+.sched-text-input, .sched-select, .sched-num-input {
+  padding: 8px 10px; border-radius: 7px; border: 1px solid #DADFDD; font-family: inherit; font-size: 13.5px; width: 100%; box-sizing: border-box;
+}
+.sched-color-input { width: 36px; height: 32px; border: none; border-radius: 6px; padding: 0; cursor: pointer; background: none; }
+.sched-row-del { background: none; border: none; color: #B23; font-size: 15px; cursor: pointer; font-family: inherit; padding: 4px; }
+
+.sched-teacher-card { border: 1px solid #EDEFEE; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+.sched-teacher-head { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; }
+.sched-teacher-head .sched-text-input { max-width: 320px; font-weight: 700; }
+.sched-subfield-label { display: block; font-size: 12px; font-weight: 700; color: var(--teal-dark); margin: 12px 0 8px; }
+.sched-check-list { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.sched-check { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--dark); cursor: pointer; }
+
+.sched-avail-grid { display: grid; gap: 4px; overflow-x: auto; }
+.sched-avail-row { display: grid; grid-template-columns: 34px repeat(var(--sched-avail-cols), minmax(30px, 1fr)); gap: 4px; }
+.sched-avail-label { font-size: 11px; color: var(--grey); display: flex; align-items: center; justify-content: center; }
+.sched-avail-daylabel { font-size: 11.5px; font-weight: 700; color: var(--teal-dark); text-align: center; padding-bottom: 2px; }
+.sched-avail-cell {
+  height: 26px; border-radius: 5px; border: 1px solid #DEE6E2; background: #F3F8F6; cursor: pointer; padding: 0;
+}
+.sched-avail-cell:hover { border-color: var(--teal); }
+.sched-avail-cell.off { background: #F6D9D9; border-color: #D98; }
+
+.sched-result-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.sched-result-actions { display: flex; gap: 10px; align-items: center; }
+.sched-solver-status { font-size: 13px; color: var(--grey); margin-top: 12px; min-height: 18px; }
+.sched-solver-status.running { color: var(--teal-dark); font-weight: 600; }
+
+.sched-result-viewbar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.sched-view-toggle { display: flex; gap: 6px; }
+.sched-view-btn {
+  background: var(--ice); color: var(--teal-dark); border: none; padding: 7px 16px; border-radius: 20px;
+  font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit;
+}
+.sched-view-btn.active { background: var(--teal); color: var(--white); }
+.sched-result-viewbar select { padding: 7px 10px; border-radius: 7px; border: 1px solid #DADFDD; font-family: inherit; font-size: 13px; }
+.sched-conflict-badge { background: #F6D9D9; color: #A32; border-radius: 20px; padding: 5px 12px; font-size: 12px; font-weight: 700; }
+.sched-result-export { display: flex; gap: 8px; margin-inline-start: auto; flex-wrap: wrap; }
+
+.sched-grid { display: grid; gap: 4px; overflow-x: auto; }
+.sched-grid-row { display: grid; grid-template-columns: 60px repeat(var(--sched-grid-cols), minmax(90px, 1fr)); gap: 4px; }
+.sched-grid-corner { background: none; }
+.sched-grid-daylabel { font-size: 13px; font-weight: 700; color: var(--teal-dark); text-align: center; padding: 6px 0; }
+.sched-grid-plabel { font-size: 12.5px; color: var(--grey); display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.sched-grid-cell { min-height: 56px; border-radius: 8px; padding: 6px 8px; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+.sched-grid-cell.empty { background: #F7F9F8; border: 1px dashed #E1E7E4; }
+.sched-grid-cell.filled {
+  background: #F3F8F6;
+  background: color-mix(in srgb, var(--sched-subj-color) 16%, white);
+  border-inline-start: 4px solid var(--sched-subj-color);
+  cursor: grab;
+}
+.sched-grid-cell.filled:active { cursor: grabbing; }
+.sched-grid-cell.conflict { outline: 2px solid #C33; outline-offset: -2px; }
+.sched-cell-subj { font-size: 12.5px; font-weight: 700; color: var(--teal-dark); }
+.sched-cell-sub { font-size: 11px; color: var(--grey); }
+
+#sched-print-all-holder { display: none; }
+.sched-print-page { page-break-after: always; padding: 20px 0; }
+.sched-print-page h2 { font-size: 18px; margin: 0 0 14px; }
+
+@media (max-width: 860px) {
+  .sched-subject-cols, .sched-room-cols, .sched-assign-cols, .sched-class-cols { grid-template-columns: 1fr; }
+  .sched-col-labels { display: none; }
+  .sched-row { border: 1px solid #EDEFEE; margin-bottom: 8px; }
+}
+
+@media print {
+  body.sched-printing-all .no-print,
+  body.sched-printing-all #sched-result-grid-wrap { display: none !important; }
+  body.sched-printing-all #sched-print-all-holder { display: block !important; }
+  .sched-tabs-nav, .sched-tab-panel:not([data-tab-panel="result"]) { display: none !important; }
+  .sched-grid-cell.filled { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
