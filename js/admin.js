@@ -283,23 +283,32 @@ async function handleStatsDeleteClick(e) {
   }
 }
 
-function wireStatsTabs() {
-  const btnCustomers = document.getElementById("stats-tab-btn-customers");
-  const btnCharts = document.getElementById("stats-tab-btn-charts");
-  const tabCustomers = document.getElementById("stats-tab-customers");
-  const tabCharts = document.getElementById("stats-tab-charts");
-  btnCustomers.addEventListener("click", () => {
-    btnCustomers.classList.add("active");
-    btnCharts.classList.remove("active");
-    tabCustomers.style.display = "";
-    tabCharts.style.display = "none";
-  });
-  btnCharts.addEventListener("click", () => {
-    btnCharts.classList.add("active");
-    btnCustomers.classList.remove("active");
-    tabCharts.style.display = "";
-    tabCustomers.style.display = "none";
-  });
+/* Three top-level tabs (הודעות / לקוחות / תבניות) instead of numbered
+   stacked sections — "לקוחות" and "תבניות" both live inside the same
+   #panel-stats (they share one data fetch, one error message and one
+   refresh button) and just toggle which of its two inner views shows. */
+function wireAdminTopTabs() {
+  const tabs = {
+    feedback: { btn: document.getElementById("toptab-feedback"), panel: document.getElementById("panel-feedback") },
+    customers: { btn: document.getElementById("toptab-customers"), panel: document.getElementById("panel-stats") },
+    templates: { btn: document.getElementById("toptab-templates"), panel: document.getElementById("panel-stats") },
+  };
+  const innerCustomers = document.getElementById("stats-tab-customers");
+  const innerCharts = document.getElementById("stats-tab-charts");
+
+  function activate(key) {
+    Object.entries(tabs).forEach(([k, t]) => t.btn.classList.toggle("active", k === key));
+    document.getElementById("panel-feedback").style.display = key === "feedback" ? "" : "none";
+    document.getElementById("panel-stats").style.display = key === "feedback" ? "none" : "";
+    if (key !== "feedback") {
+      innerCustomers.style.display = key === "customers" ? "" : "none";
+      innerCharts.style.display = key === "templates" ? "" : "none";
+    }
+  }
+
+  tabs.feedback.btn.addEventListener("click", () => activate("feedback"));
+  tabs.customers.btn.addEventListener("click", () => activate("customers"));
+  tabs.templates.btn.addEventListener("click", () => activate("templates"));
 }
 
 function showCustomerStatsCard() {
@@ -312,7 +321,6 @@ function showCustomerStatsCard() {
   }
   setup.style.display = "none";
   card.style.display = "";
-  wireStatsTabs();
   document.getElementById("stats-load-btn").addEventListener("click", loadCustomerStats);
   document.getElementById("stats-users-table").addEventListener("click", handleStatsDeleteClick);
   document.getElementById("stats-users-table").addEventListener("click", handleUserRowToggle);
@@ -328,6 +336,7 @@ async function sha256Hex(text) {
 function showPanel() {
   document.getElementById("admin-gate").style.display = "none";
   document.getElementById("admin-panel").style.display = "";
+  wireAdminTopTabs();
 
   const status = document.getElementById("admin-status");
   const explain = document.getElementById("admin-explain");
