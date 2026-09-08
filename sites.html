@@ -58,12 +58,20 @@
      not DeskKit's own editor layout width. */
   body.preview-focus .builder-wrap { grid-template-columns: 1fr; max-width: none; padding: 0; }
   body.preview-focus .preview-sticky { position: static; }
-  body.preview-focus #site-preview-frame { height: 100vh; border: none; border-radius: 0; }
+  /* A fixed corner badge would sit right on top of the customer's own
+     site header — nearly every template places its own nav menu in
+     exactly that corner, so the badge ended up physically covering (and
+     blocking clicks on) "אודות"/"צור קשר". A full-width bar in normal
+     document flow, above the iframe, can never overlap the site's own
+     header regardless of template layout. */
+  body.preview-focus #site-preview-frame { height: calc(100vh - 48px); border: none; border-radius: 0; display: block; }
+  #close-preview-bar {
+    height: 48px; box-sizing: border-box; display: flex; align-items: center; justify-content: flex-end;
+    padding: 0 16px; background: var(--teal-dark);
+  }
   #close-preview-btn {
-    position: fixed; top: 14px; inset-inline-end: 14px; z-index: 50;
-    background: var(--teal-dark); color: #fff; border: none; border-radius: 8px;
-    padding: 10px 16px; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
-    box-shadow: 0 8px 20px rgba(0,0,0,.2);
+    background: rgba(255,255,255,.12); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 16px; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
   }
 </style>
 </head>
@@ -281,7 +289,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="js/color-utils.js"></script>
 <script src="js/site-templates.js"></script>
-<script src="js/site-builder.js?v=8"></script>
+<script src="js/site-builder.js?v=9"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>

@@ -544,6 +544,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (isFullPreview) {
     document.body.classList.add("preview-focus");
+    const closeBar = document.createElement("div");
+    closeBar.id = "close-preview-bar";
     const closeBtn = document.createElement("button");
     closeBtn.type = "button";
     closeBtn.id = "close-preview-btn";
@@ -556,7 +558,11 @@ document.addEventListener("DOMContentLoaded", () => {
       window.close();
       setTimeout(() => { location.href = "sites.html?browse=1"; }, 300);
     });
-    document.body.appendChild(closeBtn);
+    closeBar.appendChild(closeBtn);
+    // Inserted as the very first element in the page (not a fixed corner
+    // badge) so it sits in normal document flow, above the iframe, and can
+    // never overlap the customer's own site header underneath it.
+    document.body.insertBefore(closeBar, document.body.firstChild);
   }
 
   document.getElementById("full-preview-btn").addEventListener("click", () => {

@@ -104,8 +104,7 @@ function renderCustomerStats(data) {
       ].filter(Boolean).join("") || "—";
       const date = u.createdAt ? new Date(u.createdAt).toLocaleDateString("he-IL") : "—";
       const email = u.email || u.id;
-      const initial = email.trim().charAt(0).toUpperCase() || "?";
-      return `<tr><td><span class="admin-user-cell"><span class="admin-user-avatar">${escapeHtml(initial)}</span>${escapeHtml(email)}</span></td><td>${date}</td><td>${sitesHtml}</td><td>${cvHtml}</td><td>${usageHtml}</td></tr>`;
+      return `<tr><td>${escapeHtml(email)}</td><td>${date}</td><td>${sitesHtml}</td><td>${cvHtml}</td><td>${usageHtml}</td></tr>`;
     })
     .join("");
 
