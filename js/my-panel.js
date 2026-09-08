@@ -66,6 +66,10 @@ function myPanelQuoteIcon() {
   return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v3h3"/><path d="M9 12h6M9 16h6"/><circle cx="17" cy="19" r="3.2" fill="currentColor" stroke="none" opacity=".18"/><path d="M15.8 19l.9.9 1.6-1.7"/></svg>';
 }
 
+function myPanelScheduleIcon() {
+  return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 3v3M16 3v3"/><path d="M7.5 13h3M7.5 17h3M13.5 13h3M13.5 17h3"/></svg>';
+}
+
 /* Same dropdown as the header's own account menu (js/nav-auth.js) —
    reused class names so it inherits that styling as-is, just opened
    upward ("dropup") since this trigger sits at the very bottom of the
@@ -131,8 +135,8 @@ function myPanelRowHtml(opts) {
     ? `<button type="button" class="my-content-delete-btn" data-panel-delete="${opts.deleteAttr}" title="מחיקה" aria-label="מחיקה">${myPanelTrashIcon()}</button>`
     : "";
   const activeClass = opts.active ? " active" : "";
-  const thumbClass = opts.kind === "cv" ? " my-panel-card-thumb-cv" : opts.kind === "quote" ? " my-panel-card-thumb-quote" : "";
-  const icon = opts.kind === "cv" ? myPanelCvIcon() : opts.kind === "quote" ? myPanelQuoteIcon() : myPanelSiteIcon();
+  const thumbClass = opts.kind === "cv" ? " my-panel-card-thumb-cv" : opts.kind === "quote" ? " my-panel-card-thumb-quote" : opts.kind === "schedule" ? " my-panel-card-thumb-schedule" : "";
+  const icon = opts.kind === "cv" ? myPanelCvIcon() : opts.kind === "quote" ? myPanelQuoteIcon() : opts.kind === "schedule" ? myPanelScheduleIcon() : myPanelSiteIcon();
   return `<div class="my-content-row">
     <a href="${opts.href}" class="my-panel-card${activeClass}">
       <span class="my-panel-card-thumb${thumbClass}">${icon}</span>
@@ -158,6 +162,10 @@ function myPanelCurrentContext() {
     const q = new URLSearchParams(location.search).get("quote");
     return q ? { kind: "quote", id: q } : null;
   }
+  if (path === "schedule-builder.html") {
+    const s = new URLSearchParams(location.search).get("schedule");
+    return s ? { kind: "schedule", id: s } : null;
+  }
   return null;
 }
 
@@ -165,6 +173,7 @@ async function loadMyPanel(user) {
   const sitesList = document.getElementById("my-panel-sites");
   const cvList = document.getElementById("my-panel-cv");
   const quotesList = document.getElementById("my-panel-quotes");
+  const schedulesList = document.getElementById("my-panel-schedules");
   if (!sitesList || !cvList) return;
   const ctx = myPanelCurrentContext();
 
@@ -234,10 +243,30 @@ async function loadMyPanel(user) {
       quotesList.innerHTML = myPanelEmptyRowHtml({ href: "quote-app.html", text: "עדיין לא שמרתם הצעת מחיר —", linkText: "ליצירה" });
     }
   }
+
+  if (schedulesList) {
+    const { data: schedules } = await supabaseClient
+      .from("schedule_projects").select("id, data")
+      .eq("user_id", user.id).order("updated_at", { ascending: false });
+    if (schedules && schedules.length) {
+      schedulesList.innerHTML = schedules.map((s) => {
+        const d = s.data || {};
+        return myPanelRowHtml({
+          kind: "schedule",
+          href: "schedule-builder.html?schedule=" + encodeURIComponent(s.id),
+          name: (d.name && d.name.trim()) || "מערכת שעות (ללא שם)",
+          deleteAttr: "schedule:" + s.id,
+          active: !!(ctx && ctx.kind === "schedule" && ctx.id === s.id),
+        });
+      }).join("");
+    } else {
+      schedulesList.innerHTML = myPanelEmptyRowHtml({ href: "schedule-builder.html", text: "עדיין לא בנית מערכת שעות —", linkText: "ליצירה" });
+    }
+  }
 }
 
 async function deleteMyPanelItem(kind, id, button) {
-  const label = kind === "cv" ? "את קורות החיים שלכם" : kind === "quote" ? "את הצעת המחיר הזו" : "את האתר הזה";
+  const label = kind === "cv" ? "את קורות החיים שלכם" : kind === "quote" ? "את הצעת המחיר הזו" : kind === "schedule" ? "את מערכת השעות הזו" : "את האתר הזה";
   if (!confirm(`למחוק לצמיתות ${label}? הפעולה בלתי הפיכה.`)) return;
   button.disabled = true;
   const { data } = await supabaseClient.auth.getSession();
@@ -249,6 +278,8 @@ async function deleteMyPanelItem(kind, id, button) {
     await supabaseClient.from("cv_saves").delete().eq("user_id", user.id);
   } else if (kind === "quote") {
     await supabaseClient.from("quote_saves").delete().eq("id", id).eq("user_id", user.id);
+  } else if (kind === "schedule") {
+    await supabaseClient.from("schedule_projects").delete().eq("id", id).eq("user_id", user.id);
   }
   await loadMyPanel(user);
 }
@@ -263,7 +294,7 @@ function myPanelSectionsHtml() {
       </button>
       <div class="my-panel-section-list" id="${listId}"></div>
     </div>`;
-  return section("sites", "אתרים", "my-panel-sites") + section("cv", "קורות חיים", "my-panel-cv") + section("quotes", "הצעות מחיר", "my-panel-quotes");
+  return section("sites", "אתרים", "my-panel-sites") + section("cv", "קורות חיים", "my-panel-cv") + section("quotes", "הצעות מחיר", "my-panel-quotes") + section("schedules", "מערכות שעות", "my-panel-schedules");
 }
 
 /* Reads back the width/collapsed state the pre-paint inline script (first
