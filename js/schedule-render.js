@@ -14,6 +14,77 @@ function schedEsc(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+/* ---------- paywall (Gumroad license, same pattern as js/site-builder.js) ----------
+   IMPORTANT: placeholder product ID/checkout link — see README ("בונה מערכת
+   שעות — הגדרת Gumroad") before going live. Filling in every setup tab
+   (subjects/classes/teachers/rooms/assignments) stays free and
+   unlimited; only actually running the solver ("🎲 צור מערכת שעות" /
+   "המשך לשפר") requires a redeemed license — same "honest caveat" as
+   everywhere else on this site: a client-side check against Gumroad's
+   API, not real DRM, but the same barrier the CV/sites builders already
+   used successfully before the CV one went free. */
+const SCHEDULE_GUMROAD_CONFIG = { productId: "REPLACE_ME_PRODUCT_ID", checkoutUrl: "https://REPLACE_ME.gumroad.com/l/REPLACE_ME" };
+const SCHEDULE_UNLOCK_KEY = "deskkit_schedule_unlocked_" + SCHEDULE_GUMROAD_CONFIG.productId;
+/* Fixed, not per-project like site templates: there's only one version
+   of this tool, so one purchase should unlock every project this account
+   ever builds here — passed as redeem-license's generic "template" scope
+   key, which it treats as an opaque string. */
+const SCHEDULE_LICENSE_TEMPLATE = "schedule-builder";
+
+function scheduleIsUnlocked() {
+  return localStorage.getItem(SCHEDULE_UNLOCK_KEY) === "1";
+}
+
+function refreshScheduleUnlockUi() {
+  const unlocked = scheduleIsUnlocked();
+  document.getElementById("sched-unlock-gate").hidden = unlocked;
+  document.getElementById("sched-unlock-done").hidden = !unlocked;
+}
+
+/* Verification itself happens server-side in the redeem-license Edge
+   Function (see that file) — it re-verifies the key with Gumroad itself
+   and atomically claims it against this account, so the same purchased
+   key can't unlock a second, unrelated account. */
+async function verifyScheduleLicense() {
+  const input = document.getElementById("sched-license-input");
+  const note = document.getElementById("sched-license-note");
+  const key = input.value.trim();
+  if (!key) { note.textContent = "יש להזין קוד רישוי."; note.className = "unlock-note err"; return; }
+  if (!scheduleCurrentUserId) { note.textContent = "יש להתחבר לחשבון כדי לפתוח את הכלי."; note.className = "unlock-note err"; return; }
+  note.textContent = "בודקים...";
+  note.className = "unlock-note";
+  try {
+    const { data, error } = await supabaseClient.functions.invoke("redeem-license", {
+      body: { licenseKey: key, productId: SCHEDULE_GUMROAD_CONFIG.productId, userId: scheduleCurrentUserId, template: SCHEDULE_LICENSE_TEMPLATE },
+    });
+    if (error || !data) {
+      note.textContent = "שגיאת חיבור לשירות האימות. נסו שוב בעוד רגע.";
+      note.className = "unlock-note err";
+      return;
+    }
+    if (!data.success) {
+      note.textContent = data.reason === "redeemed-elsewhere"
+        ? "קוד הרישוי הזה כבר שימש לפתיחת חשבון אחר."
+        : "קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב.";
+      note.className = "unlock-note err";
+      return;
+    }
+    localStorage.setItem(SCHEDULE_UNLOCK_KEY, "1");
+    note.textContent = "נפתח בהצלחה!";
+    note.className = "unlock-note ok";
+    refreshScheduleUnlockUi();
+  } catch (err) {
+    note.textContent = "שגיאת חיבור לשירות האימות. נסו שוב בעוד רגע.";
+    note.className = "unlock-note err";
+  }
+}
+
+function wireScheduleUnlock() {
+  document.getElementById("sched-buy-link").href = SCHEDULE_GUMROAD_CONFIG.checkoutUrl;
+  document.getElementById("sched-verify-btn").addEventListener("click", verifyScheduleLicense);
+  refreshScheduleUnlockUi();
+}
+
 /* ---------- tabs ---------- */
 
 function schedShowTab(tab) {
@@ -358,7 +429,18 @@ function wireAssignmentsTab() {
     const field = e.target.dataset.field;
     if (field === "classId") a.classId = e.target.value;
     if (field === "teacherId") a.teacherId = e.target.value;
-    if (field === "subjectId") { a.subjectId = e.target.value; renderAssignmentsTab(); }
+    if (field === "subjectId") {
+      a.subjectId = e.target.value;
+      // The teacher dropdown is about to re-render filtered to whoever
+      // teaches the NEW subject — a.teacherId has to move with it, or the
+      // saved assignment would silently keep pointing at a teacher who
+      // (per the checkboxes on their own card) doesn't actually teach
+      // this subject, even though the visible dropdown shows someone else.
+      const eligible = scheduleTeachersForSubject(scheduleState, a.subjectId);
+      const pool = eligible.length ? eligible : scheduleState.teachers;
+      a.teacherId = pool[0] ? pool[0].id : "";
+      renderAssignmentsTab();
+    }
   });
   wrap.addEventListener("click", (e) => {
     const btn = e.target.closest('[data-action="delete-assignment"]');
@@ -388,7 +470,7 @@ function setSolvingUi(active, statusText) {
 }
 
 function runSolver(continueFromCurrent) {
-  if (scheduleSolving) return;
+  if (scheduleSolving || !scheduleIsUnlocked()) return;
   const problem = buildScheduleProblem(scheduleState);
   if (!problem.lessons.length) {
     alert("אין שיעורים לשיבוץ — הוסיפו שיבוצי הוראה בלשונית המתאימה קודם.");
@@ -661,6 +743,7 @@ function initSchedulePage() {
   wireRoomsTab();
   wireTeachersTab();
   wireAssignmentsTab();
+  wireScheduleUnlock();
   wireResultControls();
   wireResultGrid();
   wirePrintExport();

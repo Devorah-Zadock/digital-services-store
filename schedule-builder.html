@@ -163,14 +163,26 @@
 
   <div class="sched-tab-panel" data-tab-panel="result">
     <div class="sched-card no-print" id="sched-result-controls">
-      <div class="sched-result-head">
-        <h3>יצירת מערכת שעות</h3>
-        <div class="sched-result-actions">
-          <button type="button" class="btn btn-gold" id="sched-generate-btn">🎲 צור מערכת שעות</button>
-          <button type="button" class="btn-mini" id="sched-improve-btn" hidden>המשך לשפר</button>
+      <div id="sched-unlock-gate">
+        <h3 style="margin:0 0 6px;">יצירת מערכת שעות אוטומטית</h3>
+        <p class="sched-hint" style="margin:0 0 14px;">מילוי המקצועות, הכיתות, המורים והאילוצים חינמי וללא הגבלה. יצירת מערכת השעות עצמה — השיבוץ האוטומטי החכם שפותר את כל ההתנגשויות — היא כלי בתשלום חד-פעמי.</p>
+        <a href="#" id="sched-buy-link" target="_blank" rel="noopener" class="btn btn-gold" style="width:100%; box-sizing:border-box; text-align:center; display:block; margin-bottom:14px;">רכישת קוד פתיחה</a>
+        <div class="unlock-box">
+          <input type="text" id="sched-license-input" placeholder="קוד רישוי (מהמייל של הרכישה)" dir="ltr">
+          <div class="unlock-note" id="sched-license-note"></div>
+          <button type="button" class="btn btn-teal" id="sched-verify-btn" style="width:100%;">אימות ופתיחה</button>
         </div>
       </div>
-      <div id="sched-solver-status" class="sched-solver-status"></div>
+      <div id="sched-unlock-done" hidden>
+        <div class="sched-result-head">
+          <h3>יצירת מערכת שעות</h3>
+          <div class="sched-result-actions">
+            <button type="button" class="btn btn-gold" id="sched-generate-btn">🎲 צור מערכת שעות</button>
+            <button type="button" class="btn-mini" id="sched-improve-btn" hidden>המשך לשפר</button>
+          </div>
+        </div>
+        <div id="sched-solver-status" class="sched-solver-status"></div>
+      </div>
     </div>
 
     <div id="sched-result-view" hidden>
