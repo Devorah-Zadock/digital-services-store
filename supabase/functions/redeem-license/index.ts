@@ -49,7 +49,14 @@ Deno.serve(async (req: Request) => {
     });
     const gumroadData = await gumroadRes.json();
     if (!gumroadData.success) {
-      return new Response(JSON.stringify({ success: false, reason: "invalid" }), { status: 200, headers: corsHeaders });
+      // Gumroad's own message ("That license does not exist for the
+      // provided product." / "Invalid product." / etc.) is exactly what
+      // tells apart a wrong product_id from a wrong/reused key — worth
+      // surfacing instead of collapsing everything into one bare "invalid".
+      return new Response(
+        JSON.stringify({ success: false, reason: "invalid", gumroadMessage: gumroadData.message || null }),
+        { status: 200, headers: corsHeaders }
+      );
     }
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);

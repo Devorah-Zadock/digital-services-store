@@ -467,9 +467,10 @@ async function verifySiteLicense() {
       return;
     }
     if (!data.success) {
+      const invalidMsg = "קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב." + (data.gumroadMessage ? ` (Gumroad: ${data.gumroadMessage})` : "");
       note.textContent = data.reason === "redeemed-elsewhere" || data.reason === "different-template"
         ? "קוד הרישוי הזה כבר שימש לפתיחת אתר אחר. לתבנית נוספת נדרשת רכישה נפרדת."
-        : "קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב.";
+        : invalidMsg;
       note.className = "unlock-note err";
       return;
     }

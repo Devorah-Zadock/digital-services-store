@@ -62,9 +62,8 @@ async function verifyScheduleLicense() {
       return;
     }
     if (!data.success) {
-      note.textContent = data.reason === "redeemed-elsewhere"
-        ? "קוד הרישוי הזה כבר שימש לפתיחת חשבון אחר."
-        : "קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב.";
+      const invalidMsg = "קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב." + (data.gumroadMessage ? ` (Gumroad: ${data.gumroadMessage})` : "");
+      note.textContent = data.reason === "redeemed-elsewhere" ? "קוד הרישוי הזה כבר שימש לפתיחת חשבון אחר." : invalidMsg;
       note.className = "unlock-note err";
       return;
     }
