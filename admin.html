@@ -22,11 +22,11 @@
   }
   .admin-gate-box h1 { font-size: 20px; color: var(--teal-dark); margin: 0 0 8px; }
   .admin-gate-box p { font-size: 13.5px; color: var(--grey); margin: 0 0 20px; }
-  .admin-gate-box input[type="password"] {
-    width: 100%; box-sizing: border-box; padding: 12px 14px; border-radius: 8px; border: 1px solid #DADFDD;
-    font-family: inherit; font-size: 15px; margin-bottom: 12px; text-align: center;
+  .admin-gate-spinner {
+    width: 30px; height: 30px; margin: 0 auto; border: 3px solid #DDE4E1; border-top-color: var(--teal);
+    border-radius: 50%; animation: admin-gate-spin .8s linear infinite;
   }
-  .admin-login-err { color: #B23; font-size: 13px; min-height: 18px; margin-bottom: 8px; }
+  @keyframes admin-gate-spin { to { transform: rotate(360deg); } }
 
   .admin-panel-wrap { padding: 0 0 70px; }
   .admin-hero {
@@ -162,12 +162,16 @@
 <div id="admin-gate" class="admin-gate-wrap">
   <div class="admin-gate-box">
     <h1>אזור ניהול</h1>
-    <p>העמוד הזה מיועד רק לבעלת האתר — נא להזין סיסמה.</p>
-    <form id="admin-login-form">
-      <input type="password" id="admin-password" placeholder="סיסמה" autocomplete="off" autofocus>
-      <div class="admin-login-err" id="admin-login-err"></div>
-      <button type="submit" class="btn btn-teal" style="width:100%;">כניסה</button>
-    </form>
+    <p>בודקים הרשאה…</p>
+    <div class="admin-gate-spinner"></div>
+  </div>
+</div>
+
+<div id="admin-denied" class="admin-gate-wrap" style="display:none;">
+  <div class="admin-gate-box">
+    <h1>אין הרשאת גישה</h1>
+    <p>החשבון שמחובר כרגע לא מוגדר כמנהל/ת האתר. אם זה החשבון שלך, ודאי שהמייל שלו נמצא ברשימת <code>ADMIN_EMAILS</code> ב-Supabase Dashboard → Edge Functions → admin-stats → Secrets.</p>
+    <a href="index.html" class="btn btn-teal" style="width:100%; display:block; box-sizing:border-box;">חזרה לעמוד הבית</a>
   </div>
 </div>
 
@@ -220,8 +224,8 @@
       <ol>
         <li>ב-Supabase Dashboard → SQL Editor, מריצים את הקובץ <code>supabase/sql/customer_profiles.sql</code> מתוך הריפו — זה יוצר טבלת <code>customer_profiles</code> שמתמלאת אוטומטית בכל הרשמה חדשה.</li>
         <li>פורסים את הפונקציה <code>supabase functions deploy admin-stats</code> (או מדביקים את <code>supabase/functions/admin-stats/index.ts</code> ב-Dashboard → Edge Functions → New Function).</li>
-        <li>ב-Dashboard → Edge Functions → admin-stats → Secrets, מוסיפים סוד בשם <code>ADMIN_STATS_KEY</code> עם כל מחרוזת שרוצים (למשל סיסמה אקראית).</li>
-        <li>מדביקים את אותה מחרוזת בדיוק בקבוע <code>ADMIN_STATS_KEY</code> בקובץ <code>js/admin.js</code>.</li>
+        <li>ב-Dashboard → Edge Functions → admin-stats → Secrets, מוסיפים סוד בשם <code>ADMIN_EMAILS</code> עם כתובת המייל שאיתה נכנסים לאתר (אם יש כמה מנהלות — מפרידים בפסיקים, בלי רווחים).</li>
+        <li>נכנסים לעמוד הזה (admin.html) כשמחוברים עם אותו חשבון — הגישה נבדקת מול השרת לפי מייל, לא מול סיסמה שכתובה בקוד.</li>
         <li>בנוסף, כדי לראות כאן גם שימוש בהצעות מחיר והורדות של מצגות/גליונות: ב-SQL Editor מריצים גם את <code>supabase/sql/usage_events.sql</code> מתוך הריפו (חד-פעמי, לא תלוי בשלבים הקודמים).</li>
       </ol>
     </div>
@@ -271,6 +275,9 @@
 <script src="js/quote-render.js?v=3"></script>
 <script src="js/products-data.js?v=2"></script>
 <script src="js/main.js"></script>
-<script src="js/admin.js?v=14"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/nav-auth.js"></script>
+<script src="js/admin.js?v=15"></script>
 </body>
 </html>
