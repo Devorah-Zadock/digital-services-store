@@ -46,73 +46,150 @@ function productLabel(slug) {
   return p ? p.title : slug;
 }
 
+/* One row of the KPI bar chart — bar length is the value relative to the
+   largest value among the chart's own (non-pending) numbers, so the whole
+   set reads as one picture instead of needing to compare digits tile by
+   tile. `pending` renders a flat grey bar + "—" for a metric that isn't
+   measured yet (usage_events not set up), same distinction the old tiles
+   made, so a real 0 is never confused with "not tracked at all". */
+function kpiRow(label, num, max, opts) {
+  opts = opts || {};
+  if (opts.pending) {
+    return `<div class="kpi-row"><div class="kpi-label">${label} <span style="color:var(--grey); font-weight:400;">(לא הופעל)</span></div><div class="kpi-bar-track"><div class="kpi-bar kpi-bar-pending" style="width:6%"></div></div><div class="kpi-num kpi-num-pending">—</div></div>`;
+  }
+  const pct = max > 0 ? Math.max(4, Math.round((num / max) * 100)) : 4;
+  return `<div class="kpi-row"><div class="kpi-label">${label}</div><div class="kpi-bar-track"><div class="kpi-bar${opts.gold ? " kpi-bar-gold" : ""}" style="width:${pct}%"></div></div><div class="kpi-num">${num}</div></div>`;
+}
+
+/* A count + small inline bar inside one table cell, so a per-template row
+   carries its own mini "graph" instead of being a bare number next to N
+   other bare numbers. */
+function tplBarCell(count, max) {
+  const pct = max > 0 ? Math.max(4, Math.round((count / max) * 100)) : 4;
+  return `<div class="tpl-count-cell"><span class="tpl-num">${count}</span><div class="tpl-bar-track"><div class="tpl-bar" style="width:${pct}%"></div></div></div>`;
+}
+
 function renderCustomerStats(data) {
   const summary = document.getElementById("stats-summary");
   const table = document.getElementById("stats-users-table");
 
-  const templateRows = Object.keys(data.templateCounts)
-    .sort((a, b) => data.templateCounts[b] - data.templateCounts[a])
-    .map((slug) => `<tr><td>${escapeHtml(templateLabel(slug))}</td><td>${data.templateCounts[slug]}</td><td>${data.finalizedTemplateCounts[slug] || 0}</td></tr>`)
-    .join("");
-
-  const downloadRows = Object.entries(Object.assign({}, data.deckDownloadCounts, data.xlsxDownloadCounts))
-    .sort((a, b) => b[1] - a[1])
-    .map(([slug, count]) => `<tr><td>${escapeHtml(productLabel(slug))}</td><td>${count}</td></tr>`)
-    .join("");
-
   const siteProjectCount = Object.values(data.templateCounts).reduce((a, b) => a + b, 0);
   const finalizedCount = Object.values(data.finalizedTemplateCounts).reduce((a, b) => a + b, 0);
-  // usage_events-backed tiles show "—" instead of a real 0 when the table
-  // itself isn't set up yet — a bare 0 there is indistinguishable from
-  // "genuinely zero downloads so far", which reads as broken/wrong once
-  // someone who actually downloaded things looks at it.
   const usageOn = data.usageEventsAvailable !== false;
-  const usageTile = (num, label) => usageOn
-    ? `<div class="admin-stat-tile"><div class="admin-stat-num">${num}</div><div class="admin-stat-label">${label}</div></div>`
-    : `<div class="admin-stat-tile admin-stat-tile-pending"><div class="admin-stat-num">—</div><div class="admin-stat-label">${label} (לא הופעל)</div></div>`;
+  const quoteUserCount = data.quoteBuilderUserCount ?? 0;
+  const deckCount = data.deckDownloadCount ?? 0;
+  const xlsxCount = data.xlsxDownloadCount ?? 0;
+
+  // Only real (measured) numbers set the chart's scale — a pending metric
+  // never dilutes it down to a flat "—" bar.
+  const realValues = [data.userCount, data.cvBuilderUserCount, siteProjectCount, finalizedCount];
+  if (usageOn) realValues.push(quoteUserCount, deckCount, xlsxCount);
+  const kpiMax = Math.max(1, ...realValues);
+
   summary.innerHTML = `
-    <div class="admin-stat-tiles">
-      <div class="admin-stat-tile"><div class="admin-stat-num">${data.userCount}</div><div class="admin-stat-label">משתמשים רשומים</div></div>
-      <div class="admin-stat-tile"><div class="admin-stat-num">${data.cvBuilderUserCount}</div><div class="admin-stat-label">השתמשו בקורות חיים</div></div>
-      ${usageTile(data.quoteBuilderUserCount ?? 0, "השתמשו בהצעות מחיר")}
-      <div class="admin-stat-tile"><div class="admin-stat-num">${siteProjectCount}</div><div class="admin-stat-label">אתרים נפתחו</div></div>
-      <div class="admin-stat-tile admin-stat-tile-gold"><div class="admin-stat-num">${finalizedCount}</div><div class="admin-stat-label">אתרים שולמו והורדו</div></div>
-      ${usageTile(data.deckDownloadCount ?? 0, "מצגות הורדו")}
-      ${usageTile(data.xlsxDownloadCount ?? 0, "גליונות הורדו")}
+    <div class="kpi-chart">
+      ${kpiRow("משתמשים רשומים", data.userCount, kpiMax)}
+      ${kpiRow("השתמשו בקורות חיים", data.cvBuilderUserCount, kpiMax)}
+      ${usageOn ? kpiRow("השתמשו בהצעות מחיר", quoteUserCount, kpiMax) : kpiRow("השתמשו בהצעות מחיר", 0, kpiMax, { pending: true })}
+      ${kpiRow("אתרים נפתחו", siteProjectCount, kpiMax)}
+      ${kpiRow("אתרים שולמו והורדו", finalizedCount, kpiMax, { gold: true })}
+      ${usageOn ? kpiRow("מצגות הורדו", deckCount, kpiMax) : kpiRow("מצגות הורדו", 0, kpiMax, { pending: true })}
+      ${usageOn ? kpiRow("גליונות הורדו", xlsxCount, kpiMax) : kpiRow("גליונות הורדו", 0, kpiMax, { pending: true })}
     </div>
-    ${usageOn ? "" : `<p style="font-size:12.5px; color:#8A6212; background:#FBF2E0; border-radius:8px; padding:8px 12px; margin:0 0 16px;">שלושת האריחים המסומנים "לא הופעל" ידווחו נתונים אמיתיים לאחר הרצת קובץ ה-SQL <code>supabase/sql/usage_events.sql</code> (חד-פעמי) — עד אז הם לא באמת אפס, פשוט עוד לא נמדדים.</p>`}
+    ${usageOn ? "" : `<p style="font-size:12.5px; color:#8A6212; background:#FBF2E0; border-radius:8px; padding:8px 12px; margin:0 0 20px;">השורות המסומנות "לא הופעל" ידווחו נתונים אמיתיים לאחר הרצת קובץ ה-SQL <code>supabase/sql/usage_events.sql</code> (חד-פעמי) — עד אז הן לא באמת אפס, פשוט עוד לא נמדדות.</p>`}
+    <div class="admin-subhead">תבניות אתר</div>
     <table class="stats-table">
-      <thead><tr><th>תבנית אתר</th><th>פרויקטים שנפתחו</th><th>מתוכם הורדו בפועל</th></tr></thead>
-      <tbody>${templateRows || '<tr><td colspan="3">עדיין אין נתונים</td></tr>'}</tbody>
+      <thead><tr><th>תבנית</th><th>פרויקטים שנפתחו</th><th>מתוכם הורדו בפועל</th></tr></thead>
+      <tbody>${
+        Object.keys(data.templateCounts).length
+          ? Object.keys(data.templateCounts)
+              .sort((a, b) => data.templateCounts[b] - data.templateCounts[a])
+              .map((slug) => {
+                const openMax = Math.max(1, ...Object.values(data.templateCounts));
+                return `<tr><td>${escapeHtml(templateLabel(slug))}</td><td>${tplBarCell(data.templateCounts[slug], openMax)}</td><td>${data.finalizedTemplateCounts[slug] || 0}</td></tr>`;
+              })
+              .join("")
+          : '<tr><td colspan="3">עדיין אין נתונים</td></tr>'
+      }</tbody>
     </table>
-    <table class="stats-table" style="margin-top:18px;">
-      <thead><tr><th>מצגת / גיליון</th><th>הורדות</th></tr></thead>
-      <tbody>${downloadRows || '<tr><td colspan="2">עדיין אין הורדות</td></tr>'}</tbody>
+    <div class="admin-subhead">מצגות שהורדו</div>
+    <table class="stats-table">
+      <thead><tr><th>מצגת</th><th>הורדות</th></tr></thead>
+      <tbody>${
+        Object.keys(data.deckDownloadCounts || {}).length
+          ? Object.entries(data.deckDownloadCounts).sort((a, b) => b[1] - a[1])
+              .map(([slug, count]) => `<tr><td>${escapeHtml(productLabel(slug))}</td><td>${tplBarCell(count, Math.max(1, ...Object.values(data.deckDownloadCounts)))}</td></tr>`)
+              .join("")
+          : `<tr><td colspan="2">${usageOn ? "עדיין אין הורדות" : "לא הופעל"}</td></tr>`
+      }</tbody>
+    </table>
+    <div class="admin-subhead">גליונות שהורדו</div>
+    <table class="stats-table">
+      <thead><tr><th>גיליון</th><th>הורדות</th></tr></thead>
+      <tbody>${
+        Object.keys(data.xlsxDownloadCounts || {}).length
+          ? Object.entries(data.xlsxDownloadCounts).sort((a, b) => b[1] - a[1])
+              .map(([slug, count]) => `<tr><td>${escapeHtml(productLabel(slug))}</td><td>${tplBarCell(count, Math.max(1, ...Object.values(data.xlsxDownloadCounts)))}</td></tr>`)
+              .join("")
+          : `<tr><td colspan="2">${usageOn ? "עדיין אין הורדות" : "לא הופעל"}</td></tr>`
+      }</tbody>
     </table>`;
 
+  // Each user is two rows: a compact summary row (click to expand) and a
+  // detail row that starts hidden — full site list, CV/quote usage and
+  // delete controls live there instead of being crammed into chips inside
+  // the summary row itself.
   const userRows = data.users
-    .map((u) => {
+    .map((u, i) => {
       const sitesHtml = u.sites.length
-        ? u.sites.map((s) => `<span class="stats-chip">${escapeHtml(templateLabel(s.template))}${s.status === "finalized" ? " ✓" : " (טיוטה)"}<button type="button" class="stats-del-btn" data-del="site:${s.id}" title="מחיקת האתר הזה">✕</button></span>`).join("")
-        : "—";
+        ? u.sites.map((s) => `<span class="stats-chip">${escapeHtml(templateLabel(s.template))}${s.status === "finalized" ? " ✓ שולם והורד" : " (טיוטה)"}<button type="button" class="stats-del-btn" data-del="site:${s.id}" title="מחיקת האתר הזה">✕</button></span>`).join("")
+        : "אין אתרים";
       const cvHtml = u.usedCvBuilder
-        ? `<span class="stats-chip">כן<button type="button" class="stats-del-btn" data-del="cv:${u.id}" title="מחיקת קורות החיים">✕</button></span>`
-        : "—";
-      const usageHtml = [
-        u.usedQuoteBuilder ? `<span class="stats-chip">הצעות מחיר</span>` : "",
-        u.downloads ? `<span class="stats-chip">${u.downloads} הורדות</span>` : "",
-      ].filter(Boolean).join("") || "—";
+        ? `<span class="stats-chip">קורות חיים נשמרו<button type="button" class="stats-del-btn" data-del="cv:${u.id}" title="מחיקת קורות החיים">✕</button></span>`
+        : "לא נעשה שימוש";
+      const quoteHtml = u.usedQuoteBuilder ? "כן" : "לא";
       const date = u.createdAt ? new Date(u.createdAt).toLocaleDateString("he-IL") : "—";
       const email = u.email || u.id;
-      return `<tr><td>${escapeHtml(email)}</td><td>${date}</td><td>${sitesHtml}</td><td>${cvHtml}</td><td>${usageHtml}</td></tr>`;
+      const quickCounts = [
+        `${u.sites.length} אתרים`,
+        u.usedCvBuilder ? "קו״ח: כן" : "קו״ח: לא",
+        u.downloads ? `${u.downloads} הורדות` : "0 הורדות",
+      ].map((c) => `<span class="user-quickcount">${escapeHtml(c)}</span>`).join("");
+
+      return `
+        <tr class="user-row" data-uidx="${i}">
+          <td><span class="user-row-toggle">›</span></td>
+          <td>${escapeHtml(email)}</td>
+          <td>${date}</td>
+          <td><div class="user-row-quickcounts">${quickCounts}</div></td>
+        </tr>
+        <tr class="user-detail-row" data-uidx="${i}" hidden>
+          <td colspan="4">
+            <div class="user-detail-panel">
+              <div class="user-detail-group"><h4>אתרים</h4>${sitesHtml}</div>
+              <div class="user-detail-group"><h4>קורות חיים</h4>${cvHtml}</div>
+              <div class="user-detail-group"><h4>שימוש בהצעות מחיר</h4>${quoteHtml}</div>
+            </div>
+          </td>
+        </tr>`;
     })
     .join("");
 
   table.innerHTML = `
     <table class="stats-table">
-      <thead><tr><th>מייל</th><th>נרשם בתאריך</th><th>אתרים</th><th>קורות חיים</th><th>שימוש נוסף</th></tr></thead>
-      <tbody>${userRows || '<tr><td colspan="5">עדיין אין משתמשים</td></tr>'}</tbody>
+      <thead><tr><th></th><th>מייל</th><th>נרשם בתאריך</th><th>סיכום</th></tr></thead>
+      <tbody>${userRows || '<tr><td colspan="4">עדיין אין משתמשים</td></tr>'}</tbody>
     </table>`;
+}
+
+function handleUserRowToggle(e) {
+  const row = e.target.closest(".user-row");
+  if (!row) return;
+  const idx = row.dataset.uidx;
+  const detail = document.querySelector(`.user-detail-row[data-uidx="${idx}"]`);
+  if (!detail) return;
+  detail.hidden = !detail.hidden;
+  row.classList.toggle("open", !detail.hidden);
 }
 
 async function callAdminStats(body) {
@@ -179,6 +256,7 @@ function showCustomerStatsCard() {
   card.style.display = "";
   document.getElementById("stats-load-btn").addEventListener("click", loadCustomerStats);
   document.getElementById("stats-users-table").addEventListener("click", handleStatsDeleteClick);
+  document.getElementById("stats-users-table").addEventListener("click", handleUserRowToggle);
   loadCustomerStats();
 }
 
@@ -199,18 +277,12 @@ function showPanel() {
 
   if (ADMIN_INBOX_URL) {
     status.innerHTML = `<span class="admin-status connected">מחובר</span>`;
-    explain.textContent = "הודעות שנשלחות דרך טופס המשוב באתר נשמרות כאן לצמיתות, ולא נעלמות עם רענון — כי הן מאוחסנות בשרת חיצוני, לא בדפדפן. הרשימה למטה טוענת ישירות מ-formspree; אם היא לא נטענת (למשל אם התנתקת מ-formspree בדפדפן הזה), אפשר לפתוח את התיבה בלשונית נפרדת בכפתור.";
-    // Embedded straight from Formspree's own dashboard URL — if this browser
-    // already has an active formspree.io session (same login used to set up
-    // the form), the iframe shows the real, live submissions list, no extra
-    // login step. If Formspree blocks being framed (common for account
-    // pages, to prevent clickjacking) the iframe area just stays blank —
-    // the button below is the guaranteed-to-work fallback either way.
-    action.innerHTML = `
-      <div class="admin-inbox-frame-wrap">
-        <iframe src="${ADMIN_INBOX_URL}" title="הודעות משוב" loading="lazy"></iframe>
-      </div>
-      <a href="${ADMIN_INBOX_URL}" target="_blank" rel="noopener" class="btn btn-gold" style="margin-top:14px;">פתיחת תיבת ההודעות בלשונית נפרדת</a>`;
+    explain.textContent = "הודעות שנשלחות דרך טופס המשוב באתר נשמרות כאן לצמיתות, ולא נעלמות עם רענון — כי הן מאוחסנות בשרת חיצוני, לא בדפדפן.";
+    // Formspree blocks its own dashboard from being framed (standard
+    // clickjacking protection on account pages), so an embedded iframe here
+    // only ever showed an empty grey box — never the real messages. A
+    // plain link to the real dashboard is the only thing that actually works.
+    action.innerHTML = `<a href="${ADMIN_INBOX_URL}" target="_blank" rel="noopener" class="btn btn-gold">פתיחת תיבת ההודעות</a>`;
     setupCard.style.display = "none";
   } else {
     status.innerHTML = `<span class="admin-status pending">עוד לא חובר</span>`;
