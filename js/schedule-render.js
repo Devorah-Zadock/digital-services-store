@@ -59,19 +59,20 @@ function renderSubjectsTab() {
 
 function subjectRowHtml(s) {
   const roomOptions = ['<option value="">ללא חדר מיוחד</option>']
-    .concat(scheduleState.rooms.map((r) => `<option value="${r.id}"${r.id === s.roomId ? " selected" : ""}>${schedEsc(r.name)}</option>`))
+    .concat(scheduleState.rooms.map((r) => `<option value="${r.id}"${r.id === s.roomId ? " selected" : ""}>${schedEsc(scheduleDisplayName(r.name))}</option>`))
     .join("");
   return `<div class="sched-row sched-subject-cols" data-subject-id="${s.id}">
     <input type="color" class="sched-color-input" data-field="color" value="${s.color}">
     <input type="text" class="sched-text-input" data-field="name" value="${schedEsc(s.name)}" placeholder="שם המקצוע">
     <select class="sched-select" data-field="roomId">${roomOptions}</select>
+    <input type="number" class="sched-num-input" data-field="maxConsecutive" min="1" max="${SCHEDULE_MAX_PERIODS}" placeholder="ללא הגבלה" value="${s.maxConsecutive || ""}">
     <button type="button" class="sched-row-del" data-action="delete-subject" title="מחיקה" aria-label="מחיקה">🗑</button>
   </div>`;
 }
 
 function wireSubjectsTab() {
   document.getElementById("sched-add-subject").addEventListener("click", () => {
-    scheduleAddSubject(scheduleState, "מקצוע חדש", "#1F5C4E", null);
+    scheduleAddSubject(scheduleState, "", "#1F5C4E", null);
     renderSubjectsTab();
     renderAssignmentsTab();
   });
@@ -84,6 +85,7 @@ function wireSubjectsTab() {
     const field = e.target.dataset.field;
     if (field === "name") { s.name = e.target.value; renderAssignmentsTab(); }
     if (field === "color") s.color = e.target.value;
+    if (field === "maxConsecutive") { const v = parseInt(e.target.value, 10); s.maxConsecutive = v > 0 ? v : null; }
   });
   wrap.addEventListener("change", (e) => {
     const row = e.target.closest("[data-subject-id]");
@@ -117,13 +119,14 @@ function renderClassesTab() {
   wrap.innerHTML = scheduleState.classes.map((c) => `
     <div class="sched-row sched-class-cols" data-class-id="${c.id}">
       <input type="text" class="sched-text-input" data-field="name" value="${schedEsc(c.name)}" placeholder="שם הכיתה">
+      <input type="number" class="sched-num-input" data-field="maxDailyPeriod" min="1" max="${SCHEDULE_MAX_PERIODS}" placeholder="כל היום" value="${c.maxDailyPeriod || ""}">
       <button type="button" class="sched-row-del" data-action="delete-class" title="מחיקה" aria-label="מחיקה">🗑</button>
     </div>`).join("");
 }
 
 function wireClassesTab() {
   document.getElementById("sched-add-class").addEventListener("click", () => {
-    scheduleAddClass(scheduleState, "כיתה חדשה");
+    scheduleAddClass(scheduleState, "");
     renderClassesTab();
     renderAssignmentsTab();
   });
@@ -133,7 +136,9 @@ function wireClassesTab() {
     if (!row) return;
     const c = scheduleState.classes.find((x) => x.id === row.dataset.classId);
     if (!c) return;
-    if (e.target.dataset.field === "name") { c.name = e.target.value; renderAssignmentsTab(); }
+    const field = e.target.dataset.field;
+    if (field === "name") { c.name = e.target.value; renderAssignmentsTab(); }
+    if (field === "maxDailyPeriod") { const v = parseInt(e.target.value, 10); c.maxDailyPeriod = v > 0 ? v : null; }
   });
   wrap.addEventListener("click", (e) => {
     const btn = e.target.closest('[data-action="delete-class"]');
@@ -166,7 +171,7 @@ function renderRoomsTab() {
 
 function wireRoomsTab() {
   document.getElementById("sched-add-room").addEventListener("click", () => {
-    scheduleAddRoom(scheduleState, "חדר מיוחד", 1);
+    scheduleAddRoom(scheduleState, "", 1);
     renderRoomsTab();
     renderSubjectsTab();
   });
@@ -214,7 +219,7 @@ function availabilityGridHtml(teacher) {
 
 function teacherCardHtml(t) {
   const subjectChecks = scheduleState.subjects.length
-    ? scheduleState.subjects.map((s) => `<label class="sched-check"><input type="checkbox" data-field="subject" value="${s.id}"${t.subjectIds.includes(s.id) ? " checked" : ""}> ${schedEsc(s.name)}</label>`).join("")
+    ? scheduleState.subjects.map((s) => `<label class="sched-check"><input type="checkbox" data-field="subject" value="${s.id}"${t.subjectIds.includes(s.id) ? " checked" : ""}> ${schedEsc(scheduleDisplayName(s.name))}</label>`).join("")
     : '<p class="sched-hint">הוסיפו קודם מקצועות בלשונית "מקצועות".</p>';
   return `<div class="sched-teacher-card" data-teacher-id="${t.id}">
     <div class="sched-teacher-head">
@@ -223,6 +228,7 @@ function teacherCardHtml(t) {
     </div>
     <div class="sched-teacher-subjects">
       <label class="sched-subfield-label">מקצועות שהמורה מלמד/ת</label>
+      <p class="sched-hint" style="margin:0 0 8px;">סמנו כל מקצוע שהמורה הזו יכולה ללמד — בלשונית "שיבוצי הוראה" אפשר לשבץ אותה רק למקצוע שסימנתם כאן.</p>
       <div class="sched-check-list">${subjectChecks}</div>
     </div>
     <div class="sched-teacher-avail">
@@ -243,7 +249,7 @@ function renderTeachersTab() {
 
 function wireTeachersTab() {
   document.getElementById("sched-add-teacher").addEventListener("click", () => {
-    scheduleAddTeacher(scheduleState, "מורה חדש/ה");
+    scheduleAddTeacher(scheduleState, "");
     renderTeachersTab();
     renderAssignmentsTab();
   });
@@ -298,11 +304,11 @@ function wireTeachersTab() {
 /* ---------- assignments tab ---------- */
 
 function assignmentRowHtml(a) {
-  const classOpts = scheduleState.classes.map((c) => `<option value="${c.id}"${c.id === a.classId ? " selected" : ""}>${schedEsc(c.name)}</option>`).join("");
-  const subjOpts = scheduleState.subjects.map((s) => `<option value="${s.id}"${s.id === a.subjectId ? " selected" : ""}>${schedEsc(s.name)}</option>`).join("");
+  const classOpts = scheduleState.classes.map((c) => `<option value="${c.id}"${c.id === a.classId ? " selected" : ""}>${schedEsc(scheduleDisplayName(c.name))}</option>`).join("");
+  const subjOpts = scheduleState.subjects.map((s) => `<option value="${s.id}"${s.id === a.subjectId ? " selected" : ""}>${schedEsc(scheduleDisplayName(s.name))}</option>`).join("");
   const eligible = scheduleTeachersForSubject(scheduleState, a.subjectId);
   const teacherPool = eligible.length ? eligible : scheduleState.teachers;
-  const teacherOpts = teacherPool.map((t) => `<option value="${t.id}"${t.id === a.teacherId ? " selected" : ""}>${schedEsc(t.name)}</option>`).join("");
+  const teacherOpts = teacherPool.map((t) => `<option value="${t.id}"${t.id === a.teacherId ? " selected" : ""}>${schedEsc(scheduleDisplayName(t.name))}</option>`).join("");
   return `<div class="sched-row sched-assign-cols" data-assignment-id="${a.id}">
     <select class="sched-select" data-field="classId">${classOpts}</select>
     <select class="sched-select" data-field="subjectId">${subjOpts}</select>
@@ -461,8 +467,8 @@ function resultGridHtml(kind, entityId) {
           : scheduleState.classes.find((c) => c.id === lesson.classId);
         const isConflict = conflicts.has(lid);
         cells += `<div class="sched-grid-cell filled${isConflict ? " conflict" : ""}" draggable="true" data-lesson-id="${lid}" data-day="${d}" data-period="${p}" style="--sched-subj-color:${subj ? subj.color : "#ccc"}">
-          <span class="sched-cell-subj">${schedEsc(subj ? subj.name : "?")}</span>
-          <span class="sched-cell-sub">${schedEsc(other ? other.name : "")}</span>
+          <span class="sched-cell-subj">${schedEsc(subj ? scheduleDisplayName(subj.name) : "?")}</span>
+          <span class="sched-cell-sub">${schedEsc(other ? scheduleDisplayName(other.name) : "")}</span>
         </div>`;
       } else {
         cells += `<div class="sched-grid-cell empty" data-day="${d}" data-period="${p}"></div>`;
@@ -475,7 +481,7 @@ function resultGridHtml(kind, entityId) {
 
 function scheduleEntityOptionsHtml() {
   const list = scheduleResultView.kind === "class" ? scheduleState.classes : scheduleState.teachers;
-  return list.map((x) => `<option value="${x.id}">${schedEsc(x.name)}</option>`).join("");
+  return list.map((x) => `<option value="${x.id}">${schedEsc(scheduleDisplayName(x.name))}</option>`).join("");
 }
 
 function renderResultTab() {
@@ -565,7 +571,7 @@ function buildAllClassesPrintHtml() {
   if (!scheduleState.timetable) return "";
   return scheduleState.classes.map((c) => `
     <div class="sched-print-page">
-      <h2>מערכת שעות — ${schedEsc(c.name)}</h2>
+      <h2>מערכת שעות — ${schedEsc(scheduleDisplayName(c.name))}</h2>
       ${resultGridHtml("class", c.id)}
     </div>`).join("");
 }
@@ -606,12 +612,12 @@ function exportResultCsv() {
       const other = kind === "class"
         ? scheduleState.teachers.find((t) => t.id === lesson.teacherId)
         : scheduleState.classes.find((c) => c.id === lesson.classId);
-      row.push(`${subj ? subj.name : ""} (${other ? other.name : ""})`);
+      row.push(`${subj ? scheduleDisplayName(subj.name) : ""} (${other ? scheduleDisplayName(other.name) : ""})`);
     }
     rows.push(row);
   }
   const csv = rows.map((r) => r.map(csvEscape).join(",")).join("\r\n");
-  downloadTextFile(csv, `מערכת-שעות-${entity.name}.csv`, "text/csv;charset=utf-8;");
+  downloadTextFile(csv, `מערכת-שעות-${scheduleDisplayName(entity.name)}.csv`, "text/csv;charset=utf-8;");
 }
 
 function wirePrintExport() {

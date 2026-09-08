@@ -9,6 +9,14 @@ const SCHEDULE_DAY_NAMES = ["א", "ב", "ג", "ד", "ה", "ו"];
 const SCHEDULE_MAX_DAYS = 6;
 const SCHEDULE_MAX_PERIODS = 12;
 
+/* Soft-cost weight for each distinct day a teacher has at least one
+   lesson on — smaller than the per-gap-hour weight (1) so avoiding a
+   mid-day gap still wins when the two pull in different directions, but
+   large enough that, given a free choice, the solver clusters a
+   teacher's few weekly hours onto fewer days instead of spreading them
+   across the whole week for no reason. */
+const SCHEDULE_TEACHER_DAY_WEIGHT = 0.4;
+
 function scheduleUid(prefix) {
   return prefix + "_" + Date.now().toString(36).slice(-5) + Math.random().toString(36).slice(2, 7);
 }
@@ -17,8 +25,8 @@ function defaultScheduleState() {
   return {
     name: "מערכת שעות חדשה",
     settings: { days: 5, periodsPerDay: 8 },
-    subjects: [],    // { id, name, color, roomId }
-    classes: [],     // { id, name }
+    subjects: [],    // { id, name, color, roomId, maxConsecutive: number|null }
+    classes: [],     // { id, name, maxDailyPeriod: number|null }
     teachers: [],    // { id, name, subjectIds: [], unavailable: ["d-p", ...] }
     rooms: [],       // { id, name, count }
     assignments: [], // { id, classId, subjectId, teacherId, weeklyHours }
@@ -34,10 +42,42 @@ function slotKey(day, period) {
   return day + "-" + period;
 }
 
-/* --- CRUD (mutate state in place, return the new/removed item) --- */
+/* Display fallback everywhere a name is rendered (checkboxes, dropdown
+   options, print/CSV) — an entity newly added via its "+" button starts
+   with an empty name (see scheduleAdd* below) so its placeholder shows
+   instead of text the user has to delete first; this is what keeps that
+   empty name from rendering as a blank, unlabeled option elsewhere. */
+function scheduleDisplayName(name) {
+  const trimmed = (name || "").trim();
+  return trimmed || "(ללא שם)";
+}
+
+/* How many consecutive same-value entries `sortedPeriods` has beyond
+   `maxConsecutive`, summed over every run — e.g. periods [1,2,3,5] with
+   maxConsecutive 2 has one run of length 3, so this returns 1. Shared by
+   the worker's incremental bookkeeping and this file's from-scratch
+   evaluator so both score a max-consecutive violation identically. */
+function scheduleConsecutiveExcess(sortedPeriods, maxConsecutive) {
+  if (!maxConsecutive || maxConsecutive <= 0) return 0;
+  let excess = 0, runStart = 0;
+  for (let i = 1; i <= sortedPeriods.length; i++) {
+    const brokeRun = i === sortedPeriods.length || sortedPeriods[i] !== sortedPeriods[i - 1] + 1;
+    if (brokeRun) {
+      const runLen = i - runStart;
+      if (runLen > maxConsecutive) excess += runLen - maxConsecutive;
+      runStart = i;
+    }
+  }
+  return excess;
+}
+
+/* --- CRUD (mutate state in place, return the new/removed item) ---
+   Every new row starts with an empty name on purpose: the input shows
+   its placeholder ("מקצוע חדש" etc.) instead of real text the user has
+   to select-all-and-delete before they can type their own. */
 
 function scheduleAddSubject(state, name, color, roomId) {
-  const s = { id: scheduleUid("subj"), name: name || "מקצוע חדש", color: color || "#1F5C4E", roomId: roomId || null };
+  const s = { id: scheduleUid("subj"), name: name || "", color: color || "#1F5C4E", roomId: roomId || null, maxConsecutive: null };
   state.subjects.push(s);
   return s;
 }
@@ -48,7 +88,7 @@ function scheduleRemoveSubject(state, id) {
 }
 
 function scheduleAddClass(state, name) {
-  const c = { id: scheduleUid("cls"), name: name || "כיתה חדשה" };
+  const c = { id: scheduleUid("cls"), name: name || "", maxDailyPeriod: null };
   state.classes.push(c);
   return c;
 }
@@ -58,7 +98,7 @@ function scheduleRemoveClass(state, id) {
 }
 
 function scheduleAddTeacher(state, name) {
-  const t = { id: scheduleUid("tch"), name: name || "מורה חדש/ה", subjectIds: [], unavailable: [] };
+  const t = { id: scheduleUid("tch"), name: name || "", subjectIds: [], unavailable: [] };
   state.teachers.push(t);
   return t;
 }
@@ -68,7 +108,7 @@ function scheduleRemoveTeacher(state, id) {
 }
 
 function scheduleAddRoom(state, name, count) {
-  const r = { id: scheduleUid("room"), name: name || "חדר מיוחד", count: Math.max(1, count || 1) };
+  const r = { id: scheduleUid("room"), name: name || "", count: Math.max(1, count || 1) };
   state.rooms.push(r);
   return r;
 }
@@ -108,6 +148,8 @@ function buildScheduleProblem(state) {
     teacherUnavailable: state.teachers.map((t) => ({ id: t.id, unavailable: t.unavailable || [] })),
     subjectRoom: state.subjects.filter((s) => s.roomId).map((s) => ({ subjectId: s.id, roomId: s.roomId })),
     roomCount: state.rooms.map((r) => ({ id: r.id, count: r.count || 1 })),
+    subjectMaxConsecutive: state.subjects.filter((s) => s.maxConsecutive > 0).map((s) => ({ subjectId: s.id, max: s.maxConsecutive })),
+    classMaxPeriod: state.classes.filter((c) => c.maxDailyPeriod > 0).map((c) => ({ classId: c.id, maxPeriod: c.maxDailyPeriod })),
   };
 }
 
@@ -120,6 +162,10 @@ function scheduleEvaluatePlacement(problem, placement) {
   problem.subjectRoom.forEach((sr) => { subjectRoomMap[sr.subjectId] = sr.roomId; });
   const roomCountMap = {};
   problem.roomCount.forEach((r) => { roomCountMap[r.id] = r.count; });
+  const subjectMaxMap = {};
+  (problem.subjectMaxConsecutive || []).forEach((s) => { subjectMaxMap[s.subjectId] = s.max; });
+  const classMaxPeriodMap = {};
+  (problem.classMaxPeriod || []).forEach((c) => { classMaxPeriodMap[c.classId] = c.maxPeriod; });
 
   const teacherSlot = {}, classSlot = {}, roomSlot = {};
   let hard = 0;
@@ -134,6 +180,8 @@ function scheduleEvaluatePlacement(problem, placement) {
     if (teacherUnavailSet[lesson.teacherId] && teacherUnavailSet[lesson.teacherId].has(sk)) hard += 1;
     const roomId = subjectRoomMap[lesson.subjectId];
     if (roomId) roomSlot[roomId + "|" + sk] = (roomSlot[roomId + "|" + sk] || 0) + 1;
+    const maxPeriod = classMaxPeriodMap[lesson.classId];
+    if (maxPeriod && pos.period >= maxPeriod) hard += 1;
   });
   Object.values(teacherSlot).forEach((c) => { if (c > 1) hard += c - 1; });
   Object.values(classSlot).forEach((c) => { if (c > 1) hard += c - 1; });
@@ -141,6 +189,19 @@ function scheduleEvaluatePlacement(problem, placement) {
     const roomId = rk.split("|")[0];
     const cap = roomCountMap[roomId] || 1;
     if (roomSlot[rk] > cap) hard += roomSlot[rk] - cap;
+  });
+
+  const classSubjectDayPeriods = {};
+  problem.lessons.forEach((lesson) => {
+    const pos = placement[lesson.id];
+    if (!pos || !subjectMaxMap[lesson.subjectId]) return;
+    const key = lesson.classId + "|" + lesson.subjectId + "|" + pos.day;
+    (classSubjectDayPeriods[key] = classSubjectDayPeriods[key] || []).push(pos.period);
+  });
+  Object.keys(classSubjectDayPeriods).forEach((key) => {
+    const subjectId = key.split("|")[1];
+    const sorted = classSubjectDayPeriods[key].slice().sort((a, b) => a - b);
+    hard += scheduleConsecutiveExcess(sorted, subjectMaxMap[subjectId]);
   });
 
   let soft = 0;
@@ -156,24 +217,17 @@ function scheduleEvaluatePlacement(problem, placement) {
       const sorted = periodsArr.slice().sort((a, b) => a - b);
       const span = sorted[sorted.length - 1] - sorted[0] + 1;
       soft += Math.max(0, span - sorted.length); // window/gap hours (duplicates from a double-booking must never make this negative)
+      soft += SCHEDULE_TEACHER_DAY_WEIGHT; // one active day for this teacher — nudges fewer, more compact working days
     });
   });
-
-  const classSubjectDay = {};
-  problem.lessons.forEach((lesson) => {
-    const pos = placement[lesson.id];
-    if (!pos) return;
-    const key = lesson.classId + "|" + lesson.subjectId + "|" + pos.day;
-    classSubjectDay[key] = (classSubjectDay[key] || 0) + 1;
-  });
-  Object.values(classSubjectDay).forEach((c) => { if (c > 1) soft += (c - 1) * 0.5; });
 
   return { hard, soft, cost: hard * 1000 + soft };
 }
 
 /* Returns the set of lesson ids currently involved in a hard conflict
-   (double-booking or unavailability) — used to highlight offending
-   cells red after a manual drag on the results grid. */
+   (double-booking, unavailability, a class scheduled past its daily
+   limit, or a subject run past its max-consecutive limit) — used to
+   highlight offending cells red after a manual drag on the results grid. */
 function scheduleFindConflicts(problem, placement) {
   const teacherUnavailSet = {};
   problem.teacherUnavailable.forEach((t) => { teacherUnavailSet[t.id] = new Set(t.unavailable); });
@@ -181,8 +235,13 @@ function scheduleFindConflicts(problem, placement) {
   problem.subjectRoom.forEach((sr) => { subjectRoomMap[sr.subjectId] = sr.roomId; });
   const roomCountMap = {};
   problem.roomCount.forEach((r) => { roomCountMap[r.id] = r.count; });
+  const subjectMaxMap = {};
+  (problem.subjectMaxConsecutive || []).forEach((s) => { subjectMaxMap[s.subjectId] = s.max; });
+  const classMaxPeriodMap = {};
+  (problem.classMaxPeriod || []).forEach((c) => { classMaxPeriodMap[c.classId] = c.maxPeriod; });
 
   const teacherSlot = {}, classSlot = {}, roomSlot = {};
+  const classSubjectDayLessons = {}; // "classId|subjectId|day" -> [{period, lessonId}]
   problem.lessons.forEach((lesson) => {
     const pos = placement[lesson.id];
     if (!pos) return;
@@ -191,6 +250,10 @@ function scheduleFindConflicts(problem, placement) {
     (classSlot[lesson.classId + "|" + sk] = classSlot[lesson.classId + "|" + sk] || []).push(lesson.id);
     const roomId = subjectRoomMap[lesson.subjectId];
     if (roomId) (roomSlot[roomId + "|" + sk] = roomSlot[roomId + "|" + sk] || []).push(lesson.id);
+    if (subjectMaxMap[lesson.subjectId]) {
+      const key = lesson.classId + "|" + lesson.subjectId + "|" + pos.day;
+      (classSubjectDayLessons[key] = classSubjectDayLessons[key] || []).push({ period: pos.period, lessonId: lesson.id });
+    }
   });
 
   const bad = new Set();
@@ -203,8 +266,26 @@ function scheduleFindConflicts(problem, placement) {
   });
   problem.lessons.forEach((lesson) => {
     const pos = placement[lesson.id];
-    if (pos && teacherUnavailSet[lesson.teacherId] && teacherUnavailSet[lesson.teacherId].has(slotKey(pos.day, pos.period))) {
+    if (!pos) return;
+    if (teacherUnavailSet[lesson.teacherId] && teacherUnavailSet[lesson.teacherId].has(slotKey(pos.day, pos.period))) {
       bad.add(lesson.id);
+    }
+    const maxPeriod = classMaxPeriodMap[lesson.classId];
+    if (maxPeriod && pos.period >= maxPeriod) bad.add(lesson.id);
+  });
+  Object.keys(classSubjectDayLessons).forEach((key) => {
+    const subjectId = key.split("|")[1];
+    const maxConsecutive = subjectMaxMap[subjectId];
+    const entries = classSubjectDayLessons[key].slice().sort((a, b) => a.period - b.period);
+    let runStart = 0;
+    for (let i = 1; i <= entries.length; i++) {
+      const brokeRun = i === entries.length || entries[i].period !== entries[i - 1].period + 1;
+      if (brokeRun) {
+        if (i - runStart > maxConsecutive) {
+          for (let j = runStart; j < i; j++) bad.add(entries[j].lessonId);
+        }
+        runStart = i;
+      }
     }
   });
   return bad;
@@ -212,8 +293,8 @@ function scheduleFindConflicts(problem, placement) {
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
-    SCHEDULE_DAY_NAMES, SCHEDULE_MAX_DAYS, SCHEDULE_MAX_PERIODS,
-    scheduleUid, defaultScheduleState, scheduleDayName, slotKey,
+    SCHEDULE_DAY_NAMES, SCHEDULE_MAX_DAYS, SCHEDULE_MAX_PERIODS, SCHEDULE_TEACHER_DAY_WEIGHT,
+    scheduleUid, defaultScheduleState, scheduleDayName, slotKey, scheduleDisplayName, scheduleConsecutiveExcess,
     scheduleAddSubject, scheduleRemoveSubject, scheduleAddClass, scheduleRemoveClass,
     scheduleAddTeacher, scheduleRemoveTeacher, scheduleAddRoom, scheduleRemoveRoom,
     scheduleAddAssignment, scheduleRemoveAssignment, scheduleTeachersForSubject,
