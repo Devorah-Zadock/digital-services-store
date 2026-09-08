@@ -46,19 +46,8 @@ function productLabel(slug) {
   return p ? p.title : slug;
 }
 
-/* One row of the KPI bar chart — bar length is the value relative to the
-   largest value among the chart's own (non-pending) numbers, so the whole
-   set reads as one picture instead of needing to compare digits tile by
-   tile. `pending` renders a flat grey bar + "—" for a metric that isn't
-   measured yet (usage_events not set up), same distinction the old tiles
-   made, so a real 0 is never confused with "not tracked at all". */
-function kpiRow(label, num, max, opts) {
-  opts = opts || {};
-  if (opts.pending) {
-    return `<div class="kpi-row"><div class="kpi-label">${label} <span style="color:var(--grey); font-weight:400;">(לא הופעל)</span></div><div class="kpi-bar-track"><div class="kpi-bar kpi-bar-pending" style="width:6%"></div></div><div class="kpi-num kpi-num-pending">—</div></div>`;
-  }
-  const pct = max > 0 ? Math.max(4, Math.round((num / max) * 100)) : 4;
-  return `<div class="kpi-row"><div class="kpi-label">${label}</div><div class="kpi-bar-track"><div class="kpi-bar${opts.gold ? " kpi-bar-gold" : ""}" style="width:${pct}%"></div></div><div class="kpi-num">${num}</div></div>`;
+function quoteTemplateLabel(slug) {
+  return (typeof QUOTE_TEMPLATES !== "undefined" && QUOTE_TEMPLATES[slug]) ? QUOTE_TEMPLATES[slug].label : slug;
 }
 
 /* A count + small inline bar inside one table cell, so a per-template row
@@ -67,6 +56,68 @@ function kpiRow(label, num, max, opts) {
 function tplBarCell(count, max) {
   const pct = max > 0 ? Math.max(4, Math.round((count / max) * 100)) : 4;
   return `<div class="tpl-count-cell"><span class="tpl-num">${count}</span><div class="tpl-bar-track"><div class="tpl-bar" style="width:${pct}%"></div></div></div>`;
+}
+
+/* A subheaded table of {label -> count}, used identically for site
+   templates, CV templates, quote templates, decks and xlsx sheets — one
+   function instead of five near-identical blocks. */
+function renderCountTable(subhead, headerLabel, counts, labelFn, emptyMsg) {
+  const entries = Object.entries(counts || {});
+  const max = Math.max(1, ...entries.map(([, c]) => c));
+  const rows = entries.length
+    ? entries.sort((a, b) => b[1] - a[1]).map(([slug, count]) => `<tr><td>${escapeHtml(labelFn(slug))}</td><td>${tplBarCell(count, max)}</td></tr>`).join("")
+    : `<tr><td colspan="2">${emptyMsg}</td></tr>`;
+  return `<div class="admin-subhead">${subhead}</div><table class="stats-table"><thead><tr><th>${headerLabel}</th><th>שימושים</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+/* Real SVG bar chart for the 7 top-line KPI numbers — one hue (single
+   series needs no legend), rounded bars, a hairline baseline, and the
+   value labeled at each bar's own tip rather than a bare grid of boxes.
+   `pending` renders a flat grey sliver + "—" for a metric that isn't
+   measured yet (usage_events not set up), so a real 0 is never confused
+   with "not tracked at all". */
+function renderKpiChart(items) {
+  const width = 760, rowH = 32, barH = 20, labelW = 150, valueW = 44, pad = 10;
+  const barStart = valueW + pad;
+  const barEnd = width - labelW - pad;
+  const barMaxW = Math.max(10, barEnd - barStart);
+  const height = items.length * rowH + 8;
+
+  const rows = items.map((it, i) => {
+    const cy = i * rowH + rowH / 2 + 4;
+    const barY = cy - barH / 2;
+    const track = `<rect class="kpi-bar-track-rect" x="${barStart}" y="${barY}" width="${barMaxW}" height="${barH}" rx="4"></rect>`;
+    if (it.pending) {
+      const barW = Math.max(10, barMaxW * 0.07);
+      const barX = barEnd - barW;
+      return `${track}
+        <rect class="kpi-bar-rect kpi-bar-rect-pending" x="${barX}" y="${barY}" width="${barW}" height="${barH}" rx="4"></rect>
+        <text class="kpi-bar-value kpi-bar-value-pending" x="${barX - 8}" y="${cy + 4}" text-anchor="end">—</text>
+        <text class="kpi-bar-label kpi-bar-label-pending" x="${width}" y="${cy + 4}" text-anchor="end">${escapeHtml(it.label)} (לא הופעל)</text>`;
+    }
+    const pct = it.max > 0 ? Math.max(0.04, it.value / it.max) : 0.04;
+    const barW = Math.max(6, barMaxW * pct);
+    const barX = barEnd - barW;
+    return `${track}
+      <rect class="kpi-bar-rect${it.gold ? " kpi-bar-rect-gold" : ""}" x="${barX}" y="${barY}" width="${barW}" height="${barH}" rx="4"><title>${escapeHtml(it.label)}: ${it.value}</title></rect>
+      <text class="kpi-bar-value" x="${barX - 8}" y="${cy + 4}" text-anchor="end">${it.value}</text>
+      <text class="kpi-bar-label" x="${width}" y="${cy + 4}" text-anchor="end">${escapeHtml(it.label)}</text>`;
+  }).join("");
+
+  return `<div class="kpi-chart-wrap"><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="גרף סטטיסטיקות לקוחות">
+    <line class="kpi-baseline" x1="${barEnd}" y1="0" x2="${barEnd}" y2="${height}"></line>
+    ${rows}
+  </svg></div>`;
+}
+
+const USAGE_KIND_LABELS = { cv: "קורות חיים", deck: "מצגת", xlsx: "גיליון", quote: "הצעת מחיר" };
+const USAGE_ACTION_LABELS = { edit: "עריכה", download: "הורדה" };
+function usageLogLineHtml(entry) {
+  const kindLabel = USAGE_KIND_LABELS[entry.kind] || entry.kind;
+  const actionLabel = USAGE_ACTION_LABELS[entry.action] || entry.action;
+  const itemLabel = entry.slug ? (entry.kind === "quote" ? quoteTemplateLabel(entry.slug) : productLabel(entry.slug)) : "";
+  const dateStr = entry.createdAt ? new Date(entry.createdAt).toLocaleString("he-IL", { dateStyle: "short", timeStyle: "short" }) : "";
+  return `<li><span>${escapeHtml(kindLabel)}${itemLabel ? " · " + escapeHtml(itemLabel) : ""} — ${escapeHtml(actionLabel)}</span><span class="usage-log-date">${escapeHtml(dateStr)}</span></li>`;
 }
 
 function renderCustomerStats(data) {
@@ -86,16 +137,18 @@ function renderCustomerStats(data) {
   if (usageOn) realValues.push(quoteUserCount, deckCount, xlsxCount);
   const kpiMax = Math.max(1, ...realValues);
 
+  const kpiItems = [
+    { label: "משתמשים רשומים", value: data.userCount, max: kpiMax },
+    { label: "השתמשו בקורות חיים", value: data.cvBuilderUserCount, max: kpiMax },
+    usageOn ? { label: "השתמשו בהצעות מחיר", value: quoteUserCount, max: kpiMax } : { label: "השתמשו בהצעות מחיר", pending: true },
+    { label: "אתרים נפתחו", value: siteProjectCount, max: kpiMax },
+    { label: "אתרים שולמו והורדו", value: finalizedCount, max: kpiMax, gold: true },
+    usageOn ? { label: "מצגות הורדו", value: deckCount, max: kpiMax } : { label: "מצגות הורדו", pending: true },
+    usageOn ? { label: "גליונות הורדו", value: xlsxCount, max: kpiMax } : { label: "גליונות הורדו", pending: true },
+  ];
+
   summary.innerHTML = `
-    <div class="kpi-chart">
-      ${kpiRow("משתמשים רשומים", data.userCount, kpiMax)}
-      ${kpiRow("השתמשו בקורות חיים", data.cvBuilderUserCount, kpiMax)}
-      ${usageOn ? kpiRow("השתמשו בהצעות מחיר", quoteUserCount, kpiMax) : kpiRow("השתמשו בהצעות מחיר", 0, kpiMax, { pending: true })}
-      ${kpiRow("אתרים נפתחו", siteProjectCount, kpiMax)}
-      ${kpiRow("אתרים שולמו והורדו", finalizedCount, kpiMax, { gold: true })}
-      ${usageOn ? kpiRow("מצגות הורדו", deckCount, kpiMax) : kpiRow("מצגות הורדו", 0, kpiMax, { pending: true })}
-      ${usageOn ? kpiRow("גליונות הורדו", xlsxCount, kpiMax) : kpiRow("גליונות הורדו", 0, kpiMax, { pending: true })}
-    </div>
+    ${renderKpiChart(kpiItems)}
     ${usageOn ? "" : `<p style="font-size:12.5px; color:#8A6212; background:#FBF2E0; border-radius:8px; padding:8px 12px; margin:0 0 20px;">השורות המסומנות "לא הופעל" ידווחו נתונים אמיתיים לאחר הרצת קובץ ה-SQL <code>supabase/sql/usage_events.sql</code> (חד-פעמי) — עד אז הן לא באמת אפס, פשוט עוד לא נמדדות.</p>`}
     <div class="admin-subhead">תבניות אתר</div>
     <table class="stats-table">
@@ -112,33 +165,15 @@ function renderCustomerStats(data) {
           : '<tr><td colspan="3">עדיין אין נתונים</td></tr>'
       }</tbody>
     </table>
-    <div class="admin-subhead">מצגות שהורדו</div>
-    <table class="stats-table">
-      <thead><tr><th>מצגת</th><th>הורדות</th></tr></thead>
-      <tbody>${
-        Object.keys(data.deckDownloadCounts || {}).length
-          ? Object.entries(data.deckDownloadCounts).sort((a, b) => b[1] - a[1])
-              .map(([slug, count]) => `<tr><td>${escapeHtml(productLabel(slug))}</td><td>${tplBarCell(count, Math.max(1, ...Object.values(data.deckDownloadCounts)))}</td></tr>`)
-              .join("")
-          : `<tr><td colspan="2">${usageOn ? "עדיין אין הורדות" : "לא הופעל"}</td></tr>`
-      }</tbody>
-    </table>
-    <div class="admin-subhead">גליונות שהורדו</div>
-    <table class="stats-table">
-      <thead><tr><th>גיליון</th><th>הורדות</th></tr></thead>
-      <tbody>${
-        Object.keys(data.xlsxDownloadCounts || {}).length
-          ? Object.entries(data.xlsxDownloadCounts).sort((a, b) => b[1] - a[1])
-              .map(([slug, count]) => `<tr><td>${escapeHtml(productLabel(slug))}</td><td>${tplBarCell(count, Math.max(1, ...Object.values(data.xlsxDownloadCounts)))}</td></tr>`)
-              .join("")
-          : `<tr><td colspan="2">${usageOn ? "עדיין אין הורדות" : "לא הופעל"}</td></tr>`
-      }</tbody>
-    </table>`;
+    ${renderCountTable("תבניות קורות חיים", "תבנית", data.cvTemplateCounts, productLabel, usageOn ? "עדיין אין שימוש" : "לא הופעל")}
+    ${renderCountTable("תבניות הצעות מחיר", "תבנית", data.quoteTemplateCounts, quoteTemplateLabel, usageOn ? "עדיין אין שימוש" : "לא הופעל")}
+    ${renderCountTable("מצגות שהורדו", "מצגת", data.deckDownloadCounts, productLabel, usageOn ? "עדיין אין הורדות" : "לא הופעל")}
+    ${renderCountTable("גליונות שהורדו", "גיליון", data.xlsxDownloadCounts, productLabel, usageOn ? "עדיין אין הורדות" : "לא הופעל")}`;
 
   // Each user is two rows: a compact summary row (click to expand) and a
-  // detail row that starts hidden — full site list, CV/quote usage and
-  // delete controls live there instead of being crammed into chips inside
-  // the summary row itself.
+  // detail row that starts hidden — full site list, CV/quote usage, a
+  // full itemized usage log and delete controls live there instead of
+  // being crammed into chips inside the summary row itself.
   const userRows = data.users
     .map((u, i) => {
       const sitesHtml = u.sites.length
@@ -148,6 +183,9 @@ function renderCustomerStats(data) {
         ? `<span class="stats-chip">קורות חיים נשמרו<button type="button" class="stats-del-btn" data-del="cv:${u.id}" title="מחיקת קורות החיים">✕</button></span>`
         : "לא נעשה שימוש";
       const quoteHtml = u.usedQuoteBuilder ? "כן" : "לא";
+      const usageLogHtml = (u.usageLog && u.usageLog.length)
+        ? `<ul class="usage-log-list">${u.usageLog.map(usageLogLineHtml).join("")}</ul>`
+        : "אין תיעוד שימוש";
       const date = u.createdAt ? new Date(u.createdAt).toLocaleDateString("he-IL") : "—";
       const email = u.email || u.id;
       const quickCounts = [
@@ -169,6 +207,7 @@ function renderCustomerStats(data) {
               <div class="user-detail-group"><h4>אתרים</h4>${sitesHtml}</div>
               <div class="user-detail-group"><h4>קורות חיים</h4>${cvHtml}</div>
               <div class="user-detail-group"><h4>שימוש בהצעות מחיר</h4>${quoteHtml}</div>
+              <div class="user-detail-group user-detail-group-wide"><h4>יומן שימוש מפורט</h4>${usageLogHtml}</div>
             </div>
           </td>
         </tr>`;
@@ -244,6 +283,25 @@ async function handleStatsDeleteClick(e) {
   }
 }
 
+function wireStatsTabs() {
+  const btnCustomers = document.getElementById("stats-tab-btn-customers");
+  const btnCharts = document.getElementById("stats-tab-btn-charts");
+  const tabCustomers = document.getElementById("stats-tab-customers");
+  const tabCharts = document.getElementById("stats-tab-charts");
+  btnCustomers.addEventListener("click", () => {
+    btnCustomers.classList.add("active");
+    btnCharts.classList.remove("active");
+    tabCustomers.style.display = "";
+    tabCharts.style.display = "none";
+  });
+  btnCharts.addEventListener("click", () => {
+    btnCharts.classList.add("active");
+    btnCustomers.classList.remove("active");
+    tabCharts.style.display = "";
+    tabCustomers.style.display = "none";
+  });
+}
+
 function showCustomerStatsCard() {
   const setup = document.getElementById("stats-setup-card");
   const card = document.getElementById("stats-card");
@@ -254,6 +312,7 @@ function showCustomerStatsCard() {
   }
   setup.style.display = "none";
   card.style.display = "";
+  wireStatsTabs();
   document.getElementById("stats-load-btn").addEventListener("click", loadCustomerStats);
   document.getElementById("stats-users-table").addEventListener("click", handleStatsDeleteClick);
   document.getElementById("stats-users-table").addEventListener("click", handleUserRowToggle);

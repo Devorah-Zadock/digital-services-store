@@ -41,7 +41,7 @@ async function loadStats(admin: ReturnType<typeof createClient>) {
       admin.from("customer_profiles").select("id, email, created_at").order("created_at", { ascending: false }),
       admin.from("site_projects").select("id, user_id, template, status, created_at"),
       admin.from("cv_saves").select("user_id"),
-      admin.from("usage_events").select("user_id, kind, slug, action"),
+      admin.from("usage_events").select("user_id, kind, slug, action, created_at").order("created_at", { ascending: false }),
     ]);
   if (profilesErr) throw profilesErr;
   if (projectsErr) throw projectsErr;
@@ -60,26 +60,35 @@ async function loadStats(admin: ReturnType<typeof createClient>) {
   const quoteUsers = new Set(usageEvents.filter((e) => e.kind === "quote" && e.action === "edit").map((e) => e.user_id));
   const deckDownloadCounts: Record<string, number> = {};
   const xlsxDownloadCounts: Record<string, number> = {};
+  const cvTemplateCounts: Record<string, number> = {};
+  const quoteTemplateCounts: Record<string, number> = {};
   for (const e of usageEvents) {
-    if (e.action !== "download") continue;
-    if (e.kind === "deck") deckDownloadCounts[e.slug] = (deckDownloadCounts[e.slug] || 0) + 1;
-    if (e.kind === "xlsx") xlsxDownloadCounts[e.slug] = (xlsxDownloadCounts[e.slug] || 0) + 1;
+    if (e.action === "download") {
+      if (e.kind === "deck") deckDownloadCounts[e.slug] = (deckDownloadCounts[e.slug] || 0) + 1;
+      if (e.kind === "xlsx") xlsxDownloadCounts[e.slug] = (xlsxDownloadCounts[e.slug] || 0) + 1;
+    } else if (e.action === "edit") {
+      if (e.kind === "cv") cvTemplateCounts[e.slug] = (cvTemplateCounts[e.slug] || 0) + 1;
+      if (e.kind === "quote") quoteTemplateCounts[e.slug] = (quoteTemplateCounts[e.slug] || 0) + 1;
+    }
   }
   const deckDownloadCount = Object.values(deckDownloadCounts).reduce((a, b) => a + b, 0);
   const xlsxDownloadCount = Object.values(xlsxDownloadCounts).reduce((a, b) => a + b, 0);
 
-  const byUser: Record<string, { sites: { id: string; template: string; status: string }[]; usedCvBuilder: boolean; usedQuoteBuilder: boolean; downloads: number }> = {};
+  type UsageLogEntry = { kind: string; slug: string | null; action: string; createdAt: string };
+  const byUser: Record<string, { sites: { id: string; template: string; status: string }[]; usedCvBuilder: boolean; usedQuoteBuilder: boolean; downloads: number; usageLog: UsageLogEntry[] }> = {};
   for (const p of profiles || []) {
-    byUser[p.id] = { sites: [], usedCvBuilder: cvUsers.has(p.id), usedQuoteBuilder: quoteUsers.has(p.id), downloads: 0 };
+    byUser[p.id] = { sites: [], usedCvBuilder: cvUsers.has(p.id), usedQuoteBuilder: quoteUsers.has(p.id), downloads: 0, usageLog: [] };
   }
   for (const proj of projects || []) {
-    if (!byUser[proj.user_id]) byUser[proj.user_id] = { sites: [], usedCvBuilder: cvUsers.has(proj.user_id), usedQuoteBuilder: quoteUsers.has(proj.user_id), downloads: 0 };
+    if (!byUser[proj.user_id]) byUser[proj.user_id] = { sites: [], usedCvBuilder: cvUsers.has(proj.user_id), usedQuoteBuilder: quoteUsers.has(proj.user_id), downloads: 0, usageLog: [] };
     byUser[proj.user_id].sites.push({ id: proj.id, template: proj.template, status: proj.status || "draft" });
   }
+  // usage_events was already fetched newest-first, so each user's log ends
+  // up newest-first too without a separate sort per user.
   for (const e of usageEvents) {
-    if (e.action !== "download") continue;
-    if (!byUser[e.user_id]) byUser[e.user_id] = { sites: [], usedCvBuilder: cvUsers.has(e.user_id), usedQuoteBuilder: quoteUsers.has(e.user_id), downloads: 0 };
-    byUser[e.user_id].downloads += 1;
+    if (!byUser[e.user_id]) byUser[e.user_id] = { sites: [], usedCvBuilder: cvUsers.has(e.user_id), usedQuoteBuilder: quoteUsers.has(e.user_id), downloads: 0, usageLog: [] };
+    if (e.action === "download") byUser[e.user_id].downloads += 1;
+    byUser[e.user_id].usageLog.push({ kind: e.kind, slug: e.slug, action: e.action, createdAt: e.created_at });
   }
 
   const templateCounts: Record<string, number> = {};
@@ -99,11 +108,13 @@ async function loadStats(admin: ReturnType<typeof createClient>) {
     usedQuoteBuilder: byUser[p.id] ? byUser[p.id].usedQuoteBuilder : false,
     downloads: byUser[p.id] ? byUser[p.id].downloads : 0,
     sites: byUser[p.id] ? byUser[p.id].sites : [],
+    usageLog: byUser[p.id] ? byUser[p.id].usageLog : [],
   }));
 
   return {
     userCount: users.length, cvBuilderUserCount: cvUsers.size, quoteBuilderUserCount: quoteUsers.size,
     deckDownloadCount, xlsxDownloadCount, deckDownloadCounts, xlsxDownloadCounts, usageEventsAvailable,
+    cvTemplateCounts, quoteTemplateCounts,
     templateCounts, finalizedTemplateCounts, users,
   };
 }
