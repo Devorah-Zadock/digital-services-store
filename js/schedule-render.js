@@ -21,10 +21,8 @@ function schedEsc(s) {
    license — same "honest caveat" as everywhere else on this site: a
    client-side check against Gumroad's API, not real DRM, but the same
    barrier the CV/sites builders already used successfully before the CV
-   one went free.
-   checkoutUrl is still a placeholder — see README ("בונה מערכת שעות —
-   הגדרת Gumroad") for where to copy the real one from. */
-const SCHEDULE_GUMROAD_CONFIG = { productId: "K122yL6VSdTui67Be5ZiYw==", checkoutUrl: "https://REPLACE_ME.gumroad.com/l/REPLACE_ME" };
+   one went free. */
+const SCHEDULE_GUMROAD_CONFIG = { productId: "K122yL6VSdTui67Be5ZiYw==", checkoutUrl: "https://dizstudio.gumroad.com/l/koixys" };
 const SCHEDULE_UNLOCK_KEY = "deskkit_schedule_unlocked_" + SCHEDULE_GUMROAD_CONFIG.productId;
 /* Fixed, not per-project like site templates: there's only one version
    of this tool, so one purchase should unlock every project this account
