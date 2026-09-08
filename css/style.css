@@ -59,7 +59,7 @@ ul { margin: 0; }
 }
 @keyframes marquee {
   from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
+  to { transform: translateX(-33.3334%); }
 }
 
 /* ---------- Scroll-reveal ---------- */
@@ -70,8 +70,16 @@ ul { margin: 0; }
 }
 
 /* ---------- Marquee strip ---------- */
-.marquee { overflow: hidden; background: var(--teal-dark); padding: 12px 0; }
-.marquee-track { display: flex; width: max-content; animation: marquee 22s linear infinite; }
+/* direction:ltr here is load-bearing, not cosmetic: .marquee-track is
+   wider than its container (width:max-content) and animates via
+   translateX. In the page's normal RTL flow an over-wide block like this
+   sits flush against the RIGHT edge at rest with nothing buffered beyond
+   it — so as it slides left there's no queued content to reveal, and the
+   strip runs empty well before the loop point. Forcing ltr makes it sit
+   flush-left with the extra copies buffered off-screen to the right,
+   which is what the left-scrolling animation actually needs. */
+.marquee { overflow: hidden; background: var(--teal-dark); padding: 12px 0; direction: ltr; }
+.marquee-track { display: flex; width: max-content; animation: marquee 34s linear infinite; }
 .marquee-item {
   display: flex; align-items: center; gap: 10px; color: #DCEBE5; font-size: 13.5px; font-weight: 600;
   padding: 0 28px; white-space: nowrap;
@@ -726,12 +734,11 @@ footer.site { background: linear-gradient(180deg, var(--teal-dark), #102921); co
 
 .cookie-notice {
   position: fixed; inset-inline: 0; bottom: 0; z-index: 250;
-  background: var(--teal-dark); color: var(--white);
+  background: var(--white); color: var(--teal-dark); border-top: 1px solid #DDE4E1;
   display: flex; align-items: center; justify-content: center; gap: 18px; flex-wrap: wrap;
-  padding: 12px 24px; box-shadow: 0 -6px 20px rgba(0,0,0,.15);
+  padding: 12px 24px; box-shadow: 0 -6px 20px rgba(0,0,0,.1);
 }
-.cookie-notice p { margin: 0; font-size: 13px; max-width: 560px; }
-.cookie-notice a { color: var(--gold-light); text-decoration: underline; }
+.cookie-notice p { margin: 0; font-size: 13px; max-width: 560px; color: var(--grey); }
 .cookie-notice button { padding: 8px 20px; font-size: 13px; flex: none; }
 body.cookie-notice-active .fab { display: none; }
 
