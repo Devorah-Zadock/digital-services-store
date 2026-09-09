@@ -222,20 +222,20 @@ function injectCookieNotice() {
 /* Shared by site-builder.js and schedule-render.js: once the Gumroad
    checkout link has been opened, clicking it again only reopens the same
    page — there's nothing new to do there, so it's disabled (visually and
-   for real, via pointer-events) rather than left clickable forever. The
-   "clicked" flag is per-key in localStorage, not just an in-memory flag,
-   so it survives a reload/revisit rather than un-disabling itself. */
-function wireBuyLinkOnce(link, storageKey) {
+   for real, via pointer-events) rather than left clickable forever.
+   Deliberately in-memory only (no localStorage): a flag that persisted
+   across reloads turned out to survive a reload or an account switch on
+   the SAME browser too, permanently graying out the button for whoever
+   logs in next on that machine — confusing for account-switch testing,
+   and no less confusing for two different real customers sharing a
+   computer. Guarding against an accidental double-click within the same
+   page visit is all this needs to do. */
+function wireBuyLinkOnce(link) {
   if (!link) return;
-  const disable = () => {
+  link.addEventListener("click", () => {
     link.classList.add("btn-disabled");
     link.setAttribute("aria-disabled", "true");
     link.textContent = "דף הרכישה נפתח ✓";
-  };
-  if (localStorage.getItem(storageKey) === "1") { disable(); return; }
-  link.addEventListener("click", () => {
-    localStorage.setItem(storageKey, "1");
-    disable();
   });
 }
 

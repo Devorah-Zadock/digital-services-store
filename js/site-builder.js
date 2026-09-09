@@ -522,7 +522,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const buyLink = document.getElementById("buy-link");
   buyLink.href = SITE_GUMROAD_CONFIG.checkoutUrl;
-  wireBuyLinkOnce(buyLink, "deskkit_sites_buyclicked_" + SITE_GUMROAD_CONFIG.productId);
+  wireBuyLinkOnce(buyLink);
   wireForm();
   refreshUnlockUI();
 

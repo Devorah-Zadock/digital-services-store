@@ -123,7 +123,7 @@ async function verifyScheduleLicense() {
 function wireScheduleUnlock() {
   const buyLink = document.getElementById("sched-buy-link");
   buyLink.href = SCHEDULE_GUMROAD_CONFIG.checkoutUrl;
-  wireBuyLinkOnce(buyLink, "deskkit_schedule_buyclicked_" + SCHEDULE_GUMROAD_CONFIG.productId);
+  wireBuyLinkOnce(buyLink);
   document.getElementById("sched-verify-btn").addEventListener("click", verifyScheduleLicense);
   refreshScheduleUnlockUi();
 }
