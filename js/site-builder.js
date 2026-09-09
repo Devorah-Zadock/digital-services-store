@@ -467,7 +467,13 @@ async function verifySiteLicense() {
       return;
     }
     if (!data.success) {
-      const invalidMsg = "קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב." + (data.gumroadMessage ? ` (Gumroad: ${data.gumroadMessage})` : "");
+      // TEMPORARY: appending gumroadDebug (raw Gumroad HTTP status/body) so
+      // we can see exactly why a genuinely purchased key is failing —
+      // remove this debug suffix once that's root-caused.
+      const debugSuffix = !data.gumroadMessage && data.gumroadDebug
+        ? ` [דיבוג: HTTP ${data.gumroadDebug.status} — ${String(data.gumroadDebug.body || "").slice(0, 200)}]`
+        : "";
+      const invalidMsg = "קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב." + (data.gumroadMessage ? ` (Gumroad: ${data.gumroadMessage})` : debugSuffix);
       note.textContent = data.reason === "redeemed-elsewhere" || data.reason === "different-template"
         ? "קוד הרישוי הזה כבר שימש לפתיחת אתר אחר. לתבנית נוספת נדרשת רכישה נפרדת."
         : invalidMsg;

@@ -47,14 +47,32 @@ Deno.serve(async (req: Request) => {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({ product_id: productId, license_key: licenseKey }),
     });
-    const gumroadData = await gumroadRes.json();
+    // Read as text first, not .json() directly: an unexpected non-JSON
+    // reply (an HTML error page, an empty body) would otherwise throw and
+    // get swallowed by the outer catch as a generic 500, hiding exactly
+    // the detail we need while actively debugging a real "invalid" report
+    // on a genuine purchased key.
+    const gumroadText = await gumroadRes.text();
+    let gumroadData: Record<string, unknown> = {};
+    try {
+      gumroadData = JSON.parse(gumroadText);
+    } catch (_e) {
+      gumroadData = {};
+    }
     if (!gumroadData.success) {
       // Gumroad's own message ("That license does not exist for the
       // provided product." / "Invalid product." / etc.) is exactly what
       // tells apart a wrong product_id from a wrong/reused key — worth
       // surfacing instead of collapsing everything into one bare "invalid".
+      // TEMPORARY: gumroadDebug (raw HTTP status + body) is included only
+      // while actively root-causing this — remove it once resolved.
       return new Response(
-        JSON.stringify({ success: false, reason: "invalid", gumroadMessage: gumroadData.message || null }),
+        JSON.stringify({
+          success: false,
+          reason: "invalid",
+          gumroadMessage: (gumroadData.message as string) || null,
+          gumroadDebug: { status: gumroadRes.status, body: gumroadText.slice(0, 400) },
+        }),
         { status: 200, headers: corsHeaders }
       );
     }
