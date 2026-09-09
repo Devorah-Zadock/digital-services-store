@@ -3,26 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>קטלוג תבניות — DeskKit</title>
+<title>מדריכים — DeskKit</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="description" content="קטלוג תבניות עסקיות: קורות חיים לפי מקצוע, מצגות עסקיות ועוד — מוכן להורדה ועריכה מיידית.">
-<link rel="canonical" href="https://deskkit.co.il/products.html">
+<meta name="description" content="מדריכים פרקטיים לבניית מערכת שעות לבית ספר, כתיבת קורות חיים שמתקבלים, ובניית אתר עסקי מקצועי — מ-DeskKit.">
+<link rel="canonical" href="https://deskkit.co.il/guides.html">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=22">
-<link rel="stylesheet" href="css/builder.css?v=2">
 </head>
 <body>
 <script>
-  /* Guesses, synchronously and before first paint, whether "my content"
-     will end up mounted (js/my-panel.js only knows for sure after an
-     async Supabase check) — reserves its 220px margin immediately so
-     the whole page doesn't visibly jump sideways once the real check
-     resolves a beat later. A wrong guess (stale/expired token) just
-     falls back to the old behavior for that one navigation. */
   try {
     for (var i = 0; i < localStorage.length; i++) {
       var k = localStorage.key(i);
@@ -47,9 +40,9 @@
       <a href="index.html">בית</a>
       <a href="sites.html?browse=1">אתרים</a>
       <a href="quote-app.html">הצעות מחיר</a>
-      <a href="products.html?type=cv" data-nav-type="cv">קורות חיים</a>
-      <a href="products.html?type=deck" data-nav-type="deck">מצגות</a>
-      <a href="products.html?type=xlsx" data-nav-type="xlsx">גליונות</a>
+      <a href="products.html?type=cv">קורות חיים</a>
+      <a href="products.html?type=deck">מצגות</a>
+      <a href="products.html?type=xlsx">גליונות</a>
       <a href="about.html">אודות</a>
       <a href="contact.html">צור קשר</a>
     </div>
@@ -61,23 +54,43 @@
   </nav>
 </header>
 
-<section class="builder-top no-print">
-  <div class="container">
-    <h1 id="products-hero-title" style="font-size:26px; margin:6px 0 4px;">קורות חיים</h1>
-    <p id="products-hero-lead" style="color:var(--grey); font-size:14px; margin:0;">תבניות קורות חיים מוכנות, בעיצוב מקצועי — ממלאים פרטים ורואים תוצאה חיה, לפי מקצוע.</p>
-  </div>
+<section class="hero" style="padding:60px 24px 70px;">
+  <h1 style="font-size:32px;">מדריכים</h1>
+  <p class="lead">טיפים פרקטיים, בלי מילים גבוהות — כדי שתוכלו ליישם אותם תוך דקות.</p>
 </section>
 
 <section>
-  <div class="container">
-    <div class="tpl-search-row">
-      <div class="tpl-search-wrap">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-        <input type="search" id="product-search" class="tpl-search" placeholder="חיפוש תבנית לפי שם...">
-      </div>
+  <div class="container" style="max-width:900px;">
+    <div class="grid">
+
+      <a href="guide-school-schedule.html" class="card" style="text-decoration:none; color:inherit;">
+        <div class="body">
+          <div style="font-size:30px;">🗓️</div>
+          <h3>איך בונים מערכת שעות אוטומטית לבית ספר</h3>
+          <p style="font-size:14px; color:var(--grey); margin:0; flex:1;">מה זה אילוצים, ואיך מקבלים מערכת שעות ללא התנגשויות תוך דקות.</p>
+          <span style="color:var(--teal); font-weight:600;">לקריאת המדריך ←</span>
+        </div>
+      </a>
+
+      <a href="guide-cv-tips.html" class="card" style="text-decoration:none; color:inherit;">
+        <div class="body">
+          <div style="font-size:30px;">📄</div>
+          <h3>5 טיפים לקורות חיים שמתקבלים</h3>
+          <p style="font-size:14px; color:var(--grey); margin:0; flex:1;">כללי אצבע פשוטים שעושים הבדל אמיתי — מהיקף העמוד ועד הישגים מדידים.</p>
+          <span style="color:var(--teal); font-weight:600;">לקריאת המדריך ←</span>
+        </div>
+      </a>
+
+      <a href="guide-business-website.html" class="card" style="text-decoration:none; color:inherit;">
+        <div class="body">
+          <div style="font-size:30px;">🌐</div>
+          <h3>איך בונים אתר עסקי מקצועי בלי לדעת קוד</h3>
+          <p style="font-size:14px; color:var(--grey); margin:0; flex:1;">מה חייב להיות בכל אתר עסקי, ואיך עושים את זה שלב אחר שלב.</p>
+          <span style="color:var(--teal); font-weight:600;">לקריאת המדריך ←</span>
+        </div>
+      </a>
+
     </div>
-    <div class="tabs tabs-sub" id="subcat-tabs"></div>
-    <div class="grid" id="product-grid"></div>
   </div>
 </section>
 
@@ -86,7 +99,7 @@
     <div class="footer-grid">
       <div>
         <h5>DeskKit</h5>
-        <p style="font-size:14px; max-width:320px;">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
+        <p style="font-size:14px; max-width:320px;">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות, אתרים ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
       </div>
       <div>
         <h5>ניווט</h5>
@@ -96,7 +109,7 @@
           <li><a href="products.html?type=deck">מצגות</a></li>
           <li><a href="products.html?type=xlsx">גליונות</a></li>
           <li><a href="sites.html?browse=1">אתרים</a></li>
-          <li><a href="quote-app.html">הצעות מחיר</a></li>
+          <li><a href="schedule-builder.html">מערכת שעות</a></li>
           <li><a href="about.html">אודות</a></li>
           <li><a href="contact.html">צור קשר</a></li>
         </ul>
@@ -105,7 +118,6 @@
         <h5>מידע</h5>
         <ul>
           <li><a href="guides.html">מדריכים</a></li>
-          <li><a href="admin.html">ניהול</a></li>
           <li><a href="terms.html">מדיניות</a></li>
           <li><a href="accessibility.html">נגישות</a></li>
         </ul>
@@ -121,8 +133,6 @@
   </div>
 </footer>
 
-<script src="js/products-data.js?v=2"></script>
-<script src="js/catalog.js?v=11"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>

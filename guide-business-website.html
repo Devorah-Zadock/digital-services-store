@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>איך בונים אתר עסקי מקצועי בלי לדעת קוד — מדריך | DeskKit</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="description" content="מדריך לבניית אתר עסקי מקצועי בעברית תוך דקות, בלי לדעת לתכנת — מה חייב להיות בכל אתר עסקי, ואיך עושים את זה שלב אחר שלב.">
+<link rel="canonical" href="https://deskkit.co.il/guide-business-website.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=22">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "איך בונים אתר עסקי מקצועי בלי לדעת קוד",
+  "description": "מדריך לבניית אתר עסקי מקצועי בעברית תוך דקות, בלי ידע בתכנות.",
+  "author": { "@type": "Organization", "name": "DeskKit" },
+  "publisher": { "@type": "Organization", "name": "DeskKit" },
+  "datePublished": "2026-09-09",
+  "mainEntityOfPage": "https://deskkit.co.il/guide-business-website.html"
+}
+</script>
+</head>
+<body>
+<script>
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf("sb-") === 0 && k.indexOf("-auth-token") !== -1 && localStorage.getItem(k)) {
+        document.body.classList.add("has-sites-rail");
+        break;
+      }
+    }
+    var rw = localStorage.getItem("deskkit_rail_w");
+    if (rw) document.documentElement.style.setProperty("--rail-w", rw + "px");
+    if (localStorage.getItem("deskkit_rail_collapsed") === "1") {
+      document.documentElement.style.setProperty("--rail-w", "0px");
+      document.body.classList.add("rail-collapsed");
+    }
+  } catch (e) {}
+</script>
+
+<header class="site">
+  <nav class="nav">
+    <a href="index.html" class="brand"><span class="brand-badge"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><rect class="bm-fold" x="6" y="4" width="4" height="16" rx="2"/><path class="bm-face" d="M9,4 H13 A8,8 0 0 1 13,20 H9 Z"/></svg></span><span class="brand-text">DeskKit</span></a>
+    <div class="nav-links">
+      <a href="index.html">בית</a>
+      <a href="sites.html?browse=1">אתרים</a>
+      <a href="quote-app.html">הצעות מחיר</a>
+      <a href="products.html?type=cv">קורות חיים</a>
+      <a href="products.html?type=deck">מצגות</a>
+      <a href="products.html?type=xlsx">גליונות</a>
+      <a href="about.html">אודות</a>
+      <a href="contact.html">צור קשר</a>
+    </div>
+    <div class="nav-end-group">
+      <a href="account.html?redirect=tools.html" id="nav-login-link" class="nav-login nav-login-pending">כניסה</a>
+      <a href="catalog.html" class="nav-cta">לצפייה בקטלוג</a>
+    </div>
+    <button class="burger" aria-label="תפריט">☰</button>
+  </nav>
+</header>
+
+<section class="hero" style="padding:60px 24px 70px;">
+  <h1 style="font-size:32px;">איך בונים אתר עסקי מקצועי בלי לדעת קוד</h1>
+  <p class="lead">לא צריך מפתח, לא צריך תקציב של אלפי שקלים — רק לדעת מה חייב להיות באתר, ולמלא את זה.</p>
+</section>
+
+<section>
+  <div class="container" style="max-width:720px;">
+
+    <h3 style="color:var(--teal-dark);">למה עדיין צריך אתר, גם אם יש עמוד עסקי באינסטגרם</h3>
+    <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;">
+      עמוד ברשת חברתית תלוי באלגוריתם ובחשבון של חברה אחרת — יום אחד הוא יכול להיסגר, להשתנות, או פשוט לא להופיע למי שלא עוקב. אתר משלכם הוא הכתובת היחידה שבאמת שייכת לכם, נמצאת בגוגל, ואפשר לשלוח אותה בביטחון בכרטיס ביקור, בחתימת מייל, או ללקוח בטלפון — "תחפשו אותנו בגוגל" הרבה פחות אמין מ"האתר שלנו הוא...".
+    </p>
+
+    <h3 style="color:var(--teal-dark);">מה חייב להיות באתר עסקי — הרשימה המינימלית</h3>
+    <ul style="font-size:15.5px; color:var(--grey); margin:0 0 24px; padding-inline-start:22px;">
+      <li style="margin-bottom:8px;"><b>מה העסק עושה, בשורה אחת ברורה</b> — לא סיסמה שיווקית מעורפלת, אלא משפט שמסביר בדיוק במה אתם עוסקים.</li>
+      <li style="margin-bottom:8px;"><b>דרכי יצירת קשר בולטות</b> — טלפון או וואטסאפ שלוחצים עליו ופותח שיחה ישירות, לא רק טופס.</li>
+      <li style="margin-bottom:8px;"><b>רשימת שירותים/מוצרים</b> — כדי שמישהו שנוחת באתר יידע מיד אם אתם מתאימים לצורך שלו.</li>
+      <li style="margin-bottom:8px;"><b>כתובת (אם רלוונטי)</b> — במיוחד לעסק עם מיקום פיזי או אזור שירות מוגדר.</li>
+      <li>עיצוב אחיד וברור — צבע אחד ראשי, פונט קריא, בלי עומס חזותי.</li>
+    </ul>
+
+    <h3 style="color:var(--teal-dark);">איך עושים את זה בפועל, שלב אחר שלב</h3>
+    <ol style="font-size:15.5px; color:var(--grey); margin:0 0 24px; padding-inline-start:22px;">
+      <li style="margin-bottom:10px;"><b>בוחרים תבנית</b> מותאמת לסוג העסק (עסק מקומי, פרילנסר/יועץ, קטלוג מוצרים וכו').</li>
+      <li style="margin-bottom:10px;"><b>ממלאים את הפרטים</b> — שם העסק, תיאור קצר, שירותים, פרטי קשר, ותמונה ראשית אם יש.</li>
+      <li style="margin-bottom:10px;"><b>בוחרים צבע ראשי</b> שמתאים למיתוג הקיים שלכם (אם אין, כל צבע נעים ורגוע עובד טוב).</li>
+      <li style="margin-bottom:10px;">רואים <b>תצוגה חיה</b> של האתר תוך כדי מילוי — כך שרואים בדיוק את התוצאה לפני שמסיימים.</li>
+      <li>מורידים את קובצי האתר המוכנים, או מפרסמים ישירות וכך מקבלים קישור חי.</li>
+    </ol>
+
+    <h3 style="color:var(--teal-dark);">אחרי שהאתר באוויר — שני דברים שעוזרים הכי הרבה</h3>
+    <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;">
+      לרשום את העסק בחינם ב-Google עסקים שלי — זה מה שמשפיע הכי הרבה על הופעה בחיפוש מקומי ("מסעדות באזורי", "אינסטלטור בעיר X"). ולשקול לחבר דומיין משלכם (בערך 60-150 ₪ לשנה) — כתובת כמו <span dir="ltr">yourbusiness.co.il</span> נראית הרבה יותר מקצועית מכתובת גנרית, ועוזרת ללקוחות לזכור ולסמוך על העסק.
+    </p>
+
+    <div style="background:var(--ice, #F3F7F6); border-radius:16px; padding:28px; text-align:center; margin-top:8px;">
+      <h4 style="margin:0 0 10px;">רוצים להתחיל עכשיו?</h4>
+      <p style="font-size:14.5px; color:var(--grey); margin:0 0 18px;">בוחרים תבנית, ממלאים פרטים, ורואים תוצאה מיד — עריכת התוכן חינמית וללא הגבלה, ורק ההורדה/פרסום הסופיים בתשלום חד-פעמי.</p>
+      <a href="sites.html?browse=1" class="btn btn-gold">לבניית האתר העסקי</a>
+    </div>
+
+  </div>
+</section>
+
+<footer class="site">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <h5>DeskKit</h5>
+        <p style="font-size:14px; max-width:320px;">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות, אתרים ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
+      </div>
+      <div>
+        <h5>ניווט</h5>
+        <ul>
+          <li><a href="catalog.html">קטלוג מוצרים</a></li>
+          <li><a href="products.html?type=cv">קורות חיים</a></li>
+          <li><a href="products.html?type=deck">מצגות</a></li>
+          <li><a href="products.html?type=xlsx">גליונות</a></li>
+          <li><a href="sites.html?browse=1">אתרים</a></li>
+          <li><a href="schedule-builder.html">מערכת שעות</a></li>
+          <li><a href="about.html">אודות</a></li>
+          <li><a href="contact.html">צור קשר</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>מידע</h5>
+        <ul>
+          <li><a href="guides.html">מדריכים</a></li>
+          <li><a href="terms.html">מדיניות</a></li>
+          <li><a href="accessibility.html">נגישות</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>צור קשר</h5>
+        <ul>
+          <li>digital.dz.studio@gmail.com</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">© 2026 DeskKit. כל הזכויות שמורות.</div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/nav-auth.js"></script>
+<script src="js/my-panel.js?v=9"></script>
+<script src="js/main.js"></script>
+<script src="js/widgets.js?v=8"></script>
+<script src="js/effects.js"></script>
+</body>
+</html>

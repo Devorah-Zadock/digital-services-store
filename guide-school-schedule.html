@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>איך בונים מערכת שעות אוטומטית לבית ספר — מדריך | DeskKit</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="description" content="מדריך צעד-אחר-צעד לבניית מערכת שעות אוטומטית לבית ספר — אילו נתונים צריך, מהם אילוצים, ואיך מקבלים מערכת שעות ללא התנגשויות תוך דקות במקום ימים של עבודה ידנית.">
+<link rel="canonical" href="https://deskkit.co.il/guide-school-schedule.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=22">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "איך בונים מערכת שעות אוטומטית לבית ספר",
+  "description": "מדריך צעד-אחר-צעד לבניית מערכת שעות אוטומטית לבית ספר ללא התנגשויות.",
+  "author": { "@type": "Organization", "name": "DeskKit" },
+  "publisher": { "@type": "Organization", "name": "DeskKit" },
+  "datePublished": "2026-09-09",
+  "mainEntityOfPage": "https://deskkit.co.il/guide-school-schedule.html"
+}
+</script>
+</head>
+<body>
+<script>
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf("sb-") === 0 && k.indexOf("-auth-token") !== -1 && localStorage.getItem(k)) {
+        document.body.classList.add("has-sites-rail");
+        break;
+      }
+    }
+    var rw = localStorage.getItem("deskkit_rail_w");
+    if (rw) document.documentElement.style.setProperty("--rail-w", rw + "px");
+    if (localStorage.getItem("deskkit_rail_collapsed") === "1") {
+      document.documentElement.style.setProperty("--rail-w", "0px");
+      document.body.classList.add("rail-collapsed");
+    }
+  } catch (e) {}
+</script>
+
+<header class="site">
+  <nav class="nav">
+    <a href="index.html" class="brand"><span class="brand-badge"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><rect class="bm-fold" x="6" y="4" width="4" height="16" rx="2"/><path class="bm-face" d="M9,4 H13 A8,8 0 0 1 13,20 H9 Z"/></svg></span><span class="brand-text">DeskKit</span></a>
+    <div class="nav-links">
+      <a href="index.html">בית</a>
+      <a href="sites.html?browse=1">אתרים</a>
+      <a href="quote-app.html">הצעות מחיר</a>
+      <a href="products.html?type=cv">קורות חיים</a>
+      <a href="products.html?type=deck">מצגות</a>
+      <a href="products.html?type=xlsx">גליונות</a>
+      <a href="about.html">אודות</a>
+      <a href="contact.html">צור קשר</a>
+    </div>
+    <div class="nav-end-group">
+      <a href="account.html?redirect=tools.html" id="nav-login-link" class="nav-login nav-login-pending">כניסה</a>
+      <a href="catalog.html" class="nav-cta">לצפייה בקטלוג</a>
+    </div>
+    <button class="burger" aria-label="תפריט">☰</button>
+  </nav>
+</header>
+
+<section class="hero" style="padding:60px 24px 70px;">
+  <h1 style="font-size:32px;">איך בונים מערכת שעות אוטומטית לבית ספר בלי לשבור את הראש</h1>
+  <p class="lead">מדריך קצר לרכזי משק, מזכירות ומנהלי בתי ספר — מה באמת צריך כדי לקבל מערכת שעות מלאה, ללא התנגשויות, תוך דקות במקום ימים.</p>
+</section>
+
+<section>
+  <div class="container" style="max-width:720px;">
+
+    <h3 style="color:var(--teal-dark);">הבעיה עם בניית מערכת שעות ביד</h3>
+    <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;">
+      כל מי שאי פעם בנה מערכת שעות לבית ספר ביד — בגיליון Excel, על הלוח, או אפילו על דפים — מכיר את התחושה: ברגע שסידרתם כיתה אחת, גיליתם שמורה מסוימת "מוכפלת" בשתי כיתות באותה שעה. תיקנתם את זה, וגיליתם שכיתה אחרת לומדת אנגלית שלוש שעות ברצף ביום שני. זה משחק פאזל אינסופי, וברוב בתי הספר זה לוקח ימים שלמים בכל תחילת שנה, ולפעמים גם עדכונים חוזרים באמצע השנה.
+    </p>
+
+    <h3 style="color:var(--teal-dark);">מה בעצם "אילוצים" — ולמה הם הלב של הבעיה</h3>
+    <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;">
+      מערכת שעות טובה היא בעצם פתרון לרשימה ארוכה של כללים שצריכים להתקיים בו-זמנית: מורה לא יכול ללמד בשני מקומות באותה שעה, כיתה מסוימת לא אמורה ללמוד את אותו מקצוע יותר משעה-שעתיים ברצף, מורה מסוים לא זמין בימים מסוימים, מקצוע מסוים דורש חדר ייעודי (מעבדה, חדר מחשבים) שיש ממנו רק כמות מוגבלת. כל אחד מהכללים האלה נראה פשוט בפני עצמו — הקושי הוא לספק את כולם יחד, לכל הכיתות, בו-זמנית.
+    </p>
+
+    <h3 style="color:var(--teal-dark);">איך זה עובד עם כלי אוטומטי</h3>
+    <p style="font-size:15.5px; color:var(--grey); margin-bottom:12px;">
+      במקום לפתור את הפאזל ביד, כלי אוטומטי מקבל את כל הנתונים והאילוצים ופותר אותם בשבילכם, בתוך שניות. השלבים בפועל:
+    </p>
+    <ol style="font-size:15.5px; color:var(--grey); margin:0 0 24px; padding-inline-start:22px;">
+      <li style="margin-bottom:10px;"><b>מזינים את הבסיס</b> — רשימת המקצועות, הכיתות, המורים והחדרים המיוחדים (מעבדות, חדרי מחשבים וכו').</li>
+      <li style="margin-bottom:10px;"><b>קובעים לכל כיתה כמה שעות שבועיות</b> נדרשות מכל מקצוע, ואיזה מורה מלמד אותו.</li>
+      <li style="margin-bottom:10px;"><b>מוסיפים אילוצים</b> — ימים שמורה לא זמין בהם, מקסימום שעות רצופות לאותו מקצוע, מקסימום שעות מקצוע ביום לכיתה מסוימת.</li>
+      <li style="margin-bottom:10px;"><b>לוחצים על יצירה</b> — והמערכת בונה מערכת שעות מלאה שעומדת בכל האילוצים, ללא התנגשויות.</li>
+      <li>אם רוצים לשנות משהו ידנית אחרי זה — אפשר לגרור שיעורים בעצמכם, והמערכת מתריעה מיד אם יצרתם התנגשות חדשה.</li>
+    </ol>
+
+    <h3 style="color:var(--teal-dark);">טיפ: להתחיל פשוט, ולהוסיף אילוצים בהדרגה</h3>
+    <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;">
+      אם יש לכם המון אילוצים ספציפיים (הרבה מורים חלקיים, הרבה חדרים מיוחדים), הכי יעיל להתחיל עם המקצועות והשיבוצים הבסיסיים, ליצור מערכת ראשונה, ורק אז להוסיף אילוצים נוספים אחד-אחד ולבדוק שהמערכת עדיין מסתדרת. כך קל יותר לאתר איפה בדיוק אילוץ מסוים "תוקע" את הפתרון, במקום להזין הכול בבת אחת.
+    </p>
+
+    <div style="background:var(--ice, #F3F7F6); border-radius:16px; padding:28px; text-align:center; margin-top:8px;">
+      <h4 style="margin:0 0 10px;">רוצים לנסות בעצמכם?</h4>
+      <p style="font-size:14.5px; color:var(--grey); margin:0 0 18px;">מילוי המקצועות, הכיתות, המורים והאילוצים חינמי וללא הגבלה. יצירת מערכת השעות האוטומטית עצמה היא כלי בתשלום חד-פעמי.</p>
+      <a href="schedule-builder.html" class="btn btn-gold">למעבר לבונה מערכת השעות</a>
+    </div>
+
+  </div>
+</section>
+
+<footer class="site">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <h5>DeskKit</h5>
+        <p style="font-size:14px; max-width:320px;">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות, אתרים ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
+      </div>
+      <div>
+        <h5>ניווט</h5>
+        <ul>
+          <li><a href="catalog.html">קטלוג מוצרים</a></li>
+          <li><a href="products.html?type=cv">קורות חיים</a></li>
+          <li><a href="products.html?type=deck">מצגות</a></li>
+          <li><a href="products.html?type=xlsx">גליונות</a></li>
+          <li><a href="sites.html?browse=1">אתרים</a></li>
+          <li><a href="schedule-builder.html">מערכת שעות</a></li>
+          <li><a href="about.html">אודות</a></li>
+          <li><a href="contact.html">צור קשר</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>מידע</h5>
+        <ul>
+          <li><a href="guides.html">מדריכים</a></li>
+          <li><a href="terms.html">מדיניות</a></li>
+          <li><a href="accessibility.html">נגישות</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>צור קשר</h5>
+        <ul>
+          <li>digital.dz.studio@gmail.com</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">© 2026 DeskKit. כל הזכויות שמורות.</div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/nav-auth.js"></script>
+<script src="js/my-panel.js?v=9"></script>
+<script src="js/main.js"></script>
+<script src="js/widgets.js?v=8"></script>
+<script src="js/effects.js"></script>
+</body>
+</html>

@@ -9,6 +9,10 @@
   <url><loc>https://deskkit.co.il/catalog.html</loc><priority>0.7</priority></url>
   <url><loc>https://deskkit.co.il/tools.html</loc><priority>0.6</priority></url>
   <url><loc>https://deskkit.co.il/about.html</loc><priority>0.6</priority></url>
+  <url><loc>https://deskkit.co.il/guides.html</loc><priority>0.6</priority></url>
+  <url><loc>https://deskkit.co.il/guide-school-schedule.html</loc><priority>0.6</priority></url>
+  <url><loc>https://deskkit.co.il/guide-cv-tips.html</loc><priority>0.6</priority></url>
+  <url><loc>https://deskkit.co.il/guide-business-website.html</loc><priority>0.6</priority></url>
   <url><loc>https://deskkit.co.il/contact.html</loc><priority>0.5</priority></url>
   <url><loc>https://deskkit.co.il/terms.html</loc><priority>0.3</priority></url>
   <url><loc>https://deskkit.co.il/accessibility.html</loc><priority>0.3</priority></url>

@@ -54,7 +54,17 @@ function initProductsPage() {
   const hero = TYPE_HERO[type];
   if (hero) {
     if (heroTitleEl) heroTitleEl.textContent = hero.title;
-    if (heroLeadEl) heroLeadEl.textContent = hero.lead;
+    if (heroLeadEl) {
+      heroLeadEl.textContent = hero.lead + " ";
+      if (type === "cv") {
+        const guideLink = document.createElement("a");
+        guideLink.href = "guide-cv-tips.html";
+        guideLink.style.color = "var(--teal)";
+        guideLink.style.fontWeight = "600";
+        guideLink.textContent = "5 טיפים לקורות חיים שמתקבלים";
+        heroLeadEl.appendChild(guideLink);
+      }
+    }
     document.title = hero.title + " — קטלוג — DeskKit";
     const descTag = document.querySelector('meta[name="description"]');
     if (descTag) descTag.setAttribute("content", hero.lead);
