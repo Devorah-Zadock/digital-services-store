@@ -95,7 +95,7 @@ function siteTplCardHtml(key, t) {
       <div class="body">
         <div class="card-meta">
           <span class="tag">${escapeHtmlS(t.category)}</span>
-          <span class="price">99 ₪</span>
+          <span class="price">199 ₪</span>
         </div>
         <h3>${escapeHtmlS(t.label)}</h3>
         <p style="font-size:13px; color:var(--grey); margin:0; flex:1;">${escapeHtmlS(t.desc)}</p>

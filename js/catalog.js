@@ -126,7 +126,7 @@ function siteCardHtmlForToolbox(key, t) {
       <div class="body">
         <div class="card-meta">
           <span class="tag">${escapeHtmlC(t.category)}</span>
-          <span class="price">99 ₪</span>
+          <span class="price">199 ₪</span>
         </div>
         <h3>${escapeHtmlC(t.label)}</h3>
         <a href="sites.html?template=${key}" class="btn btn-teal card-cta">בחירה ועריכה</a>
