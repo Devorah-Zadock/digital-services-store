@@ -514,7 +514,9 @@ document.addEventListener("DOMContentLoaded", () => {
   ensurePagesShape(siteState.data);
   const hasSavedContent = !!(saved && (saved.data.businessName || (saved.data.services || []).some((s) => s.name)));
 
-  document.getElementById("buy-link").href = SITE_GUMROAD_CONFIG.checkoutUrl;
+  const buyLink = document.getElementById("buy-link");
+  buyLink.href = SITE_GUMROAD_CONFIG.checkoutUrl;
+  wireBuyLinkOnce(buyLink, "deskkit_sites_buyclicked_" + SITE_GUMROAD_CONFIG.productId);
   wireForm();
   refreshUnlockUI();
 

@@ -219,6 +219,26 @@ function injectCookieNotice() {
   });
 }
 
+/* Shared by site-builder.js and schedule-render.js: once the Gumroad
+   checkout link has been opened, clicking it again only reopens the same
+   page — there's nothing new to do there, so it's disabled (visually and
+   for real, via pointer-events) rather than left clickable forever. The
+   "clicked" flag is per-key in localStorage, not just an in-memory flag,
+   so it survives a reload/revisit rather than un-disabling itself. */
+function wireBuyLinkOnce(link, storageKey) {
+  if (!link) return;
+  const disable = () => {
+    link.classList.add("btn-disabled");
+    link.setAttribute("aria-disabled", "true");
+    link.textContent = "דף הרכישה נפתח ✓";
+  };
+  if (localStorage.getItem(storageKey) === "1") { disable(); return; }
+  link.addEventListener("click", () => {
+    localStorage.setItem(storageKey, "1");
+    disable();
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   injectFeedbackWidget();
   injectChatWidget();

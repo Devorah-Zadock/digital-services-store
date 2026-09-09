@@ -115,7 +115,9 @@ async function verifyScheduleLicense() {
 }
 
 function wireScheduleUnlock() {
-  document.getElementById("sched-buy-link").href = SCHEDULE_GUMROAD_CONFIG.checkoutUrl;
+  const buyLink = document.getElementById("sched-buy-link");
+  buyLink.href = SCHEDULE_GUMROAD_CONFIG.checkoutUrl;
+  wireBuyLinkOnce(buyLink, "deskkit_schedule_buyclicked_" + SCHEDULE_GUMROAD_CONFIG.productId);
   document.getElementById("sched-verify-btn").addEventListener("click", verifyScheduleLicense);
   refreshScheduleUnlockUi();
 }

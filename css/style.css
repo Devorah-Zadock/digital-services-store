@@ -449,6 +449,9 @@ body.has-sites-rail .nav-account-wrap { display: none; }
 .btn-outline:hover { background: rgba(255,255,255,.14); transform: translateY(-2px); }
 .btn-teal { background: linear-gradient(135deg, var(--teal), var(--teal-light)); color: var(--white); box-shadow: 0 8px 20px rgba(22,63,53,.2); }
 .btn-teal:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(22,63,53,.3); }
+.btn-disabled, .btn-disabled:hover {
+  pointer-events: none; opacity: .55; box-shadow: none; transform: none; cursor: default;
+}
 
 /* ---------- Sections ---------- */
 section { padding: 88px 0; }
