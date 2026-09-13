@@ -72,18 +72,28 @@ const QUOTE_CSS = `
    original, single design this tool shipped with, kept as the default so
    existing saved quotes (no q.template yet) render unchanged. */
 const QUOTE_SKIN_CSS = {
-  classic: ``,
+  /* Both "classic" and "modern" are the same category (עסקי כללי), so
+     they share one accent color — the same blue used for the matching
+     "עסקי שירות" category of site templates, for a consistent palette
+     across DeskKit's tools rather than each tool inventing its own. */
+  classic: `
+    .quote-doc.skin-classic hr { border-top-color:#2563EB; }
+    .quote-doc.skin-classic .subject, .quote-doc.skin-classic .price-line { color:#2563EB; }
+  `,
   modern: `
     .quote-doc.skin-modern { padding-top:0; }
-    .quote-doc.skin-modern .letterhead { background:linear-gradient(135deg, #1F5C4E, #2A7D68); padding:34px 40px 26px; margin-bottom:0; }
+    .quote-doc.skin-modern .letterhead { background:linear-gradient(135deg, #2563EB, #4C7FEF); padding:34px 40px 26px; margin-bottom:0; }
     .quote-doc.skin-modern .biz-name { color:#fff; font-family:'Rubik', 'Heebo', Arial, sans-serif; font-weight:900; font-size:24px; letter-spacing:-.01em; }
     .quote-doc.skin-modern .tagline { color:rgba(255,255,255,.85); }
     .quote-doc.skin-modern .contact-line { color:rgba(255,255,255,.75); }
     .quote-doc.skin-modern hr { display:none; }
     .quote-doc.skin-modern .qd-inner { padding-top:30px; }
-    .quote-doc.skin-modern .subject { color:#1F5C4E; }
-    .quote-doc.skin-modern .price-line { color:#1F5C4E; }
+    .quote-doc.skin-modern .subject { color:#2563EB; }
+    .quote-doc.skin-modern .price-line { color:#2563EB; }
   `,
+  /* "elegant" and "noir" are both אירועים ובוטיק — sharing the same
+     warm gold accent family ties them together even though noir keeps
+     its own dark letterhead. */
   elegant: `
     .quote-doc.skin-elegant { background:#FDFBF6; }
     .quote-doc.skin-elegant .biz-name { font-family:'Frank Ruhl Libre', Georgia, serif; font-weight:700; font-size:23px; color:#7A5A1E; letter-spacing:.01em; }
@@ -94,13 +104,14 @@ const QUOTE_SKIN_CSS = {
   `,
   noir: `
     .quote-doc.skin-noir { padding-top:0; }
-    .quote-doc.skin-noir .letterhead { background:#14201C; padding:34px 40px 26px; margin-bottom:0; }
+    .quote-doc.skin-noir .letterhead { background:#14201C; padding:34px 40px 26px; margin-bottom:0; border-bottom:2px solid #C99A3B; }
     .quote-doc.skin-noir .biz-name { color:#fff; font-weight:300; letter-spacing:.06em; text-transform:uppercase; font-size:19px; }
     .quote-doc.skin-noir .tagline { color:rgba(255,255,255,.7); }
     .quote-doc.skin-noir .contact-line { color:rgba(255,255,255,.55); }
     .quote-doc.skin-noir hr { display:none; }
     .quote-doc.skin-noir .qd-inner { padding-top:30px; }
     .quote-doc.skin-noir .subject { letter-spacing:.02em; }
+    .quote-doc.skin-noir .price-line { color:#7A5A1E; }
   `,
 };
 
