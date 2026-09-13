@@ -45,6 +45,22 @@ document.addEventListener("DOMContentLoaded", () => {
     const user = data.session && data.session.user;
     if (user) {
       scheduleCurrentUserId = user.id;
+
+      // Prefills the Gumroad checkout with the signed-in email — most
+      // buyers want their receipt/license at the same address anyway, and
+      // Gumroad's own field stays a normal, editable input, so anyone who
+      // wants a different receipt email can still just type over it.
+      if (user.email) {
+        const buyLink = document.getElementById("sched-buy-link");
+        if (buyLink && buyLink.href) {
+          try {
+            const url = new URL(buyLink.href);
+            url.searchParams.set("email", user.email);
+            buyLink.href = url.toString();
+          } catch (_e) { /* malformed href — leave it as-is */ }
+        }
+      }
+
       const urlId = new URLSearchParams(location.search).get("schedule");
       if (urlId) {
         const loaded = await loadScheduleById(urlId, user.id);

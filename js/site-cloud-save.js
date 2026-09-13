@@ -99,6 +99,21 @@ document.addEventListener("DOMContentLoaded", () => {
     if (user) {
       siteCurrentUserId = user.id;
 
+      // Prefills the Gumroad checkout with the signed-in email — most
+      // buyers want their receipt/license at the same address anyway, and
+      // Gumroad's own field stays a normal, editable input, so anyone who
+      // wants a different receipt email can still just type over it.
+      if (user.email) {
+        const buyLink = document.getElementById("buy-link");
+        if (buyLink && buyLink.href) {
+          try {
+            const url = new URL(buyLink.href);
+            url.searchParams.set("email", user.email);
+            buyLink.href = url.toString();
+          } catch (_e) { /* malformed href — leave it as-is */ }
+        }
+      }
+
       const { data: rows } = await supabaseClient
         .from("site_projects").select("*").eq("user_id", user.id)
         .order("created_at", { ascending: false });
