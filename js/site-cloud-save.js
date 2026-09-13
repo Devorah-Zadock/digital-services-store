@@ -149,6 +149,17 @@ document.addEventListener("DOMContentLoaded", () => {
           // new row instead of touching any other template's project.
           siteProjectId = null;
           siteIsFinalized = false;
+          // The synchronous loadSiteState() call (before this account was
+          // even known) reads a localStorage cache keyed only by template,
+          // not by account — on a shared/reused browser, that can silently
+          // load a DIFFERENT account's leftover draft for this exact
+          // template. Now that the real signed-in account is confirmed to
+          // have no saved project for it, that stale draft is discarded in
+          // favor of a genuinely fresh one, and the already-rendered form
+          // is refreshed to match.
+          siteState.template = urlTemplate;
+          siteState.data = freshSiteData(urlTemplate);
+          if (typeof showWizard === "function") showWizard();
         }
       }
     }
