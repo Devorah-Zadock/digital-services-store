@@ -49,7 +49,25 @@ const SITE_DEFAULT = {
   videoUrl: "",
 };
 
-let siteState = { template: "local-service", data: JSON.parse(JSON.stringify(SITE_DEFAULT)) };
+/* Matches the per-category default accent colors in site-templates.js
+   (same category, same color) — without this, every brand-new project
+   started life with SITE_DEFAULT's hardcoded green regardless of which
+   template it was, so the catalog thumbnails looked varied while the
+   actual builder/preview never did. */
+const SITE_TEMPLATE_DEFAULT_COLOR = {
+  "local-service": "#2563EB", "process": "#2563EB",
+  "freelancer": "#7C3AED", "portfolio": "#7C3AED",
+  "catalog": "#C2410C", "boutique": "#C2410C",
+  "gallery": "#B5175A", "bold": "#B5175A", "studio": "#B5175A",
+  "elegant": "#B8860B", "noir": "#B8860B",
+};
+function freshSiteData(template) {
+  const data = JSON.parse(JSON.stringify(SITE_DEFAULT));
+  data.primaryColor = SITE_TEMPLATE_DEFAULT_COLOR[template] || SITE_DEFAULT.primaryColor;
+  return data;
+}
+
+let siteState = { template: "local-service", data: freshSiteData("local-service") };
 let lastVerifiedPurchase = null;
 let previewPage = "index";
 
@@ -525,7 +543,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // A specific, valid template with no cache of its own yet — a
     // genuinely fresh project. Never inherit whatever a DIFFERENT
     // template's cache happens to hold.
-    siteState = { template: urlTemplate, data: JSON.parse(JSON.stringify(SITE_DEFAULT)) };
+    siteState = { template: urlTemplate, data: freshSiteData(urlTemplate) };
   }
   ensurePagesShape(siteState.data);
   const hasSavedContent = !!(saved && (saved.data.businessName || (saved.data.services || []).some((s) => s.name)));
