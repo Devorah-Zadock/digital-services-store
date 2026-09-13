@@ -477,15 +477,15 @@ async function verifySiteLicense() {
       return;
     }
     if (!data.success) {
-      // TEMPORARY: appending gumroadDebug (raw Gumroad HTTP status/body) so
-      // we can see exactly why a genuinely purchased key is failing —
-      // remove this debug suffix once that's root-caused.
-      const debugSuffix = !data.gumroadMessage && data.gumroadDebug
-        ? ` [דיבוג: HTTP ${data.gumroadDebug.status} — ${String(data.gumroadDebug.body || "").slice(0, 200)}]`
-        : "";
-      const invalidMsg = "קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב." + (data.gumroadMessage ? ` (Gumroad: ${data.gumroadMessage})` : debugSuffix);
-      note.textContent = data.reason === "redeemed-elsewhere" || data.reason === "different-template"
-        ? "קוד הרישוי הזה כבר שימש לפתיחת אתר אחר. לתבנית נוספת נדרשת רכישה נפרדת."
+      // A real, live escape hatch for a genuinely stuck paying customer —
+      // not just "try again" with nowhere left to go. Prefills the email
+      // with exactly the key they tried, so following up doesn't start
+      // from scratch.
+      const supportMailto = `mailto:digital.dz.studio@gmail.com?subject=${encodeURIComponent("בעיה בקוד רישוי — בניית אתר")}&body=${encodeURIComponent("הקוד שהזנתי: " + key)}`;
+      const supportLine = `<br>עדיין תקועים? <a href="${supportMailto}" style="color:inherit; text-decoration:underline;">כתבו לנו ונפתור את זה ידנית</a>.`;
+      const invalidMsg = "קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב." + (data.gumroadMessage ? ` (Gumroad: ${data.gumroadMessage})` : "") + supportLine;
+      note.innerHTML = data.reason === "redeemed-elsewhere" || data.reason === "different-template"
+        ? "קוד הרישוי הזה כבר שימש לפתיחת אתר אחר. לתבנית נוספת נדרשת רכישה נפרדת." + supportLine
         : invalidMsg;
       note.className = "unlock-note err";
       return;

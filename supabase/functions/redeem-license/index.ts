@@ -64,14 +64,11 @@ Deno.serve(async (req: Request) => {
       // provided product." / "Invalid product." / etc.) is exactly what
       // tells apart a wrong product_id from a wrong/reused key — worth
       // surfacing instead of collapsing everything into one bare "invalid".
-      // TEMPORARY: gumroadDebug (raw HTTP status + body) is included only
-      // while actively root-causing this — remove it once resolved.
       return new Response(
         JSON.stringify({
           success: false,
           reason: "invalid",
           gumroadMessage: (gumroadData.message as string) || null,
-          gumroadDebug: { status: gumroadRes.status, body: gumroadText.slice(0, 400) },
         }),
         { status: 200, headers: corsHeaders }
       );
