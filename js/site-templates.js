@@ -191,7 +191,7 @@ ${body}
 /* ---------- Template 1: local service business ---------- */
 function renderLocalServiceSite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const pal = derivePalette(d.primaryColor || "#2563EB");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
@@ -303,7 +303,7 @@ function renderLocalServiceSite(d, page) {
 /* ---------- Template 2: freelancer / consultant ---------- */
 function renderFreelancerSite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const pal = derivePalette(d.primaryColor || "#7C3AED");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
@@ -386,7 +386,7 @@ function renderFreelancerSite(d, page) {
 /* ---------- Template 3: small catalog / shop ---------- */
 function renderCatalogSite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const pal = derivePalette(d.primaryColor || "#C2410C");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
@@ -483,7 +483,7 @@ function renderCatalogSite(d, page) {
 /* ---------- Template 4: modern gallery / editorial ---------- */
 function renderGallerySite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const pal = derivePalette(d.primaryColor || "#1F2A44");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
@@ -595,7 +595,7 @@ function renderGallerySite(d, page) {
 /* ---------- Template 5: bold / neo-brutalist ---------- */
 function renderBoldSite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const pal = derivePalette(d.primaryColor || "#B5175A");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
@@ -695,7 +695,7 @@ function renderBoldSite(d, page) {
 /* ---------- Template 6: elegant split-hero (events / boutique) ---------- */
 function renderElegantSite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const pal = derivePalette(d.primaryColor || "#D4A017");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
@@ -817,7 +817,7 @@ function renderElegantSite(d, page) {
 /* ---------- Template 7: process / how-we-work ---------- */
 function renderProcessSite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const pal = derivePalette(d.primaryColor || "#0E7C86");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
@@ -928,7 +928,7 @@ function renderProcessSite(d, page) {
 /* ---------- Template 8: creative portfolio (personal) ---------- */
 function renderPortfolioSite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const pal = derivePalette(d.primaryColor || "#2D6A4F");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
@@ -1027,7 +1027,7 @@ function renderPortfolioSite(d, page) {
 /* ---------- Template 9: boutique shop with a featured item (shop) ---------- */
 function renderBoutiqueSite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const pal = derivePalette(d.primaryColor || "#A0522D");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
@@ -1139,7 +1139,7 @@ function renderBoutiqueSite(d, page) {
 /* ---------- Template 10: dark luxury (events / boutique) ---------- */
 function renderNoirSite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const pal = derivePalette(d.primaryColor || "#5C1F3D");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
@@ -1256,7 +1256,7 @@ function scrollRevealScript() {
 /* ---------- Template 11: creative studio (asymmetric split hero, dark) ---------- */
 function renderStudioSite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const pal = derivePalette(d.primaryColor || "#0E9488");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
