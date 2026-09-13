@@ -121,22 +121,31 @@ function renderCustomerStats(data) {
   const xlsxCount = data.xlsxDownloadCount ?? 0;
 
   // Only real (measured) numbers set the chart's scale — a pending metric
-  // never dilutes it down to a flat "—" bar.
-  const realValues = [data.userCount, data.cvBuilderUserCount, siteProjectCount, finalizedCount];
+  // never dilutes it down to a flat "—" bar. Only metrics actually shown
+  // as bars belong here — userCount and finalizedCount aren't bars.
+  const realValues = [data.cvBuilderUserCount, siteProjectCount];
   if (usageOn) realValues.push(quoteUserCount, deckCount, xlsxCount);
   const kpiMax = Math.max(1, ...realValues);
 
+  // "משתמשים רשומים" is a headcount metric, not a per-template usage
+  // count — mixing it into the same comparison chart as "how much was
+  // each template used" made the chart compare two unrelated things on
+  // one axis. Shown instead as its own stat line above the chart.
+  // Likewise the chart's job is comparing categories at a glance, so
+  // each bar is labeled with just the category's plain name — the
+  // finalized/paid breakdown for sites already lives in the "אתרים"
+  // table below (the per-row note), not as a second, oddly-labeled bar
+  // here.
   const kpiItems = [
-    { label: "משתמשים רשומים", value: data.userCount, max: kpiMax },
-    { label: "השתמשו בקורות חיים", value: data.cvBuilderUserCount, max: kpiMax },
-    usageOn ? { label: "השתמשו בהצעות מחיר", value: quoteUserCount, max: kpiMax } : { label: "השתמשו בהצעות מחיר", pending: true },
-    { label: "אתרים נפתחו", value: siteProjectCount, max: kpiMax },
-    { label: "אתרים שולמו והורדו", value: finalizedCount, max: kpiMax, gold: true },
-    usageOn ? { label: "מצגות הורדו", value: deckCount, max: kpiMax } : { label: "מצגות הורדו", pending: true },
-    usageOn ? { label: "גליונות הורדו", value: xlsxCount, max: kpiMax } : { label: "גליונות הורדו", pending: true },
+    { label: "אתרים", value: siteProjectCount, max: kpiMax },
+    { label: "קורות חיים", value: data.cvBuilderUserCount, max: kpiMax },
+    usageOn ? { label: "הצעות מחיר", value: quoteUserCount, max: kpiMax } : { label: "הצעות מחיר", pending: true },
+    usageOn ? { label: "מצגות", value: deckCount, max: kpiMax } : { label: "מצגות", pending: true },
+    usageOn ? { label: "גליונות", value: xlsxCount, max: kpiMax } : { label: "גליונות", pending: true },
   ];
 
   summary.innerHTML = `
+    <p style="font-size:13.5px; color:var(--grey); margin:0 0 14px;">משתמשים רשומים סה"כ: <b style="color:var(--dark);">${data.userCount}</b></p>
     <div class="admin-chart-card"><canvas id="kpi-chart-canvas" height="230"></canvas></div>
     ${usageOn ? "" : `<p style="font-size:12.5px; color:#8A6212; background:#FBF2E0; border-radius:8px; padding:8px 12px; margin:0 0 20px;">השורות המסומנות "לא הופעל" ידווחו נתונים אמיתיים לאחר הרצת קובץ ה-SQL <code>supabase/sql/usage_events.sql</code> (חד-פעמי) — עד אז הן לא באמת אפס, פשוט עוד לא נמדדות.</p>`}
     <div class="admin-subhead">אתרים</div>

@@ -198,7 +198,7 @@ async function loadMyPanel(user) {
       return myPanelRowHtml({
         kind: "site",
         href: "sites.html?template=" + encodeURIComponent(s.template),
-        name: bizName || "אתר עסקי (ללא שם)",
+        name: bizName || "אתר תדמית (ללא שם)",
         sub: MY_PANEL_TEMPLATE_LABELS[s.template] || s.template,
         deleteAttr: "site:" + s.id,
         active: !!(ctx && ctx.kind === "site" && ctx.template === s.template),

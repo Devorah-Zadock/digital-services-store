@@ -378,8 +378,8 @@ async function downloadSiteZip() {
 async function publishSite() {
   const btn = document.getElementById("publish-site-btn");
   const note = document.getElementById("publish-note");
-  if (!siteCurrentUserId || !siteProjectId) {
-    note.textContent = "שומרים קודם את האתר... נסו שוב בעוד רגע.";
+  if (!siteCurrentUserId) {
+    window.location.href = "account.html?redirect=" + encodeURIComponent(location.pathname + location.search);
     return;
   }
   const originalLabel = btn.textContent;
@@ -387,6 +387,16 @@ async function publishSite() {
   btn.textContent = "מפרסמים...";
   note.textContent = "";
   try {
+    // Publish needs a real project id to attach the deploy to. Used to
+    // just tell the visitor "saving first, try again" and stop there —
+    // but nothing ever actually triggered that save, so without a
+    // separate manual click on the top "שמירה" button first, every
+    // retry hit this same message forever.
+    if (!siteProjectId) await saveSiteNow();
+    if (!siteProjectId) {
+      note.textContent = "לא הצלחנו לשמור את האתר. נסו שוב בעוד רגע.";
+      return;
+    }
     const pages = {};
     enabledSitePages().forEach((page) => { pages[page] = currentSiteHtml(page); });
     const { data, error } = await supabaseClient.functions.invoke("publish-site", {
