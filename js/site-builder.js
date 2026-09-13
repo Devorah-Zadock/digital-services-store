@@ -400,6 +400,14 @@ async function publishSite() {
     window.location.href = "account.html?redirect=" + encodeURIComponent(location.pathname + location.search);
     return;
   }
+  // A blank business name means the placeholder text ("שם העסק שלכם" etc.)
+  // is literally all a real visitor would see — worth a real business
+  // going live on a public URL, not something to let happen by accident.
+  if (!siteState.data.businessName || !siteState.data.businessName.trim()) {
+    note.textContent = "לפני הפרסום, צריך למלא לפחות את שם העסק.";
+    document.getElementById("s-name").focus();
+    return;
+  }
   const originalLabel = btn.textContent;
   btn.disabled = true;
   btn.textContent = "מפרסמים...";
