@@ -955,7 +955,7 @@ function renderPortfolioSite(d, page) {
     .po-work-head h2 { font-size:27px; margin:10px 0 0; }
     .po-work-row { display:grid; grid-template-columns:60px 1fr auto; align-items:baseline; gap:18px; padding:24px 0; border-top:1px solid #EDEDED; }
     .po-work-row:last-child { border-bottom:1px solid #EDEDED; }
-    .po-work-idx { font-size:14px; font-weight:800; color:#${pal.primary}; }
+    .po-work-idx { font-size:34px; font-weight:800; color:#${pal.primary}; line-height:1; }
     .po-work-main h3 { margin:0 0 6px; font-size:18px; font-weight:800; }
     .po-work-main p { margin:0; font-size:13.5px; color:#777; max-width:480px; }
     .po-work-row .price { font-weight:800; color:#${pal.primaryDark}; font-size:14.5px; white-space:nowrap; }
