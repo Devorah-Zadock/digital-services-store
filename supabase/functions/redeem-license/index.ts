@@ -42,22 +42,30 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const gumroadRes = await fetch("https://api.gumroad.com/v2/licenses/verify", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ product_id: productId, license_key: licenseKey }),
-    });
-    // Read as text first, not .json() directly: an unexpected non-JSON
-    // reply (an HTML error page, an empty body) would otherwise throw and
-    // get swallowed by the outer catch as a generic 500, hiding exactly
-    // the detail we need while actively debugging a real "invalid" report
-    // on a genuine purchased key.
-    const gumroadText = await gumroadRes.text();
+    // Confirmed twice in real testing: a license verified within the
+    // first moment or two after a genuine purchase can come back invalid,
+    // then succeed on an immediate retry with the exact same key —
+    // Gumroad's own systems evidently need a beat to catch up right after
+    // a charge completes. Rather than making every customer manually
+    // retry, try up to 3 times with a short pause before giving up.
     let gumroadData: Record<string, unknown> = {};
-    try {
-      gumroadData = JSON.parse(gumroadText);
-    } catch (_e) {
-      gumroadData = {};
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const gumroadRes = await fetch("https://api.gumroad.com/v2/licenses/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ product_id: productId, license_key: licenseKey }),
+      });
+      // Read as text first, not .json() directly: an unexpected non-JSON
+      // reply (an HTML error page, an empty body) would otherwise throw
+      // and get swallowed by the outer catch as a generic 500.
+      const gumroadText = await gumroadRes.text();
+      try {
+        gumroadData = JSON.parse(gumroadText);
+      } catch (_e) {
+        gumroadData = {};
+      }
+      if (gumroadData.success) break;
+      if (attempt < 3) await new Promise((r) => setTimeout(r, 1500));
     }
     if (!gumroadData.success) {
       // Gumroad's own message ("That license does not exist for the
