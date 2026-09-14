@@ -86,6 +86,9 @@ function siteBaseCss() {
     .site-hero-slideshow { position:relative; overflow:hidden; aspect-ratio:4/3; }
     .site-reveal { opacity:0; transform:translateY(18px); transition:opacity .7s ease, transform .7s ease; }
     .site-reveal.site-in { opacity:1; transform:translateY(0); }
+    .site-hero-videobg { position:absolute; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+    .site-hero-videobg iframe { position:absolute; top:50%; left:50%; width:177.78vh; min-width:100%; height:56.25vw; min-height:100%; transform:translate(-50%,-50%); border:0; }
+    .site-hero-videobg::after { content:""; position:absolute; inset:0; background:rgba(0,0,0,.42); }
     .site-hero-slideshow .site-hero-slide { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity 1.4s ease; }
     .site-hero-slideshow .site-hero-slide.active { opacity:1; }
     .site-video-wrap { position:relative; padding-bottom:56.25%; height:0; overflow:hidden; border-radius:14px; box-shadow:0 16px 34px rgba(0,0,0,.14); max-width:780px; margin:0 auto; }
@@ -108,6 +111,36 @@ function videoEmbedSrc(url) {
 }
 function videoEmbedHtml(embedSrc) {
   return `<div class="site-video-wrap"><iframe src="${embedSrc}" title="סרטון" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+}
+
+/* Same YouTube/Vimeo URL d.videoUrl already uses for the embedded video
+   section, but with autoplay+mute+loop+no-controls params so it can play
+   silently behind a hero instead of needing a click. Muted autoplay is
+   what every major browser actually allows without the visitor's own
+   interaction — a background video that needed sound would just never
+   start. */
+function videoBgEmbedSrc(url) {
+  if (!url) return null;
+  const u = String(url).trim();
+  let m = u.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{6,})/);
+  if (m) return `https://www.youtube.com/embed/${m[1]}?autoplay=1&mute=1&loop=1&playlist=${m[1]}&controls=0&showinfo=0&modestbranding=1&playsinline=1&rel=0&disablekb=1&iv_load_policy=3`;
+  m = u.match(/vimeo\.com\/(\d+)/);
+  if (m) return `https://player.vimeo.com/video/${m[1]}?autoplay=1&muted=1&loop=1&background=1&controls=0`;
+  return null;
+}
+/* Full-bleed, click-through (pointer-events:none — a hero CTA sitting on
+   top must stay clickable) video layer with its own built-in dark
+   overlay, so it's legible under white hero text regardless of what the
+   video itself looks like. The oversized iframe + translate(-50%,-50%)
+   centering is the standard "cover" trick for a 16:9 embed: sized off
+   the viewport's own aspect so it always fills the box and crops
+   overflow, the same way object-fit:cover does for a plain <img> (an
+   <iframe> has no object-fit support of its own). */
+function heroVideoBgHtml(d) {
+  if (!d.heroVideoBg) return "";
+  const src = videoBgEmbedSrc(d.videoUrl);
+  if (!src) return "";
+  return `<div class="site-hero-videobg"><iframe src="${src}" title="" tabindex="-1" aria-hidden="true" allow="autoplay; encrypted-media"></iframe></div>`;
 }
 function waFabHtml(d) {
   const href = waLink(d.whatsapp || d.phone);
@@ -284,6 +317,7 @@ function renderLocalServiceSite(d, page) {
     .ls-hero { position:relative; overflow:hidden; text-align:center; color:#fff; padding:100px 0 112px;
       background: radial-gradient(circle at 22% 20%, rgba(255,255,255,.18), transparent 55%),
                   linear-gradient(155deg, #${pal.primaryDark} 0%, #${pal.primary} 60%, #${pal.primaryDark} 130%); }
+    .ls-hero .container { position:relative; z-index:1; }
     .ls-hero .eyebrow { background:rgba(255,255,255,.16); color:#fff; margin-bottom:20px; }
     .ls-hero h1 { font-family:'Frank Ruhl Libre',serif; font-size:48px; font-weight:700; margin:0 0 18px; line-height:1.25; }
     .ls-hero p { font-size:18px; opacity:.92; max-width:560px; margin:0 auto 34px; }
@@ -342,7 +376,7 @@ function renderLocalServiceSite(d, page) {
   } else {
     const showSearch = dd._services.length >= 3;
     main = `
-      <section class="ls-hero"><div class="container">
+      <section class="ls-hero">${heroVideoBgHtml(d)}<div class="container">
         <span class="eyebrow">שירות מקצועי ואמין</span>
         <h1>${escapeHtmlS(dd.businessName)}</h1>
         <p>${escapeHtmlS(dd.tagline)}</p>
@@ -1279,7 +1313,7 @@ function renderNoirSite(d, page) {
   } else {
     main = `
       <section class="nr-hero">
-        ${heroMediaHtml(d, "")}
+        ${d.heroVideoBg && videoBgEmbedSrc(d.videoUrl) ? heroVideoBgHtml(d) : heroMediaHtml(d, "")}
         <div class="nr-hero-inner">
           <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "אירוע ובוטיק"}</span>
           <h1>${escapeHtmlS(dd.businessName)}</h1>

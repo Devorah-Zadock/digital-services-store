@@ -61,6 +61,7 @@ const SITE_DEFAULT = {
   heroImage: "",
   heroImages: [],
   videoUrl: "",
+  heroVideoBg: false,
 };
 
 /* Matches the per-category default accent colors in site-templates.js
@@ -96,6 +97,7 @@ function ensurePagesShape(data) {
   // feature — every project saved before that update needs this to
   // become a real array, not stay undefined, the first time it loads.
   if (!Array.isArray(data.heroImages)) data.heroImages = [];
+  data.heroVideoBg = !!data.heroVideoBg;
   return data;
 }
 
@@ -197,6 +199,8 @@ function renderFormValues() {
   document.getElementById("s-page-about").checked = d.pages.about;
   document.getElementById("s-page-contact").checked = d.pages.contact;
   document.getElementById("s-video").value = d.videoUrl || "";
+  const videoBgCheckbox = document.getElementById("s-video-bg");
+  if (videoBgCheckbox) videoBgCheckbox.checked = d.heroVideoBg;
   renderPhotoPreview();
   renderGalleryPreview();
   renderServicesList();
@@ -361,6 +365,13 @@ function wireForm() {
     siteState.data.videoUrl = e.target.value;
     renderSitePreview();
   });
+  const videoBgCheckbox = document.getElementById("s-video-bg");
+  if (videoBgCheckbox) {
+    videoBgCheckbox.addEventListener("change", (e) => {
+      siteState.data.heroVideoBg = e.target.checked;
+      renderSitePreview();
+    });
+  }
 
   document.getElementById("s-page-about").addEventListener("change", (e) => {
     ensurePagesShape(siteState.data).pages.about = e.target.checked;

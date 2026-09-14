@@ -223,7 +223,11 @@
       <input type="file" id="s-gallery" accept="image/*" multiple style="display:none;">
     </div>
 
-    <div class="field"><label for="s-video">קישור לסרטון (יוטיוב, אופציונלי)</label><input id="s-video" type="text" dir="ltr" placeholder="https://youtube.com/watch?v=..."></div>
+    <div class="field">
+      <label for="s-video">קישור לסרטון (יוטיוב, אופציונלי)</label>
+      <input id="s-video" type="text" dir="ltr" placeholder="https://youtube.com/watch?v=...">
+      <label class="page-toggle" style="margin-top:8px;"><input type="checkbox" id="s-video-bg"> הצגת הסרטון כרקע לכותרת הראשית (ללא קול, מתנגן אוטומטית בלולאה) — נתמך כרגע בחלק מהעיצובים</label>
+    </div>
 
     <hr class="sep">
 
@@ -329,8 +333,8 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="js/color-utils.js"></script>
-<script src="js/site-templates.js?v=6"></script>
-<script src="js/site-builder.js?v=22"></script>
+<script src="js/site-templates.js?v=7"></script>
+<script src="js/site-builder.js?v=23"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>
