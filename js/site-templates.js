@@ -84,6 +84,8 @@ function siteBaseCss() {
        explicit width+height (like .site-hero-photo.round) simply wins,
        since aspect-ratio only fills in a dimension left auto. */
     .site-hero-slideshow { position:relative; overflow:hidden; aspect-ratio:4/3; }
+    .site-reveal { opacity:0; transform:translateY(18px); transition:opacity .7s ease, transform .7s ease; }
+    .site-reveal.site-in { opacity:1; transform:translateY(0); }
     .site-hero-slideshow .site-hero-slide { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity 1.4s ease; }
     .site-hero-slideshow .site-hero-slide.active { opacity:1; }
     .site-video-wrap { position:relative; padding-bottom:56.25%; height:0; overflow:hidden; border-radius:14px; box-shadow:0 16px 34px rgba(0,0,0,.14); max-width:780px; margin:0 auto; }
@@ -256,6 +258,7 @@ ${siteFontImport()}
 <body>
 ${body}
 ${heroSlideshowScript()}
+${scrollRevealScript()}
 </body>
 </html>`;
 }
@@ -322,13 +325,13 @@ function renderLocalServiceSite(d, page) {
       <section class="ls-hero" style="padding:70px 0 54px;"><div class="container">
         <span class="eyebrow">מי אנחנו</span><h1 style="font-size:36px;">${escapeHtmlS(dd.businessName)}</h1>
       </div></section>
-      <section class="ls-about" style="padding:64px 0;"><div class="container"><p>${nl2brS(dd.about)}</p></div></section>`;
+      <section class="ls-about site-reveal" style="padding:64px 0;"><div class="container"><p>${nl2brS(dd.about)}</p></div></section>`;
   } else if (page === "contact") {
     main = `
       <section class="ls-hero" style="padding:70px 0 54px;"><div class="container">
         <span class="eyebrow">נשמח לשמוע מכם</span><h1 style="font-size:36px;">יצירת קשר</h1>
       </div></section>
-      <section class="ls-contact"><div class="container">
+      <section class="ls-contact site-reveal"><div class="container">
         ${dd._hasContact ? `
           ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
           ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
@@ -346,19 +349,19 @@ function renderLocalServiceSite(d, page) {
         ${ctaHtml(cta, "ls-cta")}
         ${heroMediaHtml(d, "site-hero-photo")}
       </div></section>
-      <section class="ls-section"><div class="container">
+      <section class="ls-section site-reveal"><div class="container">
         <div class="head"><span class="eyebrow">מה אנחנו מציעים</span><h2>השירותים שלנו</h2>
         ${showSearch ? searchBoxHtml("#ls-services-grid", "חיפוש שירות...") : ""}</div>
         <div class="ls-services" id="ls-services-grid">${dd._services.map((s, i) => `
           <div class="ls-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><div class="num">${String(i + 1).padStart(2, "0")}</div><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price-tag">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
         ${showSearch ? searchScriptHtml() : ""}
       </div></section>
-      ${embedSrc ? `<section class="ls-section" style="padding-top:0;"><div class="container">
+      ${embedSrc ? `<section class="ls-section site-reveal" style="padding-top:0;"><div class="container">
         <div class="head"><span class="eyebrow">סרטון</span><h2>הכירו אותנו</h2></div>
         ${videoEmbedHtml(embedSrc)}
       </div></section>` : ""}
-      ${(!d.pages || !d.pages.about) ? `<section class="ls-about"><div class="container"><span class="eyebrow" style="background:#fff; color:#${pal.primaryDark};">מי אנחנו</span><h2>קצת עלינו</h2><p>${nl2brS(dd.about)}</p></div></section>` : ""}
-      ${(!d.pages || !d.pages.contact) ? `<section class="ls-contact"><div class="container">
+      ${(!d.pages || !d.pages.about) ? `<section class="ls-about site-reveal"><div class="container"><span class="eyebrow" style="background:#fff; color:#${pal.primaryDark};">מי אנחנו</span><h2>קצת עלינו</h2><p>${nl2brS(dd.about)}</p></div></section>` : ""}
+      ${(!d.pages || !d.pages.contact) ? `<section class="ls-contact site-reveal"><div class="container">
         <h2>יצירת קשר</h2>
         ${dd._hasContact ? `
           ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
@@ -422,7 +425,7 @@ function renderFreelancerSite(d, page) {
         <span class="eyebrow">נשמח לשמוע מכם</span>
         <div class="fr-name" style="font-size:34px;">יצירת קשר</div>
       </section>
-      <section class="fr-cta">
+      <section class="fr-cta site-reveal">
         <h2>בואו נדבר</h2>
         ${wa ? `<a class="btn" href="${wa}" target="_blank" rel="noopener">וואטסאפ</a>` : ""}
         ${d.email ? `<a class="btn" href="mailto:${escapeHtmlS(d.email)}">שליחת מייל</a>` : ""}
@@ -443,7 +446,7 @@ function renderFreelancerSite(d, page) {
         <div class="fr-tags">${services.map((s) => `<span class="fr-tag">${escapeHtmlS(s.name)}</span>`).join("")}</div>
       </div>
       ${embedSrc ? `<div class="fr-body" style="padding-top:0;">${videoEmbedHtml(embedSrc)}</div>` : ""}
-      <section class="fr-cta">
+      <section class="fr-cta site-reveal">
         <h2>בואו נדבר</h2>
         ${wa ? `<a class="btn" href="${wa}" target="_blank" rel="noopener">וואטסאפ</a>` : ""}
         ${d.email ? `<a class="btn" href="mailto:${escapeHtmlS(d.email)}">שליחת מייל</a>` : ""}
@@ -515,7 +518,7 @@ function renderCatalogSite(d, page) {
       <section class="cat-title" style="padding:56px 0 48px;"><div class="container">
         <span class="eyebrow">נשמח לשמוע מכם</span><h1>יצירת קשר</h1>
       </div></section>
-      <section class="cat-info"><div class="container">
+      <section class="cat-info site-reveal"><div class="container">
         ${dd._hasContact ? `
           ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
           ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
@@ -616,13 +619,13 @@ function renderGallerySite(d, page) {
   let main;
   if (page === "about") {
     main = `
-      <section class="gl-about"><div class="container">
+      <section class="gl-about site-reveal"><div class="container">
         <blockquote>${nl2brS(dd.about)}</blockquote>
         <cite>${escapeHtmlS(dd.businessName)}</cite>
       </div></section>`;
   } else if (page === "contact") {
     main = `
-      <section class="gl-contact"><div class="container">
+      <section class="gl-contact site-reveal"><div class="container">
         <h2>יצירת קשר</h2>
         ${dd._hasContact ? `
           ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
@@ -641,7 +644,7 @@ function renderGallerySite(d, page) {
         <p class="gl-tagline">${escapeHtmlS(dd.tagline)}</p>
         ${ctaHtml(cta, "gl-cta")}
       </div></section>
-      <section class="gl-section"><div class="container">
+      <section class="gl-section site-reveal"><div class="container">
         <div class="gl-section-head"><div><span class="gl-kicker">מה אנחנו מציעים</span><h2>השירותים שלנו</h2></div>
         ${showSearch ? searchBoxHtml("#gl-bento", "חיפוש שירות...") : ""}</div>
         <div class="gl-bento" id="gl-bento">${dd._services.map((s) => `
@@ -649,8 +652,8 @@ function renderGallerySite(d, page) {
         ${showSearch ? searchScriptHtml() : ""}
       </div></section>
       ${embedSrc ? `<div class="container"><div style="padding:0 0 40px;">${videoEmbedHtml(embedSrc)}</div></div>` : ""}
-      ${(!d.pages || !d.pages.about) ? `<section class="gl-about"><div class="container"><blockquote>${nl2brS(dd.about)}</blockquote><cite>${escapeHtmlS(dd.businessName)}</cite></div></section>` : ""}
-      ${(!d.pages || !d.pages.contact) ? `<section class="gl-contact"><div class="container">
+      ${(!d.pages || !d.pages.about) ? `<section class="gl-about site-reveal"><div class="container"><blockquote>${nl2brS(dd.about)}</blockquote><cite>${escapeHtmlS(dd.businessName)}</cite></div></section>` : ""}
+      ${(!d.pages || !d.pages.contact) ? `<section class="gl-contact site-reveal"><div class="container">
         <h2>יצירת קשר</h2>
         ${dd._hasContact ? `
           ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
@@ -719,7 +722,7 @@ function renderBoldSite(d, page) {
 
   let main;
   if (page === "about") {
-    main = `<section class="nb-about last"><div class="container"><p>${nl2brS(dd.about)}</p></div></section>`;
+    main = `<section class="nb-about site-reveal last"><div class="container"><p>${nl2brS(dd.about)}</p></div></section>`;
   } else if (page === "contact") {
     main = `
       <section class="nb-hero last"><div class="container">
@@ -742,16 +745,16 @@ function renderBoldSite(d, page) {
         ${ctaHtml(cta, "nb-cta")}
         ${heroMediaHtml(d, "nb-hero-photo")}
       </div></section>
-      <section class="nb-section"><div class="container">
+      <section class="nb-section site-reveal"><div class="container">
         <div class="nb-section-head"><span class="nb-tag">מה אנחנו מציעים</span><h2>השירותים שלנו</h2>
         ${showSearch ? searchBoxHtml("#nb-grid", "חיפוש שירות...") : ""}</div>
         <div class="nb-grid" id="nb-grid">${dd._services.map((s) => `
           <div class="nb-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
         ${showSearch ? searchScriptHtml() : ""}
       </div></section>
-      ${embedSrc ? `<section class="nb-section"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : ""}
-      ${(!d.pages || !d.pages.about) ? `<section class="nb-about"><div class="container"><p>${nl2brS(dd.about)}</p></div></section>` : ""}
-      ${(!d.pages || !d.pages.contact) ? `<section class="nb-contact last"><div class="container">
+      ${embedSrc ? `<section class="nb-section site-reveal"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : ""}
+      ${(!d.pages || !d.pages.about) ? `<section class="nb-about site-reveal"><div class="container"><p>${nl2brS(dd.about)}</p></div></section>` : ""}
+      ${(!d.pages || !d.pages.contact) ? `<section class="nb-contact site-reveal last"><div class="container">
         ${dd._hasContact ? `
           ${d.phone ? `<span class="line">טלפון: ${escapeHtmlS(d.phone)}</span>` : ""}
           ${d.email ? `<span class="line">מייל: ${escapeHtmlS(d.email)}</span>` : ""}
@@ -825,10 +828,10 @@ function renderElegantSite(d, page) {
   if (page === "about") {
     main = `
       <div class="container"><div class="eg-rule" style="margin:36px auto 0;"></div></div>
-      <section class="eg-about"><div class="container"><blockquote>${nl2brS(dd.about)}</blockquote></div></section>`;
+      <section class="eg-about site-reveal"><div class="container"><blockquote>${nl2brS(dd.about)}</blockquote></div></section>`;
   } else if (page === "contact") {
     main = `
-      <section class="eg-contact"><div class="container">
+      <section class="eg-contact site-reveal"><div class="container">
         <span class="eg-kicker">נשמח לשמוע מכם</span>
         <h2 style="font-family:'Frank Ruhl Libre',serif; font-size:30px; margin:12px 0 26px;">יצירת קשר</h2>
         ${dd._hasContact ? `
@@ -859,7 +862,7 @@ function renderElegantSite(d, page) {
           </div>
         `}
       </div></section>
-      <section class="eg-section" style="padding-top:0;"><div class="container">
+      <section class="eg-section site-reveal" style="padding-top:0;"><div class="container">
         <div class="eg-section-head"><span class="eg-kicker">מה אנחנו מציעים</span><h2>השירותים שלנו</h2>
         ${showSearch ? searchBoxHtml("#eg-offerings", "חיפוש שירות...") : ""}</div>
         <div class="eg-offerings" id="eg-offerings">${dd._services.map((s) => `
@@ -870,8 +873,8 @@ function renderElegantSite(d, page) {
         ${showSearch ? searchScriptHtml() : ""}
       </div></section>
       ${embedSrc ? `<div class="container"><div style="padding:0 0 50px;">${videoEmbedHtml(embedSrc)}</div></div>` : ""}
-      ${(!d.pages || !d.pages.about) ? `<section class="eg-about"><div class="container"><span class="eg-kicker">מי אנחנו</span><blockquote style="margin-top:18px;">${nl2brS(dd.about)}</blockquote></div></section>` : ""}
-      ${(!d.pages || !d.pages.contact) ? `<section class="eg-contact"><div class="container">
+      ${(!d.pages || !d.pages.about) ? `<section class="eg-about site-reveal"><div class="container"><span class="eg-kicker">מי אנחנו</span><blockquote style="margin-top:18px;">${nl2brS(dd.about)}</blockquote></div></section>` : ""}
+      ${(!d.pages || !d.pages.contact) ? `<section class="eg-contact site-reveal"><div class="container">
         <span class="eg-kicker">נשמח לשמוע מכם</span>
         <h2 style="font-family:'Frank Ruhl Libre',serif; font-size:30px; margin:12px 0 26px;">יצירת קשר</h2>
         ${dd._hasContact ? `
@@ -945,13 +948,13 @@ function renderProcessSite(d, page) {
       <section class="pr-hero" style="padding:70px 0 54px;"><div class="container">
         <span class="eyebrow">מי אנחנו</span><h1 style="font-size:36px;">${escapeHtmlS(dd.businessName)}</h1>
       </div></section>
-      <section class="pr-about"><div class="container"><p>${nl2brS(dd.about)}</p></div></section>`;
+      <section class="pr-about site-reveal"><div class="container"><p>${nl2brS(dd.about)}</p></div></section>`;
   } else if (page === "contact") {
     main = `
       <section class="pr-hero" style="padding:70px 0 54px;"><div class="container">
         <span class="eyebrow">נשמח לשמוע מכם</span><h1 style="font-size:36px;">יצירת קשר</h1>
       </div></section>
-      <section class="pr-contact"><div class="container">
+      <section class="pr-contact site-reveal"><div class="container">
         ${dd._hasContact ? `
           ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
           ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
@@ -969,7 +972,7 @@ function renderProcessSite(d, page) {
         ${ctaHtml(cta, "pr-cta")}
         ${heroMediaHtml(d, "site-hero-photo")}
       </div></section>
-      <section class="pr-steps"><div class="container">
+      <section class="pr-steps site-reveal"><div class="container">
         <div class="pr-steps-head"><span class="eyebrow">התהליך שלנו</span><h2>שלב אחר שלב</h2>
         ${showSearch ? searchBoxHtml("#pr-timeline", "חיפוש...") : ""}</div>
         <div class="pr-timeline" id="pr-timeline">${dd._services.map((s, i) => `
@@ -982,8 +985,8 @@ function renderProcessSite(d, page) {
         ${showSearch ? searchScriptHtml() : ""}
       </div></section>
       ${embedSrc ? `<div class="container"><div style="padding:0 0 50px;">${videoEmbedHtml(embedSrc)}</div></div>` : ""}
-      ${(!d.pages || !d.pages.about) ? `<section class="pr-about"><div class="container"><span class="eyebrow">מי אנחנו</span><p>${nl2brS(dd.about)}</p></div></section>` : ""}
-      ${(!d.pages || !d.pages.contact) ? `<section class="pr-contact"><div class="container">
+      ${(!d.pages || !d.pages.about) ? `<section class="pr-about site-reveal"><div class="container"><span class="eyebrow">מי אנחנו</span><p>${nl2brS(dd.about)}</p></div></section>` : ""}
+      ${(!d.pages || !d.pages.contact) ? `<section class="pr-contact site-reveal"><div class="container">
         <h2>יצירת קשר</h2>
         ${dd._hasContact ? `
           ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
@@ -1048,13 +1051,13 @@ function renderPortfolioSite(d, page) {
   let main;
   if (page === "about") {
     main = `
-      <section class="po-work" style="padding-top:44px;"><div class="container" style="max-width:680px;">
+      <section class="po-work site-reveal" style="padding-top:44px;"><div class="container" style="max-width:680px;">
         <div class="po-work-head"><span class="kicker">מי אני</span><h2>${escapeHtmlS(dd.businessName)}</h2></div>
         <p style="font-size:16px; line-height:1.85; color:#333;">${nl2brS(dd.about)}</p>
       </div></section>`;
   } else if (page === "contact") {
     main = `
-      <section class="po-cta">
+      <section class="po-cta site-reveal">
         <h2>בואו נדבר</h2>
         ${wa ? `<a class="btn" href="${wa}" target="_blank" rel="noopener">וואטסאפ</a>` : ""}
         ${d.email ? `<a class="btn" href="mailto:${escapeHtmlS(d.email)}">שליחת מייל</a>` : ""}
@@ -1073,7 +1076,7 @@ function renderPortfolioSite(d, page) {
         </div>
         ${heroMediaHtml(d, "po-hero-photo")}
       </div></section>
-      <section class="po-work"><div class="container">
+      <section class="po-work site-reveal"><div class="container">
         <div class="po-work-head"><span class="kicker">מה אני עושה</span><h2>עבודות ושירותים</h2></div>
         ${services.map((s, i) => `
           <div class="po-work-row">
@@ -1083,8 +1086,8 @@ function renderPortfolioSite(d, page) {
           </div>`).join("")}
       </div></section>
       ${embedSrc ? `<div class="container"><div style="padding:0 0 50px;">${videoEmbedHtml(embedSrc)}</div></div>` : ""}
-      ${(!d.pages || !d.pages.about) ? `<section class="po-work" style="padding-top:0;"><div class="container" style="max-width:680px;"><div class="po-work-head"><span class="kicker">מי אני</span><h2>עליי</h2></div><p style="font-size:15.5px; line-height:1.85; color:#333;">${nl2brS(dd.about)}</p></div></section>` : ""}
-      <section class="po-cta">
+      ${(!d.pages || !d.pages.about) ? `<section class="po-work site-reveal" style="padding-top:0;"><div class="container" style="max-width:680px;"><div class="po-work-head"><span class="kicker">מי אני</span><h2>עליי</h2></div><p style="font-size:15.5px; line-height:1.85; color:#333;">${nl2brS(dd.about)}</p></div></section>` : ""}
+      <section class="po-cta site-reveal">
         <h2>בואו נדבר</h2>
         ${wa ? `<a class="btn" href="${wa}" target="_blank" rel="noopener">וואטסאפ</a>` : ""}
         ${d.email ? `<a class="btn" href="mailto:${escapeHtmlS(d.email)}">שליחת מייל</a>` : ""}
@@ -1157,7 +1160,7 @@ function renderBoutiqueSite(d, page) {
   } else if (page === "contact") {
     main = `
       <section class="bq-banner bq-banner-noimg"><div class="bq-banner-inner"><span class="eyebrow">נשמח לשמוע מכם</span><h1>יצירת קשר</h1></div></section>
-      <section class="bq-info"><div class="container">
+      <section class="bq-info site-reveal"><div class="container">
         ${dd._hasContact ? `
           ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
           ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
@@ -1180,7 +1183,7 @@ function renderBoutiqueSite(d, page) {
         </div>
       </section>
       <div class="container">
-        <section class="bq-featured"><div class="bq-featured-card">
+        <section class="bq-featured site-reveal"><div class="bq-featured-card">
           <div class="bq-featured-price">${featured.price ? escapeHtmlS(featured.price) : ""}</div>
           <div>
             <span class="bq-featured-tag">המומלץ שלנו</span>
@@ -1260,10 +1263,10 @@ function renderNoirSite(d, page) {
 
   let main;
   if (page === "about") {
-    main = `<section class="nr-about"><div class="container"><span class="nr-kicker">מי אנחנו</span><blockquote style="margin-top:16px;">${nl2brS(dd.about)}</blockquote></div></section>`;
+    main = `<section class="nr-about site-reveal"><div class="container"><span class="nr-kicker">מי אנחנו</span><blockquote style="margin-top:16px;">${nl2brS(dd.about)}</blockquote></div></section>`;
   } else if (page === "contact") {
     main = `
-      <section class="nr-contact"><div class="container">
+      <section class="nr-contact site-reveal"><div class="container">
         <span class="nr-kicker">נשמח לשמוע מכם</span>
         <h2 style="font-family:'Frank Ruhl Libre',serif; font-style:italic; font-size:28px; margin:12px 0 26px; color:#fff;">יצירת קשר</h2>
         ${dd._hasContact ? `
@@ -1284,15 +1287,15 @@ function renderNoirSite(d, page) {
           ${ctaHtml(cta, "nr-cta")}
         </div>
       </section>
-      <section class="nr-menu"><div class="container">
+      <section class="nr-menu site-reveal"><div class="container">
         <div class="nr-menu-head"><span class="nr-kicker">מה אנחנו מציעים</span><h2>השירותים שלנו</h2></div>
         <div class="nr-menu-list">${dd._services.map((s) => `
           <div class="nr-menu-row"><span class="name">${escapeHtmlS(s.name)}</span><span class="leader"></span>${s.price ? `<span class="price">${escapeHtmlS(s.price)}</span>` : ""}</div>
           ${s.desc ? `<div class="nr-menu-desc">${escapeHtmlS(s.desc)}</div>` : ""}`).join("")}</div>
       </div></section>
       ${embedSrc ? `<div class="container"><div style="padding:0 0 50px;">${videoEmbedHtml(embedSrc)}</div></div>` : ""}
-      ${(!d.pages || !d.pages.about) ? `<section class="nr-about"><div class="container"><span class="nr-kicker">מי אנחנו</span><blockquote style="margin-top:16px;">${nl2brS(dd.about)}</blockquote></div></section>` : ""}
-      ${(!d.pages || !d.pages.contact) ? `<section class="nr-contact"><div class="container">
+      ${(!d.pages || !d.pages.about) ? `<section class="nr-about site-reveal"><div class="container"><span class="nr-kicker">מי אנחנו</span><blockquote style="margin-top:16px;">${nl2brS(dd.about)}</blockquote></div></section>` : ""}
+      ${(!d.pages || !d.pages.contact) ? `<section class="nr-contact site-reveal"><div class="container">
         <span class="nr-kicker">נשמח לשמוע מכם</span>
         <h2 style="font-family:'Frank Ruhl Libre',serif; font-style:italic; font-size:28px; margin:12px 0 26px; color:#fff;">יצירת קשר</h2>
         ${dd._hasContact ? `
@@ -1307,20 +1310,24 @@ function renderNoirSite(d, page) {
   return siteDoc({ title: titles[page], description: dd.tagline, css }, `${header}${main}${footer}`).replace("<body>", '<body class="nr-body">');
 }
 
-/* Small reveal-on-scroll used only by this template: headings/cards start
-   faded + shifted down and settle into place the first time they cross
-   into view. Respects prefers-reduced-motion by simply never hiding
-   anything in the first place, rather than hiding then trying to detect
-   the media query in JS. */
+/* Reveal-on-scroll — originally built for the studio template only
+   (.ag-reveal/.ag-in), now shared by every template via .site-reveal:
+   content sections start faded + shifted down and settle into place the
+   first time they cross into view. Injected once in siteDoc(), so no
+   per-template footer wiring needed. Respects prefers-reduced-motion by
+   simply never hiding anything in the first place, rather than hiding
+   then trying to detect the media query in JS. Hero sections are
+   deliberately left out (see each template's render function) — nothing
+   above the fold should start invisible on a slow connection. */
 function scrollRevealScript() {
   return `<script>
     if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches && "IntersectionObserver" in window) {
       var io = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
-          if (entry.isIntersecting) { entry.target.classList.add("ag-in"); io.unobserve(entry.target); }
+          if (entry.isIntersecting) { entry.target.classList.add("site-in"); io.unobserve(entry.target); }
         });
       }, { threshold: 0.2 });
-      document.querySelectorAll(".ag-reveal").forEach(function (el) { io.observe(el); });
+      document.querySelectorAll(".site-reveal").forEach(function (el) { io.observe(el); });
     }
   </script>`;
 }
@@ -1374,8 +1381,6 @@ function renderStudioSite(d, page) {
     .ag-cta { display:inline-flex; align-items:center; gap:8px; background:#${pal.primary}; color:#0C0C0E; font-weight:800; padding:13px 26px; border-radius:30px; font-size:14px; width:fit-content; }
     @media (max-width:760px) { .ag-hero { grid-template-columns:1fr; } .ag-hero-text { padding:48px 24px; } .ag-hero-text h1 { font-size:38px; } .ag-hero-art { min-height:260px; } }
 
-    .ag-reveal { opacity:0; transform:translateY(18px); transition:opacity .7s ease, transform .7s ease; }
-    .ag-reveal.ag-in { opacity:1; transform:translateY(0); }
 
     .ag-section { padding:80px 0; border-top:1px solid #232321; }
     .ag-kicker { font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#${pal.ice}; }
@@ -1398,11 +1403,11 @@ function renderStudioSite(d, page) {
   // rail links (#ag-services / #ag-about / #ag-contact) safe inside the
   // preview iframe — needed here even with no navLinksHtml (single-page
   // mode is exactly when those in-page anchors exist).
-  const footer = `<div class="ag-footer">© ${new Date().getFullYear()} ${escapeHtmlS(dd.businessName)}</div>${waFabHtml(d)}${(navLinksHtml || inPageRail) ? previewNavScript() : ""}${scrollRevealScript()}`;
+  const footer = `<div class="ag-footer">© ${new Date().getFullYear()} ${escapeHtmlS(dd.businessName)}</div>${waFabHtml(d)}${(navLinksHtml || inPageRail) ? previewNavScript() : ""}`;
 
   function contactBlock(heading) {
     return `
-      <section class="ag-section" id="ag-contact"><div class="container ag-reveal">
+      <section class="ag-section" id="ag-contact"><div class="container site-reveal">
         <span class="ag-kicker">נשמח לשמוע מכם</span>
         <h2>${heading}</h2>
         <div class="ag-contact-lines">
@@ -1419,7 +1424,7 @@ function renderStudioSite(d, page) {
   let main;
   if (page === "about") {
     main = `
-      <section class="ag-section" style="border-top:none; padding-top:64px;"><div class="container ag-reveal">
+      <section class="ag-section" style="border-top:none; padding-top:64px;"><div class="container site-reveal">
         <span class="ag-kicker">נעים להכיר</span>
         <h2>${escapeHtmlS(dd.businessName)}</h2>
         <p class="ag-about-body">${nl2brS(dd.about)}</p>
@@ -1441,7 +1446,7 @@ function renderStudioSite(d, page) {
           <a class="ag-cta" href="${escapeHtmlS(heroCta ? heroCta.href : (inPageRail ? "#ag-contact" : "#"))}"${heroCta && heroCta.external ? ' target="_blank" rel="noopener"' : ""}${heroCta && heroCta.page ? ' data-site-nav data-page="contact"' : ""}>רוצה להכיר יותר? ‹</a>
         </div>
       </section>
-      <section class="ag-section" id="ag-services" style="border-top:none;"><div class="container ag-reveal">
+      <section class="ag-section" id="ag-services" style="border-top:none;"><div class="container site-reveal">
         <span class="ag-kicker">זה מה שהעסק שלך מקבל</span>
         <h2>השירותים שלנו</h2>
         <div class="ag-grid">${services.map((s) => `
@@ -1449,7 +1454,7 @@ function renderStudioSite(d, page) {
       </div></section>
       ${embedSrc ? `<section class="ag-section"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : ""}
       ${(!d.pages || !d.pages.about) ? `
-      <section class="ag-section" id="ag-about"><div class="container ag-reveal">
+      <section class="ag-section" id="ag-about"><div class="container site-reveal">
         <span class="ag-kicker">נעים להכיר</span>
         <h2>${escapeHtmlS(dd.businessName)}</h2>
         <p class="ag-about-body">${nl2brS(dd.about)}</p>
