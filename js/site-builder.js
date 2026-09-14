@@ -499,12 +499,21 @@ function refreshUnlockUI() {
    write to, so a key can finalize exactly one (account, template) pair,
    full stop — not just "not reused by this same signed-in account",
    which is all a client-side check could ever guarantee. */
+let siteVerifying = false;
 async function verifySiteLicense() {
+  // Without this guard, a double-click (plausible now that the retry
+  // logic can take 3-4.5s round-trip) fires two overlapping requests, and
+  // whichever response resolves LAST overwrites the note — including a
+  // stale "invalid" landing on top of an already-succeeded verification.
+  if (siteVerifying) return;
   const input = document.getElementById("license-input");
   const note = document.getElementById("license-note");
   const key = input.value.trim();
   if (!key) { note.textContent = "יש להזין קוד רישוי."; note.className = "unlock-note err"; return; }
   if (!siteCurrentUserId) { note.textContent = "יש להתחבר לחשבון כדי לפתוח את ההורדה."; note.className = "unlock-note err"; return; }
+  siteVerifying = true;
+  const verifyBtn = document.getElementById("verify-btn");
+  if (verifyBtn) verifyBtn.disabled = true;
   note.textContent = "בודקים...";
   note.className = "unlock-note";
   try {
@@ -554,6 +563,9 @@ async function verifySiteLicense() {
   } catch (err) {
     note.textContent = "שגיאת חיבור לשירות האימות. נסו שוב בעוד רגע.";
     note.className = "unlock-note err";
+  } finally {
+    siteVerifying = false;
+    if (verifyBtn) verifyBtn.disabled = false;
   }
 }
 
