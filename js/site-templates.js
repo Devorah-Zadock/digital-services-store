@@ -1272,6 +1272,12 @@ function renderStudioSite(d, page) {
   const navLinksHtml = siteNavLinks(d, page);
   const embedSrc = videoEmbedSrc(d.videoUrl);
   const inPageRail = !navLinksHtml && page === "index";
+  // This template builds its own hero CTA below instead of going through
+  // ctaHtml() (it always shows the same "רוצה להכיר יותר?" label no matter
+  // where it points) — primaryCtaHref() is only reused here for the actual
+  // href/marker logic, so it doesn't repeat the same relative-link-in-an-
+  // iframe bug ctaHtml() was just fixed for.
+  const heroCta = primaryCtaHref(d, page);
   const railLinks = navLinksHtml
     ? navLinksHtml
     : inPageRail
@@ -1366,7 +1372,7 @@ function renderStudioSite(d, page) {
           <span class="kicker">${dd.tagline ? "ברוכים הבאים" : "סטודיו יצירתי"}</span>
           <h1>${escapeHtmlS(dd.businessName)}</h1>
           <p>${escapeHtmlS(dd.tagline)}</p>
-          <a class="ag-cta" href="${wa || (d.email ? "mailto:" + d.email : inPageRail ? "#ag-contact" : "#")}"${wa ? ' target="_blank" rel="noopener"' : ""}>רוצה להכיר יותר? ‹</a>
+          <a class="ag-cta" href="${escapeHtmlS(heroCta ? heroCta.href : (inPageRail ? "#ag-contact" : "#"))}"${heroCta && heroCta.external ? ' target="_blank" rel="noopener"' : ""}${heroCta && heroCta.page ? ' data-site-nav data-page="contact"' : ""}>רוצה להכיר יותר? ‹</a>
         </div>
       </section>
       <section class="ag-section" id="ag-services" style="border-top:none;"><div class="container ag-reveal">
