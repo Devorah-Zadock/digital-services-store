@@ -99,12 +99,18 @@
     </div>
     <div class="home-hero-visual" aria-hidden="true">
       <div class="hhv-glow"></div>
+      <!-- Dedicated showcase renders, not the catalog's own thumbnails: the
+           catalog deliberately shows neutral placeholder content ("שם
+           העסק", a generic name) so a customer immediately understands
+           it's an editable template. The homepage carousel's job is the
+           opposite — to impress at a glance — so these use the exact same
+           templates filled in with realistic, polished example content. -->
       <div class="hhv-circle" id="hero-carousel">
-        <img class="hhv-slide active" src="images/previews/cv-general-modern.webp" alt="">
-        <img class="hhv-slide" src="images/previews/site-noir.webp" alt="">
-        <img class="hhv-slide" src="images/previews/quote-modern.webp" alt="">
-        <img class="hhv-slide" src="images/previews/deck-investor-pitch.webp" alt="">
-        <img class="hhv-slide" src="images/previews/cv-design-creative.webp" alt="">
+        <img class="hhv-slide active" src="images/previews/hero-cv-1.webp" alt="">
+        <img class="hhv-slide" src="images/previews/hero-site.webp" alt="">
+        <img class="hhv-slide" src="images/previews/hero-quote.webp" alt="">
+        <img class="hhv-slide" src="images/previews/hero-deck.webp" alt="">
+        <img class="hhv-slide" src="images/previews/hero-cv-2.webp" alt="">
       </div>
       <div class="hhv-dots" id="hero-carousel-dots">
         <span class="active"></span><span></span><span></span><span></span><span></span>
@@ -337,5 +343,20 @@
 <script src="js/main.js"></script>
 <script src="js/widgets.js?v=8"></script>
 <script src="js/effects.js"></script>
+<script>
+  // account-settings.js redirects here with this param right after a
+  // self-service account deletion — a plain redirect with no confirmation
+  // would leave someone wondering whether it actually worked.
+  if (new URLSearchParams(location.search).get("accountDeleted") === "1") {
+    const bar = document.createElement("div");
+    bar.className = "cookie-notice";
+    bar.innerHTML = '<p>החשבון והתוכן שלו נמחקו לצמיתות.</p><button type="button" class="btn btn-teal" id="account-deleted-ok">הבנתי</button>';
+    document.body.appendChild(bar);
+    document.getElementById("account-deleted-ok").addEventListener("click", () => {
+      bar.remove();
+      history.replaceState(null, "", location.pathname);
+    });
+  }
+</script>
 </body>
 </html>
