@@ -18,6 +18,33 @@ let siteCurrentUserId = null;
 let siteProjectId = null;
 let siteIsFinalized = false;
 
+/* Autosave: a refresh with no manual save used to lose everything typed
+   in since the last click of "שמירה" — confirmed live. Every edit inside
+   #wizard-section marks the project dirty; a periodic tick saves it
+   quietly in the background (same status element the manual save button
+   uses), without needing every individual handler in site-builder.js to
+   know about saving. */
+let siteDirty = false;
+let siteAutosaving = false;
+
+function markSiteDirty() {
+  siteDirty = true;
+  const status = document.getElementById("site-save-status");
+  if (status && status.classList.contains("ok")) { status.textContent = ""; status.classList.remove("ok"); }
+}
+
+async function siteAutosaveTick() {
+  if (!siteCurrentUserId || !siteDirty || siteAutosaving) return;
+  siteAutosaving = true;
+  await saveSiteNow();
+  siteAutosaving = false;
+  if (siteProjectId) {
+    siteDirty = false;
+    const status = document.getElementById("site-save-status");
+    if (status) { status.textContent = "נשמר אוטומטית ✓"; status.classList.add("ok"); }
+  }
+}
+
 async function saveSiteNow() {
   if (!siteCurrentUserId) return;
   const row = { user_id: siteCurrentUserId, template: siteState.template, data: siteState.data };
@@ -166,6 +193,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (window.revealGatedPage) window.revealGatedPage();
   });
 
+  const wizard = document.getElementById("wizard-section");
+  if (wizard) {
+    wizard.addEventListener("input", markSiteDirty);
+    wizard.addEventListener("change", markSiteDirty);
+    wizard.addEventListener("click", markSiteDirty);
+  }
+  setInterval(siteAutosaveTick, 20000);
+
   const btn = document.getElementById("site-save-btn");
   const status = document.getElementById("site-save-status");
   if (btn) {
@@ -174,6 +209,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.disabled = true;
       await saveSiteNow();
       btn.disabled = false;
+      siteDirty = false;
       status.textContent = "נשמר ✓";
       status.classList.add("ok");
       if (window.refreshMyPanel) window.refreshMyPanel();

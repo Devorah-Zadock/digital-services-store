@@ -97,12 +97,22 @@ function primaryCtaHref(d, page) {
   if (wa) return { href: wa, label: "שליחת הודעה בוואטסאפ", external: true };
   if (d.email) return { href: `mailto:${d.email}`, label: "שליחת מייל", external: false };
   if (d.phone) return { href: `tel:${d.phone}`, label: "התקשרות עכשיו", external: false };
-  if (d.pages && d.pages.contact && page !== "contact") return { href: "contact.html", label: "יצירת קשר", external: false };
+  // Same relative "contact.html" the real nav links use, so it needs the
+  // same page: "contact" marker — see the comment above previewNavScript().
+  if (d.pages && d.pages.contact && page !== "contact") return { href: "contact.html", label: "יצירת קשר", external: false, page: "contact" };
   return null;
 }
 function ctaHtml(cta, cls) {
   if (!cta) return "";
-  return `<a class="${cls}" href="${escapeHtmlS(cta.href)}"${cta.external ? ' target="_blank" rel="noopener"' : ""}>${escapeHtmlS(cta.label)}</a>`;
+  // Confirmed live: without data-site-nav, this exact relative "contact.html"
+  // link (a customer with no phone/email/WhatsApp set yet, but a separate
+  // Contact page turned on) navigated the PREVIEW IFRAME for real instead of
+  // switching its tab — since a srcdoc iframe has no URL of its own, the
+  // relative link resolved against the editor page's own URL and silently
+  // opened DeskKit's own contact page. The real nav links already carry this
+  // marker for exactly this reason; the CTA button just never got it.
+  const navAttrs = cta.page ? ` data-site-nav data-page="${cta.page}"` : "";
+  return `<a class="${cls}" href="${escapeHtmlS(cta.href)}"${cta.external ? ' target="_blank" rel="noopener"' : ""}${navAttrs}>${escapeHtmlS(cta.label)}</a>`;
 }
 
 /* Builds the shared multi-page nav links (Home / About / Contact) — only
