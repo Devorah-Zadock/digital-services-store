@@ -1509,27 +1509,32 @@ const SITE_CATEGORIES = [
   { slug: "events", label: "אירועים ובוטיק" },
 ];
 
+/* Ordered so the visually striking designs lead the default "הכל" catalog
+   view — the flat, business-card-plain ones (local-service, freelancer,
+   catalog) used to sit first purely because of object key order, which
+   made the whole catalog read as bland at a glance even though the more
+   distinctive templates were there too, just scrolled past. */
 const SITE_TEMPLATES = {
+  "studio": { label: "סטודיו קריאייטיב", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "הירו א-סימטרי כהה, ניווט צדי אנכי, וטקסטים שנכנסים באנימציה בגלילה", thumb: "images/previews/site-studio.webp", render: renderStudioSite,
+    features: ["הירו א-סימטרי כהה עם ניווט צדי אנכי", "טקסטים שנכנסים באנימציה תוך כדי גלילה", "עיצוב נועז שממש לא נראה כמו \"תבנית\"", "מתאים לסטודיו עיצוב או מותג יצירתי"] },
+  "noir": { label: "יוקרתי כהה", category: "אירועים ובוטיק", categorySlug: "events", desc: "רקע כהה, טיפוגרפיה איטלקית עדינה, ורשימת שירותים בסגנון תפריט", thumb: "images/previews/site-noir.webp", render: renderNoirSite,
+    features: ["רקע כהה ויוקרתי עם וידאו רקע אפשרי", "טיפוגרפיה איטלקית עדינה", "רשימת שירותים בסגנון תפריט מסעדה", "מתאים לאירועים ומותגים יוקרתיים"] },
+  "bold": { label: "נועז ומודרני", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "מסגרות עבות, צללים חדים, טיפוגרפיה גדולה", thumb: "images/previews/site-bold.webp", render: renderBoldSite,
+    features: ["טיפוגרפיה גדולה ותוססת שקופצת לעין", "מסגרות עבות וצללים חדים", "גלריית תמונות מתחלפות בכותרת", "מתאים למותגים שרוצים לבלוט"] },
+  "elegant": { label: "אלגנטי ומעוצב", category: "אירועים ובוטיק", categorySlug: "events", desc: "טיפוגרפיה עדינה, תמונה מפוצלת, מתאים לאירועים ועסקי בוטיק", thumb: "images/previews/site-elegant.webp", render: renderElegantSite,
+    features: ["פריסה מפוצלת: תמונה בצד, טקסט בצד", "גלריית תמונות מתחלפות", "טיפוגרפיה עדינה שמתאימה לאירועים", "מושלם לעסקי בוטיק ואירועים"] },
+  "gallery": { label: "גלריה מודרנית", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "תמונה מלאה ברקע, עיצוב עיתונאי ואלגנטי", thumb: "images/previews/site-gallery.webp", render: renderGallerySite,
+    features: ["תמונת רקע מלאה בכותרת, בסגנון עיתונאי", "פריסת \"בֶּנְטוֹ\" מודרנית למוצרים או עבודות", "טיפוגרפיה עדינה ואלגנטית", "צבע ראשי לבחירה שצובע את כל האתר"] },
+  "portfolio": { label: "תיק עבודות יצירתי", category: "תדמית אישית", categorySlug: "personal", desc: "כותרת אישית גדולה ורשימת עבודות ממוספרת, בסגנון פורטפוליו", thumb: "images/previews/site-portfolio.webp", render: renderPortfolioSite,
+    features: ["כותרת אישית גדולה עם שם ותפקיד", "רשימת עבודות ממוספרת בסגנון פורטפוליו", "גלריית תמונות מתחלפות", "מתאים למעצבים, יוצרים ואנשי מקצוע יצירתיים"] },
+  "boutique": { label: "חנות בוטיק", category: "קטלוג ומכירות", categorySlug: "shop", desc: "מוצר מומלץ בכרטיס גדול, ואחריו רשת המוצרים הנוספים", thumb: "images/previews/site-boutique.webp", render: renderBoutiqueSite,
+    features: ["מוצר מומלץ בכרטיס גדול ובולט", "רשת מוצרים נוספים מתחתיו", "גלריית תמונות מתחלפות בכותרת", "מתאים לחנות בוטיק עם מוצר דגל"] },
+  "process": { label: "תהליך עבודה", category: "עסקי שירות", categorySlug: "service", desc: "ציר זמן ממוספר שמראה איך אתם עובדים, שלב אחר שלב", thumb: "images/previews/site-process.webp", render: renderProcessSite,
+    features: ["ציר זמן ממוספר שמראה איך אתם עובדים", "בונה אמון עוד לפני שיחת המכירה הראשונה", "גלריית תמונות מתחלפות בכותרת", "מתאים לעסקי שירות עם תהליך עבודה ברור"] },
   "local-service": { label: "עסק שירות מקומי", category: "עסקי שירות", categorySlug: "service", desc: "Hero גדול, כרטיסי שירותים, וואטסאפ צף", thumb: "images/previews/site-local-service.webp", render: renderLocalServiceSite,
     features: ["תמונת רקע גדולה בכותרת — אפשר גם וידאו רקע נגן אוטומטית", "גלריית תמונות מתחלפות בכותרת", "כפתור וואטסאפ צף בכל העמודים", "כרטיסי שירותים עם תיאור ומחיר"] },
   "freelancer": { label: "פרילנסר / יועץ", category: "תדמית אישית", categorySlug: "personal", desc: "מינימלי וממורכז, מתאים למותג אישי", thumb: "images/previews/site-freelancer.webp", render: renderFreelancerSite,
     features: ["עיצוב ממורכז ונקי, בלי רעשי רקע", "תמונה אישית או גלריית תמונות מתחלפות", "מתאים למותג אישי או ייעוץ פרטני", "צבע ראשי לבחירה שצובע את כל האתר"] },
   "catalog": { label: "קטלוג קטן", category: "קטלוג ומכירות", categorySlug: "shop", desc: "רשת מוצרים עם תגי מחיר וניווט עליון", thumb: "images/previews/site-catalog.webp", render: renderCatalogSite,
     features: ["רשת מוצרים עם תגי מחיר ברורים", "ניווט עליון קבוע בין העמודים", "גלריית תמונות מתחלפות בכותרת", "מתאים לחנות קטנה או תפריט שירותים"] },
-  "gallery": { label: "גלריה מודרנית", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "תמונה מלאה ברקע, עיצוב עיתונאי ואלגנטי", thumb: "images/previews/site-gallery.webp", render: renderGallerySite,
-    features: ["תמונת רקע מלאה בכותרת, בסגנון עיתונאי", "פריסת \"בֶּנְטוֹ\" מודרנית למוצרים או עבודות", "טיפוגרפיה עדינה ואלגנטית", "צבע ראשי לבחירה שצובע את כל האתר"] },
-  "bold": { label: "נועז ומודרני", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "מסגרות עבות, צללים חדים, טיפוגרפיה גדולה", thumb: "images/previews/site-bold.webp", render: renderBoldSite,
-    features: ["טיפוגרפיה גדולה ותוססת שקופצת לעין", "מסגרות עבות וצללים חדים", "גלריית תמונות מתחלפות בכותרת", "מתאים למותגים שרוצים לבלוט"] },
-  "elegant": { label: "אלגנטי ומעוצב", category: "אירועים ובוטיק", categorySlug: "events", desc: "טיפוגרפיה עדינה, תמונה מפוצלת, מתאים לאירועים ועסקי בוטיק", thumb: "images/previews/site-elegant.webp", render: renderElegantSite,
-    features: ["פריסה מפוצלת: תמונה בצד, טקסט בצד", "גלריית תמונות מתחלפות", "טיפוגרפיה עדינה שמתאימה לאירועים", "מושלם לעסקי בוטיק ואירועים"] },
-  "process": { label: "תהליך עבודה", category: "עסקי שירות", categorySlug: "service", desc: "ציר זמן ממוספר שמראה איך אתם עובדים, שלב אחר שלב", thumb: "images/previews/site-process.webp", render: renderProcessSite,
-    features: ["ציר זמן ממוספר שמראה איך אתם עובדים", "בונה אמון עוד לפני שיחת המכירה הראשונה", "גלריית תמונות מתחלפות בכותרת", "מתאים לעסקי שירות עם תהליך עבודה ברור"] },
-  "portfolio": { label: "תיק עבודות יצירתי", category: "תדמית אישית", categorySlug: "personal", desc: "כותרת אישית גדולה ורשימת עבודות ממוספרת, בסגנון פורטפוליו", thumb: "images/previews/site-portfolio.webp", render: renderPortfolioSite,
-    features: ["כותרת אישית גדולה עם שם ותפקיד", "רשימת עבודות ממוספרת בסגנון פורטפוליו", "גלריית תמונות מתחלפות", "מתאים למעצבים, יוצרים ואנשי מקצוע יצירתיים"] },
-  "boutique": { label: "חנות בוטיק", category: "קטלוג ומכירות", categorySlug: "shop", desc: "מוצר מומלץ בכרטיס גדול, ואחריו רשת המוצרים הנוספים", thumb: "images/previews/site-boutique.webp", render: renderBoutiqueSite,
-    features: ["מוצר מומלץ בכרטיס גדול ובולט", "רשת מוצרים נוספים מתחתיו", "גלריית תמונות מתחלפות בכותרת", "מתאים לחנות בוטיק עם מוצר דגל"] },
-  "noir": { label: "יוקרתי כהה", category: "אירועים ובוטיק", categorySlug: "events", desc: "רקע כהה, טיפוגרפיה איטלקית עדינה, ורשימת שירותים בסגנון תפריט", thumb: "images/previews/site-noir.webp", render: renderNoirSite,
-    features: ["רקע כהה ויוקרתי עם וידאו רקע אפשרי", "טיפוגרפיה איטלקית עדינה", "רשימת שירותים בסגנון תפריט מסעדה", "מתאים לאירועים ומותגים יוקרתיים"] },
-  "studio": { label: "סטודיו קריאייטיב", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "הירו א-סימטרי כהה, ניווט צדי אנכי, וטקסטים שנכנסים באנימציה בגלילה", thumb: "images/previews/site-studio.webp", render: renderStudioSite,
-    features: ["הירו א-סימטרי כהה עם ניווט צדי אנכי", "טקסטים שנכנסים באנימציה תוך כדי גלילה", "עיצוב נועז שממש לא נראה כמו \"תבנית\"", "מתאים לסטודיו עיצוב או מותג יצירתי"] },
 };

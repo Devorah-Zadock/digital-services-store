@@ -39,7 +39,12 @@ body {
   font-family: 'Heebo', Arial, sans-serif;
   color: var(--dark);
   background: var(--white);
-  direction: rtl;
+  /* Inherits direction from <html dir="..."> rather than hardcoding rtl —
+     js/i18n.js flips that attribute at runtime for the EN/HE toggle, and
+     a hardcoded value here would silently override it, leaving every
+     inset-inline-*/margin-inline-* rule mirrored wrong regardless of the
+     toggle's own state (confirmed live: the header still rendered RTL
+     under dir="ltr" until this was inheritance instead of a hardcode). */
   line-height: 1.6;
   overflow-x: clip;
 }
@@ -145,6 +150,12 @@ body.has-sites-rail header.site {
 .nav-login.nav-login-pending { visibility: hidden; }
 .nav-login:hover { color: var(--teal-dark); }
 .nav-login-email { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: ltr; text-align: right; }
+.lang-toggle {
+  background: var(--white); border: 1px solid #DCE9E4; color: var(--teal-dark);
+  font-size: 12.5px; font-weight: 700; padding: 6px 13px; border-radius: 20px;
+  cursor: pointer; font-family: inherit; transition: border-color .15s ease, background .15s ease;
+}
+.lang-toggle:hover { background: var(--ice); border-color: var(--teal-light); }
 
 /* Shared "switchable list" widget. .my-sites-rail itself is the global
    "my content" panel (js/my-panel.js) mounted on every logged-in page —
@@ -371,11 +382,23 @@ body.has-sites-rail .nav-account-wrap { display: none; }
 
 /* ---------- Homepage hero (asymmetric, own layout — not the shared
    centered .hero used by inner pages) ---------- */
-.home-hero { position: relative; overflow: hidden; padding: 96px 24px 80px; background: var(--ice); isolation: isolate; }
-/* An oversized, slowly drifting gradient layer behind the content — plain
-   transform keyframes (translate + rotate), not animated custom
-   properties, so it interpolates smoothly in every browser instead of
-   depending on @property support. */
+/* The base fill itself is a moving gradient (not a flat --ice background
+   with the motion confined to accent blobs on top) — the whole hero reads
+   as animated, not just the D. background-size/position (not transform)
+   here, since this layer is the section's own background and has to stay
+   flush with its edges rather than drift past them. */
+.home-hero {
+  position: relative; overflow: hidden; padding: 96px 24px 80px; isolation: isolate;
+  background: linear-gradient(120deg, #DDF2E9 0%, #E9F2EF 22%, #F5E9CC 50%, #E9F2EF 76%, #E3ECF8 100%);
+  background-size: 240% 240%;
+  animation: homeHeroBg 16s ease-in-out infinite alternate;
+}
+@keyframes homeHeroBg { 0% { background-position: 0% 35%; } 100% { background-position: 100% 65%; } }
+@media (prefers-reduced-motion: reduce) { .home-hero { animation: none; } }
+/* An oversized, slowly drifting gradient layer of stronger color blobs on
+   top of that base — plain transform keyframes (translate + rotate), not
+   animated custom properties, so it interpolates smoothly in every
+   browser instead of depending on @property support. */
 .home-hero::before {
   content: ""; position: absolute; z-index: -1; inset: -25%;
   background:
@@ -482,7 +505,10 @@ section { padding: 88px 0; }
 /* ---------- Homepage tools section: heading at the reading-order start
    (right, in RTL) with two "flagship" cards beside it, the rest below —
    an asymmetric header instead of the usual centered kicker+h2. ---------- */
-#tools { scroll-margin-top: 20px; }
+/* The sticky header (~70px) sits on top of whatever scrolls to the top of
+   the viewport — a small scroll-margin left the header covering the first
+   row of cards after the "בואו נתחיל" anchor jump. */
+#tools { scroll-margin-top: 100px; }
 .tools-top { display: flex; align-items: center; gap: 36px; flex-wrap: wrap; margin-bottom: 32px; }
 .tools-heading { font-size: 32px; margin: 0; color: var(--teal-dark); letter-spacing: -.01em; flex: 0 1 320px; }
 .tools-top-cards { display: flex; gap: 24px; flex: 1 1 480px; min-width: 0; }
@@ -586,7 +612,7 @@ section { padding: 88px 0; }
 /* Flips around the horizontal axis (bottom edge lifts up and over, like a
    die tumbling) rather than the vertical axis — a left-right flip read as
    too "web-generic" next to the rest of the site. */
-.flip-card:hover .flip-card-inner, .flip-card.is-flipped .flip-card-inner { transform: rotateX(-180deg); }
+.flip-card:hover .flip-card-inner, .flip-card.is-flipped .flip-card-inner { transform: rotateX(180deg); }
 .flip-card-front, .flip-card-back {
   position: absolute; inset: 0;
   backface-visibility: hidden; -webkit-backface-visibility: hidden;
@@ -596,7 +622,7 @@ section { padding: 88px 0; }
 .flip-card .card::before { display: none; }
 .flip-card .card:hover { transform: none; box-shadow: var(--shadow); }
 .flip-card-back {
-  transform: rotateX(-180deg);
+  transform: rotateX(180deg);
   background: linear-gradient(135deg, var(--teal-dark), var(--teal) 85%);
   color: var(--white);
   padding: 20px 22px 18px;
