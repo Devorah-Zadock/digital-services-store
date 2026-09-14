@@ -569,6 +569,17 @@ async function verifySiteLicense() {
   }
 }
 
+// sites.html doesn't load js/require-auth.js (its auth gating is
+// conditional — only entering the wizard needs an account, browsing the
+// catalog doesn't), so it has no window.revealGatedPage of its own. This
+// page defines it directly instead: site-cloud-save.js calls it only
+// once it has finished correcting siteState for the real signed-in
+// account, which is what makes it safe to finally show the page.
+window.revealGatedPage = function () {
+  const overlay = document.getElementById("auth-gate-overlay");
+  if (overlay) overlay.remove();
+};
+
 document.addEventListener("DOMContentLoaded", () => {
   const params = new URLSearchParams(location.search);
   const urlTemplate = params.get("template");
@@ -608,7 +619,16 @@ document.addEventListener("DOMContentLoaded", () => {
       if (data.session && data.session.user) {
         if (urlTemplate && SITE_TEMPLATES[urlTemplate]) siteState.template = urlTemplate;
         showWizard();
-        if (overlay) overlay.remove();
+        // Confirmed live: this check and site-cloud-save.js's own account
+        // check are two independent async calls with no guaranteed order.
+        // Removing the overlay right here, the moment THIS faster one
+        // resolves, could reveal the page before site-cloud-save.js has
+        // corrected siteState away from whatever the synchronous pre-auth
+        // loadSiteState() peek guessed (a DIFFERENT account's cached
+        // draft, on a shared/reused browser) — briefly showing someone
+        // else's content. window.revealGatedPage() (called by
+        // site-cloud-save.js only AFTER that correction) is now the sole
+        // place responsible for removing the overlay.
       } else {
         const here = location.pathname.split("/").pop() + location.search;
         location.href = "account.html?redirect=" + encodeURIComponent(here);
