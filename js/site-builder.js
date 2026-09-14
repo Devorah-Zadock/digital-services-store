@@ -127,18 +127,29 @@ function renderServicesList() {
    builder.html?template=) so the wizard below can just read it from
    the URL on load like the CV builder already does. */
 function siteTplCardHtml(key, t) {
+  const features = t.features || [];
   return `
-    <div class="card" data-cat="${t.categorySlug}">
-      <div class="thumb"><img src="${t.thumb}" alt="${escapeHtmlS(t.label)}" loading="lazy"></div>
-      <div class="body">
-        <div class="card-meta">
-          <span class="tag">${escapeHtmlS(t.category)}</span>
-          <span class="price">199 ₪</span>
+    <div class="flip-card" data-cat="${t.categorySlug}">
+      <div class="flip-card-inner">
+        <div class="flip-card-front card" data-cat="${t.categorySlug}">
+          <div class="thumb"><img src="${t.thumb}" alt="${escapeHtmlS(t.label)}" loading="lazy"></div>
+          <div class="body">
+            <div class="card-meta">
+              <span class="tag">${escapeHtmlS(t.category)}</span>
+              <span class="price">199 ₪</span>
+            </div>
+            <h3>${escapeHtmlS(t.label)}</h3>
+            <p style="font-size:13px; color:var(--grey); margin:0; flex:1;">${escapeHtmlS(t.desc)}</p>
+            <a href="sites.html?template=${key}" class="btn btn-teal card-cta">בחירה ועריכה</a>
+          </div>
         </div>
-        <h3>${escapeHtmlS(t.label)}</h3>
-        <p style="font-size:13px; color:var(--grey); margin:0; flex:1;">${escapeHtmlS(t.desc)}</p>
-        <a href="sites.html?template=${key}" class="btn btn-teal card-cta">בחירה ועריכה</a>
+        <div class="flip-card-back">
+          <h4>${escapeHtmlS(t.label)} — מה כלול</h4>
+          <ul>${features.map((f) => `<li>${escapeHtmlS(f)}</li>`).join("")}</ul>
+          <a href="sites.html?template=${key}" class="card-cta">בחירה ועריכה</a>
+        </div>
       </div>
+      <span class="flip-card-hint">לפרטים נוספים: מעבר עכבר או הקשה</span>
     </div>`;
 }
 
@@ -163,6 +174,16 @@ function renderTplCatalog() {
   });
   if (searchEl) searchEl.addEventListener("input", () => { term = searchEl.value; apply(); });
   apply();
+
+  // Devices with no real hover (touch) get a tap-to-flip toggle instead —
+  // :hover alone would leave the card's back stuck showing after a tap,
+  // since there's no "unhover" gesture to flip it back.
+  gridEl.addEventListener("click", (e) => {
+    if (e.target.closest(".card-cta")) return;
+    if (window.matchMedia("(hover: hover)").matches) return;
+    const card = e.target.closest(".flip-card");
+    if (card) card.classList.toggle("is-flipped");
+  });
 }
 
 function renderCurrentTplInfo() {
