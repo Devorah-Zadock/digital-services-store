@@ -637,6 +637,15 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.getElementById("finish-btn").addEventListener("click", () => {
+    // Purchasing a license before typing a single real word means paying
+    // for a page that still just shows placeholder instructions — worth
+    // catching here, before money changes hands, not only at publish time.
+    if (!siteState.data.businessName || !siteState.data.businessName.trim()) {
+      const note = document.getElementById("finish-gate-warn");
+      if (note) note.style.display = "";
+      document.getElementById("s-name").focus();
+      return;
+    }
     financeGateOpened = true;
     refreshUnlockUI();
   });
