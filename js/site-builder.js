@@ -149,7 +149,6 @@ function siteTplCardHtml(key, t) {
           <a href="sites.html?template=${key}" class="card-cta">בחירה ועריכה</a>
         </div>
       </div>
-      <span class="flip-card-hint">לפרטים נוספים: מעבר עכבר או הקשה</span>
     </div>`;
 }
 

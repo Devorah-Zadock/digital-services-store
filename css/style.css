@@ -390,7 +390,7 @@ body.has-sites-rail .nav-account-wrap { display: none; }
   100% { transform: translate(2%, -3%) rotate(-3deg); }
 }
 @media (prefers-reduced-motion: reduce) { .home-hero::before { animation: none; } }
-.home-hero-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 48px; align-items: center; }
+.home-hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
 .home-hero-eyebrow {
   display: inline-flex; align-items: center; gap: 8px; background: var(--white); border: 1px solid #DCE9E4;
   padding: 7px 16px; border-radius: 20px; font-size: 12.5px; font-weight: 700; color: var(--teal-dark); margin-bottom: 22px;
@@ -405,37 +405,41 @@ body.has-sites-rail .nav-account-wrap { display: none; }
 .btn-outline-dark { background: transparent; color: var(--teal-dark); border: 1.5px solid var(--teal-dark); }
 .btn-outline-dark:hover { background: var(--teal-dark); color: var(--white); transform: translateY(-2px); }
 
-/* A big "D" silhouette (same shape as .brand-mark, scaled up) filled with
-   a collage of real template renders — reads as "here's what you'll get"
-   across the tools at a glance, and doubles as an oversized version of
-   DeskKit's own mark instead of a generic stock mockup. */
-.home-hero-visual { position: relative; height: 440px; display: flex; align-items: center; justify-content: center; }
+/* A big "D" badge (same shape as .brand-mark, scaled way up) sitting
+   among a scattered cluster of real template renders — reads as "here's
+   what you'll get" across the tools at a glance, and doubles as an
+   oversized version of DeskKit's own mark instead of a generic stock
+   mockup. Every position below is a percentage of .hhv-cluster's own
+   box, so the whole collage stays inside it — nothing bleeds past the
+   container and gets hard-clipped at its edge. */
+.home-hero-visual { position: relative; height: 500px; display: flex; align-items: center; justify-content: center; }
+.hhv-cluster { position: relative; width: 100%; height: 100%; max-width: 460px; }
 .hhv-dee {
-  position: relative; width: 380px; height: 440px;
+  position: absolute; top: 20%; inset-inline-start: 26%; width: 44%; height: 58%; z-index: 1;
   clip-path: url(#heroDeeClip);
-  filter: drop-shadow(0 26px 50px rgba(15, 51, 43, .28));
-}
-.hhv-dee-bg {
-  position: absolute; inset: -20%;
+  filter: drop-shadow(0 20px 40px rgba(15, 51, 43, .3));
   background: linear-gradient(135deg, var(--vivid-emerald), var(--teal-dark) 45%, var(--gold) 85%);
   background-size: 220% 220%;
-  animation: heroDeeShift 12s ease-in-out infinite alternate;
+  animation: heroDeeShift 9s ease-in-out infinite alternate;
 }
 @keyframes heroDeeShift { 0% { background-position: 0% 30%; } 100% { background-position: 100% 70%; } }
-.hhv-dee-img {
-  position: absolute; object-fit: cover; border-radius: 10px;
-  box-shadow: 0 14px 30px rgba(0,0,0,.25); border: 3px solid var(--white);
+@media (prefers-reduced-motion: reduce) { .hhv-dee { animation: none; } }
+.hhv-card {
+  position: absolute; object-fit: cover; border-radius: 9px;
+  box-shadow: 0 14px 28px rgba(0,0,0,.22); border: 3px solid var(--white);
 }
-.hhv-dee-img-1 { width: 62%; height: 34%; top: 6%; inset-inline-start: 30%; transform: rotate(-3deg); }
-.hhv-dee-img-2 { width: 52%; height: 30%; top: 40%; inset-inline-start: 6%; transform: rotate(4deg); }
-.hhv-dee-img-3 { width: 58%; height: 28%; top: 68%; inset-inline-start: 26%; transform: rotate(-2deg); }
-.hhv-dee-img-4 { width: 40%; height: 22%; top: 2%; inset-inline-start: -6%; transform: rotate(6deg); }
-@media (prefers-reduced-motion: reduce) { .hhv-dee-bg { animation: none; } }
+.hhv-card-1 { width: 34%; height: 19%; top: 0%;  inset-inline-start: 2%;  transform: rotate(-7deg); z-index: 3; }
+.hhv-card-2 { width: 30%; height: 17%; top: 1%;  inset-inline-start: 46%; transform: rotate(5deg);  z-index: 4; }
+.hhv-card-3 { width: 32%; height: 19%; top: 17%; inset-inline-start: 68%; transform: rotate(8deg);  z-index: 5; }
+.hhv-card-4 { width: 30%; height: 18%; top: 41%; inset-inline-start: 0%;  transform: rotate(4deg);  z-index: 2; }
+.hhv-card-5 { width: 34%; height: 19%; top: 58%; inset-inline-start: 64%; transform: rotate(-6deg); z-index: 4; }
+.hhv-card-6 { width: 32%; height: 19%; top: 76%; inset-inline-start: 8%;  transform: rotate(6deg);  z-index: 3; }
+.hhv-card-7 { width: 30%; height: 18%; top: 80%; inset-inline-start: 45%; transform: rotate(-8deg); z-index: 5; }
 @media (max-width: 900px) {
   .home-hero-grid { grid-template-columns: 1fr; }
   .home-hero h1 { font-size: 36px; }
-  .home-hero-visual { height: 340px; margin-top: 10px; }
-  .hhv-dee { width: 300px; height: 340px; }
+  .home-hero-visual { height: 380px; margin-top: 10px; }
+  .hhv-cluster { max-width: 340px; }
 }
 .btn {
   display: inline-block; padding: 14px 30px; border-radius: 30px;
@@ -467,6 +471,18 @@ section { padding: 88px 0; }
 }
 .section-head h2 { font-size: 34px; margin: 12px 0 12px; color: var(--teal-dark); letter-spacing: -.01em; }
 .section-head p { color: var(--grey); font-size: 16px; }
+
+/* ---------- Homepage tools section: heading at the reading-order start
+   (right, in RTL) with two "flagship" cards beside it, the rest below —
+   an asymmetric header instead of the usual centered kicker+h2. ---------- */
+.tools-top { display: flex; align-items: center; gap: 36px; flex-wrap: wrap; margin-bottom: 32px; }
+.tools-heading { font-size: 32px; margin: 0; color: var(--teal-dark); letter-spacing: -.01em; flex: 0 1 320px; }
+.tools-top-cards { display: flex; gap: 24px; flex: 1 1 480px; min-width: 0; }
+.tools-top-cards .card { flex: 1 1 0; min-width: 0; }
+@media (max-width: 860px) {
+  .tools-top { flex-direction: column; align-items: stretch; }
+  .tools-top-cards { flex-direction: column; }
+}
 .bg-ice { background: linear-gradient(180deg, var(--ice), #F7FBF9); }
 
 /* ---------- Category tabs ---------- */
@@ -552,14 +568,17 @@ section { padding: 88px 0; }
    for free via the existing descendant selectors) but its own hover-lift
    and top accent bar are disabled here — the whole flip-card handles its
    own hover treatment instead, so they don't fight the 3D rotation. */
-.flip-card { position: relative; perspective: 1600px; height: 430px; transition: transform .2s ease; }
+.flip-card { position: relative; perspective: 1600px; height: 390px; transition: transform .2s ease; }
 .flip-card:hover, .flip-card.is-flipped { transform: translateY(-6px); }
 .flip-card-inner {
   position: relative; width: 100%; height: 100%;
   transition: transform .6s cubic-bezier(.4,.2,.2,1);
   transform-style: preserve-3d;
 }
-.flip-card:hover .flip-card-inner, .flip-card.is-flipped .flip-card-inner { transform: rotateY(180deg); }
+/* Flips around the horizontal axis (bottom edge lifts up and over, like a
+   die tumbling) rather than the vertical axis — a left-right flip read as
+   too "web-generic" next to the rest of the site. */
+.flip-card:hover .flip-card-inner, .flip-card.is-flipped .flip-card-inner { transform: rotateX(-180deg); }
 .flip-card-front, .flip-card-back {
   position: absolute; inset: 0;
   backface-visibility: hidden; -webkit-backface-visibility: hidden;
@@ -569,7 +588,7 @@ section { padding: 88px 0; }
 .flip-card .card::before { display: none; }
 .flip-card .card:hover { transform: none; box-shadow: var(--shadow); }
 .flip-card-back {
-  transform: rotateY(180deg);
+  transform: rotateX(-180deg);
   background: linear-gradient(135deg, var(--teal-dark), var(--teal) 85%);
   color: var(--white);
   padding: 20px 22px 18px;
@@ -581,12 +600,6 @@ section { padding: 88px 0; }
 .flip-card-back li { font-size: 12.5px; line-height: 1.4; display: flex; align-items: flex-start; gap: 8px; color: #E7F2EE; }
 .flip-card-back li::before { content: "\2713"; color: var(--gold-light); font-weight: 700; flex-shrink: 0; }
 .flip-card-back .card-cta { margin-top: auto; text-align: center; padding: 9px 20px; font-size: 13.5px; background: var(--white); color: var(--teal-dark); border-radius: 10px; font-weight: 700; text-decoration: none; }
-.flip-card-hint {
-  position: absolute; bottom: 10px; inset-inline-start: 0; inset-inline-end: 0; width: fit-content; margin: 0 auto;
-  font-size: 11px; color: var(--grey); background: rgba(255,255,255,.92); padding: 3px 10px; border-radius: 20px;
-  pointer-events: none; opacity: .85; transition: opacity .2s ease; z-index: 2;
-}
-.flip-card:hover .flip-card-hint, .flip-card.is-flipped .flip-card-hint { opacity: 0; }
 
 /* ---------- Feature list (icon rows) ---------- */
 .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }

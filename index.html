@@ -38,7 +38,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=23">
+<link rel="stylesheet" href="css/style.css?v=24">
 </head>
 <body>
 <script>
@@ -102,21 +102,24 @@
           <path d="M0.08,0.06 H0.40 A0.44,0.44 0 0 1 0.40,0.94 H0.08 Z"/>
         </clipPath>
       </svg>
-      <!-- Same silhouette as the brand mark's own "D" fold-page path
-           (see .brand-mark in the header), scaled up into a big blob that
-           frames a collage instead of the small header icon. Dedicated
-           showcase renders, not the catalog's own thumbnails: those
-           deliberately show neutral placeholder content ("שם העסק") so a
-           customer immediately understands it's an editable template —
-           the homepage's job is the opposite, to impress at a glance, so
-           these use the exact same templates filled with realistic,
-           polished example content. -->
-      <div class="hhv-dee">
-        <div class="hhv-dee-bg"></div>
-        <img class="hhv-dee-img hhv-dee-img-1" src="images/previews/hero-site.webp" alt="">
-        <img class="hhv-dee-img hhv-dee-img-2" src="images/previews/hero-cv-1.webp" alt="">
-        <img class="hhv-dee-img hhv-dee-img-3" src="images/previews/hero-deck.webp" alt="">
-        <img class="hhv-dee-img hhv-dee-img-4" src="images/previews/hero-quote.webp" alt="">
+      <!-- A big "D" badge — same silhouette as the brand mark's own fold-
+           page path (see .brand-mark in the header) — sitting among a
+           scattered cluster of real template renders, not clipping them.
+           Dedicated showcase renders, not the catalog's own thumbnails:
+           those deliberately show neutral placeholder content ("שם
+           העסק") so a customer immediately understands it's an editable
+           template — the homepage's job is the opposite, to impress at a
+           glance, so these use the exact same templates filled with
+           realistic, polished example content. -->
+      <div class="hhv-cluster">
+        <div class="hhv-dee"></div>
+        <img class="hhv-card hhv-card-1" src="images/previews/hero-site.webp" alt="">
+        <img class="hhv-card hhv-card-2" src="images/previews/hero-cv-1.webp" alt="">
+        <img class="hhv-card hhv-card-3" src="images/previews/hero-deck.webp" alt="">
+        <img class="hhv-card hhv-card-4" src="images/previews/hero-quote.webp" alt="">
+        <img class="hhv-card hhv-card-5" src="images/previews/hero-cv-2.webp" alt="">
+        <img class="hhv-card hhv-card-6" src="images/previews/xlsx-cashflow.webp" alt="">
+        <img class="hhv-card hhv-card-7" src="images/previews/xlsx-timeline.webp" alt="">
       </div>
     </div>
   </div>
@@ -174,33 +177,34 @@
 
 <section class="bg-ice" id="tools">
   <div class="container">
-    <div class="section-head">
-      <div class="kicker">הכלים שלנו</div>
-      <h2>באיזה כלי תשתמשו היום?</h2>
+    <div class="tools-top">
+      <h2 class="tools-heading">באיזה כלי תשתמשו היום?</h2>
+      <div class="tools-top-cards">
+        <div class="card" data-cat="general">
+          <div class="thumb"><img src="images/previews/hero-cv-1.webp" alt="תבנית קורות חיים" loading="lazy"></div>
+          <div class="body">
+            <div class="card-meta">
+              <span class="tag">קורות חיים</span>
+              <span class="tag tag-free">חינם</span>
+            </div>
+            <h3>קורות חיים</h3>
+            <a href="products.html?type=cv" class="btn btn-teal card-cta">ליצירה</a>
+          </div>
+        </div>
+        <div class="card">
+          <div class="thumb"><img src="images/previews/hero-site.webp" alt="תבנית אתר תדמית" loading="lazy"></div>
+          <div class="body">
+            <div class="card-meta">
+              <span class="tag">אתרים</span>
+              <span class="price">199 ₪ <small>חד-פעמי</small></span>
+            </div>
+            <h3>אתרים</h3>
+            <a href="sites.html?browse=1" class="btn btn-teal card-cta">ליצירה</a>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="grid">
-      <div class="card" data-cat="general">
-        <div class="thumb"><img src="images/previews/hero-cv-1.webp" alt="תבנית קורות חיים" loading="lazy"></div>
-        <div class="body">
-          <div class="card-meta">
-            <span class="tag">קורות חיים</span>
-            <span class="tag tag-free">חינם</span>
-          </div>
-          <h3>קורות חיים</h3>
-          <a href="products.html?type=cv" class="btn btn-teal card-cta">ליצירה</a>
-        </div>
-      </div>
-      <div class="card">
-        <div class="thumb"><img src="images/previews/hero-site.webp" alt="תבנית אתר תדמית" loading="lazy"></div>
-        <div class="body">
-          <div class="card-meta">
-            <span class="tag">אתרים</span>
-            <span class="price">199 ₪ <small>חד-פעמי</small></span>
-          </div>
-          <h3>אתרים</h3>
-          <a href="sites.html?browse=1" class="btn btn-teal card-cta">ליצירה</a>
-        </div>
-      </div>
       <div class="card">
         <div class="thumb"><img src="images/previews/hero-deck.webp" alt="תבנית מצגת עסקית" loading="lazy"></div>
         <div class="body">
