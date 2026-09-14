@@ -145,6 +145,22 @@ function previewNavScript() {
           try { window.parent.postMessage({ deskkitPreviewNav: a.getAttribute("data-page") }, "*"); } catch (err) {}
         });
       });
+      // Confirmed live: a plain "#some-id" in-page anchor has the exact
+      // same problem as a relative page link above — a srcdoc iframe has
+      // no URL of its own, so the browser resolves "#ag-contact" against
+      // the EDITOR page's URL, and a native click does a real navigation
+      // into the live editor page (loaded for real, nested inside the
+      // preview) instead of scrolling to the section on the SAME page.
+      // Handled manually here instead of relying on native anchor
+      // navigation, which only works when the document has a real URL.
+      document.querySelectorAll('a[href^="#"]:not([data-site-nav])').forEach(function (a) {
+        a.addEventListener("click", function (e) {
+          e.preventDefault();
+          var id = a.getAttribute("href").slice(1);
+          var target = id && document.getElementById(id);
+          if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      });
     }
   </script>`;
 }
@@ -1332,7 +1348,11 @@ function renderStudioSite(d, page) {
     .ag-footer { border-top:1px solid #232321; padding:26px 0; text-align:center; font-size:11.5px; letter-spacing:.03em; color:#7A7975; }
   `;
   const rail = railLinks ? `<div class="ag-rail"><div class="ag-rail-inner">${railLinks}</div></div>` : "";
-  const footer = `<div class="ag-footer">© ${new Date().getFullYear()} ${escapeHtmlS(dd.businessName)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}${scrollRevealScript()}`;
+  // previewNavScript() is also what makes this template's own in-page
+  // rail links (#ag-services / #ag-about / #ag-contact) safe inside the
+  // preview iframe — needed here even with no navLinksHtml (single-page
+  // mode is exactly when those in-page anchors exist).
+  const footer = `<div class="ag-footer">© ${new Date().getFullYear()} ${escapeHtmlS(dd.businessName)}</div>${waFabHtml(d)}${(navLinksHtml || inPageRail) ? previewNavScript() : ""}${scrollRevealScript()}`;
 
   function contactBlock(heading) {
     return `
