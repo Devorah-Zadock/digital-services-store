@@ -125,6 +125,12 @@ Deno.serve(async (req: Request) => {
     for (const name of pageNames) {
       zip.file(`${name}.html`, String(pages[name]));
     }
+    // Confirmed live: without this, Netlify's zip-upload deploy served
+    // every page as "Content-Type: text/plain" instead of "text/html" —
+    // the browser showed the raw source code instead of the rendered
+    // site. Netlify's own "_headers" file forces the right content type
+    // explicitly rather than relying on its extension-based inference.
+    zip.file("_headers", "/*\n  Content-Type: text/html; charset=UTF-8\n");
     const zipBytes = await zip.generateAsync({ type: "uint8array" });
 
     let netlifySiteId = project.netlify_site_id as string | null;
