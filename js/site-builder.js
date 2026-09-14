@@ -636,18 +636,17 @@ document.addEventListener("DOMContentLoaded", () => {
     window.open(url.toString(), "_blank", "noopener");
   });
 
-  document.getElementById("finish-btn").addEventListener("click", () => {
-    // Purchasing a license before typing a single real word means paying
-    // for a page that still just shows placeholder instructions — worth
-    // catching here, before money changes hands, not only at publish time.
-    if (!siteState.data.businessName || !siteState.data.businessName.trim()) {
-      const note = document.getElementById("finish-gate-warn");
-      if (note) note.style.display = "";
-      document.getElementById("s-name").focus();
-      return;
-    }
+  document.getElementById("finish-btn").addEventListener("click", async () => {
     financeGateOpened = true;
     refreshUnlockUI();
+    // Whatever's been typed so far — even just a business name, even
+    // nothing at all — gets saved right here, the moment someone commits
+    // to buying. Without this, the project only had a real row (and a
+    // real id for a license to attach to) once someone separately clicked
+    // "שמירה" or finished the whole purchase — so verifying a license
+    // right after landing on this screen could succeed against Gumroad
+    // and still have nothing real to attach to yet.
+    if (typeof saveSiteNow === "function") await saveSiteNow();
   });
 
   document.getElementById("verify-btn").addEventListener("click", verifySiteLicense);
