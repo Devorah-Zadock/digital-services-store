@@ -21,6 +21,42 @@ function waLink(phone) {
   const digits = String(phone || "").replace(/[^\d]/g, "").replace(/^0/, "972");
   return digits ? `https://wa.me/${digits}` : "";
 }
+
+/* Drop-in replacement for every template's own "d.heroImage ? <img
+   class=...> : ..." spot — d.heroImages (2+ photos) renders a slow
+   crossfading slideshow instead of one static photo, using the exact
+   same class the single-image version used (so each template's own
+   sizing/shape CSS for that class still applies unchanged), and falls
+   straight back to the old single d.heroImage when there's no gallery.
+   The actual cycling (.site-hero-slideshow CSS + heroSlideshowScript())
+   is shared and injected once per page via siteDoc(), not per template. */
+function heroHasImage(d) {
+  return !!(d.heroImage || (d.heroImages && d.heroImages.length));
+}
+function heroMediaHtml(d, imgClass) {
+  const images = (d.heroImages && d.heroImages.length) ? d.heroImages : (d.heroImage ? [d.heroImage] : []);
+  if (!images.length) return "";
+  const cls = imgClass ? ` ${imgClass}` : "";
+  if (images.length === 1) return `<img class="${imgClass || ""}" src="${images[0]}" alt="">`;
+  return `<div class="site-hero-slideshow${cls}">${images.map((src, i) =>
+    `<img class="site-hero-slide${i === 0 ? " active" : ""}" src="${src}" alt="">`).join("")}</div>`;
+}
+/* Runs on every page regardless of whether it actually has a slideshow —
+   querySelectorAll on an absent class is just an empty, harmless no-op. */
+function heroSlideshowScript() {
+  return `<script>
+    document.querySelectorAll(".site-hero-slideshow").forEach(function (wrap) {
+      var slides = wrap.querySelectorAll(".site-hero-slide");
+      if (slides.length < 2) return;
+      var i = 0;
+      setInterval(function () {
+        slides[i].classList.remove("active");
+        i = (i + 1) % slides.length;
+        slides[i].classList.add("active");
+      }, 4200);
+    });
+  </script>`;
+}
 function siteFontImport() {
   return `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap" rel="stylesheet">`;
 }
@@ -41,6 +77,15 @@ function siteBaseCss() {
     .site-search-empty { text-align:center; color:#888; font-size:14px; padding:26px 0; }
     .site-hero-photo { display:block; margin:26px auto 0; border-radius:18px; max-width:320px; width:100%; box-shadow:0 18px 40px rgba(0,0,0,.25); }
     .site-hero-photo.round { border-radius:50%; width:132px; height:132px; object-fit:cover; margin:0 auto 18px; }
+    /* Slides are position:absolute (needed so they can stack and cross-
+       fade), which takes them out of flow — without an explicit size the
+       wrapper itself would collapse to zero height. A generic 4:3 default
+       covers the plain/no-class case; anything that already sets its own
+       explicit width+height (like .site-hero-photo.round) simply wins,
+       since aspect-ratio only fills in a dimension left auto. */
+    .site-hero-slideshow { position:relative; overflow:hidden; aspect-ratio:4/3; }
+    .site-hero-slideshow .site-hero-slide { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity 1.4s ease; }
+    .site-hero-slideshow .site-hero-slide.active { opacity:1; }
     .site-video-wrap { position:relative; padding-bottom:56.25%; height:0; overflow:hidden; border-radius:14px; box-shadow:0 16px 34px rgba(0,0,0,.14); max-width:780px; margin:0 auto; }
     .site-video-wrap iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
   `;
@@ -210,6 +255,7 @@ ${siteFontImport()}
 </head>
 <body>
 ${body}
+${heroSlideshowScript()}
 </body>
 </html>`;
 }
@@ -298,7 +344,7 @@ function renderLocalServiceSite(d, page) {
         <h1>${escapeHtmlS(dd.businessName)}</h1>
         <p>${escapeHtmlS(dd.tagline)}</p>
         ${ctaHtml(cta, "ls-cta")}
-        ${d.heroImage ? `<img class="site-hero-photo" src="${d.heroImage}" alt="">` : ""}
+        ${heroMediaHtml(d, "site-hero-photo")}
       </div></section>
       <section class="ls-section"><div class="container">
         <div class="head"><span class="eyebrow">מה אנחנו מציעים</span><h2>השירותים שלנו</h2>
@@ -387,7 +433,7 @@ function renderFreelancerSite(d, page) {
     const services = dd._services;
     main = `
       <section class="fr-hero">
-        ${d.heroImage ? `<img class="site-hero-photo round" src="${d.heroImage}" alt="">` : ""}
+        ${heroMediaHtml(d, "site-hero-photo round")}
         <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "פרילנסר / יועץ"}</span>
         <div class="fr-name">${escapeHtmlS(dd.businessName)}</div>
         <div class="fr-role">${escapeHtmlS(dd.tagline)}</div>
@@ -486,7 +532,7 @@ function renderCatalogSite(d, page) {
         <h1>${escapeHtmlS(dd.businessName)}</h1>
         <p>${escapeHtmlS(dd.tagline)}</p>
         <div class="stats">${services.length} מוצרים/שירותים זמינים</div>
-        ${d.heroImage ? `<img class="site-hero-photo" src="${d.heroImage}" alt="">` : ""}
+        ${heroMediaHtml(d, "site-hero-photo")}
       </div></section>
       <div class="container">
         ${showSearch ? searchBoxHtml("#cat-grid", "חיפוש מוצר או שירות...") : ""}
@@ -515,7 +561,7 @@ function renderGallerySite(d, page) {
   const navLinksHtml = siteNavLinks(d, page);
   const cta = primaryCtaHref(d, page);
   const embedSrc = videoEmbedSrc(d.videoUrl);
-  const hasPhoto = !!d.heroImage;
+  const hasPhoto = heroHasImage(d);
   const css = `
     .gl-nav { background:#fff; padding:18px 0; }
     .gl-nav .row { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
@@ -694,7 +740,7 @@ function renderBoldSite(d, page) {
         <h1>${escapeHtmlS(dd.businessName)}</h1>
         <p>${escapeHtmlS(dd.tagline)}</p>
         ${ctaHtml(cta, "nb-cta")}
-        ${d.heroImage ? `<img class="nb-hero-photo" src="${d.heroImage}" alt="">` : ""}
+        ${heroMediaHtml(d, "nb-hero-photo")}
       </div></section>
       <section class="nb-section"><div class="container">
         <div class="nb-section-head"><span class="nb-tag">מה אנחנו מציעים</span><h2>השירותים שלנו</h2>
@@ -727,7 +773,7 @@ function renderElegantSite(d, page) {
   const navLinksHtml = siteNavLinks(d, page);
   const cta = primaryCtaHref(d, page);
   const embedSrc = videoEmbedSrc(d.videoUrl);
-  const hasPhoto = !!d.heroImage;
+  const hasPhoto = heroHasImage(d);
   const css = `
     .eg-nav { padding:26px 0; }
     .eg-nav .row { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; }
@@ -803,7 +849,7 @@ function renderElegantSite(d, page) {
             <p>${escapeHtmlS(dd.tagline)}</p>
             ${ctaHtml(cta, "eg-cta")}
           </div>
-          <div class="eg-hero-photo-wrap"><img src="${d.heroImage}" alt=""></div>
+          <div class="eg-hero-photo-wrap">${heroMediaHtml(d, "")}</div>
         ` : `
           <div class="eg-hero-text">
             <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "עסק בוטיק"}</span>
@@ -921,7 +967,7 @@ function renderProcessSite(d, page) {
         <h1>${escapeHtmlS(dd.businessName)}</h1>
         <p>${escapeHtmlS(dd.tagline)}</p>
         ${ctaHtml(cta, "pr-cta")}
-        ${d.heroImage ? `<img class="site-hero-photo" src="${d.heroImage}" alt="">` : ""}
+        ${heroMediaHtml(d, "site-hero-photo")}
       </div></section>
       <section class="pr-steps"><div class="container">
         <div class="pr-steps-head"><span class="eyebrow">התהליך שלנו</span><h2>שלב אחר שלב</h2>
@@ -1018,14 +1064,14 @@ function renderPortfolioSite(d, page) {
   } else {
     const services = dd._services;
     main = `
-      <section class="po-hero"><div class="container" style="display:grid; grid-template-columns:${d.heroImage ? "1fr auto" : "1fr"}; align-items:center; gap:36px;">
+      <section class="po-hero"><div class="container" style="display:grid; grid-template-columns:${heroHasImage(d) ? "1fr auto" : "1fr"}; align-items:center; gap:36px;">
         <div>
           <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "תיק עבודות"}</span>
           <h1>${escapeHtmlS(dd.businessName)}</h1>
           <p>${escapeHtmlS(dd.tagline)}</p>
           ${ctaHtml(cta, "po-work-idx")}
         </div>
-        ${d.heroImage ? `<img class="po-hero-photo" src="${d.heroImage}" alt="">` : ""}
+        ${heroMediaHtml(d, "po-hero-photo")}
       </div></section>
       <section class="po-work"><div class="container">
         <div class="po-work-head"><span class="kicker">מה אני עושה</span><h2>עבודות ושירותים</h2></div>
@@ -1125,8 +1171,8 @@ function renderBoutiqueSite(d, page) {
     const rest = services.slice(1);
     const showSearch = rest.length >= 3;
     main = `
-      <section class="bq-banner ${d.heroImage ? "" : "bq-banner-noimg"}">
-        ${d.heroImage ? `<img src="${d.heroImage}" alt="">` : ""}
+      <section class="bq-banner ${heroHasImage(d) ? "" : "bq-banner-noimg"}">
+        ${heroMediaHtml(d, "")}
         <div class="bq-banner-inner">
           <span class="eyebrow">חנות בוטיק</span>
           <h1>${escapeHtmlS(dd.businessName)}</h1>
@@ -1230,7 +1276,7 @@ function renderNoirSite(d, page) {
   } else {
     main = `
       <section class="nr-hero">
-        ${d.heroImage ? `<img src="${d.heroImage}" alt="">` : ""}
+        ${heroMediaHtml(d, "")}
         <div class="nr-hero-inner">
           <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "אירוע ובוטיק"}</span>
           <h1>${escapeHtmlS(dd.businessName)}</h1>

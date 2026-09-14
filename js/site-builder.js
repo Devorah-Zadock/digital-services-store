@@ -59,6 +59,7 @@ const SITE_DEFAULT = {
   services: [{ name: "", desc: "", price: "" }],
   pages: { about: false, contact: false },
   heroImage: "",
+  heroImages: [],
   videoUrl: "",
 };
 
@@ -91,6 +92,10 @@ function ensurePagesShape(data) {
   if (!data.pages || typeof data.pages !== "object") data.pages = { about: false, contact: false };
   data.pages.about = !!data.pages.about;
   data.pages.contact = !!data.pages.contact;
+  // heroImages didn't exist before the rotating hero-image gallery
+  // feature — every project saved before that update needs this to
+  // become a real array, not stay undefined, the first time it loads.
+  if (!Array.isArray(data.heroImages)) data.heroImages = [];
   return data;
 }
 
@@ -193,6 +198,7 @@ function renderFormValues() {
   document.getElementById("s-page-contact").checked = d.pages.contact;
   document.getElementById("s-video").value = d.videoUrl || "";
   renderPhotoPreview();
+  renderGalleryPreview();
   renderServicesList();
 }
 
@@ -201,6 +207,15 @@ function renderPhotoPreview() {
   el.innerHTML = siteState.data.heroImage
     ? `<img src="${siteState.data.heroImage}" alt="">`
     : `<span class="site-photo-placeholder">🖼️</span>`;
+}
+
+const SITE_GALLERY_MAX = 5;
+function renderGalleryPreview() {
+  const el = document.getElementById("s-gallery-preview");
+  const images = siteState.data.heroImages || [];
+  el.innerHTML = images.map((src, i) =>
+    `<div class="site-gallery-thumb" data-idx="${i}"><img src="${src}" alt=""><button type="button" data-action="remove-gallery-photo" aria-label="הסרה">✕</button></div>`
+  ).join("");
 }
 
 function enabledSitePages() {
@@ -300,6 +315,48 @@ function wireForm() {
     renderPhotoPreview();
     renderSitePreview();
   });
+
+  document.getElementById("s-gallery").addEventListener("change", (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    if (!siteState.data.heroImages) siteState.data.heroImages = [];
+    const roomLeft = SITE_GALLERY_MAX - siteState.data.heroImages.length;
+    if (roomLeft <= 0) {
+      alert(`אפשר עד ${SITE_GALLERY_MAX} תמונות בגלריה — הסירו אחת כדי להוסיף חדשה.`);
+      e.target.value = "";
+      return;
+    }
+    const toAdd = files.slice(0, roomLeft);
+    if (files.length > toAdd.length) {
+      alert(`אפשר עד ${SITE_GALLERY_MAX} תמונות בגלריה — נוספו רק ${toAdd.length} מתוך ${files.length} שבחרתם.`);
+    }
+    let remaining = toAdd.length;
+    toAdd.forEach((file) => {
+      if (file.size > 6 * 1024 * 1024) {
+        alert(`"${file.name}" גדולה מדי — בחרו קובץ עד 6MB.`);
+        remaining -= 1;
+        if (remaining === 0) { renderGalleryPreview(); renderSitePreview(); }
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        siteState.data.heroImages.push(reader.result);
+        remaining -= 1;
+        if (remaining === 0) { renderGalleryPreview(); renderSitePreview(); }
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
+  });
+  document.getElementById("s-gallery-preview").addEventListener("click", (e) => {
+    const btn = e.target.closest('[data-action="remove-gallery-photo"]');
+    if (!btn) return;
+    const idx = parseInt(btn.closest("[data-idx]").dataset.idx, 10);
+    siteState.data.heroImages.splice(idx, 1);
+    renderGalleryPreview();
+    renderSitePreview();
+  });
+
   document.getElementById("s-video").addEventListener("input", (e) => {
     siteState.data.videoUrl = e.target.value;
     renderSitePreview();
