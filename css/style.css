@@ -413,7 +413,7 @@ body.has-sites-rail .nav-account-wrap { display: none; }
   100% { transform: translate(4%, -5%) rotate(-5deg) scale(1.03); }
 }
 @media (prefers-reduced-motion: reduce) { .home-hero::before { animation: none; } }
-.home-hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+.home-hero-grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: 36px; align-items: center; }
 .home-hero-eyebrow {
   display: inline-flex; align-items: center; gap: 8px; background: var(--white); border: 1px solid #DCE9E4;
   padding: 7px 16px; border-radius: 20px; font-size: 12.5px; font-weight: 700; color: var(--teal-dark); margin-bottom: 22px;
@@ -434,9 +434,9 @@ body.has-sites-rail .nav-account-wrap { display: none; }
    underneath is deliberately vivid and keeps moving the whole time — it
    shows through every gap between the packed images, so the animation
    reads even when most of the shape is covered. */
-.home-hero-visual { position: relative; height: 520px; display: flex; align-items: center; justify-content: center; }
+.home-hero-visual { position: relative; height: 640px; display: flex; align-items: center; justify-content: center; }
 .hhv-dee {
-  position: relative; width: 420px; height: 500px;
+  position: relative; width: 540px; height: 620px;
   clip-path: url(#heroDeeClip);
   filter: drop-shadow(0 24px 46px rgba(15, 51, 43, .32));
 }
@@ -505,10 +505,12 @@ section { padding: 88px 0; }
 /* ---------- Homepage tools section: heading at the reading-order start
    (right, in RTL) with two "flagship" cards beside it, the rest below —
    an asymmetric header instead of the usual centered kicker+h2. ---------- */
-/* The sticky header (~70px) sits on top of whatever scrolls to the top of
-   the viewport — a small scroll-margin left the header covering the first
-   row of cards after the "בואו נתחיל" anchor jump. */
-#tools { scroll-margin-top: 100px; }
+/* The sticky header is 64px tall and sits on top of whatever scrolls to
+   the top of the viewport — this just clears it (64px + a small buffer).
+   Bigger than that actively backfires: it eats into the viewport's own
+   height budget, pushing more of the section's own content below the
+   fold instead of revealing more of it. */
+#tools { scroll-margin-top: 76px; }
 .tools-top { display: flex; align-items: center; gap: 36px; flex-wrap: wrap; margin-bottom: 32px; }
 .tools-heading { font-size: 32px; margin: 0; color: var(--teal-dark); letter-spacing: -.01em; flex: 0 1 320px; }
 .tools-top-cards { display: flex; gap: 24px; flex: 1 1 480px; min-width: 0; }
