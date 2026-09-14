@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מערכת CRM — DeskKit</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://deskkit.co.il/crm.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=31">
+<link rel="stylesheet" href="css/crm.css?v=1">
+</head>
+<body>
+<script>
+  /* Same "does the my-content rail belong on this page" guess used
+     site-wide — see index.html's own copy of this script for why it has
+     to run this early, synchronously, before first paint. */
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf("sb-") === 0 && k.indexOf("-auth-token") !== -1 && localStorage.getItem(k)) {
+        document.body.classList.add("has-sites-rail");
+        break;
+      }
+    }
+    var rw = localStorage.getItem("deskkit_rail_w");
+    if (rw) document.documentElement.style.setProperty("--rail-w", rw + "px");
+    if (localStorage.getItem("deskkit_rail_collapsed") === "1") {
+      document.documentElement.style.setProperty("--rail-w", "0px");
+      document.body.classList.add("rail-collapsed");
+    }
+  } catch (e) {}
+</script>
+
+<header class="site">
+  <nav class="nav">
+    <a href="index.html" class="brand"><span class="brand-badge"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><rect class="bm-fold" x="6" y="4" width="4" height="16" rx="2"/><path class="bm-face" d="M9,4 H13 A8,8 0 0 1 13,20 H9 Z"/></svg></span><span class="brand-text">DeskKit</span></a>
+    <div class="nav-links">
+      <a href="index.html">בית</a>
+      <a href="sites.html?browse=1">אתרים</a>
+      <a href="quote-app.html">הצעות מחיר</a>
+      <a href="products.html?type=cv">קורות חיים</a>
+      <a href="products.html?type=deck">מצגות</a>
+      <a href="products.html?type=xlsx">גליונות</a>
+      <a href="about.html">אודות</a>
+      <a href="contact.html">צור קשר</a>
+    </div>
+    <div class="nav-end-group">
+      <a href="account.html?redirect=tools.html" id="nav-login-link" class="nav-login nav-login-pending">כניסה</a>
+    </div>
+    <button class="burger" aria-label="תפריט">☰</button>
+  </nav>
+</header>
+
+<section style="padding-top:0;">
+  <div class="container">
+    <div class="crm-header-bar">
+      <div>
+        <h1>ניהול לקוחות</h1>
+        <p style="margin:4px 0 0; color:var(--grey); font-size:13.5px;">כל הלידים שלכם, לפי שלב במכירה. המידע נשמר בדפדפן הזה בלבד.</p>
+      </div>
+      <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+        <div class="crm-summary">
+          <span class="crm-summary-label">סה"כ בעסקאות פתוחות</span>
+          <span class="crm-summary-total" id="crm-summary-total">₪0</span>
+        </div>
+        <button type="button" class="btn btn-gold" id="crm-add-lead-btn">+ הוספת ליד</button>
+      </div>
+    </div>
+
+    <div class="crm-board" id="crm-board"></div>
+  </div>
+</section>
+
+<div class="crm-modal" id="crm-modal">
+  <div class="crm-modal-card">
+    <button type="button" class="crm-modal-close" id="crm-modal-close" aria-label="סגירה">✕</button>
+    <h3 id="crm-modal-title">הוספת ליד חדש</h3>
+    <form id="crm-form">
+      <label for="crm-f-name">שם *</label>
+      <input type="text" id="crm-f-name" required>
+
+      <label for="crm-f-phone">טלפון</label>
+      <input type="tel" id="crm-f-phone" dir="ltr">
+
+      <label for="crm-f-email">אימייל</label>
+      <input type="email" id="crm-f-email" dir="ltr">
+
+      <label for="crm-f-amount">סכום עסקה (₪)</label>
+      <input type="number" id="crm-f-amount" min="0" step="1">
+
+      <label for="crm-f-stage">שלב</label>
+      <select id="crm-f-stage">
+        <option value="new">ליד חדש</option>
+        <option value="inprogress">בטיפול / נשלחה הצעה</option>
+        <option value="followup">פולו-אפ</option>
+        <option value="won">נסגר בהצלחה!</option>
+      </select>
+
+      <label for="crm-f-notes">הערות</label>
+      <textarea id="crm-f-notes"></textarea>
+
+      <div class="crm-modal-actions">
+        <button type="button" id="crm-modal-delete" style="display:none;">מחיקת ליד</button>
+        <button type="submit" class="btn btn-teal">שמירה</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<footer class="site">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <h5>DeskKit</h5>
+        <p style="font-size:14px; max-width:320px;">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
+      </div>
+      <div>
+        <h5>ניווט</h5>
+        <ul>
+          <li><a href="products.html?type=cv">קורות חיים</a></li>
+          <li><a href="products.html?type=deck">מצגות</a></li>
+          <li><a href="products.html?type=xlsx">גליונות</a></li>
+          <li><a href="sites.html?browse=1">אתרים</a></li>
+          <li><a href="quote-app.html">הצעות מחיר</a></li>
+          <li><a href="about.html">אודות</a></li>
+          <li><a href="contact.html">צור קשר</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>מידע</h5>
+        <ul>
+          <li><a href="guides.html">מדריכים</a></li>
+          <li><a href="admin.html">ניהול</a></li>
+          <li><a href="terms.html">מדיניות</a></li>
+          <li><a href="accessibility.html">נגישות</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>צור קשר</h5>
+        <ul>
+          <li>digital.dz.studio@gmail.com</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">© 2026 DeskKit. כל הזכויות שמורות.</div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/nav-auth.js"></script>
+<script src="js/my-panel.js?v=9"></script>
+<script src="js/main.js"></script>
+<script src="js/crm.js?v=1"></script>
+</body>
+</html>
