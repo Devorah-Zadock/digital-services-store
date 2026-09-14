@@ -456,15 +456,17 @@ body.has-sites-rail .nav-account-wrap { display: none; }
   position: absolute; object-fit: cover; border-radius: 8px;
   box-shadow: 0 10px 22px rgba(0,0,0,.22); border: 3px solid var(--white);
 }
-.hhv-blob-img-1 { width: 32%; height: 19%; top: 2%;  inset-inline-start: 4%;  transform: rotate(-6deg); z-index: 2; }
-.hhv-blob-img-2 { width: 30%; height: 18%; top: 0%;  inset-inline-start: 40%; transform: rotate(5deg);  z-index: 3; }
-.hhv-blob-img-3 { width: 28%; height: 19%; top: 2%;  inset-inline-start: 72%; transform: rotate(8deg);  z-index: 2; }
-.hhv-blob-img-4 { width: 30%; height: 19%; top: 24%; inset-inline-start: 2%;  transform: rotate(6deg);  z-index: 3; }
-.hhv-blob-img-5 { width: 30%; height: 20%; top: 26%; inset-inline-start: 70%; transform: rotate(-5deg); z-index: 2; }
-.hhv-blob-img-6 { width: 30%; height: 19%; top: 40%; inset-inline-start: 36%; transform: rotate(3deg);  z-index: 1; }
-.hhv-blob-img-7 { width: 30%; height: 19%; top: 58%; inset-inline-start: 4%;  transform: rotate(-7deg); z-index: 3; }
-.hhv-blob-img-8 { width: 32%; height: 19%; top: 60%; inset-inline-start: 68%; transform: rotate(6deg);  z-index: 2; }
-.hhv-blob-img-9 { width: 32%; height: 18%; top: 80%; inset-inline-start: 32%; transform: rotate(-4deg); z-index: 3; }
+/* Real gaps between pieces (the gradient needs room to actually show
+   through) and a clear open moat around the centered mark — nothing sits
+   in the middle 30-70% band on either axis, so the badge reads as a
+   deliberate focal point instead of one more crowded tile. Rotation kept
+   to a gentle, consistent ±5deg range rather than a wide clashing spread. */
+.hhv-blob-img-1 { width: 27%; height: 21%; top: 6%;  inset-inline-start: 6%;  transform: rotate(-4deg); z-index: 2; }
+.hhv-blob-img-2 { width: 28%; height: 19%; top: 4%;  inset-inline-start: 62%; transform: rotate(4deg);  z-index: 2; }
+.hhv-blob-img-3 { width: 25%; height: 19%; top: 40%; inset-inline-start: 3%;  transform: rotate(3deg);  z-index: 2; }
+.hhv-blob-img-4 { width: 27%; height: 19%; top: 42%; inset-inline-start: 71%; transform: rotate(-3deg); z-index: 2; }
+.hhv-blob-img-5 { width: 27%; height: 21%; top: 72%; inset-inline-start: 8%;  transform: rotate(5deg);  z-index: 2; }
+.hhv-blob-img-6 { width: 28%; height: 19%; top: 73%; inset-inline-start: 63%; transform: rotate(-5deg); z-index: 2; }
 .hhv-blob-mark {
   position: absolute; top: 50%; inset-inline-start: 50%; transform: translate(-50%, -50%);
   width: 108px; height: 108px; border-radius: 30px;
