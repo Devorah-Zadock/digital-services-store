@@ -69,7 +69,11 @@
   body.preview-focus .fab-feedback,
   body.preview-focus .fab-a11y,
   body.preview-focus .cookie-notice { display: none !important; }
-  body.preview-focus { margin-inline-start: 0 !important; }
+  /* body.has-sites-rail reserves its 220px via padding-inline-start (see
+     style.css), not margin — so zeroing only the margin above still left
+     a stray blank strip the width of that rail whenever the account had
+     saved sites, confirmed live. */
+  body.preview-focus { margin-inline-start: 0 !important; padding-inline-start: 0 !important; }
   /* .container's own max-width otherwise still caps this at 1120px —
      "full preview" should mean the customer's real, edge-to-edge width,
      not DeskKit's own editor layout width. */
@@ -82,9 +86,12 @@
      document flow, above the iframe, can never overlap the site's own
      header regardless of template layout. */
   body.preview-focus #site-preview-frame { height: calc(100vh - 48px); border: none; border-radius: 0; display: block; }
+  /* Deliberately neutral, not DeskKit's own teal — this bar sits directly
+     above a customer's own site, which can be any color scheme, and
+     DeskKit's brand green clashed visibly with darker/warmer templates. */
   #close-preview-bar {
     height: 48px; box-sizing: border-box; display: flex; align-items: center; justify-content: flex-end;
-    padding: 0 16px; background: var(--teal-dark);
+    padding: 0 16px; background: #1A1A1A;
   }
   #close-preview-btn {
     background: rgba(255,255,255,.12); color: #fff; border: none; border-radius: 8px;
