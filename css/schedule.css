@@ -51,6 +51,15 @@
 .sched-check-list { display: flex; flex-wrap: wrap; gap: 8px 16px; }
 .sched-check { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--dark); cursor: pointer; }
 
+.sched-add-more { display: flex; justify-content: center; padding: 6px 0 2px; }
+
+.sched-avail-toggle {
+  display: flex; align-items: center; gap: 6px; width: 100%; margin: 12px 0 8px; padding: 0;
+  background: none; border: none; cursor: pointer; font-family: inherit; text-align: right;
+  font-size: 12px; font-weight: 700; color: var(--teal-dark);
+}
+.sched-avail-arrow { font-size: 10px; display: inline-block; }
+
 .sched-avail-grid { display: grid; gap: 4px; overflow-x: auto; }
 .sched-avail-row { display: grid; grid-template-columns: 34px repeat(var(--sched-avail-cols), minmax(30px, 1fr)); gap: 4px; }
 .sched-avail-label { font-size: 11px; color: var(--grey); display: flex; align-items: center; justify-content: center; }

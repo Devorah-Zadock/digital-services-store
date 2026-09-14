@@ -59,7 +59,7 @@ async function sendPurchaseReceipt() {
     const tplLabel = typeof SITE_TEMPLATES !== "undefined" && SITE_TEMPLATES[siteState.template]
       ? SITE_TEMPLATES[siteState.template].label : siteState.template;
     const bizName = siteState.data && siteState.data.businessName && siteState.data.businessName.trim();
-    const amount = purchase && purchase.price != null ? `${(purchase.price / 100).toFixed(2)} ₪` : null;
+    const amount = formatGumroadAmount(purchase);
 
     await supabaseClient.functions.invoke("send-receipt", {
       body: {

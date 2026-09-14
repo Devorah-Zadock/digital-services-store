@@ -239,6 +239,21 @@ function wireBuyLinkOnce(link) {
   });
 }
 
+/* Shared by site-cloud-save.js and schedule-render.js's receipt senders.
+   Gumroad's `price` is in the smallest unit of the PRODUCT'S OWN currency
+   (e.g. cents for a USD-priced product) — not necessarily ₪. The old code
+   divided by 100 and hardcoded "₪" regardless, so a USD sale showed its
+   dollar amount mislabeled as shekels (163.65 "₪" for what was really
+   $163.65). Reading purchase.currency, which Gumroad always includes,
+   fixes that instead of assuming everyone sells in ILS. */
+const GUMROAD_CURRENCY_SYMBOLS = { ils: "₪", usd: "$", eur: "€", gbp: "£" };
+function formatGumroadAmount(purchase) {
+  if (!purchase || purchase.price == null) return null;
+  const code = String(purchase.currency || "").toLowerCase();
+  const symbol = GUMROAD_CURRENCY_SYMBOLS[code] || (code ? code.toUpperCase() + " " : "");
+  return `${(purchase.price / 100).toFixed(2)} ${symbol}`;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   injectFeedbackWidget();
   injectChatWidget();

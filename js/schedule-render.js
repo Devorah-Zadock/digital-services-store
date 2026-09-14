@@ -14,6 +14,14 @@ function schedEsc(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+/* A small "+" repeated at the bottom of a (possibly long) list, next to
+   the existing one at the top of the card — added a row at a time, a
+   long list of teachers/subjects otherwise means scrolling all the way
+   back up just to add the next one. */
+function schedAddMoreHtml(action, label) {
+  return `<div class="sched-add-more"><button type="button" class="btn-mini" data-action="${action}">+ ${schedEsc(label)}</button></div>`;
+}
+
 /* ---------- paywall (Gumroad license, same pattern as js/site-builder.js) ----------
    Filling in every setup tab (subjects/classes/teachers/rooms/
    assignments) stays free and unlimited; only actually running the
@@ -50,7 +58,7 @@ async function sendSchedulePurchaseReceipt() {
     const purchase = scheduleLastVerifiedPurchase;
     const buyerEmail = (purchase && purchase.email) || sessionEmail;
     if (!buyerEmail) return;
-    const amount = purchase && purchase.price != null ? `${(purchase.price / 100).toFixed(2)} ₪` : "499.00 ₪";
+    const amount = formatGumroadAmount(purchase) || "499.00 ₪";
     await supabaseClient.functions.invoke("send-receipt", {
       body: {
         buyerEmail,
@@ -168,7 +176,7 @@ function renderSubjectsTab() {
     wrap.innerHTML = '<p class="sched-hint">עוד לא הוספתם מקצועות.</p>';
     return;
   }
-  wrap.innerHTML = scheduleState.subjects.map(subjectRowHtml).join("");
+  wrap.innerHTML = scheduleState.subjects.map(subjectRowHtml).join("") + schedAddMoreHtml("add-subject-bottom", "הוספת מקצוע");
 }
 
 function subjectRowHtml(s) {
@@ -185,11 +193,12 @@ function subjectRowHtml(s) {
 }
 
 function wireSubjectsTab() {
-  document.getElementById("sched-add-subject").addEventListener("click", () => {
+  const addSubject = () => {
     scheduleAddSubject(scheduleState, "", "#1F5C4E", null);
     renderSubjectsTab();
     renderAssignmentsTab();
-  });
+  };
+  document.getElementById("sched-add-subject").addEventListener("click", addSubject);
   const wrap = document.getElementById("sched-subjects-list");
   wrap.addEventListener("input", (e) => {
     const row = e.target.closest("[data-subject-id]");
@@ -207,8 +216,14 @@ function wireSubjectsTab() {
     const s = scheduleState.subjects.find((x) => x.id === row.dataset.subjectId);
     if (!s) return;
     if (e.target.dataset.field === "roomId") s.roomId = e.target.value || null;
+    if (e.target.dataset.field === "name") {
+      const trimmed = s.name.trim();
+      const dup = trimmed && scheduleState.subjects.some((x) => x.id !== s.id && x.name.trim().toLowerCase() === trimmed.toLowerCase());
+      if (dup) alert(`כבר יש מקצוע בשם "${trimmed}". כדאי לתת לו שם אחר, כדי לא להתבלבל בין השניים ברשימות ובשיבוצי ההוראה.`);
+    }
   });
   wrap.addEventListener("click", (e) => {
+    if (e.target.closest('[data-action="add-subject-bottom"]')) { addSubject(); return; }
     const btn = e.target.closest('[data-action="delete-subject"]');
     if (!btn) return;
     const row = btn.closest("[data-subject-id]");
@@ -235,15 +250,16 @@ function renderClassesTab() {
       <input type="text" class="sched-text-input" data-field="name" value="${schedEsc(c.name)}" placeholder="שם הכיתה">
       <input type="number" class="sched-num-input" data-field="maxDailyPeriod" min="1" max="${SCHEDULE_MAX_PERIODS}" placeholder="כל היום" value="${c.maxDailyPeriod || ""}">
       <button type="button" class="sched-row-del" data-action="delete-class" title="מחיקה" aria-label="מחיקה">🗑</button>
-    </div>`).join("");
+    </div>`).join("") + schedAddMoreHtml("add-class-bottom", "הוספת כיתה");
 }
 
 function wireClassesTab() {
-  document.getElementById("sched-add-class").addEventListener("click", () => {
+  const addClass = () => {
     scheduleAddClass(scheduleState, "");
     renderClassesTab();
     renderAssignmentsTab();
-  });
+  };
+  document.getElementById("sched-add-class").addEventListener("click", addClass);
   const wrap = document.getElementById("sched-classes-list");
   wrap.addEventListener("input", (e) => {
     const row = e.target.closest("[data-class-id]");
@@ -255,6 +271,7 @@ function wireClassesTab() {
     if (field === "maxDailyPeriod") { const v = parseInt(e.target.value, 10); c.maxDailyPeriod = v > 0 ? v : null; }
   });
   wrap.addEventListener("click", (e) => {
+    if (e.target.closest('[data-action="add-class-bottom"]')) { addClass(); return; }
     const btn = e.target.closest('[data-action="delete-class"]');
     if (!btn) return;
     const row = btn.closest("[data-class-id]");
@@ -280,15 +297,16 @@ function renderRoomsTab() {
       <input type="text" class="sched-text-input" data-field="name" value="${schedEsc(r.name)}" placeholder="שם החדר">
       <input type="number" class="sched-num-input" data-field="count" min="1" max="30" value="${r.count}">
       <button type="button" class="sched-row-del" data-action="delete-room" title="מחיקה" aria-label="מחיקה">🗑</button>
-    </div>`).join("");
+    </div>`).join("") + schedAddMoreHtml("add-room-bottom", "הוספת חדר");
 }
 
 function wireRoomsTab() {
-  document.getElementById("sched-add-room").addEventListener("click", () => {
+  const addRoom = () => {
     scheduleAddRoom(scheduleState, "", 1);
     renderRoomsTab();
     renderSubjectsTab();
-  });
+  };
+  document.getElementById("sched-add-room").addEventListener("click", addRoom);
   const wrap = document.getElementById("sched-rooms-list");
   wrap.addEventListener("input", (e) => {
     const row = e.target.closest("[data-room-id]");
@@ -300,6 +318,7 @@ function wireRoomsTab() {
     if (field === "count") r.count = Math.max(1, parseInt(e.target.value, 10) || 1);
   });
   wrap.addEventListener("click", (e) => {
+    if (e.target.closest('[data-action="add-room-bottom"]')) { addRoom(); return; }
     const btn = e.target.closest('[data-action="delete-room"]');
     if (!btn) return;
     const row = btn.closest("[data-room-id]");
@@ -331,10 +350,17 @@ function availabilityGridHtml(teacher) {
   return `<div class="sched-avail-grid" style="--sched-avail-cols:${days};">${rows}</div>`;
 }
 
+/* Collapse state is purely a display preference, not part of the saved
+   project data — it lives here rather than on the teacher object so it
+   survives a full renderTeachersTab() re-render (e.g. from a settings
+   change) without needing to round-trip through Supabase. */
+let scheduleAvailCollapsed = new Set();
+
 function teacherCardHtml(t) {
   const subjectChecks = scheduleState.subjects.length
     ? scheduleState.subjects.map((s) => `<label class="sched-check"><input type="checkbox" data-field="subject" value="${s.id}"${t.subjectIds.includes(s.id) ? " checked" : ""}> ${schedEsc(scheduleDisplayName(s.name))}</label>`).join("")
     : '<p class="sched-hint">הוסיפו קודם מקצועות בלשונית "מקצועות".</p>';
+  const collapsed = scheduleAvailCollapsed.has(t.id);
   return `<div class="sched-teacher-card" data-teacher-id="${t.id}">
     <div class="sched-teacher-head">
       <input type="text" class="sched-text-input" data-field="name" value="${schedEsc(t.name)}" placeholder="שם המורה">
@@ -346,8 +372,11 @@ function teacherCardHtml(t) {
       <div class="sched-check-list">${subjectChecks}</div>
     </div>
     <div class="sched-teacher-avail">
-      <label class="sched-subfield-label">שעות לא זמינות (לחיצה על משבצת מסמנת/מבטלת חסימה)</label>
-      ${availabilityGridHtml(t)}
+      <button type="button" class="sched-avail-toggle" data-action="toggle-avail" aria-expanded="${collapsed ? "false" : "true"}">
+        <span class="sched-avail-arrow">${collapsed ? "◂" : "▾"}</span>
+        שעות לא זמינות (לחיצה על משבצת מסמנת/מבטלת חסימה)
+      </button>
+      ${collapsed ? "" : availabilityGridHtml(t)}
     </div>
   </div>`;
 }
@@ -358,15 +387,21 @@ function renderTeachersTab() {
     wrap.innerHTML = '<p class="sched-hint">עוד לא הוספתם מורים.</p>';
     return;
   }
-  wrap.innerHTML = scheduleState.teachers.map(teacherCardHtml).join("");
+  wrap.innerHTML = scheduleState.teachers.map(teacherCardHtml).join("") + schedAddMoreHtml("add-teacher-bottom", "הוספת מורה");
 }
 
 function wireTeachersTab() {
-  document.getElementById("sched-add-teacher").addEventListener("click", () => {
-    scheduleAddTeacher(scheduleState, "");
+  const addTeacher = () => {
+    // Collapse every existing teacher's availability grid first — adding
+    // one more otherwise pushes the new row further down the page each
+    // time, meaning a lot of scrolling back up to reach it.
+    scheduleState.teachers.forEach((t) => scheduleAvailCollapsed.add(t.id));
+    const t = scheduleAddTeacher(scheduleState, "");
+    scheduleAvailCollapsed.add(t.id);
     renderTeachersTab();
     renderAssignmentsTab();
-  });
+  };
+  document.getElementById("sched-add-teacher").addEventListener("click", addTeacher);
   const wrap = document.getElementById("sched-teachers-list");
 
   wrap.addEventListener("input", (e) => {
@@ -391,15 +426,25 @@ function wireTeachersTab() {
   });
 
   wrap.addEventListener("click", (e) => {
+    if (e.target.closest('[data-action="add-teacher-bottom"]')) { addTeacher(); return; }
     const delBtn = e.target.closest('[data-action="delete-teacher"]');
     if (delBtn) {
       const card = delBtn.closest("[data-teacher-id]");
       if (!confirm("למחוק את המורה? שיבוצי הוראה שמשתמשים בו/בה יימחקו גם הם.")) return;
+      scheduleAvailCollapsed.delete(card.dataset.teacherId);
       scheduleRemoveTeacher(scheduleState, card.dataset.teacherId);
       scheduleState.timetable = null;
       renderTeachersTab();
       renderAssignmentsTab();
       renderResultTab();
+      return;
+    }
+    const toggleBtn = e.target.closest('[data-action="toggle-avail"]');
+    if (toggleBtn) {
+      const card = toggleBtn.closest("[data-teacher-id]");
+      const id = card.dataset.teacherId;
+      if (scheduleAvailCollapsed.has(id)) scheduleAvailCollapsed.delete(id); else scheduleAvailCollapsed.add(id);
+      renderTeachersTab();
       return;
     }
     const cell = e.target.closest(".sched-avail-cell");
