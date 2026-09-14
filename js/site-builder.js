@@ -34,6 +34,19 @@ function siteDataKey(template) {
   return SITE_DATA_KEY + "_" + template;
 }
 
+// Display-only mirror of PUBLISH_LIMIT in supabase/functions/publish-
+// site/index.ts, which is what actually enforces it server-side — keep
+// the two in sync by hand if the limit ever changes.
+const SITE_PUBLISH_LIMIT = 5;
+function renderPublishRemaining() {
+  const el = document.getElementById("publish-remaining");
+  if (!el) return;
+  const left = Math.max(0, SITE_PUBLISH_LIMIT - sitePublishCount);
+  el.textContent = left > 0
+    ? `נותרו ${left} מתוך ${SITE_PUBLISH_LIMIT} עדכוני פרסום חינם לאתר זה.`
+    : `הגעתם למגבלת ${SITE_PUBLISH_LIMIT} עדכוני הפרסום החינמיים לאתר זה — אפשר עדיין להוריד את קובצי האתר (ZIP) ולהעלות אותם בעצמכם.`;
+}
+
 const SITE_DEFAULT = {
   businessName: "",
   tagline: "",
@@ -447,10 +460,21 @@ async function publishSite() {
     const { data, error } = await supabaseClient.functions.invoke("publish-site", {
       body: { siteProjectId, userId: siteCurrentUserId, pages },
     });
-    if (error || !data || !data.success) {
+    if (error || !data) {
       note.textContent = "הפרסום נכשל. נסו שוב בעוד רגע.";
       return;
     }
+    if (data.reason === "limit_reached") {
+      sitePublishCount = data.publishCount;
+      renderPublishRemaining();
+      note.innerHTML = `הגעתם למספר המרבי של עדכוני פרסום חינמיים לאתר הזה. אפשר עדיין ללחוץ על "הורדת קובצי האתר (ZIP)" למטה ולהעלות אותם בעצמכם לכל שירות אחסון — זה לא מוגבל. רוצים להמשיך לפרסם דרכנו? <a href="mailto:digital.dz.studio@gmail.com?subject=${encodeURIComponent("בקשה להמשך פרסום — בניית אתר")}" style="color:inherit; text-decoration:underline;">כתבו לנו</a>.`;
+      return;
+    }
+    if (!data.success) {
+      note.textContent = "הפרסום נכשל. נסו שוב בעוד רגע.";
+      return;
+    }
+    if (typeof data.publishCount === "number") { sitePublishCount = data.publishCount; renderPublishRemaining(); }
     note.innerHTML = `
       <div style="margin-bottom:4px;">האתר חי!</div>
       <a href="${data.url}" target="_blank" rel="noopener" style="display:block; font-size:16px; font-weight:700; color:#2B6CB0; word-break:break-all;">${data.url}</a>
@@ -483,6 +507,7 @@ function refreshUnlockUI() {
     gate.style.display = "none";
     pending.style.display = "none";
     done.style.display = "";
+    renderPublishRemaining();
     return;
   }
   done.style.display = "none";

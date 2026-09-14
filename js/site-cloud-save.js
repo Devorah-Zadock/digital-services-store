@@ -17,6 +17,13 @@
 let siteCurrentUserId = null;
 let siteProjectId = null;
 let siteIsFinalized = false;
+// Mirrors the site_projects row's own publish_count — read here so
+// site-builder.js can show "X מתוך 5 נשארו" before anyone even clicks
+// פרסום, not just after the Edge Function refuses. See
+// supabase/sql/site_projects_publish_limit.sql and publish-site's
+// PUBLISH_LIMIT for where the actual cap is enforced (server-side —
+// this is display-only, never trust it for the real check).
+let sitePublishCount = 0;
 
 /* Autosave: a refresh with no manual save used to lose everything typed
    in since the last click of "שמירה" — confirmed live. Every edit inside
@@ -163,6 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (row) {
           siteProjectId = row.id;
           siteIsFinalized = row.status === "finalized";
+          sitePublishCount = row.publish_count || 0;
           siteState.template = row.template;
           siteState.data = row.data;
           ensurePagesShape(siteState.data);
@@ -175,6 +183,7 @@ document.addEventListener("DOMContentLoaded", () => {
           // project. siteProjectId stays null so the next save creates a
           // new row instead of touching any other template's project.
           siteProjectId = null;
+          sitePublishCount = 0;
           siteIsFinalized = false;
           // The synchronous loadSiteState() call (before this account was
           // even known) reads a localStorage cache keyed only by template,
