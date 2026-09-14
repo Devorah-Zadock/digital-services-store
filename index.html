@@ -38,7 +38,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=22">
+<link rel="stylesheet" href="css/style.css?v=23">
 </head>
 <body>
 <script>
@@ -80,7 +80,6 @@
     </div>
     <div class="nav-end-group">
       <a href="account.html?redirect=tools.html" id="nav-login-link" class="nav-login nav-login-pending">כניסה</a>
-      <a href="catalog.html" class="nav-cta">לצפייה בקטלוג</a>
     </div>
     <button class="burger" aria-label="תפריט">☰</button>
   </nav>
@@ -93,27 +92,31 @@
       <h1>תבניות לעיצוב<br>בבילדר חי — <span class="accent">בחינם</span></h1>
       <p class="lead">בוחרים תבנית, רואים תוצאה בזמן אמת, ומורידים תוך דקות.</p>
       <div class="cta-row">
-        <a href="catalog.html" class="btn btn-gold">בואו נתחיל</a>
+        <a href="#tools" class="btn btn-gold">בואו נתחיל</a>
         <a href="#how" class="btn btn-outline-dark">איך זה עובד</a>
       </div>
     </div>
     <div class="home-hero-visual" aria-hidden="true">
-      <div class="hhv-glow"></div>
-      <!-- Dedicated showcase renders, not the catalog's own thumbnails: the
-           catalog deliberately shows neutral placeholder content ("שם
-           העסק", a generic name) so a customer immediately understands
-           it's an editable template. The homepage carousel's job is the
-           opposite — to impress at a glance — so these use the exact same
-           templates filled in with realistic, polished example content. -->
-      <div class="hhv-circle" id="hero-carousel">
-        <img class="hhv-slide active" src="images/previews/hero-cv-1.webp" alt="">
-        <img class="hhv-slide" src="images/previews/hero-site.webp" alt="">
-        <img class="hhv-slide" src="images/previews/hero-quote.webp" alt="">
-        <img class="hhv-slide" src="images/previews/hero-deck.webp" alt="">
-        <img class="hhv-slide" src="images/previews/hero-cv-2.webp" alt="">
-      </div>
-      <div class="hhv-dots" id="hero-carousel-dots">
-        <span class="active"></span><span></span><span></span><span></span><span></span>
+      <svg width="0" height="0" style="position:absolute;">
+        <clipPath id="heroDeeClip" clipPathUnits="objectBoundingBox">
+          <path d="M0.08,0.06 H0.40 A0.44,0.44 0 0 1 0.40,0.94 H0.08 Z"/>
+        </clipPath>
+      </svg>
+      <!-- Same silhouette as the brand mark's own "D" fold-page path
+           (see .brand-mark in the header), scaled up into a big blob that
+           frames a collage instead of the small header icon. Dedicated
+           showcase renders, not the catalog's own thumbnails: those
+           deliberately show neutral placeholder content ("שם העסק") so a
+           customer immediately understands it's an editable template —
+           the homepage's job is the opposite, to impress at a glance, so
+           these use the exact same templates filled with realistic,
+           polished example content. -->
+      <div class="hhv-dee">
+        <div class="hhv-dee-bg"></div>
+        <img class="hhv-dee-img hhv-dee-img-1" src="images/previews/hero-site.webp" alt="">
+        <img class="hhv-dee-img hhv-dee-img-2" src="images/previews/hero-cv-1.webp" alt="">
+        <img class="hhv-dee-img hhv-dee-img-3" src="images/previews/hero-deck.webp" alt="">
+        <img class="hhv-dee-img hhv-dee-img-4" src="images/previews/hero-quote.webp" alt="">
       </div>
     </div>
   </div>
@@ -169,12 +172,11 @@
   </div>
 </div>
 
-<section class="bg-ice">
+<section class="bg-ice" id="tools">
   <div class="container">
     <div class="section-head">
       <div class="kicker">הכלים שלנו</div>
-      <h2>תוצאה מקצועית, תוך דקות</h2>
-      <p>קורות חיים, אתר עסקי והצעת מחיר — בעיצוב מקצועי, מוכנים תוך דקות.</p>
+      <h2>באיזה כלי תשתמשו היום?</h2>
     </div>
     <div class="grid">
       <div class="card" data-cat="general">
@@ -184,7 +186,7 @@
             <span class="tag">קורות חיים</span>
             <span class="tag tag-free">חינם</span>
           </div>
-          <h3>התאימו קורות חיים משלכם</h3>
+          <h3>קורות חיים</h3>
           <a href="products.html?type=cv" class="btn btn-teal card-cta">ליצירה</a>
         </div>
       </div>
@@ -192,11 +194,33 @@
         <div class="thumb"><img src="images/previews/hero-site.webp" alt="תבנית אתר תדמית" loading="lazy"></div>
         <div class="body">
           <div class="card-meta">
-            <span class="tag">אתר תדמית</span>
+            <span class="tag">אתרים</span>
             <span class="price">199 ₪ <small>חד-פעמי</small></span>
           </div>
-          <h3>בנו אתר תדמית מרשים</h3>
+          <h3>אתרים</h3>
           <a href="sites.html?browse=1" class="btn btn-teal card-cta">ליצירה</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="thumb"><img src="images/previews/hero-deck.webp" alt="תבנית מצגת עסקית" loading="lazy"></div>
+        <div class="body">
+          <div class="card-meta">
+            <span class="tag">מצגות</span>
+            <span class="tag tag-free">חינם</span>
+          </div>
+          <h3>מצגות</h3>
+          <a href="products.html?type=deck" class="btn btn-teal card-cta">ליצירה</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="thumb"><img src="images/previews/xlsx-cashflow.webp" alt="גיליון Excel עסקי" loading="lazy"></div>
+        <div class="body">
+          <div class="card-meta">
+            <span class="tag">גליונות</span>
+            <span class="tag tag-free">חינם</span>
+          </div>
+          <h3>גליונות</h3>
+          <a href="products.html?type=xlsx" class="btn btn-teal card-cta">ליצירה</a>
         </div>
       </div>
       <div class="card">
@@ -206,7 +230,7 @@
             <span class="tag">הצעות מחיר</span>
             <span class="tag tag-free">חינם</span>
           </div>
-          <h3>הצעת מחיר מוכנה תוך דקות</h3>
+          <h3>הצעת מחיר לעסק שלך</h3>
           <a href="quote-app.html" class="btn btn-teal card-cta">ליצירה</a>
         </div>
       </div>
@@ -248,7 +272,7 @@
       <div class="step">
         <div class="num">1</div>
         <h4>בוחרים תבנית</h4>
-        <p>עוברים על הקטלוג ובוחרים את המוצר שמתאים לכם.</p>
+        <p>עוברים על התבניות ובוחרים את מה שמתאים לכם.</p>
       </div>
       <div class="step">
         <div class="num">2</div>
@@ -301,7 +325,6 @@
       <div>
         <h5>ניווט</h5>
         <ul>
-          <li><a href="catalog.html">קטלוג מוצרים</a></li>
           <li><a href="products.html?type=cv">קורות חיים</a></li>
           <li><a href="products.html?type=deck">מצגות</a></li>
           <li><a href="products.html?type=xlsx">גליונות</a></li>
@@ -332,7 +355,7 @@
 </footer>
 
 <script src="js/products-data.js?v=2"></script>
-<script src="js/catalog.js?v=11"></script>
+<script src="js/catalog.js?v=12"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>

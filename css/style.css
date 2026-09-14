@@ -106,8 +106,8 @@ body.has-sites-rail header.site {
   width: calc(100% + var(--rail-w, 220px));
 }
 /* .nav-links is the only thing that actually lives in .nav's own centered
-   flex flow now — both .brand and .nav-end-group (login + catalog CTA)
-   are pinned straight to the true edges of header.site instead, the same
+   flex flow now — both .brand and .nav-end-group (login link) are pinned
+   straight to the true edges of header.site instead, the same
    reasoning as the brand: "first/last inside the centered, max-width-capped
    bar" still leaves visible empty margin past it on any screen wider than
    --max. That leaves justify-content:center free to actually center the
@@ -116,7 +116,7 @@ body.has-sites-rail header.site {
    either pinned group. */
 .nav {
   display: flex; align-items: center; justify-content: center;
-  padding: 16px 24px; padding-inline-start: 190px; padding-inline-end: 210px; max-width: var(--max); margin: 0 auto;
+  padding: 16px 24px; padding-inline-start: 190px; padding-inline-end: 150px; max-width: var(--max); margin: 0 auto;
 }
 .brand {
   position: absolute; top: 50%; inset-inline-start: 24px; transform: translateY(-50%);
@@ -141,13 +141,6 @@ body.has-sites-rail header.site {
 .nav-links { display: flex; align-items: center; gap: 28px; font-size: 15px; font-weight: 500; }
 .nav-links a { color: var(--dark); opacity: .85; padding: 6px 0; border-bottom: 2px solid transparent; transition: opacity .15s ease, border-color .15s ease; }
 .nav-links a:hover, .nav-links a.active { opacity: 1; border-color: var(--gold); }
-.nav-cta {
-  background: linear-gradient(135deg, var(--teal), var(--teal-light)); color: var(--white); padding: 10px 22px;
-  border-radius: 30px; font-size: 14px; font-weight: 600;
-  box-shadow: 0 8px 20px rgba(22,63,53,.22);
-  transition: transform .15s ease, box-shadow .15s ease;
-}
-.nav-cta:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(22,63,53,.3); }
 .nav-login { color: var(--grey); font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: flex-end; gap: 5px; min-width: 92px; transition: color .15s ease; }
 .nav-login.nav-login-pending { visibility: hidden; }
 .nav-login:hover { color: var(--teal-dark); }
@@ -378,14 +371,25 @@ body.has-sites-rail .nav-account-wrap { display: none; }
 
 /* ---------- Homepage hero (asymmetric, own layout — not the shared
    centered .hero used by inner pages) ---------- */
-.home-hero {
-  position: relative; overflow: hidden; padding: 96px 24px 80px;
+.home-hero { position: relative; overflow: hidden; padding: 96px 24px 80px; background: var(--ice); isolation: isolate; }
+/* An oversized, slowly drifting gradient layer behind the content — plain
+   transform keyframes (translate + rotate), not animated custom
+   properties, so it interpolates smoothly in every browser instead of
+   depending on @property support. */
+.home-hero::before {
+  content: ""; position: absolute; z-index: -1; inset: -25%;
   background:
     radial-gradient(ellipse 820px 560px at 90% -12%, rgba(0,200,150,.28), transparent 58%),
-    radial-gradient(ellipse 640px 480px at -8% 100%, rgba(201,154,59,.28), transparent 58%),
-    radial-gradient(ellipse 500px 400px at 40% 40%, rgba(123,92,255,.10), transparent 60%),
-    var(--ice);
+    radial-gradient(ellipse 640px 480px at 8% 100%, rgba(201,154,59,.3), transparent 58%),
+    radial-gradient(ellipse 500px 400px at 45% 45%, rgba(123,92,255,.12), transparent 60%);
+  animation: homeHeroGradient 18s ease-in-out infinite alternate;
 }
+@keyframes homeHeroGradient {
+  0%   { transform: translate(0, 0) rotate(0deg); }
+  50%  { transform: translate(-3%, 2%) rotate(4deg); }
+  100% { transform: translate(2%, -3%) rotate(-3deg); }
+}
+@media (prefers-reduced-motion: reduce) { .home-hero::before { animation: none; } }
 .home-hero-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 48px; align-items: center; }
 .home-hero-eyebrow {
   display: inline-flex; align-items: center; gap: 8px; background: var(--white); border: 1px solid #DCE9E4;
@@ -401,39 +405,37 @@ body.has-sites-rail .nav-account-wrap { display: none; }
 .btn-outline-dark { background: transparent; color: var(--teal-dark); border: 1.5px solid var(--teal-dark); }
 .btn-outline-dark:hover { background: var(--teal-dark); color: var(--white); transform: translateY(-2px); }
 
-/* A big circle that cycles through real template previews — reads as
-   "here's what you'll get" across all the tools at a glance, instead of
-   one static generic mockup. The glow sits behind and larger than the
-   circle (a soft halo, not the fill), the circle itself clips the actual
-   preview images edge to edge. */
-.home-hero-visual { position: relative; height: 420px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; }
-.hhv-glow {
-  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  width: 420px; height: 420px; border-radius: 50%; filter: blur(8px);
-  background: radial-gradient(circle at 32% 32%, rgba(0,200,150,.45), rgba(201,154,59,.4) 65%, rgba(123,92,255,.25) 100%);
+/* A big "D" silhouette (same shape as .brand-mark, scaled up) filled with
+   a collage of real template renders — reads as "here's what you'll get"
+   across the tools at a glance, and doubles as an oversized version of
+   DeskKit's own mark instead of a generic stock mockup. */
+.home-hero-visual { position: relative; height: 440px; display: flex; align-items: center; justify-content: center; }
+.hhv-dee {
+  position: relative; width: 380px; height: 440px;
+  clip-path: url(#heroDeeClip);
+  filter: drop-shadow(0 26px 50px rgba(15, 51, 43, .28));
 }
-.hhv-circle {
-  position: relative; width: 340px; height: 340px; border-radius: 50%; overflow: hidden;
-  box-shadow: 0 26px 60px rgba(15, 51, 43, .22); border: 6px solid var(--white); flex-shrink: 0;
+.hhv-dee-bg {
+  position: absolute; inset: -20%;
+  background: linear-gradient(135deg, var(--vivid-emerald), var(--teal-dark) 45%, var(--gold) 85%);
+  background-size: 220% 220%;
+  animation: heroDeeShift 12s ease-in-out infinite alternate;
 }
-.hhv-slide {
-  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
-  opacity: 0; transition: opacity 1.1s ease;
+@keyframes heroDeeShift { 0% { background-position: 0% 30%; } 100% { background-position: 100% 70%; } }
+.hhv-dee-img {
+  position: absolute; object-fit: cover; border-radius: 10px;
+  box-shadow: 0 14px 30px rgba(0,0,0,.25); border: 3px solid var(--white);
 }
-.hhv-slide.active { opacity: 1; animation: hhvKenBurns 6.5s ease-in-out infinite alternate; }
-@keyframes hhvKenBurns { from { transform: scale(1); } to { transform: scale(1.08); } }
-.hhv-dots { display: flex; gap: 7px; }
-.hhv-dots span { width: 7px; height: 7px; border-radius: 50%; background: #D7DEDB; transition: background .3s ease, width .3s ease; }
-.hhv-dots span.active { background: var(--teal); width: 20px; border-radius: 4px; }
-@media (prefers-reduced-motion: reduce) {
-  .hhv-slide.active { animation: none; }
-}
+.hhv-dee-img-1 { width: 62%; height: 34%; top: 6%; inset-inline-start: 30%; transform: rotate(-3deg); }
+.hhv-dee-img-2 { width: 52%; height: 30%; top: 40%; inset-inline-start: 6%; transform: rotate(4deg); }
+.hhv-dee-img-3 { width: 58%; height: 28%; top: 68%; inset-inline-start: 26%; transform: rotate(-2deg); }
+.hhv-dee-img-4 { width: 40%; height: 22%; top: 2%; inset-inline-start: -6%; transform: rotate(6deg); }
+@media (prefers-reduced-motion: reduce) { .hhv-dee-bg { animation: none; } }
 @media (max-width: 900px) {
   .home-hero-grid { grid-template-columns: 1fr; }
   .home-hero h1 { font-size: 36px; }
-  .home-hero-visual { height: 320px; margin-top: 10px; }
-  .hhv-glow { width: 320px; height: 320px; }
-  .hhv-circle { width: 250px; height: 250px; }
+  .home-hero-visual { height: 340px; margin-top: 10px; }
+  .hhv-dee { width: 300px; height: 340px; }
 }
 .btn {
   display: inline-block; padding: 14px 30px; border-radius: 30px;
@@ -831,31 +833,3 @@ body.cookie-notice-active .fab { display: none; }
   .banner { flex-direction: column; text-align: center; }
 }
 
-/* ---------- Toolbox overview (catalog.html) — every product type as its
-   own horizontally-scrolling row, instead of merging them into one
-   filtered grid (that's what products.html?type=X is for). ---------- */
-.toolbox-row { margin-bottom: 44px; }
-.toolbox-row-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; gap: 12px; }
-.toolbox-row-head h2 { font-size: 20px; color: var(--teal-dark); margin: 0; }
-.toolbox-row-all { font-size: 15px; font-weight: 700; color: var(--teal); white-space: nowrap; }
-.toolbox-row-all:hover { text-decoration: underline; }
-.toolbox-scroll-wrap { position: relative; }
-.toolbox-scroll {
-  display: flex; gap: 20px; overflow-x: auto; padding: 4px 4px 14px;
-  scroll-snap-type: x proximity; scroll-behavior: smooth;
-  scrollbar-width: none; -ms-overflow-style: none;
-}
-.toolbox-scroll::-webkit-scrollbar { display: none; }
-.toolbox-card-wrap { flex: 0 0 auto; width: 250px; scroll-snap-align: start; }
-.toolbox-card-wrap .card { height: 100%; }
-.toolbox-arrow {
-  position: absolute; top: 50%; transform: translateY(-50%); z-index: 5;
-  width: 34px; height: 34px; border-radius: 50%; border: 1px solid #E2E7E5;
-  background: var(--white); box-shadow: 0 4px 14px rgba(0,0,0,.12);
-  font-size: 17px; color: var(--teal-dark); cursor: pointer;
-  display: flex; align-items: center; justify-content: center; line-height: 1;
-}
-.toolbox-arrow:hover { background: var(--ice); border-color: var(--teal-light); }
-.toolbox-arrow-start { inset-inline-start: -4px; }
-.toolbox-arrow-end { inset-inline-end: -4px; }
-@media (max-width: 640px) { .toolbox-arrow { display: none; } }
