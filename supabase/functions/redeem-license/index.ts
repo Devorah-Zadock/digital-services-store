@@ -22,9 +22,17 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+// Confirmed live: every Response below was built with only these headers,
+// with no Content-Type — Deno defaults a string body to "text/plain",
+// and supabase-js's functions.invoke() decides how to parse the response
+// purely from Content-Type. Without "application/json" here, invoke()
+// returned the body as a raw STRING instead of a parsed object, so
+// `data.success` was always undefined (falsy) on the client — every
+// verification, success or failure alike, was read as a failure.
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Content-Type": "application/json",
 };
 
 Deno.serve(async (req: Request) => {
