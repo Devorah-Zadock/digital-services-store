@@ -408,6 +408,25 @@ async function publishSite() {
     document.getElementById("s-name").focus();
     return;
   }
+  // A real business name alone still leaves every OTHER field showing its
+  // raw instructional placeholder ("תארו כאן בקצרה...", "פרטו כאן טלפון,
+  // מייל וכתובת" etc.) straight to a real visitor — worth a clear,
+  // skippable warning rather than silently publishing half-filled
+  // instructions as if they were real content.
+  const d = siteState.data;
+  const missing = [];
+  if (!d.tagline || !d.tagline.trim()) missing.push("תיאור קצר");
+  if (!d.about || !d.about.trim()) missing.push("קטע \"עלינו\"");
+  if (!(d.services || []).some((s) => s.name && s.name.trim())) missing.push("שירותים/מוצרים");
+  if (!d.phone && !d.whatsapp && !d.email && !d.address) missing.push("פרטי יצירת קשר");
+  if (missing.length) {
+    const proceed = confirm(
+      "עדיין חסר תוכן אמיתי ב: " + missing.join(", ") + ".\n" +
+      "בלי זה, מבקרים באתר יראו את הטקסטים ההנחיה שנועדו רק לכם, לא תוכן אמיתי.\n\n" +
+      "לפרסם בכל זאת?"
+    );
+    if (!proceed) return;
+  }
   const originalLabel = btn.textContent;
   btn.disabled = true;
   btn.textContent = "מפרסמים...";
