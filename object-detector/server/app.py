@@ -1,9 +1,12 @@
 """
-שרת האתר (Flask). מריצים כך:
+שרת האתר (Flask) - צד השרת (server-side).
+
+מריצים כך (מתוך תיקיית server):
 
     python app.py
 
 ואז נכנסים בדפדפן לכתובת: http://127.0.0.1:5000
+דף ה-HTML שהדפדפן מקבל (צד הלקוח) נמצא בתיקיית client/ לצד server/.
 
 חשוב: לפני שמריצים את זה בפעם הראשונה צריך לאמן מודל
 (אחרת תופיע הודעת שגיאה שמסבירה מה לעשות):
@@ -21,7 +24,15 @@ from PIL import Image
 from config import UPLOAD_DIR, MODEL_PATH, MAX_UPLOAD_DIMENSION
 from detector import Detector
 
-app = Flask(__name__)
+# תיקיית client (צד הלקוח: HTML/CSS) יושבת לצד תיקיית server, אחות שלה.
+SERVER_DIR = os.path.dirname(os.path.abspath(__file__))
+CLIENT_DIR = os.path.join(SERVER_DIR, "..", "client")
+
+app = Flask(
+    __name__,
+    template_folder=os.path.join(CLIENT_DIR, "templates"),
+    static_folder=os.path.join(CLIENT_DIR, "static"),
+)
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 _detector = None

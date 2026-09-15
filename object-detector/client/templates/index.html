@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מערכת זיהוי אובייקטים</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+    <h1>מערכת זיהוי אובייקטים</h1>
+    <p class="subtitle">מעלים תמונה, המערכת מסמנת ומספרת כל אובייקט שזוהה</p>
+
+    <form action="/predict" method="post" enctype="multipart/form-data">
+        <input type="file" name="image" accept="image/*" required>
+        <button type="submit">זהה אובייקטים</button>
+    </form>
+
+    {% if error %}
+        <p class="error">{{ error }}</p>
+    {% endif %}
+
+    {% if result %}
+        <img class="result-image" src="data:image/png;base64,{{ result.image_b64 }}" alt="תוצאת הזיהוי">
+
+        <p class="total">סה"כ נמצאו <strong>{{ result.total }}</strong> אובייקטים</p>
+
+        {% if result.counts %}
+        <table>
+            <tr><th>סוג אובייקט</th><th>כמות</th></tr>
+            {% for class_name, count in result.counts %}
+            <tr><td>{{ class_name }}</td><td>{{ count }}</td></tr>
+            {% endfor %}
+        </table>
+        {% endif %}
+    {% endif %}
+</div>
+</body>
+</html>
