@@ -380,87 +380,143 @@ body.has-sites-rail .nav-account-wrap { display: none; }
 .hero p.lead { font-size: 18px; color: #DCEBE5; max-width: 620px; margin: 0 auto 34px; animation: fadeUp .6s .08s ease both; }
 .hero .cta-row { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; animation: fadeUp .6s .16s ease both; }
 
-/* ---------- Homepage hero (asymmetric, own layout — not the shared
-   centered .hero used by inner pages) ---------- */
-/* The base fill itself is a moving gradient (not a flat --ice background
-   with the motion confined to accent blobs on top) — the whole hero reads
-   as animated, not just the D. background-size/position (not transform)
-   here, since this layer is the section's own background and has to stay
-   flush with its edges rather than drift past them. */
-.home-hero {
-  position: relative; overflow: hidden; padding: 96px 24px 80px; isolation: isolate;
-  background: linear-gradient(120deg, #DDF2E9 0%, #E9F2EF 22%, #F5E9CC 50%, #E9F2EF 76%, #E3ECF8 100%);
-  background-size: 240% 240%;
-  animation: homeHeroBg 16s ease-in-out infinite alternate;
+/* ==========================================================================
+   Neo-minimal homepage reskin — scoped entirely under body.home-neo so it
+   never touches any other page. Deliberately does NOT touch :root's
+   --teal/--gold/pill-radius tokens (used everywhere else on the site, from
+   the admin dashboard to every builder) — a global rebrand is a much
+   bigger, separate decision than "redo the homepage". Own local constants
+   instead, right here.
+   ========================================================================== */
+body.home-neo {
+  --hn-bg: #FAFAFA; --hn-ink: #1A1A1A; --hn-action: #000000; --hn-blue: #1040C0;
+  --hn-grey: #6B6B6B; --hn-border: #EAEAEA; --hn-radius: 8px;
+  background: var(--hn-bg); color: var(--hn-ink);
+  font-family: 'Assistant', Arial, sans-serif;
 }
-@keyframes homeHeroBg { 0% { background-position: 0% 35%; } 100% { background-position: 100% 65%; } }
-@media (prefers-reduced-motion: reduce) { .home-hero { animation: none; } }
-/* An oversized, slowly drifting gradient layer of stronger color blobs on
-   top of that base — plain transform keyframes (translate + rotate), not
-   animated custom properties, so it interpolates smoothly in every
-   browser instead of depending on @property support. */
-.home-hero::before {
-  content: ""; position: absolute; z-index: -1; inset: -25%;
-  background:
-    radial-gradient(ellipse 780px 560px at 88% -8%, rgba(0,200,150,.5), transparent 60%),
-    radial-gradient(ellipse 620px 480px at 6% 96%, rgba(201,154,59,.5), transparent 60%),
-    radial-gradient(ellipse 560px 440px at 48% 48%, rgba(123,92,255,.22), transparent 62%);
-  animation: homeHeroGradient 12s ease-in-out infinite alternate;
-}
-@keyframes homeHeroGradient {
-  0%   { transform: translate(0, 0) rotate(0deg) scale(1); }
-  50%  { transform: translate(-5%, 4%) rotate(6deg) scale(1.06); }
-  100% { transform: translate(4%, -5%) rotate(-5deg) scale(1.03); }
-}
-@media (prefers-reduced-motion: reduce) { .home-hero::before { animation: none; } }
-.home-hero-split { display: grid; grid-template-columns: 55% 45%; gap: 40px; align-items: center; }
-.home-hero-text { max-width: 500px; }
-.home-hero-eyebrow {
-  display: inline-flex; align-items: center; gap: 8px; background: var(--white); border: 1px solid #DCE9E4;
-  padding: 7px 16px; border-radius: 20px; font-size: 12.5px; font-weight: 700; color: var(--teal-dark); margin-bottom: 22px;
-}
-.home-hero h1 { font-size: 46px; font-weight: 900; line-height: 1.2; letter-spacing: -.015em; margin: 0 0 20px; color: var(--dark); }
-.home-hero h1 .accent {
-  background: linear-gradient(90deg, var(--vivid-emerald), var(--teal-dark));
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-}
-.home-hero p.lead { font-size: 17px; color: var(--grey); margin: 0 0 30px; }
-.home-hero .cta-row { display: flex; gap: 14px; flex-wrap: wrap; }
+body.home-neo header.site { background: var(--hn-bg); }
+body.home-neo .burger { color: var(--hn-ink); }
+body.home-neo .lang-toggle { background: var(--hn-bg); border-color: var(--hn-border); color: var(--hn-ink); border-radius: var(--hn-radius); }
+body.home-neo .lang-toggle:hover { background: var(--hn-border); border-color: var(--hn-border); }
+body.home-neo .cookie-notice { background: var(--hn-bg); border-top-color: var(--hn-border); }
+body.home-neo .cookie-notice p { color: var(--hn-grey); }
+body.home-neo .cookie-notice .btn-teal { background: var(--hn-action); border-radius: var(--hn-radius); }
 
-/* Left side: a few lightly-rotated preview cards scattered around a big
-   version of the header's own brand mark — used here as an SVG mask, so
-   a second, independent grid of preview tiles shows only through the
-   "D" silhouette. Plain physical left/right on the scattered tiles (not
-   inset-inline-*): this is a decorative graphic that should look
-   identical in either language, not mirror with text direction — see
-   .hhv-badge-mark's own history of exactly this mistake elsewhere in
-   this file. */
-.home-hero-visual { position: relative; height: 460px; }
-.hhv-dmask {
-  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  width: 300px; height: 300px; border-radius: 40px; overflow: hidden;
-  filter: drop-shadow(0 24px 48px rgba(15,51,43,.28));
+/* ---------- Navbar + logo ---------- */
+body.home-neo .nav { max-width: 1400px; padding-inline: 32px; }
+body.home-neo .brand-badge { display: none; }
+body.home-neo .brand-text { color: var(--hn-ink); font-weight: 800; font-size: 19px; }
+body.home-neo .brand-text::before { content: "✦"; margin-inline-end: 8px; color: var(--hn-ink); font-size: 15px; }
+body.home-neo .nav-links { gap: 40px; }
+body.home-neo .nav-links a {
+  color: var(--hn-grey); font-weight: 500; border-bottom: none; padding: 0;
+  transition: color .15s ease;
 }
-.hhv-scatter { position: absolute; inset: 0; }
-.hhv-scatter-tile {
-  position: absolute; width: 130px; height: 92px; object-fit: cover; border-radius: 10px;
-  border: 3px solid var(--white); box-shadow: 0 14px 28px rgba(15,51,43,.2);
+body.home-neo .nav-links a.active, body.home-neo .nav-links a:hover { color: var(--hn-ink); border-bottom: none; }
+
+/* ---------- Shared section rhythm + primitives ---------- */
+body.home-neo .hn-hero, body.home-neo .hn-tools, body.home-neo .hn-flagship,
+body.home-neo .hn-steps, body.home-neo .hn-advantages { padding-block: 120px; }
+body.home-neo .hn-section-h { font-size: 34px; font-weight: 700; margin: 0 0 64px; letter-spacing: -.01em; }
+body.home-neo .hn-center { text-align: center; }
+body.home-neo .hn-btn {
+  display: inline-block; padding: 14px 28px; border-radius: var(--hn-radius);
+  font-weight: 600; font-size: 15px; cursor: pointer; border: 1.5px solid transparent;
+  transition: opacity .15s ease, background .15s ease;
 }
-.hhv-s1 { top: 2%; left: 0; transform: rotate(-7deg); }
-.hhv-s2 { top: 10%; right: 2%; transform: rotate(6deg); }
-.hhv-s3 { bottom: 6%; left: 6%; transform: rotate(5deg); }
-.hhv-s4 { bottom: 0; right: 0; transform: rotate(-5deg); }
+body.home-neo .hn-btn-primary { background: var(--hn-action); color: var(--hn-bg); }
+body.home-neo .hn-btn-primary:hover { opacity: .82; }
+body.home-neo .hn-btn-secondary { background: transparent; color: var(--hn-ink); border-color: var(--hn-ink); }
+body.home-neo .hn-btn-secondary:hover { background: var(--hn-ink); color: var(--hn-bg); }
+body.home-neo .hn-btn-flat { display: block; width: 100%; text-align: center; box-sizing: border-box; background: var(--hn-action); color: var(--hn-bg); }
+body.home-neo .hn-btn-flat:hover { opacity: .82; }
+body.home-neo .hn-btn-gold { background: var(--hn-bg); color: var(--hn-ink); }
+body.home-neo .hn-btn-gold:hover { opacity: .85; }
+
+/* ---------- Hero ---------- */
+body.home-neo .hn-hero { padding-bottom: 80px; }
+body.home-neo .hn-hero-split { display: grid; grid-template-columns: 55% 45%; gap: 40px; align-items: center; }
+body.home-neo .hn-hero-text { max-width: 520px; }
+body.home-neo .hn-hero-eyebrow { display: block; font-size: 13.5px; font-weight: 600; color: var(--hn-grey); margin-bottom: 18px; }
+body.home-neo .hn-hero-text h1 { font-size: 44px; font-weight: 700; line-height: 1.28; margin: 0 0 22px; color: var(--hn-ink); }
+body.home-neo .hn-hero-lead { font-size: 16.5px; color: #6E6E5E; line-height: 1.8; margin: 0 0 34px; }
+body.home-neo .hn-cta-row { display: flex; gap: 14px; flex-wrap: wrap; }
+body.home-neo .hn-hero-visual { position: relative; height: 420px; }
+body.home-neo .hn-mock {
+  position: absolute; width: 340px; height: 240px; border-radius: var(--hn-radius);
+  overflow: hidden; box-shadow: 0 12px 32px rgba(0,0,0,.08); border: 1px solid var(--hn-border);
+}
+body.home-neo .hn-mock img { width: 100%; height: 100%; object-fit: cover; display: block; }
+body.home-neo .hn-mock-back { top: 8%; right: 4%; }
+body.home-neo .hn-mock-front { bottom: 4%; right: 22%; }
 @media (max-width: 900px) {
-  .home-hero-split { grid-template-columns: 1fr; }
-  .home-hero-text { max-width: none; }
-  .home-hero h1 { font-size: 34px; }
-  .home-hero-visual { height: 320px; margin-top: 16px; }
-  .hhv-dmask { width: 220px; height: 220px; border-radius: 30px; }
-  .hhv-scatter-tile { width: 96px; height: 68px; }
+  body.home-neo .hn-hero-split { grid-template-columns: 1fr; }
+  body.home-neo .hn-hero-text { max-width: none; }
+  body.home-neo .hn-hero-text h1 { font-size: 32px; }
+  body.home-neo .hn-hero-visual { height: 260px; margin-top: 24px; }
+  body.home-neo .hn-mock { width: 240px; height: 168px; }
 }
-@media (max-width: 560px) {
-  .home-hero-visual { display: none; }
+@media (max-width: 560px) { body.home-neo .hn-hero-visual { display: none; } }
+
+/* ---------- Marquee (restyled to fit, not removed) ---------- */
+body.home-neo .marquee { background: var(--hn-bg); border-top: 1px solid var(--hn-border); border-bottom: 1px solid var(--hn-border); }
+body.home-neo .marquee-item { color: var(--hn-grey); }
+body.home-neo .marquee-item .dot { background: var(--hn-ink); }
+
+/* ---------- Tools grid ---------- */
+body.home-neo .hn-tools-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+body.home-neo .hn-card {
+  background: var(--hn-bg); border: 1px solid var(--hn-border); border-radius: var(--hn-radius);
+  padding: 32px 28px; display: flex; flex-direction: column; gap: 16px;
 }
+body.home-neo .hn-card h3 { margin: 0; font-size: 19px; font-weight: 700; }
+body.home-neo .hn-tag {
+  align-self: flex-start; font-size: 12.5px; font-weight: 600; color: var(--hn-grey);
+  border: 1px solid var(--hn-border); border-radius: var(--hn-radius); padding: 4px 10px;
+}
+body.home-neo .hn-tag-paid { color: var(--hn-ink); }
+body.home-neo .hn-card .hn-btn-flat { margin-top: auto; }
+@media (max-width: 900px) { body.home-neo .hn-tools-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { body.home-neo .hn-tools-grid { grid-template-columns: 1fr; } }
+
+/* ---------- Flagship banner ---------- */
+body.home-neo .hn-flagship { background: #0D0D14; color: #F2F2F0; }
+body.home-neo .hn-flagship-split { display: grid; grid-template-columns: 1.3fr .7fr; gap: 48px; align-items: center; }
+body.home-neo .hn-flagship-text h2 { font-size: 30px; font-weight: 700; margin: 0 0 16px; line-height: 1.3; }
+body.home-neo .hn-flagship-text p { font-size: 15.5px; color: #B8B8C0; line-height: 1.8; margin: 0; max-width: 460px; }
+body.home-neo .hn-flagship-price-box {
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.14); border-radius: var(--hn-radius);
+  padding: 28px; text-align: center;
+}
+body.home-neo .hn-flagship-price { font-size: 34px; font-weight: 800; }
+body.home-neo .hn-flagship-price-note { font-size: 13px; color: #B8B8C0; margin: 4px 0 20px; }
+body.home-neo .hn-flagship-price-box .hn-btn { width: 100%; box-sizing: border-box; }
+@media (max-width: 800px) { body.home-neo .hn-flagship-split { grid-template-columns: 1fr; } }
+
+/* ---------- Three steps ---------- */
+body.home-neo .hn-steps-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
+body.home-neo .hn-step { position: relative; padding-top: 8px; }
+body.home-neo .hn-step-num {
+  font-size: 110px; font-weight: 800; color: #EFEFEF; line-height: 1; margin-bottom: -34px;
+}
+body.home-neo .hn-step h4 { position: relative; font-size: 19px; font-weight: 700; margin: 0 0 10px; }
+body.home-neo .hn-step p { position: relative; font-size: 14.5px; color: var(--hn-grey); line-height: 1.7; margin: 0; }
+@media (max-width: 800px) { body.home-neo .hn-steps-row { grid-template-columns: 1fr; gap: 56px; } }
+
+/* ---------- Advantages ---------- */
+body.home-neo .hn-advantages-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+body.home-neo .hn-adv-card {
+  border: 1px solid var(--hn-border); border-radius: var(--hn-radius); padding: 32px 28px;
+}
+body.home-neo .hn-adv-card h4 { font-size: 17px; font-weight: 700; margin: 0 0 10px; }
+body.home-neo .hn-adv-card p { font-size: 14px; color: var(--hn-grey); line-height: 1.7; margin: 0; }
+@media (max-width: 800px) { body.home-neo .hn-advantages-row { grid-template-columns: 1fr; } }
+
+@media (max-width: 700px) {
+  body.home-neo .hn-hero, body.home-neo .hn-tools, body.home-neo .hn-flagship,
+  body.home-neo .hn-steps, body.home-neo .hn-advantages { padding-block: 64px; }
+}
+
 .btn {
   display: inline-block; padding: 14px 30px; border-radius: 30px;
   font-weight: 600; font-size: 15px; cursor: pointer; border: none;
@@ -506,17 +562,6 @@ section { padding: 88px 0; }
    "בואו נתחיל" anchor jumps straight to, so its own height directly
    decides how much of it fits above the fold without extra scrolling. */
 #tools { scroll-margin-top: 66px; padding-top: 26px; padding-bottom: 48px; }
-.tools-top { display: flex; align-items: center; gap: 36px; flex-wrap: wrap; margin-bottom: 22px; }
-.tools-heading {
-  font-family: 'Rubik', 'Heebo', Arial, sans-serif; font-size: 32px; font-weight: 700;
-  margin: 0; color: var(--teal-dark); letter-spacing: -.01em; flex: 0 1 320px; text-align: center;
-}
-.tools-top-cards { display: flex; gap: 24px; flex: 1 1 480px; min-width: 0; }
-.tools-top-cards .card { flex: 1 1 0; min-width: 0; }
-@media (max-width: 860px) {
-  .tools-top { flex-direction: column; align-items: stretch; }
-  .tools-top-cards { flex-direction: column; }
-}
 .bg-ice { background: linear-gradient(180deg, var(--ice), #F7FBF9); }
 
 /* ---------- Category tabs ---------- */
@@ -673,33 +718,6 @@ section { padding: 88px 0; }
 .banner p { margin: 0; color: #CFE3DC; font-size: 14px; max-width: 480px; }
 .badge-free { background: linear-gradient(135deg, var(--gold-light), var(--gold)); color: var(--teal-dark); font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; margin-inline-start: 10px; }
 .badge-new { background: linear-gradient(135deg, var(--teal-light), var(--teal)); color: var(--white); font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; margin-inline-start: 10px; }
-
-/* ---------- Paid-product spotlight (site-builder promo) ---------- */
-.spotlight {
-  position: relative; overflow: hidden; isolation: isolate;
-  background:
-    radial-gradient(circle at 15% 15%, rgba(201,154,59,.3), transparent 50%),
-    radial-gradient(circle at 92% 90%, rgba(255,255,255,.1), transparent 45%),
-    linear-gradient(135deg, var(--teal-dark), var(--teal) 85%);
-  border-radius: var(--radius); box-shadow: var(--shadow-lg);
-  padding: 48px; display: grid; grid-template-columns: 1.1fr .9fr; gap: 36px; align-items: center;
-}
-.spotlight-kicker { color: var(--gold-light); font-weight: 700; font-size: 13px; letter-spacing: .04em; margin-bottom: 10px; }
-.spotlight h2 { color: var(--white); font-size: 30px; margin: 0 0 14px; }
-.spotlight p { color: #CFE3DC; font-size: 15px; margin: 0 0 20px; max-width: 460px; }
-.spotlight-list { list-style: none; margin: 0 0 26px; padding: 0; display: grid; gap: 10px; }
-.spotlight-list li { color: var(--white); font-size: 14px; display: flex; align-items: center; gap: 10px; }
-.spotlight-list li::before { content: "✓"; color: var(--gold-light); font-weight: 700; }
-.spotlight-visual {
-  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); border-radius: var(--radius-sm);
-  padding: 26px; color: var(--white);
-}
-.spotlight-visual .tpl-chip { display: inline-block; background: rgba(255,255,255,.1); border-radius: 8px; padding: 6px 12px; font-size: 12.5px; margin: 0 6px 10px 0; }
-.spotlight-visual .price-tag { font-size: 30px; font-weight: 800; color: var(--gold-light); margin: 10px 0 4px; }
-.spotlight-visual .price-note { font-size: 13px; color: #CFE3DC; }
-@media (max-width: 760px) {
-  .spotlight { grid-template-columns: 1fr; padding: 32px 22px; }
-}
 
 /* ---------- Product detail page ---------- */
 .product-hero { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; padding: 60px 0; }

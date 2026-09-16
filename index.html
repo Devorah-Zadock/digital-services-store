@@ -37,10 +37,10 @@
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=37">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&family=Assistant:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=38">
 </head>
-<body>
+<body class="home-neo">
 <script>
   /* Guesses, synchronously and before first paint, whether "my content"
      will end up mounted (js/my-panel.js only knows for sure after an
@@ -86,50 +86,23 @@
   </nav>
 </header>
 
-<section class="home-hero">
-  <div class="container home-hero-split">
-    <div class="home-hero-text">
-      <span class="home-hero-eyebrow" data-i18n="hero_eyebrow">התחנה הראשונה של העסק שלך</span>
-      <h1><span data-i18n="hero_h1_line1">מסמכים עסקיים ואתרי תדמית.</span><br><span class="accent" data-i18n="hero_h1_line2">מעוצבים, מוכנים ובלחיצת כפתור.</span></h1>
-      <p class="lead" data-i18n="hero_lead">בוחרים תבנית, עורכים אונליין בבילדר חי, ומורידים קובץ מוכן ברגע. בלי אותיות קטנות, בלי מנוי חודשי.</p>
-      <div class="cta-row">
-        <a href="#tools" class="btn btn-gold" data-i18n="hero_cta_start">ליצירה בחינם</a>
-        <a href="#how" class="btn btn-outline-dark" data-i18n="hero_cta_how">איך זה עובד?</a>
+<section class="hn-hero">
+  <div class="container hn-hero-split">
+    <div class="hn-hero-text">
+      <span class="hn-hero-eyebrow" data-i18n="hero_eyebrow">התחנה הראשונה של העסק שלך</span>
+      <h1 data-i18n="hero_h1">מסמכים עסקיים ואתרי תדמית. מעוצבים, מוכנים ובלחיצת כפתור.</h1>
+      <p class="hn-hero-lead" data-i18n="hero_lead">בוחרים תבנית, עורכים אונליין בבילדר חי, ומורידים קובץ מוכן ברגע. בלי אותיות קטנות, בלי מנוי חודשי.</p>
+      <div class="hn-cta-row">
+        <a href="#tools" class="hn-btn hn-btn-primary" data-i18n="hero_cta_start">ליצירה בחינם</a>
+        <a href="#how" class="hn-btn hn-btn-secondary" data-i18n="hero_cta_how">איך זה עובד?</a>
       </div>
     </div>
-    <!-- Left side: a handful of scattered, lightly-rotated template preview
-         cards, with the header's own brand mark scaled way up and used as
-         an SVG mask — a second, independent mosaic of preview tiles shows
-         only through the mask's "D" silhouette. Same rect+path geometry as
-         the small header logo, scaled 10x, so the shape itself can't drift
-         out of sync with the real logo. -->
-    <div class="home-hero-visual" aria-hidden="true">
-      <div class="hhv-scatter">
-        <img class="hhv-scatter-tile hhv-s1" src="images/previews/hero-cv-1.webp" alt="">
-        <img class="hhv-scatter-tile hhv-s2" src="images/previews/hero-deck.webp" alt="">
-        <img class="hhv-scatter-tile hhv-s3" src="images/previews/xlsx-cashflow.webp" alt="">
-        <img class="hhv-scatter-tile hhv-s4" src="images/previews/hero-quote.webp" alt="">
-      </div>
-      <svg class="hhv-dmask" viewBox="0 0 240 240">
-        <defs>
-          <mask id="hhvDMask" maskUnits="userSpaceOnUse">
-            <rect x="60" y="40" width="40" height="160" rx="20" fill="#fff"/>
-            <path d="M90,40 H130 A80,80 0 0 1 130,200 H90 Z" fill="#fff"/>
-          </mask>
-        </defs>
-        <rect x="0" y="0" width="240" height="240" fill="#E8F1EE"/>
-        <g mask="url(#hhvDMask)">
-          <image href="images/previews/hero-cv-1.webp" x="0" y="0" width="80" height="80" preserveAspectRatio="xMidYMid slice"/>
-          <image href="images/previews/hero-site.webp" x="80" y="0" width="80" height="80" preserveAspectRatio="xMidYMid slice"/>
-          <image href="images/previews/hero-quote.webp" x="160" y="0" width="80" height="80" preserveAspectRatio="xMidYMid slice"/>
-          <image href="images/previews/hero-deck.webp" x="0" y="80" width="80" height="80" preserveAspectRatio="xMidYMid slice"/>
-          <image href="images/previews/xlsx-cashflow.webp" x="80" y="80" width="80" height="80" preserveAspectRatio="xMidYMid slice"/>
-          <image href="images/previews/hero-cv-2.webp" x="160" y="80" width="80" height="80" preserveAspectRatio="xMidYMid slice"/>
-          <image href="images/previews/xlsx-timeline.webp" x="0" y="160" width="80" height="80" preserveAspectRatio="xMidYMid slice"/>
-          <image href="images/previews/xlsx-pnl.webp" x="80" y="160" width="80" height="80" preserveAspectRatio="xMidYMid slice"/>
-          <image href="images/previews/xlsx-invoice.webp" x="160" y="160" width="80" height="80" preserveAspectRatio="xMidYMid slice"/>
-        </g>
-      </svg>
+    <!-- Flat, architectural mockups — two overlapping squares with a thin
+         soft shadow, offset behind one another, no rotation and no round
+         shapes, in place of the earlier collage/mask treatments. -->
+    <div class="hn-hero-visual" aria-hidden="true">
+      <div class="hn-mock hn-mock-back"><img src="images/previews/hero-cv-1.webp" alt=""></div>
+      <div class="hn-mock hn-mock-front"><img src="images/previews/hero-site.webp" alt=""></div>
     </div>
   </div>
 </section>
@@ -184,145 +157,91 @@
   </div>
 </div>
 
-<section class="bg-ice" id="tools">
+<section class="hn-tools" id="tools">
   <div class="container">
-    <div class="tools-top">
-      <h2 class="tools-heading"><span data-i18n="tools_h_1">באיזה כלי</span><br><span data-i18n="tools_h_2">תשתמשו היום?</span></h2>
-      <div class="tools-top-cards">
-        <div class="card" data-cat="general">
-          <div class="thumb"><img src="images/previews/hero-cv-1.webp" alt="תבנית קורות חיים" loading="lazy"></div>
-          <div class="body">
-            <div class="card-meta">
-              <span class="tag" data-i18n="nav_cv">קורות חיים</span>
-              <span class="tag tag-free" data-i18n="tag_free">חינם</span>
-            </div>
-            <h3 data-i18n="nav_cv">קורות חיים</h3>
-            <a href="products.html?type=cv" class="btn btn-teal card-cta" data-i18n="cta_create">ליצירה</a>
-          </div>
-        </div>
-        <div class="card">
-          <div class="thumb"><img src="images/previews/hero-site.webp" alt="תבנית אתר תדמית" loading="lazy"></div>
-          <div class="body">
-            <div class="card-meta">
-              <span class="tag" data-i18n="nav_sites">אתרים</span>
-              <span class="price">199 ₪ <small data-i18n="price_onetime">חד-פעמי</small></span>
-            </div>
-            <h3 data-i18n="nav_sites">אתרים</h3>
-            <a href="sites.html?browse=1" class="btn btn-teal card-cta" data-i18n="cta_create">ליצירה</a>
-          </div>
-        </div>
+    <h2 class="hn-section-h hn-center" data-i18n="tools_h">במה נתחיל לעבוד היום?</h2>
+    <div class="hn-tools-grid">
+      <div class="hn-card">
+        <h3 data-i18n="nav_cv">קורות חיים</h3>
+        <span class="hn-tag" data-i18n="tag_free">חינם</span>
+        <a href="products.html?type=cv" class="hn-btn hn-btn-flat" data-i18n="cta_create">כניסה לכלי</a>
       </div>
-    </div>
-    <div class="grid">
-      <div class="card">
-        <div class="thumb"><img src="images/previews/hero-deck.webp" alt="תבנית מצגת עסקית" loading="lazy"></div>
-        <div class="body">
-          <div class="card-meta">
-            <span class="tag" data-i18n="nav_decks">מצגות</span>
-            <span class="tag tag-free" data-i18n="tag_free">חינם</span>
-          </div>
-          <h3 data-i18n="nav_decks">מצגות</h3>
-          <a href="products.html?type=deck" class="btn btn-teal card-cta" data-i18n="cta_create">ליצירה</a>
-        </div>
+      <div class="hn-card">
+        <h3 data-i18n="nav_sites">אתר תדמית</h3>
+        <span class="hn-tag hn-tag-paid">199 ₪ <span data-i18n="price_onetime">חד-פעמי</span></span>
+        <a href="sites.html?browse=1" class="hn-btn hn-btn-flat" data-i18n="cta_create">כניסה לכלי</a>
       </div>
-      <div class="card">
-        <div class="thumb"><img src="images/previews/xlsx-cashflow.webp" alt="גיליון Excel עסקי" loading="lazy"></div>
-        <div class="body">
-          <div class="card-meta">
-            <span class="tag" data-i18n="nav_xlsx">גליונות</span>
-            <span class="tag tag-free" data-i18n="tag_free">חינם</span>
-          </div>
-          <h3 data-i18n="nav_xlsx">גליונות</h3>
-          <a href="products.html?type=xlsx" class="btn btn-teal card-cta" data-i18n="cta_create">ליצירה</a>
-        </div>
+      <div class="hn-card">
+        <h3 data-i18n="nav_decks">מצגת</h3>
+        <span class="hn-tag" data-i18n="tag_free">חינם</span>
+        <a href="products.html?type=deck" class="hn-btn hn-btn-flat" data-i18n="cta_create">כניסה לכלי</a>
       </div>
-      <div class="card">
-        <div class="thumb"><img src="images/previews/hero-quote.webp" alt="תבנית הצעת מחיר" loading="lazy"></div>
-        <div class="body">
-          <div class="card-meta">
-            <span class="tag" data-i18n="nav_quotes">הצעות מחיר</span>
-            <span class="tag tag-free" data-i18n="tag_free">חינם</span>
-          </div>
-          <h3 data-i18n="quote_card_title">הצעת מחיר לעסק שלך</h3>
-          <a href="quote-app.html" class="btn btn-teal card-cta" data-i18n="cta_create">ליצירה</a>
-        </div>
+      <div class="hn-card">
+        <h3 data-i18n="nav_xlsx">אקסל</h3>
+        <span class="hn-tag" data-i18n="tag_free">חינם</span>
+        <a href="products.html?type=xlsx" class="hn-btn hn-btn-flat" data-i18n="cta_create">כניסה לכלי</a>
+      </div>
+      <div class="hn-card">
+        <h3 data-i18n="quote_card_title">הצעת מחיר</h3>
+        <span class="hn-tag" data-i18n="tag_free">חינם</span>
+        <a href="quote-app.html" class="hn-btn hn-btn-flat" data-i18n="cta_create">כניסה לכלי</a>
       </div>
     </div>
   </div>
 </section>
 
-<section>
-  <div class="container">
-    <div class="spotlight">
-      <div>
-        <div class="spotlight-kicker" data-i18n="spotlight_kicker">המוצר המשתלם שלנו</div>
-        <h2 data-i18n="spotlight_h2">בונים לכם אתר עסקי שלם</h2>
-        <p data-i18n="spotlight_p">וויזארד שממלאים תוך דקות, תצוגה חיה שמתעדכנת תוך כדי מילוי, ובחירה מבין כמה עיצובים — ובסוף מורידים את כל קובצי האתר, מוכנים להעלאה לאוויר.</p>
-        <ul class="spotlight-list">
-          <li data-i18n="spotlight_li1">כמה עיצובים מוכנים לבחירה</li>
-          <li data-i18n="spotlight_li2">תצוגה חיה לאורך כל התהליך</li>
-          <li data-i18n="spotlight_li3">קובצי אתר מוכנים להורדה — בלי צורך בקוד</li>
-          <li data-i18n="spotlight_li4">תשלום חד-פעמי, בלי מנוי חודשי</li>
-        </ul>
-        <a href="sites.html?browse=1" class="btn btn-gold" data-i18n="spotlight_cta">בניית האתר שלי</a>
-      </div>
-      <div class="spotlight-visual">
-        <span class="tpl-chip" data-i18n="chip_local">עסק מקומי</span><span class="tpl-chip" data-i18n="chip_freelancer">פרילנסר</span><span class="tpl-chip" data-i18n="chip_catalog">קטלוג</span>
-        <div class="price-tag">199 ₪</div>
-        <div class="price-note" data-i18n="price_note">תשלום חד-פעמי — לא מנוי</div>
-      </div>
+<section class="hn-flagship">
+  <div class="container hn-flagship-split">
+    <div class="hn-flagship-text">
+      <h2 data-i18n="flagship_h2">אתר תדמית שלם לעסק שלך. בלי קוד, בלי מנוי חודשי.</h2>
+      <p data-i18n="flagship_p">עונים על מספר שאלות, מעצבים בלייב בבילדר שלנו, ומקבלים אתר תדמית מהיר ומקצועי באוויר. משלמים פעם אחת בלבד – והאתר שלכם לתמיד.</p>
+    </div>
+    <div class="hn-flagship-price-box">
+      <div class="hn-flagship-price">199 ₪</div>
+      <div class="hn-flagship-price-note" data-i18n="flagship_price_note">תשלום חד-פעמי</div>
+      <a href="sites.html?browse=1" class="hn-btn hn-btn-gold" data-i18n="spotlight_cta">בניית האתר שלי</a>
     </div>
   </div>
 </section>
 
-<section id="how">
+<section class="hn-steps" id="how">
   <div class="container">
-    <div class="section-head">
-      <div class="kicker" data-i18n="how_kicker">איך זה עובד</div>
-      <h2 data-i18n="how_h2">שלושה צעדים פשוטים</h2>
-    </div>
-    <div class="steps">
-      <div class="step">
-        <div class="num">1</div>
-        <h4 data-i18n="step1_title">בוחרים תבנית</h4>
+    <h2 class="hn-section-h hn-center" data-i18n="how_h2">שלושה צעדים פשוטים</h2>
+    <div class="hn-steps-row">
+      <div class="hn-step">
+        <div class="hn-step-num">1</div>
+        <h4 data-i18n="step1_title">בוחרים את התבנית הנכונה</h4>
         <p data-i18n="step1_desc">עוברים על התבניות ובוחרים את מה שמתאים לכם.</p>
       </div>
-      <div class="step">
-        <div class="num">2</div>
-        <h4 data-i18n="step2_title">עורכים ורואים תוצאה חיה</h4>
-        <p data-i18n="step2_desc">ממלאים פרטים ובוחרים צבע בבילדר החי.</p>
+      <div class="hn-step">
+        <div class="hn-step-num">2</div>
+        <h4 data-i18n="step2_title">עורכים ומתאימים לעסק</h4>
+        <p data-i18n="step2_desc">ממלאים את התוכן שלכם ובוחרים צבע מותג בבילדר החי.</p>
       </div>
-      <div class="step">
-        <div class="num">3</div>
-        <h4 data-i18n="step3_title">מורידים — חינם</h4>
-        <p data-i18n="step3_desc">ה-PDF האישי שלכם מוכן להורדה מיידית — חינם לגמרי.</p>
+      <div class="hn-step">
+        <div class="hn-step-num">3</div>
+        <h4 data-i18n="step3_title">הקובץ שלכם מוכן</h4>
+        <p data-i18n="step3_desc">מורידים את המסמך המוכן שלכם או מעלים את האתר לאוויר ברגע.</p>
       </div>
     </div>
   </div>
 </section>
 
-<section>
+<section class="hn-advantages">
   <div class="container">
-    <div class="section-head">
-      <div class="kicker" data-i18n="features_kicker">למה DeskKit</div>
-      <h2 data-i18n="features_h2">עיצוב שלא נראה כמו כל תבנית אחרת</h2>
-      <p data-i18n="features_p">כל תבנית בנויה מחדש בפריסה משלה — עמודות, גופנים וסידור שונים לגמרי בין תבנית לתבנית.</p>
-    </div>
-    <div class="features">
-      <div class="feature">
-        <div class="icon">✦</div>
+    <h2 class="hn-section-h hn-center" data-i18n="features_h2">עיצוב ייחודי, בשפה שלך</h2>
+    <div class="hn-advantages-row">
+      <div class="hn-adv-card">
         <h4 data-i18n="feat1_title">עיצוב עכשווי</h4>
         <p data-i18n="feat1_desc">עמודות צד, טיפוגרפיה גדולה, תגיות צבעוניות.</p>
       </div>
-      <div class="feature">
-        <div class="icon">⚡</div>
-        <h4 data-i18n="feat2_title">חינם לגמרי</h4>
-        <p data-i18n="feat2_desc">עורכים, רואים תוצאה חיה ומורידים PDF.</p>
+      <div class="hn-adv-card">
+        <h4 data-i18n="feat2_title">כלים פתוחים בחינם</h4>
+        <p data-i18n="feat2_desc">עורכים את קורות החיים, המצגות או הצעות המחיר ומורידים PDF ללא עלות.</p>
       </div>
-      <div class="feature">
-        <div class="icon">✎</div>
+      <div class="hn-adv-card">
         <h4 data-i18n="feat3_title">הצבע שלכם</h4>
-        <p data-i18n="feat3_desc">בוחרים צבע ראשי אחד, והבילדר מתאים סביבו את כל העיצוב.</p>
+        <p data-i18n="feat3_desc">בוחרים צבע ראשי אחד, והבילדר מתאים סביבו את כל המסמך או האתר.</p>
       </div>
     </div>
   </div>
@@ -377,7 +296,7 @@
 <script src="js/main.js"></script>
 <script src="js/widgets.js?v=8"></script>
 <script src="js/effects.js"></script>
-<script src="js/i18n.js?v=2"></script>
+<script src="js/i18n.js?v=3"></script>
 <script>
   // account-settings.js redirects here with this param right after a
   // self-service account deletion — a plain redirect with no confirmation
