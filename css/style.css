@@ -125,8 +125,12 @@ body.has-sites-rail header.site {
 }
 .brand {
   position: absolute; top: 50%; inset-inline-start: 24px; transform: translateY(-50%);
-  font-size: 23px; font-weight: 800; color: var(--teal-dark); display: flex; align-items: center; gap: 11px; letter-spacing: -.01em;
+  font-size: 23px; font-weight: 800; color: #1A1A1A; display: flex; align-items: center; gap: 11px; letter-spacing: -.01em;
 }
+/* Site-wide wordmark: the old teal-gold square icon is retired in favor
+   of a plain text logo with a small ✦ mark — same everywhere the brand
+   or a link back to the homepage appears, not just the homepage itself. */
+.brand-text::before { content: "✦"; font-size: 16px; margin-inline-end: 8px; }
 .nav-end-group {
   position: absolute; top: 50%; inset-inline-end: 24px; transform: translateY(-50%);
   display: flex; align-items: center; gap: 14px;
@@ -135,12 +139,7 @@ body.has-sites-rail header.site {
   .nav { justify-content: space-between; padding-inline-end: 24px; }
   .nav-end-group { position: static; transform: none; }
 }
-.brand-badge {
-  width: 36px; height: 36px; border-radius: 11px; flex: none;
-  background: linear-gradient(145deg, var(--teal), var(--gold));
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 8px 16px rgba(31, 92, 78, .3);
-}
+.brand-badge { display: none; }
 .brand .brand-mark { width: 20px; height: 20px; flex: none; }
 .brand .brand-mark .bm-face, .brand .brand-mark .bm-fold { fill: #fff; }
 .nav-links { display: flex; align-items: center; gap: 28px; font-size: 15px; font-weight: 500; }
@@ -409,9 +408,6 @@ body.home-neo .cookie-notice .btn-teal { background: var(--hn-action); border-ra
 
 /* ---------- Navbar + logo ---------- */
 body.home-neo .nav { max-width: 1400px; padding-inline: 32px; }
-body.home-neo .brand-badge { display: none; }
-body.home-neo .brand-text { color: var(--hn-ink); font-weight: 800; font-size: 19px; }
-body.home-neo .brand-text::before { content: "✦"; margin-inline-end: 8px; color: var(--hn-ink); font-size: 15px; }
 body.home-neo .nav-links { gap: 40px; }
 body.home-neo .nav-links a {
   color: var(--hn-grey); font-weight: 500; border-bottom: none; padding: 0;
@@ -422,13 +418,18 @@ body.home-neo .nav-links a.active, body.home-neo .nav-links a:hover { color: var
 /* ---------- Shared section rhythm + primitives ---------- */
 body.home-neo .hn-hero, body.home-neo .hn-tools, body.home-neo .hn-flagship,
 body.home-neo .hn-steps, body.home-neo .hn-advantages { padding-block: 120px; }
+body.home-neo .hn-tools { position: relative; }
 body.home-neo .hn-section-h { font-size: 34px; font-weight: 700; margin: 0 0 64px; letter-spacing: -.01em; }
 body.home-neo .hn-center { text-align: center; }
 body.home-neo .hn-btn {
   display: inline-block; padding: 14px 28px; border-radius: var(--hn-radius);
   font-weight: 600; font-size: 15px; cursor: pointer; border: 1.5px solid transparent;
-  transition: opacity .15s ease, background .15s ease;
+  transition: opacity .15s ease, background .15s ease, transform .2s ease;
 }
+/* Hero CTAs specifically grow slightly on hover, on top of their own
+   color change — the card buttons (.hn-btn-flat) have their own
+   different hover reaction (color shift + shift sideways) already. */
+body.home-neo .hn-cta-row .hn-btn:hover { transform: scale(1.06); }
 body.home-neo .hn-btn-primary { background: var(--hn-action); color: var(--hn-bg); }
 body.home-neo .hn-btn-primary:hover { opacity: .82; }
 body.home-neo .hn-btn-secondary { background: transparent; color: var(--hn-ink); border-color: var(--hn-ink); }
@@ -451,7 +452,9 @@ body.home-neo .hn-mock {
   position: absolute; width: 340px; height: 240px; border-radius: var(--hn-radius);
   overflow: hidden; box-shadow: 0 12px 32px rgba(0,0,0,.08); border: 1px solid var(--hn-border);
 }
-body.home-neo .hn-mock img { width: 100%; height: 100%; object-fit: cover; display: block; }
+body.home-neo .hn-mock img { width: 100%; height: 100%; object-fit: cover; display: block; transition: opacity .4s ease, transform .35s ease; }
+body.home-neo .hn-mock:hover img { transform: scale(1.07); }
+@media (prefers-reduced-motion: reduce) { body.home-neo .hn-mock img { transition: opacity .01s linear, transform .01s linear; } }
 body.home-neo .hn-mock-back { top: 8%; right: 4%; }
 body.home-neo .hn-mock-front { bottom: 4%; right: 22%; }
 @media (max-width: 900px) {
@@ -464,15 +467,52 @@ body.home-neo .hn-mock-front { bottom: 4%; right: 22%; }
 @media (max-width: 560px) { body.home-neo .hn-hero-visual { display: none; } }
 
 /* ---------- Marquee (restyled to fit, not removed) ---------- */
-body.home-neo .marquee { background: var(--hn-bg); border-top: 1px solid var(--hn-border); border-bottom: 1px solid var(--hn-border); }
+/* A moving light-grey wash instead of flat white — the whole gradient
+   stays within a few points of --hn-bg, so dark text is always at full
+   contrast regardless of the animation's current phase. */
+body.home-neo .marquee {
+  background: linear-gradient(120deg, #F2F2F2 0%, #FAFAFA 25%, #ECECEC 50%, #FAFAFA 75%, #F2F2F2 100%);
+  background-size: 240% 240%;
+  animation: hnMarqueeWave 16s ease-in-out infinite alternate;
+  border-top: 1px solid var(--hn-border); border-bottom: 1px solid var(--hn-border);
+}
+@keyframes hnMarqueeWave { 0% { background-position: 0% 40%; } 100% { background-position: 100% 60%; } }
+@media (prefers-reduced-motion: reduce) { body.home-neo .marquee { animation: none; } }
 body.home-neo .marquee-item { color: var(--hn-grey); }
 body.home-neo .marquee-item .dot { background: var(--hn-ink); }
 
 /* ---------- Tools grid ---------- */
 body.home-neo .hn-tools-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
 body.home-neo .hn-card {
+  position: relative; overflow: hidden; isolation: isolate;
   background: var(--hn-bg); border: 1px solid var(--hn-border); border-radius: var(--hn-radius);
   padding: 32px 28px; display: flex; flex-direction: column; gap: 16px;
+}
+body.home-neo .hn-card > * { position: relative; z-index: 2; }
+/* On hover, a real product mockup fades in behind the card's own text —
+   one per tool, via nth-child since the grid's order is fixed — with a
+   near-opaque white scrim layered between the image and the text
+   (z-index 1, above the image at 0, below the content at 2) so the
+   photo reads as a subtle textured backdrop, never competing with
+   legibility. */
+body.home-neo .hn-card::before {
+  content: ""; position: absolute; inset: 0; z-index: 0;
+  background-size: cover; background-position: center;
+  opacity: 0; transition: opacity .4s ease;
+}
+body.home-neo .hn-card::after {
+  content: ""; position: absolute; inset: 0; z-index: 1;
+  background: linear-gradient(175deg, rgba(255,255,255,.94) 0%, rgba(255,255,255,.82) 45%, rgba(255,255,255,.94) 100%);
+  opacity: 0; transition: opacity .4s ease;
+}
+body.home-neo .hn-card:hover::before, body.home-neo .hn-card:hover::after { opacity: 1; }
+body.home-neo .hn-tools-grid .hn-card:nth-child(1)::before { background-image: url("../images/previews/hero-cv-1.webp"); }
+body.home-neo .hn-tools-grid .hn-card:nth-child(2)::before { background-image: url("../images/previews/hero-site.webp"); }
+body.home-neo .hn-tools-grid .hn-card:nth-child(3)::before { background-image: url("../images/previews/hero-deck.webp"); }
+body.home-neo .hn-tools-grid .hn-card:nth-child(4)::before { background-image: url("../images/previews/xlsx-cashflow.webp"); }
+body.home-neo .hn-tools-grid .hn-card:nth-child(5)::before { background-image: url("../images/previews/hero-quote.webp"); }
+@media (prefers-reduced-motion: reduce) {
+  body.home-neo .hn-card::before, body.home-neo .hn-card::after { transition: none; }
 }
 body.home-neo .hn-card h3 { margin: 0; font-size: 19px; font-weight: 700; }
 body.home-neo .hn-tag {

@@ -38,7 +38,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&family=Assistant:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=40">
+<link rel="stylesheet" href="css/style.css?v=42">
 </head>
 <body class="home-neo">
 <script>
@@ -101,11 +101,30 @@
          soft shadow, offset behind one another, no rotation and no round
          shapes, in place of the earlier collage/mask treatments. -->
     <div class="hn-hero-visual" aria-hidden="true">
-      <div class="hn-mock hn-mock-back"><img src="images/previews/hero-cv-1.webp" alt=""></div>
-      <div class="hn-mock hn-mock-front"><img src="images/previews/hero-site.webp" alt=""></div>
+      <div class="hn-mock hn-mock-back" data-cycle="images/previews/hero-cv-1.webp,images/previews/hero-cv-2.webp,images/previews/xlsx-cashflow.webp"><img src="images/previews/hero-cv-1.webp" alt=""></div>
+      <div class="hn-mock hn-mock-front" data-cycle="images/previews/hero-site.webp,images/previews/hero-deck.webp,images/previews/hero-quote.webp"><img src="images/previews/hero-site.webp" alt=""></div>
     </div>
   </div>
 </section>
+<script>
+  // Crossfades each hero mockup through its own small image set every
+  // 2s — independent timers per mock, so the two boxes don't visibly
+  // change in lockstep. Skipped entirely under prefers-reduced-motion.
+  document.addEventListener("DOMContentLoaded", () => {
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    document.querySelectorAll(".hn-mock[data-cycle]").forEach((mock) => {
+      const images = mock.dataset.cycle.split(",");
+      const img = mock.querySelector("img");
+      if (!img || images.length < 2) return;
+      let i = 0;
+      setInterval(() => {
+        i = (i + 1) % images.length;
+        img.style.opacity = "0";
+        setTimeout(() => { img.src = images[i]; img.style.opacity = "1"; }, 400);
+      }, 2000);
+    });
+  });
+</script>
 
 <div class="marquee" aria-hidden="true">
   <div class="marquee-track">
