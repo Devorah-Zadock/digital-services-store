@@ -35,6 +35,13 @@ function myPanelEscapeHtml(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+/* Same globe shape as myPanelSiteIcon, just sized to match the trash
+   icon it sits beside — replaces the old 🌐 emoji, which was the one
+   colorful icon left in an otherwise uniform-grey rail. */
+function myPanelDomainIcon() {
+  return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.3 2.5 3.6 5.5 3.6 9s-1.3 6.5-3.6 9c-2.3-2.5-3.6-5.5-3.6-9s1.3-6.5 3.6-9z"/></svg>';
+}
+
 function myPanelTrashIcon() {
   return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/><path d="M10 11v6M14 11v6"/></svg>';
 }
@@ -137,7 +144,7 @@ function myPanelRowHtml(opts) {
   // Only offered once a site is actually live (published_url set) —
   // connecting a domain to nothing wouldn't make sense before that.
   const domainBtn = opts.showDomainBtn
-    ? `<button type="button" class="my-content-domain-btn" data-domain-guide title="חיבור דומיין משלכם" aria-label="חיבור דומיין משלכם">🌐</button>`
+    ? `<button type="button" class="my-content-domain-btn" data-domain-guide title="חיבור דומיין משלכם" aria-label="חיבור דומיין משלכם">${myPanelDomainIcon()}</button>`
     : "";
   const activeClass = opts.active ? " active" : "";
   const thumbClass = opts.kind === "cv" ? " my-panel-card-thumb-cv" : opts.kind === "quote" ? " my-panel-card-thumb-quote" : opts.kind === "schedule" ? " my-panel-card-thumb-schedule" : "";
