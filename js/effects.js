@@ -3,7 +3,13 @@
 document.addEventListener("DOMContentLoaded", () => {
   // Deliberately excludes .card: catalog grids can have many cards below the
   // fold, and product listings must never depend on a scroll event firing.
-  const revealTargets = document.querySelectorAll(".feature, .step, .banner, .section-head");
+  // The .hn-* selectors are the homepage's own neo-minimal sections —
+  // small enough grids (5 tool cards, 3 steps, 3 advantages) that the
+  // same concern doesn't apply, and body.home-neo gives them their own
+  // heavier reveal + stagger timing in css/style.css.
+  const revealTargets = document.querySelectorAll(
+    ".feature, .step, .banner, .section-head, .hn-section-h, .hn-card, .hn-adv-card, .hn-step, .hn-flagship-text, .hn-flagship-price-box"
+  );
   if ("IntersectionObserver" in window && revealTargets.length) {
     revealTargets.forEach((el) => el.classList.add("reveal"));
     const io = new IntersectionObserver((entries) => {
