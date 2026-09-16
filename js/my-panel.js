@@ -134,6 +134,11 @@ function myPanelRowHtml(opts) {
   const del = opts.deleteAttr
     ? `<button type="button" class="my-content-delete-btn" data-panel-delete="${opts.deleteAttr}" title="מחיקה" aria-label="מחיקה">${myPanelTrashIcon()}</button>`
     : "";
+  // Only offered once a site is actually live (published_url set) —
+  // connecting a domain to nothing wouldn't make sense before that.
+  const domainBtn = opts.showDomainBtn
+    ? `<button type="button" class="my-content-domain-btn" data-domain-guide title="חיבור דומיין משלכם" aria-label="חיבור דומיין משלכם">🌐</button>`
+    : "";
   const activeClass = opts.active ? " active" : "";
   const thumbClass = opts.kind === "cv" ? " my-panel-card-thumb-cv" : opts.kind === "quote" ? " my-panel-card-thumb-quote" : opts.kind === "schedule" ? " my-panel-card-thumb-schedule" : "";
   const icon = opts.kind === "cv" ? myPanelCvIcon() : opts.kind === "quote" ? myPanelQuoteIcon() : opts.kind === "schedule" ? myPanelScheduleIcon() : myPanelSiteIcon();
@@ -144,7 +149,7 @@ function myPanelRowHtml(opts) {
         <span class="my-panel-card-name">${myPanelEscapeHtml(opts.name)}</span>
         ${opts.sub ? `<span class="my-panel-card-tpl">${myPanelEscapeHtml(opts.sub)}</span>` : ""}
       </span>
-    </a>${del}
+    </a>${domainBtn}${del}
   </div>`;
 }
 
@@ -178,7 +183,7 @@ async function loadMyPanel(user) {
   const ctx = myPanelCurrentContext();
 
   const { data: sites } = await supabaseClient
-    .from("site_projects").select("id, template, data")
+    .from("site_projects").select("id, template, data, published_url")
     .eq("user_id", user.id).order("created_at", { ascending: false });
 
   // One row per template is the data model's own guarantee (each save
@@ -202,6 +207,7 @@ async function loadMyPanel(user) {
         sub: MY_PANEL_TEMPLATE_LABELS[s.template] || s.template,
         deleteAttr: "site:" + s.id,
         active: !!(ctx && ctx.kind === "site" && ctx.template === s.template),
+        showDomainBtn: !!s.published_url,
       });
     }).join("");
   } else {
@@ -387,11 +393,18 @@ function mountMyPanel() {
   });
 
   aside.addEventListener("click", (e) => {
-    const btn = e.target.closest("[data-panel-delete]");
-    if (!btn) return;
-    e.preventDefault();
-    const [kind, id] = btn.dataset.panelDelete.split(":");
-    deleteMyPanelItem(kind, id, btn);
+    const delBtn = e.target.closest("[data-panel-delete]");
+    if (delBtn) {
+      e.preventDefault();
+      const [kind, id] = delBtn.dataset.panelDelete.split(":");
+      deleteMyPanelItem(kind, id, delBtn);
+      return;
+    }
+    const domainBtn = e.target.closest("[data-domain-guide]");
+    if (domainBtn) {
+      e.preventDefault();
+      openDomainGuide();
+    }
   });
 
   aside.querySelector("#my-panel-account-toggle").addEventListener("click", (e) => {

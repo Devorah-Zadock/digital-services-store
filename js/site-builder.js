@@ -401,7 +401,9 @@ async function publishSite() {
       <a href="${data.url}" target="_blank" rel="noopener" style="display:block; font-size:16px; font-weight:700; color:#2B6CB0; word-break:break-all;">${data.url}</a>
       ${data.claimUrl ? `<a href="${data.claimUrl}" target="_blank" rel="noopener" class="btn btn-teal" style="width:100%; box-sizing:border-box; text-align:center; display:block; margin-top:12px;">תפיסת האתר בחשבון Netlify שלכם (חינם)</a>
       <p style="font-size:12px; color:var(--grey); margin:8px 0 0;">חשוב: בלי הצעד הזה האתר יישאר תחת החשבון שלנו — לוחצים כדי שהאתר יהיה שלכם לצמיתות.</p>` : ""}
+      <button type="button" id="publish-domain-guide-btn" class="btn-mini" style="width:100%; margin-top:10px;">🌐 רוצים גם דומיין משלכם? לחצו כאן</button>
     `;
+    document.getElementById("publish-domain-guide-btn").addEventListener("click", openDomainGuide);
   } catch (err) {
     note.textContent = "הפרסום נכשל. נסו שוב בעוד רגע.";
   } finally {
