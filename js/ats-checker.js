@@ -18,7 +18,7 @@
    built on demand like domain-guide.js, so pages that never open it pay
    nothing for it. */
 
-const ATS_UPGRADE_MESSAGE = "הגעת למכסת הניסיונות החינמיים ב-AI ובסורק המשרות. רוצה להמשיך להשתמש בהם ללא הגבלה, וגם להסיר אוטומטית את שורת הקרדיט מה-PDF שלך? שדרג לגרסת Pro בתשלום חד-פעמי!";
+const AI_UPGRADE_MESSAGE = "הגעת למכסת הניסיונות החינמיים ב-AI ובסורק המשרות. רוצה להמשיך להשתמש בהם ללא הגבלה, וגם להסיר אוטומטית את שורת הקרדיט מה-PDF שלך? שדרג לגרסת Pro בתשלום חד-פעמי!";
 
 let atsIsProCache = null;
 
@@ -71,7 +71,7 @@ function atsShowUpgradeCard(isDailyProLimit) {
   } else {
     body.innerHTML = `
       <div class="ats-upgrade-card">
-        <p>${ATS_UPGRADE_MESSAGE}</p>
+        <p>${AI_UPGRADE_MESSAGE}</p>
         <a href="#" class="btn btn-gold ats-upgrade-btn">שדרוג ל-Pro</a>
       </div>
     `;

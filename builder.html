@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700&family=Rubik:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@400;500;700&family=Noto+Serif+Hebrew:wght@400;500;600;700&family=David+Libre:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=35">
-<link rel="stylesheet" href="css/builder.css?v=4">
+<link rel="stylesheet" href="css/builder.css?v=5">
 </head>
 <body>
 <script>
@@ -125,7 +125,13 @@
     <div class="field"><label for="f-name" data-label="name">שם מלא</label><input id="f-name" type="text"></div>
     <div class="field"><label for="f-title" data-label="title">תפקיד / כותרת</label><input id="f-title" type="text"></div>
     <div class="field"><label for="f-contact" data-label="contact">פרטי קשר (מופרד ב-|)</label><input id="f-contact" type="text"></div>
-    <div class="field"><label for="f-summary" data-label="summary">תקציר מקצועי</label><textarea id="f-summary" rows="3"></textarea></div>
+    <div class="field">
+      <div class="field-label-row">
+        <label for="f-summary" data-label="summary">תקציר מקצועי</label>
+        <button type="button" class="btn-mini ai-improve-btn" id="ai-improve-summary">✨ שפר עם AI</button>
+      </div>
+      <textarea id="f-summary" rows="3"></textarea>
+    </div>
 
     <hr class="sep">
     <div class="jobs-head">
@@ -209,7 +215,8 @@
 <script src="js/require-auth.js"></script>
 <script src="js/usage-log.js?v=1"></script>
 <script src="js/builder-cloud-save.js?v=3"></script>
-<script src="js/ats-checker.js?v=2"></script>
+<script src="js/ats-checker.js?v=3"></script>
+<script src="js/ai-writer.js?v=1"></script>
 <script src="js/main.js"></script>
 <script src="js/widgets.js?v=8"></script>
 <script src="js/effects.js"></script>
