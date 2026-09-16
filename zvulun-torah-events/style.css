@@ -132,10 +132,9 @@ a { color: inherit; }
 /* Stats */
 .stats { background: var(--navy); border-top: 1px solid rgba(255,255,255,.06); border-bottom: 1px solid rgba(255,255,255,.06); }
 .stats-grid {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; padding: 34px 24px; text-align: center;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; padding: 34px 24px; text-align: center;
 }
-.stat strong { display: block; font-size: 22px; color: var(--gold); margin-bottom: 4px; }
-.stat span { color: var(--muted); font-size: 13.5px; }
+.stat span { color: var(--gold-light); font-weight: 700; font-size: 15px; }
 
 /* Sections */
 .section { padding: 84px 0; }
