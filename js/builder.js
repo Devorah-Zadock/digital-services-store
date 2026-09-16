@@ -25,7 +25,7 @@ const FORM_LABELS = {
     font: "Font", photo: "Profile photo (optional)", uploadPhoto: "Upload photo", removePhoto: "Remove photo", textColor: "Text color" },
 };
 
-let state = { slug: null, lang: "he", fontId: "assistant", content: null };
+let state = { slug: null, lang: "he", fontId: "assistant", content: null, isPro: false };
 
 function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
 
@@ -57,7 +57,7 @@ function renderPreview() {
   const palette = derivePalette(document.getElementById("color-picker").value);
   const font = (FONT_OPTIONS.find((f) => f.id === state.fontId) || FONT_OPTIONS[0]).css;
   const textColor = document.getElementById("text-color-picker").value.replace("#", "");
-  const html = renderCVHtml({ layout: tpl.layout, font, palette, content: state.content, lang: state.lang, textColor });
+  const html = renderCVHtml({ layout: tpl.layout, font, palette, content: state.content, lang: state.lang, textColor, isPro: state.isPro });
   document.getElementById("preview-doc").innerHTML = html;
   fitPreviewToContainer();
 }

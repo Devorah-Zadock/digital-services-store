@@ -237,12 +237,17 @@ function renderClassicMono({ font, palette, content, lang, textColor }) {
   </div>`;
 }
 
-function renderCVHtml({ layout, font, palette, content, lang, textColor }) {
+function renderCVHtml({ layout, font, palette, content, lang, textColor, isPro }) {
   const l = lang === "en" ? "en" : "he";
   const args = { font, palette, content, lang: l, textColor };
   let html;
   if (layout === "sidebar") html = renderSidebar(args);
   else if (layout === "bold") html = renderBold(args);
   else html = renderClassicMono(args);
-  return `<style>.cv-doc{--cv-font:${font};}</style>` + html;
+  // Print-only credit line, real selectable text (not an image, not a
+  // link) so ATS parsers read past it cleanly — hidden on screen, shown
+  // only in the exported PDF via @media print in builder.css. Skipped
+  // entirely for Pro accounts (customer_profiles.is_pro).
+  const credit = isPro ? "" : `<div class="cv-pdf-credit">Created with DeskKit.co.il</div>`;
+  return `<style>.cv-doc{--cv-font:${font};}</style>` + html + credit;
 }

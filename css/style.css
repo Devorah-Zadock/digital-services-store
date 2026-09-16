@@ -934,3 +934,6 @@ body.cookie-notice-active .fab { display: none; }
 .ats-keyword-chip { font-size: 12.5px; font-weight: 700; color: #963029; background: #FBEAEA; border-radius: 20px; padding: 5px 13px; }
 .ats-keywords-empty { font-size: 13px; color: var(--grey); }
 .ats-tips { margin: 0; padding-inline-start: 20px; font-size: 13px; color: var(--dark); line-height: 1.9; }
+.ats-upgrade-card { background: var(--ice); border-radius: 12px; padding: 20px; text-align: center; }
+.ats-upgrade-card p { font-size: 13.5px; color: var(--dark); line-height: 1.8; margin: 0 0 16px; }
+.ats-upgrade-btn { display: block; width: 100%; box-sizing: border-box; text-align: center; }

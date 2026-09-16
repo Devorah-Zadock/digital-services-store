@@ -100,6 +100,8 @@
   .lang-big { flex: 1; justify-content: center; }
 }
 
+.cv-pdf-credit { display: none; }
+
 @media print {
   .no-print { display: none !important; }
   body, .builder-wrap, .container, .builder-preview, .preview-sticky { all: unset; display: block; }
@@ -107,4 +109,8 @@
   #preview-doc .cv-doc { box-shadow: none; margin: 0; width: 100% !important; transform: none !important; }
   #quote-preview .quote-doc { box-shadow: none; margin: 0; width: 100% !important; }
   @page { size: A4; margin: 0; }
+  .cv-pdf-credit {
+    display: block; position: fixed; bottom: 12px; inset-inline-end: 20px;
+    font-family: Arial, sans-serif; font-size: 8.5pt; color: #A0A0A0;
+  }
 }

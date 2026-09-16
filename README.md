@@ -99,9 +99,19 @@ python3 -m http.server 8000
 
 כל בדיקה היא קריאה אמיתית ל-OpenAI, שעולה כסף — לכן יש הגבלה של **3 בדיקות חינמיות לכל משתמש רשום**, שנאכפת בצד השרת (ב-Edge Function `ats-check`, מול טבלת `ai_usage`) ולא בקוד הלקוח, כדי שאי אפשר יהיה לעקוף אותה. אותה טבלה בנויה כללית (`user_id, tool, count`) כך שאפשר יהיה להוסיף עליה כלי AI נוספים בעתיד בלי מיגרציה חדשה.
 
+כל קורות חיים שמורדים כ-PDF (מכל משתמש שאינו Pro) מקבלים שורת קרדיט עדינה בפינה התחתונה — "Created with DeskKit.co.il", טקסט חי בגודל 8.5pt באפור בהיר (#A0A0A0), בלי קישור — מוטמעת ישירות ב-HTML שמיוצא ל-PDF (`js/cv-render.js`), מוצגת רק בהדפסה (`@media print` ב-`css/builder.css`) כדי שלא תפריע בתצוגה הרגילה בבילדר.
+
+### מודל Pro (עדיין ללא תשלום אמיתי מחובר)
+
+`customer_profiles.is_pro` הוא שדה בוליאני, `false` כברירת מחדל לכולם. כרגע אין עדיין תשלום אמיתי — הכפתור "שדרוג ל-Pro" שמופיע כשמישהו מגיע למכסה מוביל ל-`#` בלבד. כדי להפוך משתמש ל-Pro ידנית (למשל לבדיקה, או לפני שיהיה תשלום אמיתי): `update customer_profiles set is_pro = true where email = '...'` ב-SQL Editor.
+
+כשמשתמש הוא Pro:
+- שורת הקרדיט לא מודפסת על ה-PDF בכלל.
+- מכסת ה-3-בדיקות-חינם לכל החיים לא חלה עליו יותר — במקומה יש **מכסת שימוש הוגן של 50 בדיקות ביום** (טבלה נפרדת `ai_usage_daily`, מתאפסת כל יום), כדי להישאר מוגנים מעלויות גם אם חשבון ייפרץ או ישמש סקריפט.
+
 ### הגדרה
 
-1. מריצים את `supabase/sql/ai_usage.sql` ב-Supabase Dashboard → SQL Editor.
+1. מריצים את `supabase/sql/ai_usage.sql`, `supabase/sql/ai_usage_daily.sql` ו-`supabase/sql/customer_profiles_pro.sql` ב-Supabase Dashboard → SQL Editor.
 2. יוצרים מפתח API ב-[platform.openai.com/api-keys](https://platform.openai.com/api-keys).
 3. שומרים אותו כ-secret בפרויקט ה-Supabase: `OPENAI_API_KEY` (Dashboard → Edge Functions → Secrets, או `supabase secrets set OPENAI_API_KEY=...`).
 4. פורסים את הפונקציה: `supabase functions deploy ats-check` (או מדביקים את הקוד ידנית ב-Dashboard → Edge Functions → New Function, בדיוק כמו עם `redeem-license` ו-`publish-site`).

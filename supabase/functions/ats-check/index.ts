@@ -2,15 +2,20 @@
 // builder and returns an AI match score (1-100), the keywords from the
 // posting that are missing from the CV, and 2-3 concrete phrasing tips —
 // the "ATS Checker" feature. Every call is a real OpenAI request, which
-// costs real money, so this is capped at ATTEMPT_LIMIT free checks per
-// signed-in user (tracked in ai_usage — see supabase/sql/ai_usage.sql)
-// rather than left unlimited.
+// costs real money, so a free-tier signed-in user gets FREE_ATTEMPT_LIMIT
+// checks total (tracked in ai_usage — see supabase/sql/ai_usage.sql). A
+// Pro user (customer_profiles.is_pro — see
+// supabase/sql/customer_profiles_pro.sql) has that lifetime cap lifted
+// entirely, but still gets a much larger PRO_DAILY_LIMIT per day (tracked
+// separately in ai_usage_daily — see supabase/sql/ai_usage_daily.sql) as
+// a fair-use ceiling, since "unlimited" is still a real cost risk from a
+// compromised account or a script.
 //
 // Gated by real auth, same as admin-stats: the caller's own Supabase
 // session token goes in Authorization, verified server-side via
 // admin.auth.getUser(token) — never a client-supplied user id, since the
-// entire point of the cap is that nothing client-side can be trusted to
-// enforce or reset it.
+// entire point of either cap is that nothing client-side can be trusted
+// to enforce or reset it.
 //
 // Deploy: `supabase functions deploy ats-check` (or paste into Supabase
 // Dashboard → Edge Functions → New Function). Needs these secrets set
@@ -25,7 +30,8 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
 const TOOL = "ats-check";
-const ATTEMPT_LIMIT = 3;
+const FREE_ATTEMPT_LIMIT = 3;
+const PRO_DAILY_LIMIT = 50;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -58,17 +64,26 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: "missing jobDescription or cvText" }, 400);
     }
 
-    const { data: usageRow, error: usageErr } = await admin
-      .from("ai_usage")
-      .select("count")
-      .eq("user_id", userId)
-      .eq("tool", TOOL)
+    const { data: profile, error: profileErr } = await admin
+      .from("customer_profiles")
+      .select("is_pro")
+      .eq("id", userId)
       .maybeSingle();
+    if (profileErr) return jsonResponse({ error: profileErr.message }, 500);
+    const isPro = !!(profile && profile.is_pro);
+
+    const today = new Date().toISOString().slice(0, 10);
+    const usageTable = isPro ? "ai_usage_daily" : "ai_usage";
+    const limit = isPro ? PRO_DAILY_LIMIT : FREE_ATTEMPT_LIMIT;
+
+    let usageQuery = admin.from(usageTable).select("count").eq("user_id", userId).eq("tool", TOOL);
+    if (isPro) usageQuery = usageQuery.eq("day", today);
+    const { data: usageRow, error: usageErr } = await usageQuery.maybeSingle();
     if (usageErr) return jsonResponse({ error: usageErr.message }, 500);
 
     const currentCount = usageRow ? usageRow.count : 0;
-    if (currentCount >= ATTEMPT_LIMIT) {
-      return jsonResponse({ limitReached: true, count: currentCount, limit: ATTEMPT_LIMIT });
+    if (currentCount >= limit) {
+      return jsonResponse({ limitReached: true, isPro, count: currentCount, limit });
     }
 
     const responseLang = lang === "en" ? "English" : "Hebrew";
@@ -109,17 +124,19 @@ Deno.serve(async (req: Request) => {
     }
 
     const newCount = currentCount + 1;
-    const { error: upsertErr } = await admin
-      .from("ai_usage")
-      .upsert({ user_id: userId, tool: TOOL, count: newCount, updated_at: new Date().toISOString() }, { onConflict: "user_id,tool" });
+    const upsertRow: Record<string, unknown> = { user_id: userId, tool: TOOL, count: newCount, updated_at: new Date().toISOString() };
+    const onConflict = isPro ? "user_id,tool,day" : "user_id,tool";
+    if (isPro) upsertRow.day = today;
+    const { error: upsertErr } = await admin.from(usageTable).upsert(upsertRow, { onConflict });
     if (upsertErr) return jsonResponse({ error: upsertErr.message }, 500);
 
     return jsonResponse({
       score: parsed.score ?? null,
       missingKeywords: parsed.missingKeywords || [],
       tips: parsed.tips || [],
+      isPro,
       count: newCount,
-      limit: ATTEMPT_LIMIT,
+      limit,
     });
   } catch (err) {
     return jsonResponse({ error: String(err) }, 500);
