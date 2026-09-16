@@ -857,6 +857,23 @@ footer.site { background: linear-gradient(180deg, var(--teal-dark), #102921); co
 .cookie-notice button { padding: 8px 20px; font-size: 13px; flex: none; }
 body.cookie-notice-active .fab { display: none; }
 
+.upsell-banner {
+  position: fixed; inset-inline: 0; bottom: 0; z-index: 245;
+  background: linear-gradient(120deg, var(--teal-dark), var(--teal));
+  color: var(--white);
+  display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap;
+  padding: 16px 56px; box-shadow: 0 -10px 30px rgba(0,0,0,.2);
+}
+.upsell-banner-icon { font-size: 20px; flex-shrink: 0; }
+.upsell-banner p { margin: 0; font-size: 13.5px; line-height: 1.6; max-width: 620px; }
+.upsell-banner-cta { flex-shrink: 0; white-space: nowrap; }
+.upsell-banner-close {
+  position: absolute; top: 10px; inset-inline-end: 14px; background: rgba(255,255,255,.15);
+  border: none; color: var(--white); width: 26px; height: 26px; border-radius: 50%; cursor: pointer; font-size: 12px;
+}
+.upsell-banner-close:hover { background: rgba(255,255,255,.28); }
+@media (max-width: 640px) { .upsell-banner { padding: 40px 16px 16px; } }
+
 @media (max-width: 480px) {
   .chat-panel { right: 12px; bottom: 84px; width: calc(100vw - 24px); }
   .fab-chat { right: 14px; }

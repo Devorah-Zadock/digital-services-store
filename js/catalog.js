@@ -201,6 +201,9 @@ function handleGatedDownload(p) {
     document.body.appendChild(a);
     a.click();
     a.remove();
+    if (productType(p) === "xlsx" && window.showUpsellBanner) {
+      showUpsellBanner("רוצה להיראות אפילו יותר מקצועי מול הלקוחות שלך? מעבר לגיליונות הניהול הפנימיים, הגיע הזמן שיהיה לעסק שלך גם אתר תדמית יפהפה.");
+    }
   });
 }
 
