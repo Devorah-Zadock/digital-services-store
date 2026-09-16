@@ -25,6 +25,15 @@ body {
 
 img { max-width: 100%; display: block; }
 
+/* Icons (inline SVG sprite, referenced via <use>) */
+.icon {
+  width: 1.1em; height: 1.1em; flex-shrink: 0;
+  fill: none; stroke: currentColor; stroke-width: 1.7;
+  stroke-linecap: round; stroke-linejoin: round;
+  vertical-align: -0.15em;
+}
+.btn .icon { width: 18px; height: 18px; }
+
 .wrap { max-width: var(--max); margin: 0 auto; padding: 0 24px; }
 
 a { color: inherit; }
@@ -74,7 +83,7 @@ a { color: inherit; }
   padding: 12px 24px;
 }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-.brand-icon { color: var(--gold); font-size: 26px; }
+.brand-icon { color: var(--gold); width: 26px; height: 26px; stroke-width: 1.4; }
 .brand-text { font-weight: 800; font-size: 16px; line-height: 1.25; }
 .brand-text small { font-weight: 400; color: var(--muted); font-size: 12px; }
 .main-nav { display: flex; gap: 22px; margin-inline-start: auto; }
@@ -152,9 +161,9 @@ a { color: inherit; }
   transition: transform .15s ease, border-color .15s ease;
 }
 .card:hover { transform: translateY(-4px); border-color: rgba(212,175,55,.5); }
-.card-ico { font-size: 30px; display: block; margin-bottom: 12px; }
-.card h3 { margin: 0 0 8px; font-size: 17px; }
-.card p { margin: 0; color: var(--muted); font-size: 14.5px; }
+.card-ico { width: 32px; height: 32px; stroke-width: 1.5; color: var(--gold); display: block; margin-bottom: 14px; }
+.card h3 { margin: 0; font-size: 17px; }
+.card p { margin: 8px 0 0; color: var(--muted); font-size: 14.5px; }
 
 /* Addons */
 .addons-list {
@@ -175,12 +184,13 @@ a { color: inherit; }
 }
 
 /* About */
-.about-grid { display: grid; grid-template-columns: 320px 1fr; gap: 44px; align-items: center; }
-.about-photo {
-  aspect-ratio: 1; border-radius: 50%; background-color: var(--navy-light);
-  background-size: cover; background-position: center;
+.about-grid { display: grid; grid-template-columns: 200px 1fr; gap: 44px; align-items: center; }
+.about-mark {
+  aspect-ratio: 1; width: 140px; border-radius: 50%; background: var(--navy-light);
   border: 4px solid rgba(212,175,55,.4); box-shadow: var(--shadow);
+  display: flex; align-items: center; justify-content: center;
 }
+.about-mark .icon { width: 56px; height: 56px; color: var(--gold); stroke-width: 1.3; }
 .about-text h2 { text-align: right; margin-top: 0; }
 .about-text p { color: var(--muted); }
 .about-text .quote { color: var(--gold-light); font-size: 20px; font-weight: 700; font-style: italic; }
@@ -193,7 +203,7 @@ a { color: inherit; }
   display: flex; align-items: center; gap: 10px; text-decoration: none;
   font-size: 17px; font-weight: 700; margin-bottom: 16px; color: var(--white);
 }
-.contact-line .ico { font-size: 20px; }
+.contact-line .icon { width: 20px; height: 20px; color: var(--gold-light); }
 .contact-form {
   background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1);
   border-radius: var(--radius); padding: 30px; display: flex; flex-direction: column; gap: 16px;
@@ -230,7 +240,7 @@ a { color: inherit; }
   .nav-toggle { display: flex; }
   .header-call { display: none; }
   .about-grid { grid-template-columns: 1fr; text-align: center; }
-  .about-photo { margin: 0 auto; width: 220px; }
+  .about-mark { margin: 0 auto; }
   .about-text h2, .about-text p { text-align: center; }
   .contact-grid { grid-template-columns: 1fr; }
   .contact-info h2, .contact-info .section-lead, .contact-info .kicker { text-align: center; }
@@ -241,4 +251,31 @@ a { color: inherit; }
 
 @media (max-width: 560px) {
   .gallery-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Gentle scroll-in reveal */
+.reveal {
+  opacity: 0; transform: translateY(18px);
+  transition: opacity .6s ease, transform .6s ease;
+}
+.reveal.is-visible { opacity: 1; transform: none; }
+
+.card-grid .reveal:nth-child(1) { transition-delay: 0ms; }
+.card-grid .reveal:nth-child(2) { transition-delay: 60ms; }
+.card-grid .reveal:nth-child(3) { transition-delay: 120ms; }
+.card-grid .reveal:nth-child(4) { transition-delay: 180ms; }
+.card-grid .reveal:nth-child(n+5) { transition-delay: 220ms; }
+.addons-list .reveal:nth-child(1) { transition-delay: 0ms; }
+.addons-list .reveal:nth-child(2) { transition-delay: 60ms; }
+.addons-list .reveal:nth-child(3) { transition-delay: 120ms; }
+.addons-list .reveal:nth-child(n+4) { transition-delay: 160ms; }
+.gallery-grid .reveal:nth-child(1) { transition-delay: 0ms; }
+.gallery-grid .reveal:nth-child(2) { transition-delay: 60ms; }
+.gallery-grid .reveal:nth-child(3) { transition-delay: 120ms; }
+.gallery-grid .reveal:nth-child(n+4) { transition-delay: 160ms; }
+.stats-grid .reveal:nth-child(2) { transition-delay: 80ms; }
+.stats-grid .reveal:nth-child(3) { transition-delay: 160ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
 }
