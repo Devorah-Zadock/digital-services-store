@@ -315,24 +315,35 @@ function showQuoteCatalog() {
   showSection("qa-catalog");
 }
 
+/* Tracks which signed-in user (if any) routeAfterAuth/routeAsGuest last
+   ran for. onAuthStateChange fires far more often than an actual sign-in
+   or sign-out — a token refresh, or just the tab regaining focus after
+   being in the background, re-fires it for the SAME already-signed-in
+   user. Without this guard, every one of those re-fires re-ran
+   routeAfterAuth, which — for a business filling in its letterhead for
+   the first time (no profile row saved yet) — called
+   fillProfileForm(null) again and silently wiped every field they'd
+   already typed; same for an unsaved new quote's event fields. Only a
+   real change of signed-in user (including signing out) should reset
+   what's on screen. */
+let quoteAppRoutedUserId; // undefined until the first real routing decision
+
 document.addEventListener("DOMContentLoaded", () => {
   wireProfileForm();
   wireQuoteFormQA();
   renderQuoteTplCatalog();
 
-  supabaseClient.auth.onAuthStateChange((_event, session) => {
-    if (session && session.user) {
+  function routeIfUserChanged(session) {
+    const uid = session && session.user ? session.user.id : null;
+    if (uid === quoteAppRoutedUserId) return;
+    quoteAppRoutedUserId = uid;
+    if (uid) {
       routeAfterAuth(session.user);
     } else {
       routeAsGuest();
     }
-  });
+  }
 
-  supabaseClient.auth.getSession().then(({ data }) => {
-    if (data.session && data.session.user) {
-      routeAfterAuth(data.session.user);
-    } else {
-      routeAsGuest();
-    }
-  });
+  supabaseClient.auth.onAuthStateChange((_event, session) => routeIfUserChanged(session));
+  supabaseClient.auth.getSession().then(({ data }) => routeIfUserChanged(data.session));
 });
