@@ -38,7 +38,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=33">
+<link rel="stylesheet" href="css/style.css?v=36">
 </head>
 <body>
 <script>
@@ -87,34 +87,29 @@
 </header>
 
 <section class="home-hero">
-  <div class="container home-hero-grid">
-    <div class="home-hero-text">
-      <span class="home-hero-eyebrow" data-i18n="hero_eyebrow">כלים דיגיטליים לעסק שלך</span>
-      <h1><span data-i18n="hero_h1_1">תבניות לעיצוב</span><br><span data-i18n="hero_h1_2">בבילדר חי — </span><span class="accent" data-i18n="hero_h1_3">בחינם</span></h1>
-      <p class="lead" data-i18n="hero_lead">בוחרים תבנית, רואים תוצאה בזמן אמת, ומורידים תוך דקות.</p>
-      <div class="cta-row">
-        <a href="#tools" class="btn btn-gold" data-i18n="hero_cta_start">בואו נתחיל</a>
-        <a href="#how" class="btn btn-outline-dark" data-i18n="hero_cta_how">איך זה עובד</a>
-      </div>
+  <div class="container home-hero-center">
+    <span class="home-hero-eyebrow" data-i18n="hero_eyebrow">כלים דיגיטליים לעסק שלך</span>
+    <h1><span data-i18n="hero_h1_1">תבניות לעיצוב</span><br><span data-i18n="hero_h1_2">בבילדר חי — </span><span class="accent" data-i18n="hero_h1_3">בחינם</span></h1>
+    <p class="lead" data-i18n="hero_lead">בוחרים תבנית, רואים תוצאה בזמן אמת, ומורידים תוך דקות.</p>
+    <div class="cta-row">
+      <a href="#tools" class="btn btn-gold" data-i18n="hero_cta_start">בואו נתחיל</a>
+      <a href="#how" class="btn btn-outline-dark" data-i18n="hero_cta_how">איך זה עובד</a>
     </div>
+    <!-- Same brand mark as the header logo (.brand-badge), scaled up, with
+         a straight, calm row of real template previews beneath it — not a
+         scattered collage inside the badge itself. -->
     <div class="home-hero-visual" aria-hidden="true">
-      <!-- The header's own brand mark (.brand-badge), scaled way up — same
-           teal-gold gradient square, same white "D" shape, left blank in
-           the middle — with real template examples arranged in a neat,
-           composed frame around it, in the colored margin only. -->
-      <div class="hhv-badge">
+      <span class="hhv-badge">
         <svg class="hhv-badge-mark" viewBox="0 0 24 24" aria-hidden="true">
           <rect x="6" y="4" width="4" height="16" rx="2"/>
           <path d="M9,4 H13 A8,8 0 0 1 13,20 H9 Z"/>
         </svg>
-        <img class="hhv-badge-tile" style="top:5%; inset-inline-start:22%; width:17%; height:13%;" src="images/previews/hero-cv-1.webp" alt="">
-        <img class="hhv-badge-tile" style="top:5%; inset-inline-start:60%; width:17%; height:13%;" src="images/previews/hero-site.webp" alt="">
-        <img class="hhv-badge-tile" style="top:22%; inset-inline-start:5%; width:16%; height:13%;" src="images/previews/xlsx-cashflow.webp" alt="">
-        <img class="hhv-badge-tile" style="top:44%; inset-inline-start:4%; width:16%; height:13%;" src="images/previews/hero-quote.webp" alt="">
-        <img class="hhv-badge-tile" style="top:22%; inset-inline-start:79%; width:16%; height:13%;" src="images/previews/xlsx-timeline.webp" alt="">
-        <img class="hhv-badge-tile" style="top:44%; inset-inline-start:80%; width:16%; height:13%;" src="images/previews/hero-deck.webp" alt="">
-        <img class="hhv-badge-tile" style="top:82%; inset-inline-start:22%; width:17%; height:13%;" src="images/previews/hero-cv-2.webp" alt="">
-        <img class="hhv-badge-tile" style="top:82%; inset-inline-start:60%; width:17%; height:13%;" src="images/previews/xlsx-pnl.webp" alt="">
+      </span>
+      <div class="home-hero-strip">
+        <img src="images/previews/hero-cv-1.webp" alt="">
+        <img src="images/previews/hero-site.webp" alt="">
+        <img src="images/previews/hero-quote.webp" alt="">
+        <img src="images/previews/hero-deck.webp" alt="">
       </div>
     </div>
   </div>
