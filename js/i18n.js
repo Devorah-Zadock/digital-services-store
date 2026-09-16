@@ -17,10 +17,10 @@ const I18N = {
     nav_decks: "מצגות", nav_xlsx: "גליונות", nav_about: "אודות", nav_contact: "צור קשר",
     nav_login: "כניסה",
 
-    hero_eyebrow: "כלים דיגיטליים לעסק שלך",
-    hero_h1_1: "תבניות לעיצוב", hero_h1_2: "בבילדר חי — ", hero_h1_3: "בחינם",
-    hero_lead: "בוחרים תבנית, רואים תוצאה בזמן אמת, ומורידים תוך דקות.",
-    hero_cta_start: "בואו נתחיל", hero_cta_how: "איך זה עובד",
+    hero_eyebrow: "התחנה הראשונה של העסק שלך",
+    hero_h1_line1: "מסמכים עסקיים ואתרי תדמית.", hero_h1_line2: "מעוצבים, מוכנים ובלחיצת כפתור.",
+    hero_lead: "בוחרים תבנית, עורכים אונליין בבילדר חי, ומורידים קובץ מוכן ברגע. בלי אותיות קטנות, בלי מנוי חודשי.",
+    hero_cta_start: "ליצירה בחינם", hero_cta_how: "איך זה עובד?",
 
     mq_free: "100% חינם", mq_google: "כניסה מהירה עם Google", mq_pdf: "PDF מיידי",
     mq_langs: "עברית ואנגלית", mq_cv15: "15+ תבניות קורות חיים", mq_decks5: "5 מצגות עסקיות",
@@ -60,10 +60,10 @@ const I18N = {
     nav_decks: "Decks", nav_xlsx: "Spreadsheets", nav_about: "About", nav_contact: "Contact",
     nav_login: "Sign in",
 
-    hero_eyebrow: "Digital tools for your business",
-    hero_h1_1: "Ready-made templates", hero_h1_2: "in a live builder — ", hero_h1_3: "free",
-    hero_lead: "Pick a template, see the result in real time, and download it in minutes.",
-    hero_cta_start: "Get started", hero_cta_how: "How it works",
+    hero_eyebrow: "The first stop for your business",
+    hero_h1_line1: "Business documents and websites.", hero_h1_line2: "Designed, ready, one click away.",
+    hero_lead: "Pick a template, edit it live online, and download a ready file in seconds. No fine print, no monthly subscription.",
+    hero_cta_start: "Start for free", hero_cta_how: "How it works?",
 
     mq_free: "100% free", mq_google: "Quick sign-in with Google", mq_pdf: "Instant PDF",
     mq_langs: "Hebrew & English", mq_cv15: "15+ resume templates", mq_decks5: "5 business decks",

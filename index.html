@@ -38,7 +38,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=36">
+<link rel="stylesheet" href="css/style.css?v=37">
 </head>
 <body>
 <script>
@@ -87,30 +87,49 @@
 </header>
 
 <section class="home-hero">
-  <div class="container home-hero-center">
-    <span class="home-hero-eyebrow" data-i18n="hero_eyebrow">כלים דיגיטליים לעסק שלך</span>
-    <h1><span data-i18n="hero_h1_1">תבניות לעיצוב</span><br><span data-i18n="hero_h1_2">בבילדר חי — </span><span class="accent" data-i18n="hero_h1_3">בחינם</span></h1>
-    <p class="lead" data-i18n="hero_lead">בוחרים תבנית, רואים תוצאה בזמן אמת, ומורידים תוך דקות.</p>
-    <div class="cta-row">
-      <a href="#tools" class="btn btn-gold" data-i18n="hero_cta_start">בואו נתחיל</a>
-      <a href="#how" class="btn btn-outline-dark" data-i18n="hero_cta_how">איך זה עובד</a>
-    </div>
-    <!-- Same brand mark as the header logo (.brand-badge), scaled up, with
-         a straight, calm row of real template previews beneath it — not a
-         scattered collage inside the badge itself. -->
-    <div class="home-hero-visual" aria-hidden="true">
-      <span class="hhv-badge">
-        <svg class="hhv-badge-mark" viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="6" y="4" width="4" height="16" rx="2"/>
-          <path d="M9,4 H13 A8,8 0 0 1 13,20 H9 Z"/>
-        </svg>
-      </span>
-      <div class="home-hero-strip">
-        <img src="images/previews/hero-cv-1.webp" alt="">
-        <img src="images/previews/hero-site.webp" alt="">
-        <img src="images/previews/hero-quote.webp" alt="">
-        <img src="images/previews/hero-deck.webp" alt="">
+  <div class="container home-hero-split">
+    <div class="home-hero-text">
+      <span class="home-hero-eyebrow" data-i18n="hero_eyebrow">התחנה הראשונה של העסק שלך</span>
+      <h1><span data-i18n="hero_h1_line1">מסמכים עסקיים ואתרי תדמית.</span><br><span class="accent" data-i18n="hero_h1_line2">מעוצבים, מוכנים ובלחיצת כפתור.</span></h1>
+      <p class="lead" data-i18n="hero_lead">בוחרים תבנית, עורכים אונליין בבילדר חי, ומורידים קובץ מוכן ברגע. בלי אותיות קטנות, בלי מנוי חודשי.</p>
+      <div class="cta-row">
+        <a href="#tools" class="btn btn-gold" data-i18n="hero_cta_start">ליצירה בחינם</a>
+        <a href="#how" class="btn btn-outline-dark" data-i18n="hero_cta_how">איך זה עובד?</a>
       </div>
+    </div>
+    <!-- Left side: a handful of scattered, lightly-rotated template preview
+         cards, with the header's own brand mark scaled way up and used as
+         an SVG mask — a second, independent mosaic of preview tiles shows
+         only through the mask's "D" silhouette. Same rect+path geometry as
+         the small header logo, scaled 10x, so the shape itself can't drift
+         out of sync with the real logo. -->
+    <div class="home-hero-visual" aria-hidden="true">
+      <div class="hhv-scatter">
+        <img class="hhv-scatter-tile hhv-s1" src="images/previews/hero-cv-1.webp" alt="">
+        <img class="hhv-scatter-tile hhv-s2" src="images/previews/hero-deck.webp" alt="">
+        <img class="hhv-scatter-tile hhv-s3" src="images/previews/xlsx-cashflow.webp" alt="">
+        <img class="hhv-scatter-tile hhv-s4" src="images/previews/hero-quote.webp" alt="">
+      </div>
+      <svg class="hhv-dmask" viewBox="0 0 240 240">
+        <defs>
+          <mask id="hhvDMask" maskUnits="userSpaceOnUse">
+            <rect x="60" y="40" width="40" height="160" rx="20" fill="#fff"/>
+            <path d="M90,40 H130 A80,80 0 0 1 130,200 H90 Z" fill="#fff"/>
+          </mask>
+        </defs>
+        <rect x="0" y="0" width="240" height="240" fill="#E8F1EE"/>
+        <g mask="url(#hhvDMask)">
+          <image href="images/previews/hero-cv-1.webp" x="0" y="0" width="80" height="80" preserveAspectRatio="xMidYMid slice"/>
+          <image href="images/previews/hero-site.webp" x="80" y="0" width="80" height="80" preserveAspectRatio="xMidYMid slice"/>
+          <image href="images/previews/hero-quote.webp" x="160" y="0" width="80" height="80" preserveAspectRatio="xMidYMid slice"/>
+          <image href="images/previews/hero-deck.webp" x="0" y="80" width="80" height="80" preserveAspectRatio="xMidYMid slice"/>
+          <image href="images/previews/xlsx-cashflow.webp" x="80" y="80" width="80" height="80" preserveAspectRatio="xMidYMid slice"/>
+          <image href="images/previews/hero-cv-2.webp" x="160" y="80" width="80" height="80" preserveAspectRatio="xMidYMid slice"/>
+          <image href="images/previews/xlsx-timeline.webp" x="0" y="160" width="80" height="80" preserveAspectRatio="xMidYMid slice"/>
+          <image href="images/previews/xlsx-pnl.webp" x="80" y="160" width="80" height="80" preserveAspectRatio="xMidYMid slice"/>
+          <image href="images/previews/xlsx-invoice.webp" x="160" y="160" width="80" height="80" preserveAspectRatio="xMidYMid slice"/>
+        </g>
+      </svg>
     </div>
   </div>
 </section>
@@ -358,7 +377,7 @@
 <script src="js/main.js"></script>
 <script src="js/widgets.js?v=8"></script>
 <script src="js/effects.js"></script>
-<script src="js/i18n.js?v=1"></script>
+<script src="js/i18n.js?v=2"></script>
 <script>
   // account-settings.js redirects here with this param right after a
   // self-service account deletion — a plain redirect with no confirmation
