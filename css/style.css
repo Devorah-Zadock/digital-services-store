@@ -428,37 +428,37 @@ body.has-sites-rail .nav-account-wrap { display: none; }
 .btn-outline-dark { background: transparent; color: var(--teal-dark); border: 1.5px solid var(--teal-dark); }
 .btn-outline-dark:hover { background: var(--teal-dark); color: var(--white); transform: translateY(-2px); }
 
-/* Literal build of the reference moodboard: an organic blob (an asymmetric
-   border-radius, not a plain rounded square) packed edge-to-edge with
-   small file-type icon tiles at varied rotations. */
-.home-hero-visual { position: relative; height: 520px; display: flex; align-items: center; justify-content: center; }
-.hhv-blob {
-  position: relative; width: 520px; height: 480px;
-  border-radius: 62% 38% 55% 45% / 58% 46% 54% 42%;
-  background: var(--white);
+/* The header's own .brand-badge (teal-gold rounded square + white "D"),
+   scaled way up: the D stays blank, exactly like the small logo — real
+   template examples sit only in the colored margin framing it, in a
+   deliberately neat grid rather than a scattered pile. */
+.home-hero-visual { position: relative; height: 560px; display: flex; align-items: center; justify-content: center; }
+.hhv-badge {
+  position: relative; width: 520px; height: 520px; border-radius: 100px;
+  background: linear-gradient(145deg, var(--teal), var(--gold));
   overflow: hidden;
-  box-shadow: 0 24px 50px rgba(15, 51, 43, .18);
+  box-shadow: 0 30px 60px rgba(15, 51, 43, .3);
 }
-.hhv-fileicon {
-  position: absolute; transform: rotate(var(--r));
-  width: 72px; height: 86px; background: var(--white); border: 2.5px solid var(--dark);
-  border-radius: 7px; box-shadow: 0 6px 14px rgba(0,0,0,.1);
-  overflow: hidden;
+.hhv-badge-mark {
+  /* Plain physical left, not inset-inline-start: centering has no RTL/LTR
+     meaning, and inset-inline-start:50% resolves to right:50% under RTL —
+     combined with translate(-50%,-50%) (which always shifts by the
+     element's own box regardless of which inset was used) that put the
+     mark off the left edge entirely instead of centering it (confirmed
+     via getBoundingClientRect: x came out negative). */
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 54%; height: 54%;
 }
-.hhv-fileicon img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.hhv-fileicon-fold {
-  position: absolute; top: -1px; inset-inline-end: -1px; width: 20px; height: 20px; z-index: 1;
-  background: var(--grey-light);
-  border-inline-start: 2.5px solid var(--dark); border-bottom: 2.5px solid var(--dark);
-  clip-path: polygon(0 0, 100% 0, 100% 100%);
+.hhv-badge-mark rect, .hhv-badge-mark path { fill: var(--white); }
+.hhv-badge-tile {
+  position: absolute; object-fit: cover; border-radius: 8px;
+  border: 3px solid var(--white); box-shadow: 0 8px 18px rgba(0,0,0,.22);
 }
 @media (max-width: 900px) {
   .home-hero-grid { grid-template-columns: 1fr; }
   .home-hero h1 { font-size: 36px; }
-  .home-hero-visual { height: 320px; margin-top: 10px; }
-  .hhv-blob { width: 320px; height: 300px; }
-  .hhv-fileicon { width: 46px; height: 56px; border-radius: 5px; }
-  .hhv-fileicon-fold { width: 13px; height: 13px; }
+  .home-hero-visual { height: 340px; margin-top: 10px; }
+  .hhv-badge { width: 320px; height: 320px; border-radius: 62px; }
 }
 .btn {
   display: inline-block; padding: 14px 30px; border-radius: 30px;
@@ -502,9 +502,12 @@ section { padding: 88px 0; }
 /* Tighter than the default 88px section padding — this is the section the
    "בואו נתחיל" anchor jumps straight to, so its own height directly
    decides how much of it fits above the fold without extra scrolling. */
-#tools { scroll-margin-top: 76px; padding-top: 44px; padding-bottom: 56px; }
-.tools-top { display: flex; align-items: center; gap: 36px; flex-wrap: wrap; margin-bottom: 32px; }
-.tools-heading { font-size: 32px; margin: 0; color: var(--teal-dark); letter-spacing: -.01em; flex: 0 1 320px; }
+#tools { scroll-margin-top: 66px; padding-top: 26px; padding-bottom: 48px; }
+.tools-top { display: flex; align-items: center; gap: 36px; flex-wrap: wrap; margin-bottom: 22px; }
+.tools-heading {
+  font-family: 'Rubik', 'Heebo', Arial, sans-serif; font-size: 32px; font-weight: 700;
+  margin: 0; color: var(--teal-dark); letter-spacing: -.01em; flex: 0 1 320px; text-align: center;
+}
 .tools-top-cards { display: flex; gap: 24px; flex: 1 1 480px; min-width: 0; }
 .tools-top-cards .card { flex: 1 1 0; min-width: 0; }
 @media (max-width: 860px) {
