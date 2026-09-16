@@ -47,6 +47,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Netlify credits are shared across every customer on the account's plan
+// — see supabase/sql/site_projects_publish_limit.sql for the column this
+// checks and why.
+const PUBLISH_LIMIT = 5;
+
 function jsonResponse(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
@@ -113,7 +118,7 @@ Deno.serve(async (req: Request) => {
     // the row is actually theirs before touching Netlify on their behalf.
     const { data: project, error: fetchErr } = await admin
       .from("site_projects")
-      .select("id, user_id, netlify_site_id")
+      .select("id, user_id, netlify_site_id, publish_count")
       .eq("id", siteProjectId)
       .maybeSingle();
     if (fetchErr) return jsonResponse({ error: fetchErr.message }, 500);
@@ -121,10 +126,27 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: "site not found for this account" }, 404);
     }
 
+    // Each publish is a real Netlify deploy — real Netlify credits, shared
+    // across every customer on the account's plan. Capped per-site so one
+    // customer re-clicking "פרסום" repeatedly (by accident or otherwise)
+    // can't burn through the whole month's credits for everyone else. The
+    // ZIP download (client-side, never hits this function) stays free and
+    // unlimited either way.
+    const publishCount = (project.publish_count as number) || 0;
+    if (publishCount >= PUBLISH_LIMIT) {
+      return jsonResponse({ success: false, reason: "limit_reached", publishCount, limit: PUBLISH_LIMIT });
+    }
+
     const zip = new JSZip();
     for (const name of pageNames) {
       zip.file(`${name}.html`, String(pages[name]));
     }
+    // Confirmed live: without this, Netlify's zip-upload deploy served
+    // every page as "Content-Type: text/plain" instead of "text/html" —
+    // the browser showed the raw source code instead of the rendered
+    // site. Netlify's own "_headers" file forces the right content type
+    // explicitly rather than relying on its extension-based inference.
+    zip.file("_headers", "/*\n  Content-Type: text/html; charset=UTF-8\n");
     const zipBytes = await zip.generateAsync({ type: "uint8array" });
 
     let netlifySiteId = project.netlify_site_id as string | null;
@@ -142,13 +164,25 @@ Deno.serve(async (req: Request) => {
       await deployZipToNetlify(netlifySiteId!, zipBytes);
     }
 
+    const newPublishCount = publishCount + 1;
     const { error: updateErr } = await admin
       .from("site_projects")
-      .update({ published_url: siteUrl, netlify_site_id: netlifySiteId, published_at: new Date().toISOString() })
+      .update({
+        published_url: siteUrl,
+        netlify_site_id: netlifySiteId,
+        published_at: new Date().toISOString(),
+        publish_count: newPublishCount,
+      })
       .eq("id", siteProjectId);
     if (updateErr) return jsonResponse({ error: updateErr.message }, 500);
 
-    return jsonResponse({ success: true, url: siteUrl, claimUrl: buildClaimLink(siteProjectId) });
+    return jsonResponse({
+      success: true,
+      url: siteUrl,
+      claimUrl: buildClaimLink(siteProjectId),
+      publishCount: newPublishCount,
+      limit: PUBLISH_LIMIT,
+    });
   } catch (err) {
     return jsonResponse({ error: String(err) }, 500);
   }

@@ -33,9 +33,10 @@ function quoteTemplateLabel(slug) {
 /* A count + small inline bar inside one table cell, so a per-template row
    carries its own mini "graph" instead of being a bare number next to N
    other bare numbers. */
-function tplBarCell(count, max) {
+function tplBarCell(count, max, note) {
   const pct = max > 0 ? Math.max(4, Math.round((count / max) * 100)) : 4;
-  return `<div class="tpl-count-cell"><span class="tpl-num">${count}</span><div class="tpl-bar-track"><div class="tpl-bar" style="width:${pct}%"></div></div></div>`;
+  const noteHtml = note ? `<span class="tpl-note">${note}</span>` : "";
+  return `<div class="tpl-count-cell"><span class="tpl-num">${count}</span><div class="tpl-bar-track"><div class="tpl-bar" style="width:${pct}%"></div></div>${noteHtml}</div>`;
 }
 
 /* A subheaded table of {label -> count}, used identically for site
@@ -120,41 +121,52 @@ function renderCustomerStats(data) {
   const xlsxCount = data.xlsxDownloadCount ?? 0;
 
   // Only real (measured) numbers set the chart's scale — a pending metric
-  // never dilutes it down to a flat "—" bar.
-  const realValues = [data.userCount, data.cvBuilderUserCount, siteProjectCount, finalizedCount];
+  // never dilutes it down to a flat "—" bar. Only metrics actually shown
+  // as bars belong here — userCount and finalizedCount aren't bars.
+  const realValues = [data.cvBuilderUserCount, siteProjectCount];
   if (usageOn) realValues.push(quoteUserCount, deckCount, xlsxCount);
   const kpiMax = Math.max(1, ...realValues);
 
+  // "משתמשים רשומים" is a headcount metric, not a per-template usage
+  // count — mixing it into the same comparison chart as "how much was
+  // each template used" made the chart compare two unrelated things on
+  // one axis. Shown instead as its own stat line above the chart.
+  // Likewise the chart's job is comparing categories at a glance, so
+  // each bar is labeled with just the category's plain name — the
+  // finalized/paid breakdown for sites already lives in the "אתרים"
+  // table below (the per-row note), not as a second, oddly-labeled bar
+  // here.
   const kpiItems = [
-    { label: "משתמשים רשומים", value: data.userCount, max: kpiMax },
-    { label: "השתמשו בקורות חיים", value: data.cvBuilderUserCount, max: kpiMax },
-    usageOn ? { label: "השתמשו בהצעות מחיר", value: quoteUserCount, max: kpiMax } : { label: "השתמשו בהצעות מחיר", pending: true },
-    { label: "אתרים נפתחו", value: siteProjectCount, max: kpiMax },
-    { label: "אתרים שולמו והורדו", value: finalizedCount, max: kpiMax, gold: true },
-    usageOn ? { label: "מצגות הורדו", value: deckCount, max: kpiMax } : { label: "מצגות הורדו", pending: true },
-    usageOn ? { label: "גליונות הורדו", value: xlsxCount, max: kpiMax } : { label: "גליונות הורדו", pending: true },
+    { label: "אתרים", value: siteProjectCount, max: kpiMax },
+    { label: "קורות חיים", value: data.cvBuilderUserCount, max: kpiMax },
+    usageOn ? { label: "הצעות מחיר", value: quoteUserCount, max: kpiMax } : { label: "הצעות מחיר", pending: true },
+    usageOn ? { label: "מצגות", value: deckCount, max: kpiMax } : { label: "מצגות", pending: true },
+    usageOn ? { label: "גליונות", value: xlsxCount, max: kpiMax } : { label: "גליונות", pending: true },
   ];
 
   summary.innerHTML = `
+    <p style="font-size:13.5px; color:var(--grey); margin:0 0 14px;">משתמשים רשומים סה"כ: <b style="color:var(--dark);">${data.userCount}</b></p>
     <div class="admin-chart-card"><canvas id="kpi-chart-canvas" height="230"></canvas></div>
     ${usageOn ? "" : `<p style="font-size:12.5px; color:#8A6212; background:#FBF2E0; border-radius:8px; padding:8px 12px; margin:0 0 20px;">השורות המסומנות "לא הופעל" ידווחו נתונים אמיתיים לאחר הרצת קובץ ה-SQL <code>supabase/sql/usage_events.sql</code> (חד-פעמי) — עד אז הן לא באמת אפס, פשוט עוד לא נמדדות.</p>`}
-    <div class="admin-subhead">תבניות אתר</div>
+    <div class="admin-subhead">אתרים</div>
     <table class="stats-table">
-      <thead><tr><th>תבנית</th><th>פרויקטים שנפתחו</th><th>מתוכם הורדו בפועל</th></tr></thead>
+      <thead><tr><th>תבנית</th><th>שימושים</th></tr></thead>
       <tbody>${
         Object.keys(data.templateCounts).length
           ? Object.keys(data.templateCounts)
               .sort((a, b) => data.templateCounts[b] - data.templateCounts[a])
               .map((slug) => {
                 const openMax = Math.max(1, ...Object.values(data.templateCounts));
-                return `<tr><td>${escapeHtml(templateLabel(slug))}</td><td>${tplBarCell(data.templateCounts[slug], openMax)}</td><td>${data.finalizedTemplateCounts[slug] || 0}</td></tr>`;
+                const finalized = data.finalizedTemplateCounts[slug] || 0;
+                const note = finalized ? `מתוכם ${finalized} שולמו והורדו` : "";
+                return `<tr><td>${escapeHtml(templateLabel(slug))}</td><td>${tplBarCell(data.templateCounts[slug], openMax, note)}</td></tr>`;
               })
               .join("")
-          : '<tr><td colspan="3">עדיין אין נתונים</td></tr>'
+          : '<tr><td colspan="2">עדיין אין נתונים</td></tr>'
       }</tbody>
     </table>
-    ${renderCountTable("תבניות קורות חיים", "תבנית", data.cvTemplateCounts, productLabel, usageOn ? "עדיין אין שימוש" : "לא הופעל")}
-    ${renderCountTable("תבניות הצעות מחיר", "תבנית", data.quoteTemplateCounts, quoteTemplateLabel, usageOn ? "עדיין אין שימוש" : "לא הופעל")}
+    ${renderCountTable("קורות חיים", "תבנית", data.cvTemplateCounts, productLabel, usageOn ? "עדיין אין שימוש" : "לא הופעל")}
+    ${renderCountTable("הצעות מחיר", "תבנית", data.quoteTemplateCounts, quoteTemplateLabel, usageOn ? "עדיין אין שימוש" : "לא הופעל")}
     ${renderCountTable("מצגות שהורדו", "מצגת", data.deckDownloadCounts, productLabel, usageOn ? "עדיין אין הורדות" : "לא הופעל")}
     ${renderCountTable("גליונות שהורדו", "גיליון", data.xlsxDownloadCounts, productLabel, usageOn ? "עדיין אין הורדות" : "לא הופעל")}`;
 

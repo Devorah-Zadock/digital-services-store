@@ -14,6 +14,33 @@
 let scheduleCurrentUserId = null;
 let scheduleSavedId = null;
 
+/* Autosave: a refresh with no manual save used to lose everything typed
+   in since the last click of "שמירה" — confirmed live. Every edit inside
+   .sched-main marks the project dirty; a periodic tick saves it quietly
+   in the background (same status element the manual save button uses),
+   without needing every individual handler in schedule-render.js to know
+   about saving. */
+let scheduleDirty = false;
+let scheduleAutosaving = false;
+
+function markScheduleDirty() {
+  scheduleDirty = true;
+  const status = document.getElementById("schedule-save-status");
+  if (status && status.classList.contains("ok")) { status.textContent = ""; status.classList.remove("ok"); }
+}
+
+async function scheduleAutosaveTick() {
+  if (!scheduleCurrentUserId || !scheduleDirty || scheduleAutosaving) return;
+  scheduleAutosaving = true;
+  const err = await saveScheduleNow();
+  scheduleAutosaving = false;
+  if (!err) {
+    scheduleDirty = false;
+    const status = document.getElementById("schedule-save-status");
+    if (status) { status.textContent = "נשמר אוטומטית ✓"; status.classList.add("ok"); }
+  }
+}
+
 async function saveScheduleNow() {
   if (!scheduleCurrentUserId || !scheduleState) return "no-user";
   const row = { user_id: scheduleCurrentUserId, data: scheduleState, updated_at: new Date().toISOString() };
@@ -45,6 +72,22 @@ document.addEventListener("DOMContentLoaded", () => {
     const user = data.session && data.session.user;
     if (user) {
       scheduleCurrentUserId = user.id;
+
+      // Prefills the Gumroad checkout with the signed-in email — most
+      // buyers want their receipt/license at the same address anyway, and
+      // Gumroad's own field stays a normal, editable input, so anyone who
+      // wants a different receipt email can still just type over it.
+      if (user.email) {
+        const buyLink = document.getElementById("sched-buy-link");
+        if (buyLink && buyLink.href) {
+          try {
+            const url = new URL(buyLink.href);
+            url.searchParams.set("email", user.email);
+            buyLink.href = url.toString();
+          } catch (_e) { /* malformed href — leave it as-is */ }
+        }
+      }
+
       const urlId = new URLSearchParams(location.search).get("schedule");
       if (urlId) {
         const loaded = await loadScheduleById(urlId, user.id);
@@ -58,6 +101,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (window.revealGatedPage) window.revealGatedPage();
   });
 
+  const mainWrap = document.querySelector(".sched-main");
+  if (mainWrap) {
+    mainWrap.addEventListener("input", markScheduleDirty);
+    mainWrap.addEventListener("change", markScheduleDirty);
+    mainWrap.addEventListener("click", markScheduleDirty);
+  }
+  setInterval(scheduleAutosaveTick, 20000);
+
   const btn = document.getElementById("schedule-save-btn");
   const status = document.getElementById("schedule-save-status");
   if (!btn) return;
@@ -66,6 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btn.disabled = true;
     const err = await saveScheduleNow();
     btn.disabled = false;
+    scheduleDirty = false;
     status.classList.remove("ok");
     status.textContent = err ? "השמירה נכשלה, נסו שוב" : "נשמר ✓";
     if (!err) status.classList.add("ok");

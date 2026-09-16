@@ -39,7 +39,12 @@ body {
   font-family: 'Heebo', Arial, sans-serif;
   color: var(--dark);
   background: var(--white);
-  direction: rtl;
+  /* Inherits direction from <html dir="..."> rather than hardcoding rtl —
+     js/i18n.js flips that attribute at runtime for the EN/HE toggle, and
+     a hardcoded value here would silently override it, leaving every
+     inset-inline-*/margin-inline-* rule mirrored wrong regardless of the
+     toggle's own state (confirmed live: the header still rendered RTL
+     under dir="ltr" until this was inheritance instead of a hardcode). */
   line-height: 1.6;
   overflow-x: clip;
 }
@@ -106,8 +111,8 @@ body.has-sites-rail header.site {
   width: calc(100% + var(--rail-w, 220px));
 }
 /* .nav-links is the only thing that actually lives in .nav's own centered
-   flex flow now — both .brand and .nav-end-group (login + catalog CTA)
-   are pinned straight to the true edges of header.site instead, the same
+   flex flow now — both .brand and .nav-end-group (login link) are pinned
+   straight to the true edges of header.site instead, the same
    reasoning as the brand: "first/last inside the centered, max-width-capped
    bar" still leaves visible empty margin past it on any screen wider than
    --max. That leaves justify-content:center free to actually center the
@@ -116,7 +121,7 @@ body.has-sites-rail header.site {
    either pinned group. */
 .nav {
   display: flex; align-items: center; justify-content: center;
-  padding: 16px 24px; padding-inline-start: 190px; padding-inline-end: 210px; max-width: var(--max); margin: 0 auto;
+  padding: 16px 24px; padding-inline-start: 190px; padding-inline-end: 150px; max-width: var(--max); margin: 0 auto;
 }
 .brand {
   position: absolute; top: 50%; inset-inline-start: 24px; transform: translateY(-50%);
@@ -141,17 +146,16 @@ body.has-sites-rail header.site {
 .nav-links { display: flex; align-items: center; gap: 28px; font-size: 15px; font-weight: 500; }
 .nav-links a { color: var(--dark); opacity: .85; padding: 6px 0; border-bottom: 2px solid transparent; transition: opacity .15s ease, border-color .15s ease; }
 .nav-links a:hover, .nav-links a.active { opacity: 1; border-color: var(--gold); }
-.nav-cta {
-  background: linear-gradient(135deg, var(--teal), var(--teal-light)); color: var(--white); padding: 10px 22px;
-  border-radius: 30px; font-size: 14px; font-weight: 600;
-  box-shadow: 0 8px 20px rgba(22,63,53,.22);
-  transition: transform .15s ease, box-shadow .15s ease;
-}
-.nav-cta:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(22,63,53,.3); }
 .nav-login { color: var(--grey); font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: flex-end; gap: 5px; min-width: 92px; transition: color .15s ease; }
 .nav-login.nav-login-pending { visibility: hidden; }
 .nav-login:hover { color: var(--teal-dark); }
 .nav-login-email { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: ltr; text-align: right; }
+.lang-toggle {
+  background: var(--white); border: 1px solid #DCE9E4; color: var(--teal-dark);
+  font-size: 12.5px; font-weight: 700; padding: 6px 13px; border-radius: 20px;
+  cursor: pointer; font-family: inherit; transition: border-color .15s ease, background .15s ease;
+}
+.lang-toggle:hover { background: var(--ice); border-color: var(--teal-light); }
 
 /* Shared "switchable list" widget. .my-sites-rail itself is the global
    "my content" panel (js/my-panel.js) mounted on every logged-in page —
@@ -378,15 +382,38 @@ body.has-sites-rail .nav-account-wrap { display: none; }
 
 /* ---------- Homepage hero (asymmetric, own layout — not the shared
    centered .hero used by inner pages) ---------- */
+/* The base fill itself is a moving gradient (not a flat --ice background
+   with the motion confined to accent blobs on top) — the whole hero reads
+   as animated, not just the D. background-size/position (not transform)
+   here, since this layer is the section's own background and has to stay
+   flush with its edges rather than drift past them. */
 .home-hero {
-  position: relative; overflow: hidden; padding: 96px 24px 80px;
-  background:
-    radial-gradient(ellipse 820px 560px at 90% -12%, rgba(0,200,150,.28), transparent 58%),
-    radial-gradient(ellipse 640px 480px at -8% 100%, rgba(201,154,59,.28), transparent 58%),
-    radial-gradient(ellipse 500px 400px at 40% 40%, rgba(123,92,255,.10), transparent 60%),
-    var(--ice);
+  position: relative; overflow: hidden; padding: 96px 24px 80px; isolation: isolate;
+  background: linear-gradient(120deg, #DDF2E9 0%, #E9F2EF 22%, #F5E9CC 50%, #E9F2EF 76%, #E3ECF8 100%);
+  background-size: 240% 240%;
+  animation: homeHeroBg 16s ease-in-out infinite alternate;
 }
-.home-hero-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 48px; align-items: center; }
+@keyframes homeHeroBg { 0% { background-position: 0% 35%; } 100% { background-position: 100% 65%; } }
+@media (prefers-reduced-motion: reduce) { .home-hero { animation: none; } }
+/* An oversized, slowly drifting gradient layer of stronger color blobs on
+   top of that base — plain transform keyframes (translate + rotate), not
+   animated custom properties, so it interpolates smoothly in every
+   browser instead of depending on @property support. */
+.home-hero::before {
+  content: ""; position: absolute; z-index: -1; inset: -25%;
+  background:
+    radial-gradient(ellipse 780px 560px at 88% -8%, rgba(0,200,150,.5), transparent 60%),
+    radial-gradient(ellipse 620px 480px at 6% 96%, rgba(201,154,59,.5), transparent 60%),
+    radial-gradient(ellipse 560px 440px at 48% 48%, rgba(123,92,255,.22), transparent 62%);
+  animation: homeHeroGradient 12s ease-in-out infinite alternate;
+}
+@keyframes homeHeroGradient {
+  0%   { transform: translate(0, 0) rotate(0deg) scale(1); }
+  50%  { transform: translate(-5%, 4%) rotate(6deg) scale(1.06); }
+  100% { transform: translate(4%, -5%) rotate(-5deg) scale(1.03); }
+}
+@media (prefers-reduced-motion: reduce) { .home-hero::before { animation: none; } }
+.home-hero-grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: 36px; align-items: center; }
 .home-hero-eyebrow {
   display: inline-flex; align-items: center; gap: 8px; background: var(--white); border: 1px solid #DCE9E4;
   padding: 7px 16px; border-radius: 20px; font-size: 12.5px; font-weight: 700; color: var(--teal-dark); margin-bottom: 22px;
@@ -401,39 +428,37 @@ body.has-sites-rail .nav-account-wrap { display: none; }
 .btn-outline-dark { background: transparent; color: var(--teal-dark); border: 1.5px solid var(--teal-dark); }
 .btn-outline-dark:hover { background: var(--teal-dark); color: var(--white); transform: translateY(-2px); }
 
-/* A big circle that cycles through real template previews — reads as
-   "here's what you'll get" across all the tools at a glance, instead of
-   one static generic mockup. The glow sits behind and larger than the
-   circle (a soft halo, not the fill), the circle itself clips the actual
-   preview images edge to edge. */
-.home-hero-visual { position: relative; height: 420px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; }
-.hhv-glow {
+/* The header's own .brand-badge (teal-gold rounded square + white "D"),
+   scaled way up: the D stays blank, exactly like the small logo — real
+   template examples sit only in the colored margin framing it, in a
+   deliberately neat grid rather than a scattered pile. */
+.home-hero-visual { position: relative; height: 560px; display: flex; align-items: center; justify-content: center; }
+.hhv-badge {
+  position: relative; width: 520px; height: 520px; border-radius: 100px;
+  background: linear-gradient(145deg, var(--teal), var(--gold));
+  overflow: hidden;
+  box-shadow: 0 30px 60px rgba(15, 51, 43, .3);
+}
+.hhv-badge-mark {
+  /* Plain physical left, not inset-inline-start: centering has no RTL/LTR
+     meaning, and inset-inline-start:50% resolves to right:50% under RTL —
+     combined with translate(-50%,-50%) (which always shifts by the
+     element's own box regardless of which inset was used) that put the
+     mark off the left edge entirely instead of centering it (confirmed
+     via getBoundingClientRect: x came out negative). */
   position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  width: 420px; height: 420px; border-radius: 50%; filter: blur(8px);
-  background: radial-gradient(circle at 32% 32%, rgba(0,200,150,.45), rgba(201,154,59,.4) 65%, rgba(123,92,255,.25) 100%);
+  width: 54%; height: 54%;
 }
-.hhv-circle {
-  position: relative; width: 340px; height: 340px; border-radius: 50%; overflow: hidden;
-  box-shadow: 0 26px 60px rgba(15, 51, 43, .22); border: 6px solid var(--white); flex-shrink: 0;
-}
-.hhv-slide {
-  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
-  opacity: 0; transition: opacity 1.1s ease;
-}
-.hhv-slide.active { opacity: 1; animation: hhvKenBurns 6.5s ease-in-out infinite alternate; }
-@keyframes hhvKenBurns { from { transform: scale(1); } to { transform: scale(1.08); } }
-.hhv-dots { display: flex; gap: 7px; }
-.hhv-dots span { width: 7px; height: 7px; border-radius: 50%; background: #D7DEDB; transition: background .3s ease, width .3s ease; }
-.hhv-dots span.active { background: var(--teal); width: 20px; border-radius: 4px; }
-@media (prefers-reduced-motion: reduce) {
-  .hhv-slide.active { animation: none; }
+.hhv-badge-mark rect, .hhv-badge-mark path { fill: var(--white); }
+.hhv-badge-tile {
+  position: absolute; object-fit: cover; border-radius: 8px;
+  border: 3px solid var(--white); box-shadow: 0 8px 18px rgba(0,0,0,.22);
 }
 @media (max-width: 900px) {
   .home-hero-grid { grid-template-columns: 1fr; }
   .home-hero h1 { font-size: 36px; }
-  .home-hero-visual { height: 320px; margin-top: 10px; }
-  .hhv-glow { width: 320px; height: 320px; }
-  .hhv-circle { width: 250px; height: 250px; }
+  .home-hero-visual { height: 340px; margin-top: 10px; }
+  .hhv-badge { width: 320px; height: 320px; border-radius: 62px; }
 }
 .btn {
   display: inline-block; padding: 14px 30px; border-radius: 30px;
@@ -449,6 +474,9 @@ body.has-sites-rail .nav-account-wrap { display: none; }
 .btn-outline:hover { background: rgba(255,255,255,.14); transform: translateY(-2px); }
 .btn-teal { background: linear-gradient(135deg, var(--teal), var(--teal-light)); color: var(--white); box-shadow: 0 8px 20px rgba(22,63,53,.2); }
 .btn-teal:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(22,63,53,.3); }
+.btn-disabled, .btn-disabled:hover {
+  pointer-events: none; opacity: .55; box-shadow: none; transform: none; cursor: default;
+}
 
 /* ---------- Sections ---------- */
 section { padding: 88px 0; }
@@ -462,6 +490,30 @@ section { padding: 88px 0; }
 }
 .section-head h2 { font-size: 34px; margin: 12px 0 12px; color: var(--teal-dark); letter-spacing: -.01em; }
 .section-head p { color: var(--grey); font-size: 16px; }
+
+/* ---------- Homepage tools section: heading at the reading-order start
+   (right, in RTL) with two "flagship" cards beside it, the rest below —
+   an asymmetric header instead of the usual centered kicker+h2. ---------- */
+/* The sticky header is 64px tall and sits on top of whatever scrolls to
+   the top of the viewport — this just clears it (64px + a small buffer).
+   Bigger than that actively backfires: it eats into the viewport's own
+   height budget, pushing more of the section's own content below the
+   fold instead of revealing more of it. */
+/* Tighter than the default 88px section padding — this is the section the
+   "בואו נתחיל" anchor jumps straight to, so its own height directly
+   decides how much of it fits above the fold without extra scrolling. */
+#tools { scroll-margin-top: 66px; padding-top: 26px; padding-bottom: 48px; }
+.tools-top { display: flex; align-items: center; gap: 36px; flex-wrap: wrap; margin-bottom: 22px; }
+.tools-heading {
+  font-family: 'Rubik', 'Heebo', Arial, sans-serif; font-size: 32px; font-weight: 700;
+  margin: 0; color: var(--teal-dark); letter-spacing: -.01em; flex: 0 1 320px; text-align: center;
+}
+.tools-top-cards { display: flex; gap: 24px; flex: 1 1 480px; min-width: 0; }
+.tools-top-cards .card { flex: 1 1 0; min-width: 0; }
+@media (max-width: 860px) {
+  .tools-top { flex-direction: column; align-items: stretch; }
+  .tools-top-cards { flex-direction: column; }
+}
 .bg-ice { background: linear-gradient(180deg, var(--ice), #F7FBF9); }
 
 /* ---------- Category tabs ---------- */
@@ -497,6 +549,8 @@ section { padding: 88px 0; }
 /* ---------- Product grid / cards ---------- */
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
 .grid.grid-2 { grid-template-columns: repeat(2, 1fr); }
+.grid.grid-4 { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 900px) { .grid.grid-4 { grid-template-columns: repeat(2, 1fr); } }
 .card {
   position: relative;
   background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow);
@@ -525,9 +579,58 @@ section { padding: 88px 0; }
 .card[data-cat="deck"] { --cat-c: var(--cat-deck); --cat-bg: var(--cat-deck-bg); }
 .card[data-cat="xlsx"] { --cat-c: var(--cat-xlsx); --cat-bg: var(--cat-xlsx-bg); }
 .card h3 { margin: 0; font-size: 16.5px; color: var(--dark); line-height: 1.35; }
-.card .card-cta { margin-top: 2px; text-align: center; padding: 9px 20px; font-size: 13.5px; }
+.card .card-cta { margin-top: auto; text-align: center; padding: 9px 20px; font-size: 13.5px; }
+/* Small "new" indicator as a corner dot over the thumbnail, instead of a
+   full pill taking up its own line in the card body — keeps every card's
+   body starting at the same point regardless of whether it happens to be
+   new, which is what actually keeps a row of cards' CTA buttons aligned. */
+.card-new-badge {
+  position: absolute; top: 10px; inset-inline-end: 10px; z-index: 1;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--teal-light), var(--teal));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; box-shadow: 0 4px 10px rgba(22,63,53,.25);
+}
 .price { font-size: 16px; font-weight: 700; color: var(--teal-dark); }
 .price small { font-size: 13px; color: var(--grey); font-weight: 400; }
+
+/* ---------- Flip cards (site template catalog) ---------- */
+/* The front face reuses .card wholesale (thumb/body/tag/price all work
+   for free via the existing descendant selectors) but its own hover-lift
+   and top accent bar are disabled here — the whole flip-card handles its
+   own hover treatment instead, so they don't fight the 3D rotation. */
+.flip-card { position: relative; perspective: 1600px; height: 390px; transition: transform .2s ease; }
+.flip-card:hover, .flip-card.is-flipped { transform: translateY(-6px); }
+.flip-card-inner {
+  position: relative; width: 100%; height: 100%;
+  transition: transform .6s cubic-bezier(.4,.2,.2,1);
+  transform-style: preserve-3d;
+}
+/* Flips around the horizontal axis (bottom edge lifts up and over, like a
+   die tumbling) rather than the vertical axis — a left-right flip read as
+   too "web-generic" next to the rest of the site. */
+.flip-card:hover .flip-card-inner, .flip-card.is-flipped .flip-card-inner { transform: rotateX(180deg); }
+.flip-card-front, .flip-card-back {
+  position: absolute; inset: 0;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  border-radius: var(--radius);
+}
+.flip-card-front.card { margin: 0; }
+.flip-card .card::before { display: none; }
+.flip-card .card:hover { transform: none; box-shadow: var(--shadow); }
+.flip-card-back {
+  transform: rotateX(180deg);
+  background: linear-gradient(135deg, var(--teal-dark), var(--teal) 85%);
+  color: var(--white);
+  padding: 20px 22px 18px;
+  display: flex; flex-direction: column; gap: 10px;
+  box-shadow: var(--shadow);
+}
+.flip-card-back h4 { margin: 0 0 2px; font-size: 15px; line-height: 1.35; }
+.flip-card-back ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; flex: 1; }
+.flip-card-back li { font-size: 12.5px; line-height: 1.4; display: flex; align-items: flex-start; gap: 8px; color: #E7F2EE; }
+.flip-card-back li::before { content: "\2713"; color: var(--gold-light); font-weight: 700; flex-shrink: 0; }
+.flip-card-back .card-cta { margin-top: auto; text-align: center; padding: 9px 20px; font-size: 13.5px; background: var(--white); color: var(--teal-dark); border-radius: 10px; font-weight: 700; text-decoration: none; }
 
 /* ---------- Feature list (icon rows) ---------- */
 .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
@@ -566,6 +669,7 @@ section { padding: 88px 0; }
 .banner h3 { margin: 0 0 6px; font-size: 22px; }
 .banner p { margin: 0; color: #CFE3DC; font-size: 14px; max-width: 480px; }
 .badge-free { background: linear-gradient(135deg, var(--gold-light), var(--gold)); color: var(--teal-dark); font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; margin-inline-start: 10px; }
+.badge-new { background: linear-gradient(135deg, var(--teal-light), var(--teal)); color: var(--white); font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; margin-inline-start: 10px; }
 
 /* ---------- Paid-product spotlight (site-builder promo) ---------- */
 .spotlight {
@@ -746,6 +850,7 @@ footer.site { background: linear-gradient(180deg, var(--teal-dark), #102921); co
   padding: 12px 24px; box-shadow: 0 -6px 20px rgba(0,0,0,.1);
 }
 .cookie-notice p { margin: 0; font-size: 13px; max-width: 560px; color: var(--grey); }
+.cookie-notice p a { color: var(--teal); font-weight: 600; text-decoration: underline; }
 .cookie-notice button { padding: 8px 20px; font-size: 13px; flex: none; }
 body.cookie-notice-active .fab { display: none; }
 
@@ -771,35 +876,6 @@ body.cookie-notice-active .fab { display: none; }
   .hero h1 { font-size: 32px; }
   .banner { flex-direction: column; text-align: center; }
 }
-
-/* ---------- Toolbox overview (catalog.html) — every product type as its
-   own horizontally-scrolling row, instead of merging them into one
-   filtered grid (that's what products.html?type=X is for). ---------- */
-.toolbox-row { margin-bottom: 44px; }
-.toolbox-row-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; gap: 12px; }
-.toolbox-row-head h2 { font-size: 20px; color: var(--teal-dark); margin: 0; }
-.toolbox-row-all { font-size: 15px; font-weight: 700; color: var(--teal); white-space: nowrap; }
-.toolbox-row-all:hover { text-decoration: underline; }
-.toolbox-scroll-wrap { position: relative; }
-.toolbox-scroll {
-  display: flex; gap: 20px; overflow-x: auto; padding: 4px 4px 14px;
-  scroll-snap-type: x proximity; scroll-behavior: smooth;
-  scrollbar-width: none; -ms-overflow-style: none;
-}
-.toolbox-scroll::-webkit-scrollbar { display: none; }
-.toolbox-card-wrap { flex: 0 0 auto; width: 250px; scroll-snap-align: start; }
-.toolbox-card-wrap .card { height: 100%; }
-.toolbox-arrow {
-  position: absolute; top: 50%; transform: translateY(-50%); z-index: 5;
-  width: 34px; height: 34px; border-radius: 50%; border: 1px solid #E2E7E5;
-  background: var(--white); box-shadow: 0 4px 14px rgba(0,0,0,.12);
-  font-size: 17px; color: var(--teal-dark); cursor: pointer;
-  display: flex; align-items: center; justify-content: center; line-height: 1;
-}
-.toolbox-arrow:hover { background: var(--ice); border-color: var(--teal-light); }
-.toolbox-arrow-start { inset-inline-start: -4px; }
-.toolbox-arrow-end { inset-inline-end: -4px; }
-@media (max-width: 640px) { .toolbox-arrow { display: none; } }
 
 /* ---------- Domain connection guide popup ---------- */
 .domain-guide-overlay {

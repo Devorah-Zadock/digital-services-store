@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=23">
+<link rel="stylesheet" href="css/style.css?v=33">
 <link rel="stylesheet" href="css/builder.css?v=2">
 <style>
   .as-section { max-width: 480px; margin: 0 auto 40px; padding: 28px; background: var(--white); border: 1px solid #EAEDEC; border-radius: var(--radius); box-shadow: var(--shadow); }
@@ -68,7 +68,6 @@
     </div>
     <div class="nav-end-group">
       <a href="account.html?redirect=tools.html" id="nav-login-link" class="nav-login nav-login-pending">כניסה</a>
-      <a href="catalog.html" class="nav-cta">לצפייה בקטלוג</a>
     </div>
     <button class="burger" aria-label="תפריט">☰</button>
   </nav>
@@ -113,8 +112,17 @@
 
   <div class="as-section as-danger">
     <h3>מחיקת חשבון</h3>
-    <p class="sub">מחיקת חשבון היא פעולה ידנית כרגע — שולחים בקשה, ואנחנו מוחקים את הפרטים תוך זמן קצר.</p>
-    <a id="as-delete-link" class="btn btn-outline" style="width:100%; box-sizing:border-box; text-align:center; color:#B23333; border-color:#F0D9D9;">בקשת מחיקת חשבון</a>
+    <p class="sub">מוחק לצמיתות את כל התוכן שלכם (אתרים, קורות חיים, הצעות מחיר, מערכות שעות) ואת החשבון עצמו. הפעולה מיידית ובלתי הפיכה.</p>
+    <button type="button" id="as-delete-start" class="btn btn-outline" style="width:100%; box-sizing:border-box; text-align:center; color:#B23333; border-color:#F0D9D9;">מחיקת החשבון שלי</button>
+    <div id="as-delete-confirm" style="display:none; margin-top:16px;">
+      <p class="sub" style="margin-bottom:10px;">כדי לאשר, הקלידו את כתובת המייל שלכם (<b id="as-delete-email-hint" style="color:var(--dark);"></b>) בשדה הבא:</p>
+      <input type="email" id="as-delete-email-input" dir="ltr" autocomplete="off" style="width:100%; box-sizing:border-box; padding:10px 12px; border-radius:8px; border:1px solid #DADFDD; font-family:inherit; font-size:14px; margin-bottom:10px;">
+      <div class="as-err" id="as-delete-err"></div>
+      <div style="display:flex; gap:8px;">
+        <button type="button" id="as-delete-cancel" class="btn btn-outline" style="flex:1;">ביטול</button>
+        <button type="button" id="as-delete-confirm-btn" class="btn" style="flex:1; background:#B23333; color:#fff;" disabled>מחיקה סופית</button>
+      </div>
+    </div>
   </div>
 </div>
 

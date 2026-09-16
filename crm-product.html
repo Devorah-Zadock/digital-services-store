@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeskKit CRM — ניהול לקוחות פשוט וחכם</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="description" content="מערכת CRM מעוצבת לניהול לקוחות עם לוח קנבן, הכל ישירות בדפדפן. תשלום חד-פעמי של 99 ₪, בלי מנוי חודשי.">
+<link rel="canonical" href="https://deskkit.co.il/crm-product.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=33">
+<style>
+  .crm-mini-board {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+    background: var(--white); border-radius: 10px; padding: 16px; width: 100%;
+  }
+  .crm-mini-col { background: var(--grey-light); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+  .crm-mini-col-label { font-size: 10px; font-weight: 800; color: var(--teal-dark); padding: 2px 4px; }
+  .crm-mini-card { background: var(--white); border-radius: 6px; padding: 8px 9px; box-shadow: 0 3px 8px rgba(0,0,0,.06); }
+  .crm-mini-card b { display: block; font-size: 11px; color: var(--dark); margin-bottom: 3px; }
+  .crm-mini-card span { font-size: 10px; color: var(--teal); font-weight: 700; }
+  .crm-payment-overlay {
+    display: none; position: fixed; inset: 0; z-index: 300; background: rgba(15,30,26,.55);
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .crm-payment-card {
+    background: var(--white); border-radius: var(--radius); padding: 40px 32px; text-align: center;
+    max-width: 360px; width: 100%; box-shadow: var(--shadow-lg);
+  }
+  .crm-payment-spinner {
+    width: 44px; height: 44px; border-radius: 50%; border: 4px solid var(--ice); border-top-color: var(--teal);
+    margin: 0 auto 18px; animation: crmSpin .8s linear infinite;
+  }
+  @keyframes crmSpin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<script>
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf("sb-") === 0 && k.indexOf("-auth-token") !== -1 && localStorage.getItem(k)) {
+        document.body.classList.add("has-sites-rail");
+        break;
+      }
+    }
+    var rw = localStorage.getItem("deskkit_rail_w");
+    if (rw) document.documentElement.style.setProperty("--rail-w", rw + "px");
+    if (localStorage.getItem("deskkit_rail_collapsed") === "1") {
+      document.documentElement.style.setProperty("--rail-w", "0px");
+      document.body.classList.add("rail-collapsed");
+    }
+  } catch (e) {}
+</script>
+
+<header class="site">
+  <nav class="nav">
+    <a href="index.html" class="brand"><span class="brand-badge"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><rect class="bm-fold" x="6" y="4" width="4" height="16" rx="2"/><path class="bm-face" d="M9,4 H13 A8,8 0 0 1 13,20 H9 Z"/></svg></span><span class="brand-text">DeskKit</span></a>
+    <div class="nav-links">
+      <a href="index.html">בית</a>
+      <a href="sites.html?browse=1">אתרים</a>
+      <a href="quote-app.html">הצעות מחיר</a>
+      <a href="products.html?type=cv">קורות חיים</a>
+      <a href="products.html?type=deck">מצגות</a>
+      <a href="products.html?type=xlsx">גליונות</a>
+      <a href="about.html">אודות</a>
+      <a href="contact.html">צור קשר</a>
+    </div>
+    <div class="nav-end-group">
+      <a href="account.html?redirect=tools.html" id="nav-login-link" class="nav-login nav-login-pending">כניסה</a>
+    </div>
+    <button class="burger" aria-label="תפריט">☰</button>
+  </nav>
+</header>
+
+<section>
+  <div class="container product-hero">
+    <div class="thumb">
+      <div class="crm-mini-board" aria-hidden="true">
+        <div class="crm-mini-col">
+          <div class="crm-mini-col-label">ליד חדש</div>
+          <div class="crm-mini-card"><b>דנה כהן</b><span>₪1,200</span></div>
+          <div class="crm-mini-card"><b>עידו לוי</b><span>₪850</span></div>
+        </div>
+        <div class="crm-mini-col">
+          <div class="crm-mini-col-label">פולו-אפ</div>
+          <div class="crm-mini-card"><b>מיכל אזולאי</b><span>₪2,400</span></div>
+        </div>
+        <div class="crm-mini-col">
+          <div class="crm-mini-col-label">נסגר בהצלחה!</div>
+          <div class="crm-mini-card"><b>יוסי מזרחי</b><span>₪3,100</span></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="breadcrumb">ניהול עסק / DeskKit CRM</div>
+      <h1>DeskKit CRM — ניהול לקוחות פשוט, בלי בלגן</h1>
+      <p class="desc">לוח קנבן מעוצב שמראה בול איפה כל לקוח נמצא בתהליך המכירה — ליד חדש, בטיפול, פולו-אפ, או כבר סגור. מוסיפים לקוח, גוררים בין השלבים, ורואים כל הזמן כמה כסף יש לכם בצנרת. הכל נשמר ישירות בדפדפן שלכם — בלי הרשמה, בלי שרת, בלי לחכות.</p>
+      <div class="price-block"><span class="price">99 ₪</span><span style="color:var(--grey); font-size:14px;">תשלום חד-פעמי — גישה לכל החיים</span></div>
+      <ul class="checklist">
+        <li>לוח קנבן עם 4 שלבי מכירה מוכנים מראש</li>
+        <li>הוספת לקוח חדש (שם, טלפון, מייל, הערות וסכום עסקה) בכמה שניות</li>
+        <li>גרירה חופשית של כרטיסי לקוחות בין השלבים</li>
+        <li>שורת סיכום שמראה אוטומטית כמה כסף יש בכל העסקאות הפתוחות</li>
+        <li>בלי מנוי חודשי, בלי חוזה, בלי הגבלת מספר לקוחות</li>
+      </ul>
+      <button type="button" class="btn btn-gold" id="crm-buy-btn" style="font-size:16px; padding:16px 36px;">רכישה מאובטחת וגישה מיידית למערכת</button>
+      <div class="note-box">תשלום חד-פעמי אמיתי מגיע בקרוב עם חשבון משתמש; בינתיים הרכישה כאן היא הדגמה שפותחת לכם גישה מיידית למערכת, כדי שתוכלו להתחיל לעבוד בה כבר עכשיו.</div>
+    </div>
+  </div>
+</section>
+
+<section class="bg-ice">
+  <div class="container">
+    <div class="section-head">
+      <div class="kicker">למה DeskKit CRM</div>
+      <h2>לא צריך מערכת מסובכת כדי לדעת מה קורה עם הלקוחות</h2>
+      <p>מערכות CRM גדולות עולות מאות שקלים בחודש, דורשות הדרכה, ומלאות בפיצ'רים שאף פעם לא תשתמשו בהם. DeskKit CRM עושה בדיוק את הדבר האחד שחשוב — לראות איפה כל לקוח נמצא — בלי כל השאר.</p>
+    </div>
+    <div class="features">
+      <div class="feature">
+        <div class="icon">💳</div>
+        <h4>תשלום חד-פעמי</h4>
+        <p>99 ₪ פעם אחת, לא כל חודש. בלי הפתעות בכרטיס האשראי.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">⚡</div>
+        <h4>מוכן תוך שנייה</h4>
+        <p>בלי הדרכה, בלי הטמעה. פותחים ומתחילים לעבוד מיד.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">🔒</div>
+        <h4>המידע אצלכם</h4>
+        <p>כל הלידים נשמרים בדפדפן שלכם, לא בשרת של מישהו אחר.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="crm-payment-overlay" id="crm-payment-overlay">
+  <div class="crm-payment-card">
+    <div class="crm-payment-spinner" id="crm-payment-spinner"></div>
+    <h3 id="crm-payment-title" style="margin:0 0 8px;">מעבדים את התשלום...</h3>
+    <p id="crm-payment-sub" style="color:var(--grey); font-size:13.5px; margin:0;">רגע אחד, כמעט סיימנו.</p>
+  </div>
+</div>
+
+<footer class="site">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <h5>DeskKit</h5>
+        <p style="font-size:14px; max-width:320px;">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
+      </div>
+      <div>
+        <h5>ניווט</h5>
+        <ul>
+          <li><a href="products.html?type=cv">קורות חיים</a></li>
+          <li><a href="products.html?type=deck">מצגות</a></li>
+          <li><a href="products.html?type=xlsx">גליונות</a></li>
+          <li><a href="sites.html?browse=1">אתרים</a></li>
+          <li><a href="quote-app.html">הצעות מחיר</a></li>
+          <li><a href="about.html">אודות</a></li>
+          <li><a href="contact.html">צור קשר</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>מידע</h5>
+        <ul>
+          <li><a href="guides.html">מדריכים</a></li>
+          <li><a href="admin.html">ניהול</a></li>
+          <li><a href="terms.html">מדיניות</a></li>
+          <li><a href="accessibility.html">נגישות</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>צור קשר</h5>
+        <ul>
+          <li>digital.dz.studio@gmail.com</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">© 2026 DeskKit. כל הזכויות שמורות.</div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/nav-auth.js"></script>
+<script src="js/my-panel.js?v=9"></script>
+<script src="js/main.js"></script>
+<script src="js/crm.js?v=1"></script>
+<script>
+  /* Purchase simulation, exactly as scoped: no real payment gateway here
+     yet (see the note box above) — clicking the button just shows a brief
+     "processing" state so the flow reads like a real checkout, then flips
+     the same unlock flag crm.html checks on load and sends the customer
+     straight there. */
+  document.getElementById("crm-buy-btn").addEventListener("click", () => {
+    const overlay = document.getElementById("crm-payment-overlay");
+    const title = document.getElementById("crm-payment-title");
+    const sub = document.getElementById("crm-payment-sub");
+    const spinner = document.getElementById("crm-payment-spinner");
+    overlay.style.display = "flex";
+    setTimeout(() => {
+      spinner.style.display = "none";
+      title.textContent = "התשלום אושר! ✓";
+      sub.textContent = "מעבירים אתכם למערכת...";
+      crmUnlock();
+      setTimeout(() => { window.location.href = "crm.html"; }, 900);
+    }, 1400);
+  });
+</script>
+</body>
+</html>

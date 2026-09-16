@@ -34,6 +34,19 @@ function siteDataKey(template) {
   return SITE_DATA_KEY + "_" + template;
 }
 
+// Display-only mirror of PUBLISH_LIMIT in supabase/functions/publish-
+// site/index.ts, which is what actually enforces it server-side — keep
+// the two in sync by hand if the limit ever changes.
+const SITE_PUBLISH_LIMIT = 5;
+function renderPublishRemaining() {
+  const el = document.getElementById("publish-remaining");
+  if (!el) return;
+  const left = Math.max(0, SITE_PUBLISH_LIMIT - sitePublishCount);
+  el.textContent = left > 0
+    ? `נותרו ${left} מתוך ${SITE_PUBLISH_LIMIT} עדכוני פרסום חינם לאתר זה.`
+    : `הגעתם למגבלת ${SITE_PUBLISH_LIMIT} עדכוני הפרסום החינמיים לאתר זה — אפשר עדיין להוריד את קובצי האתר (ZIP) ולהעלות אותם בעצמכם.`;
+}
+
 const SITE_DEFAULT = {
   businessName: "",
   tagline: "",
@@ -46,10 +59,30 @@ const SITE_DEFAULT = {
   services: [{ name: "", desc: "", price: "" }],
   pages: { about: false, contact: false },
   heroImage: "",
+  heroImages: [],
   videoUrl: "",
+  heroVideoBg: false,
 };
 
-let siteState = { template: "local-service", data: JSON.parse(JSON.stringify(SITE_DEFAULT)) };
+/* Matches the per-category default accent colors in site-templates.js
+   (same category, same color) — without this, every brand-new project
+   started life with SITE_DEFAULT's hardcoded green regardless of which
+   template it was, so the catalog thumbnails looked varied while the
+   actual builder/preview never did. */
+const SITE_TEMPLATE_DEFAULT_COLOR = {
+  "local-service": "#2563EB", "process": "#2563EB",
+  "freelancer": "#7C3AED", "portfolio": "#7C3AED",
+  "catalog": "#C2410C", "boutique": "#C2410C",
+  "gallery": "#B5175A", "bold": "#B5175A", "studio": "#B5175A",
+  "elegant": "#B8860B", "noir": "#B8860B",
+};
+function freshSiteData(template) {
+  const data = JSON.parse(JSON.stringify(SITE_DEFAULT));
+  data.primaryColor = SITE_TEMPLATE_DEFAULT_COLOR[template] || SITE_DEFAULT.primaryColor;
+  return data;
+}
+
+let siteState = { template: "local-service", data: freshSiteData("local-service") };
 let lastVerifiedPurchase = null;
 let previewPage = "index";
 
@@ -60,6 +93,11 @@ function ensurePagesShape(data) {
   if (!data.pages || typeof data.pages !== "object") data.pages = { about: false, contact: false };
   data.pages.about = !!data.pages.about;
   data.pages.contact = !!data.pages.contact;
+  // heroImages didn't exist before the rotating hero-image gallery
+  // feature — every project saved before that update needs this to
+  // become a real array, not stay undefined, the first time it loads.
+  if (!Array.isArray(data.heroImages)) data.heroImages = [];
+  data.heroVideoBg = !!data.heroVideoBg;
   return data;
 }
 
@@ -89,17 +127,27 @@ function renderServicesList() {
    builder.html?template=) so the wizard below can just read it from
    the URL on load like the CV builder already does. */
 function siteTplCardHtml(key, t) {
+  const features = t.features || [];
   return `
-    <div class="card" data-cat="${t.categorySlug}">
-      <div class="thumb"><img src="${t.thumb}" alt="${escapeHtmlS(t.label)}" loading="lazy"></div>
-      <div class="body">
-        <div class="card-meta">
-          <span class="tag">${escapeHtmlS(t.category)}</span>
-          <span class="price">99 ₪</span>
+    <div class="flip-card" data-cat="${t.categorySlug}">
+      <div class="flip-card-inner">
+        <div class="flip-card-front card" data-cat="${t.categorySlug}">
+          <div class="thumb"><img src="${t.thumb}" alt="${escapeHtmlS(t.label)}" loading="lazy"></div>
+          <div class="body">
+            <div class="card-meta">
+              <span class="tag">${escapeHtmlS(t.category)}</span>
+              <span class="price">199 ₪</span>
+            </div>
+            <h3>${escapeHtmlS(t.label)}</h3>
+            <p style="font-size:13px; color:var(--grey); margin:0; flex:1;">${escapeHtmlS(t.desc)}</p>
+            <a href="sites.html?template=${key}" class="btn btn-teal card-cta">בחירה ועריכה</a>
+          </div>
         </div>
-        <h3>${escapeHtmlS(t.label)}</h3>
-        <p style="font-size:13px; color:var(--grey); margin:0; flex:1;">${escapeHtmlS(t.desc)}</p>
-        <a href="sites.html?template=${key}" class="btn btn-teal card-cta">בחירה ועריכה</a>
+        <div class="flip-card-back">
+          <h4>${escapeHtmlS(t.label)} — מה כלול</h4>
+          <ul>${features.map((f) => `<li>${escapeHtmlS(f)}</li>`).join("")}</ul>
+          <a href="sites.html?template=${key}" class="card-cta">בחירה ועריכה</a>
+        </div>
       </div>
     </div>`;
 }
@@ -125,6 +173,16 @@ function renderTplCatalog() {
   });
   if (searchEl) searchEl.addEventListener("input", () => { term = searchEl.value; apply(); });
   apply();
+
+  // Devices with no real hover (touch) get a tap-to-flip toggle instead —
+  // :hover alone would leave the card's back stuck showing after a tap,
+  // since there's no "unhover" gesture to flip it back.
+  gridEl.addEventListener("click", (e) => {
+    if (e.target.closest(".card-cta")) return;
+    if (window.matchMedia("(hover: hover)").matches) return;
+    const card = e.target.closest(".flip-card");
+    if (card) card.classList.toggle("is-flipped");
+  });
 }
 
 function renderCurrentTplInfo() {
@@ -161,7 +219,10 @@ function renderFormValues() {
   document.getElementById("s-page-about").checked = d.pages.about;
   document.getElementById("s-page-contact").checked = d.pages.contact;
   document.getElementById("s-video").value = d.videoUrl || "";
+  const videoBgCheckbox = document.getElementById("s-video-bg");
+  if (videoBgCheckbox) videoBgCheckbox.checked = d.heroVideoBg;
   renderPhotoPreview();
+  renderGalleryPreview();
   renderServicesList();
 }
 
@@ -170,6 +231,15 @@ function renderPhotoPreview() {
   el.innerHTML = siteState.data.heroImage
     ? `<img src="${siteState.data.heroImage}" alt="">`
     : `<span class="site-photo-placeholder">🖼️</span>`;
+}
+
+const SITE_GALLERY_MAX = 5;
+function renderGalleryPreview() {
+  const el = document.getElementById("s-gallery-preview");
+  const images = siteState.data.heroImages || [];
+  el.innerHTML = images.map((src, i) =>
+    `<div class="site-gallery-thumb" data-idx="${i}"><img src="${src}" alt=""><button type="button" data-action="remove-gallery-photo" aria-label="הסרה">✕</button></div>`
+  ).join("");
 }
 
 function enabledSitePages() {
@@ -269,10 +339,59 @@ function wireForm() {
     renderPhotoPreview();
     renderSitePreview();
   });
+
+  document.getElementById("s-gallery").addEventListener("change", (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    if (!siteState.data.heroImages) siteState.data.heroImages = [];
+    const roomLeft = SITE_GALLERY_MAX - siteState.data.heroImages.length;
+    if (roomLeft <= 0) {
+      alert(`אפשר עד ${SITE_GALLERY_MAX} תמונות בגלריה — הסירו אחת כדי להוסיף חדשה.`);
+      e.target.value = "";
+      return;
+    }
+    const toAdd = files.slice(0, roomLeft);
+    if (files.length > toAdd.length) {
+      alert(`אפשר עד ${SITE_GALLERY_MAX} תמונות בגלריה — נוספו רק ${toAdd.length} מתוך ${files.length} שבחרתם.`);
+    }
+    let remaining = toAdd.length;
+    toAdd.forEach((file) => {
+      if (file.size > 6 * 1024 * 1024) {
+        alert(`"${file.name}" גדולה מדי — בחרו קובץ עד 6MB.`);
+        remaining -= 1;
+        if (remaining === 0) { renderGalleryPreview(); renderSitePreview(); }
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        siteState.data.heroImages.push(reader.result);
+        remaining -= 1;
+        if (remaining === 0) { renderGalleryPreview(); renderSitePreview(); }
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
+  });
+  document.getElementById("s-gallery-preview").addEventListener("click", (e) => {
+    const btn = e.target.closest('[data-action="remove-gallery-photo"]');
+    if (!btn) return;
+    const idx = parseInt(btn.closest("[data-idx]").dataset.idx, 10);
+    siteState.data.heroImages.splice(idx, 1);
+    renderGalleryPreview();
+    renderSitePreview();
+  });
+
   document.getElementById("s-video").addEventListener("input", (e) => {
     siteState.data.videoUrl = e.target.value;
     renderSitePreview();
   });
+  const videoBgCheckbox = document.getElementById("s-video-bg");
+  if (videoBgCheckbox) {
+    videoBgCheckbox.addEventListener("change", (e) => {
+      siteState.data.heroVideoBg = e.target.checked;
+      renderSitePreview();
+    });
+  }
 
   document.getElementById("s-page-about").addEventListener("change", (e) => {
     ensurePagesShape(siteState.data).pages.about = e.target.checked;
@@ -378,24 +497,72 @@ async function downloadSiteZip() {
 async function publishSite() {
   const btn = document.getElementById("publish-site-btn");
   const note = document.getElementById("publish-note");
-  if (!siteCurrentUserId || !siteProjectId) {
-    note.textContent = "שומרים קודם את האתר... נסו שוב בעוד רגע.";
+  if (!siteCurrentUserId) {
+    window.location.href = "account.html?redirect=" + encodeURIComponent(location.pathname + location.search);
     return;
+  }
+  // A blank business name means the placeholder text ("שם העסק שלכם" etc.)
+  // is literally all a real visitor would see — worth a real business
+  // going live on a public URL, not something to let happen by accident.
+  if (!siteState.data.businessName || !siteState.data.businessName.trim()) {
+    note.textContent = "לפני הפרסום, צריך למלא לפחות את שם העסק.";
+    document.getElementById("s-name").focus();
+    return;
+  }
+  // A real business name alone still leaves every OTHER field showing its
+  // raw instructional placeholder ("תארו כאן בקצרה...", "פרטו כאן טלפון,
+  // מייל וכתובת" etc.) straight to a real visitor — worth a clear,
+  // skippable warning rather than silently publishing half-filled
+  // instructions as if they were real content.
+  const d = siteState.data;
+  const missing = [];
+  if (!d.tagline || !d.tagline.trim()) missing.push("תיאור קצר");
+  if (!d.about || !d.about.trim()) missing.push("קטע \"עלינו\"");
+  if (!(d.services || []).some((s) => s.name && s.name.trim())) missing.push("שירותים/מוצרים");
+  if (!d.phone && !d.whatsapp && !d.email && !d.address) missing.push("פרטי יצירת קשר");
+  if (missing.length) {
+    const proceed = confirm(
+      "עדיין חסר תוכן אמיתי ב: " + missing.join(", ") + ".\n" +
+      "בלי זה, מבקרים באתר יראו את הטקסטים ההנחיה שנועדו רק לכם, לא תוכן אמיתי.\n\n" +
+      "לפרסם בכל זאת?"
+    );
+    if (!proceed) return;
   }
   const originalLabel = btn.textContent;
   btn.disabled = true;
   btn.textContent = "מפרסמים...";
   note.textContent = "";
   try {
+    // Publish needs a real project id to attach the deploy to. Used to
+    // just tell the visitor "saving first, try again" and stop there —
+    // but nothing ever actually triggered that save, so without a
+    // separate manual click on the top "שמירה" button first, every
+    // retry hit this same message forever.
+    if (!siteProjectId) await saveSiteNow();
+    if (!siteProjectId) {
+      note.textContent = "לא הצלחנו לשמור את האתר. נסו שוב בעוד רגע.";
+      return;
+    }
     const pages = {};
     enabledSitePages().forEach((page) => { pages[page] = currentSiteHtml(page); });
     const { data, error } = await supabaseClient.functions.invoke("publish-site", {
       body: { siteProjectId, userId: siteCurrentUserId, pages },
     });
-    if (error || !data || !data.success) {
+    if (error || !data) {
       note.textContent = "הפרסום נכשל. נסו שוב בעוד רגע.";
       return;
     }
+    if (data.reason === "limit_reached") {
+      sitePublishCount = data.publishCount;
+      renderPublishRemaining();
+      note.innerHTML = `הגעתם למספר המרבי של עדכוני פרסום חינמיים לאתר הזה. אפשר עדיין ללחוץ על "הורדת קובצי האתר (ZIP)" למטה ולהעלות אותם בעצמכם לכל שירות אחסון — זה לא מוגבל. רוצים להמשיך לפרסם דרכנו? <a href="mailto:digital.dz.studio@gmail.com?subject=${encodeURIComponent("בקשה להמשך פרסום — בניית אתר")}" style="color:inherit; text-decoration:underline;">כתבו לנו</a>.`;
+      return;
+    }
+    if (!data.success) {
+      note.textContent = "הפרסום נכשל. נסו שוב בעוד רגע.";
+      return;
+    }
+    if (typeof data.publishCount === "number") { sitePublishCount = data.publishCount; renderPublishRemaining(); }
     note.innerHTML = `
       <div style="margin-bottom:4px;">האתר חי!</div>
       <a href="${data.url}" target="_blank" rel="noopener" style="display:block; font-size:16px; font-weight:700; color:#2B6CB0; word-break:break-all;">${data.url}</a>
@@ -430,6 +597,7 @@ function refreshUnlockUI() {
     gate.style.display = "none";
     pending.style.display = "none";
     done.style.display = "";
+    renderPublishRemaining();
     return;
   }
   done.style.display = "none";
@@ -446,12 +614,21 @@ function refreshUnlockUI() {
    write to, so a key can finalize exactly one (account, template) pair,
    full stop — not just "not reused by this same signed-in account",
    which is all a client-side check could ever guarantee. */
+let siteVerifying = false;
 async function verifySiteLicense() {
+  // Without this guard, a double-click (plausible now that the retry
+  // logic can take 3-4.5s round-trip) fires two overlapping requests, and
+  // whichever response resolves LAST overwrites the note — including a
+  // stale "invalid" landing on top of an already-succeeded verification.
+  if (siteVerifying) return;
   const input = document.getElementById("license-input");
   const note = document.getElementById("license-note");
   const key = input.value.trim();
   if (!key) { note.textContent = "יש להזין קוד רישוי."; note.className = "unlock-note err"; return; }
   if (!siteCurrentUserId) { note.textContent = "יש להתחבר לחשבון כדי לפתוח את ההורדה."; note.className = "unlock-note err"; return; }
+  siteVerifying = true;
+  const verifyBtn = document.getElementById("verify-btn");
+  if (verifyBtn) verifyBtn.disabled = true;
   note.textContent = "בודקים...";
   note.className = "unlock-note";
   try {
@@ -469,9 +646,16 @@ async function verifySiteLicense() {
       return;
     }
     if (!data.success) {
-      note.textContent = data.reason === "redeemed-elsewhere" || data.reason === "different-template"
-        ? "קוד הרישוי הזה כבר שימש לפתיחת אתר אחר. לתבנית נוספת נדרשת רכישה נפרדת."
-        : "קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב.";
+      // A real, live escape hatch for a genuinely stuck paying customer —
+      // not just "try again" with nowhere left to go. Prefills the email
+      // with exactly the key they tried, so following up doesn't start
+      // from scratch.
+      const supportMailto = `mailto:digital.dz.studio@gmail.com?subject=${encodeURIComponent("בעיה בקוד רישוי — בניית אתר")}&body=${encodeURIComponent("הקוד שהזנתי: " + key)}`;
+      const supportLine = `<br>עדיין תקועים? <a href="${supportMailto}" style="color:inherit; text-decoration:underline;">כתבו לנו ונפתור את זה ידנית</a>.`;
+      const invalidMsg = "קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב." + (data.gumroadMessage ? ` (Gumroad: ${data.gumroadMessage})` : "") + supportLine;
+      note.innerHTML = data.reason === "redeemed-elsewhere" || data.reason === "different-template"
+        ? "קוד הרישוי הזה כבר שימש לפתיחת אתר אחר. לתבנית נוספת נדרשת רכישה נפרדת." + supportLine
+        : invalidMsg;
       note.className = "unlock-note err";
       return;
     }
@@ -494,8 +678,22 @@ async function verifySiteLicense() {
   } catch (err) {
     note.textContent = "שגיאת חיבור לשירות האימות. נסו שוב בעוד רגע.";
     note.className = "unlock-note err";
+  } finally {
+    siteVerifying = false;
+    if (verifyBtn) verifyBtn.disabled = false;
   }
 }
+
+// sites.html doesn't load js/require-auth.js (its auth gating is
+// conditional — only entering the wizard needs an account, browsing the
+// catalog doesn't), so it has no window.revealGatedPage of its own. This
+// page defines it directly instead: site-cloud-save.js calls it only
+// once it has finished correcting siteState for the real signed-in
+// account, which is what makes it safe to finally show the page.
+window.revealGatedPage = function () {
+  const overlay = document.getElementById("auth-gate-overlay");
+  if (overlay) overlay.remove();
+};
 
 document.addEventListener("DOMContentLoaded", () => {
   const params = new URLSearchParams(location.search);
@@ -510,12 +708,14 @@ document.addEventListener("DOMContentLoaded", () => {
     // A specific, valid template with no cache of its own yet — a
     // genuinely fresh project. Never inherit whatever a DIFFERENT
     // template's cache happens to hold.
-    siteState = { template: urlTemplate, data: JSON.parse(JSON.stringify(SITE_DEFAULT)) };
+    siteState = { template: urlTemplate, data: freshSiteData(urlTemplate) };
   }
   ensurePagesShape(siteState.data);
   const hasSavedContent = !!(saved && (saved.data.businessName || (saved.data.services || []).some((s) => s.name)));
 
-  document.getElementById("buy-link").href = SITE_GUMROAD_CONFIG.checkoutUrl;
+  const buyLink = document.getElementById("buy-link");
+  buyLink.href = SITE_GUMROAD_CONFIG.checkoutUrl;
+  wireBuyLinkOnce(buyLink);
   wireForm();
   refreshUnlockUI();
 
@@ -534,7 +734,16 @@ document.addEventListener("DOMContentLoaded", () => {
       if (data.session && data.session.user) {
         if (urlTemplate && SITE_TEMPLATES[urlTemplate]) siteState.template = urlTemplate;
         showWizard();
-        if (overlay) overlay.remove();
+        // Confirmed live: this check and site-cloud-save.js's own account
+        // check are two independent async calls with no guaranteed order.
+        // Removing the overlay right here, the moment THIS faster one
+        // resolves, could reveal the page before site-cloud-save.js has
+        // corrected siteState away from whatever the synchronous pre-auth
+        // loadSiteState() peek guessed (a DIFFERENT account's cached
+        // draft, on a shared/reused browser) — briefly showing someone
+        // else's content. window.revealGatedPage() (called by
+        // site-cloud-save.js only AFTER that correction) is now the sole
+        // place responsible for removing the overlay.
       } else {
         const here = location.pathname.split("/").pop() + location.search;
         location.href = "account.html?redirect=" + encodeURIComponent(here);
@@ -574,9 +783,17 @@ document.addEventListener("DOMContentLoaded", () => {
     window.open(url.toString(), "_blank", "noopener");
   });
 
-  document.getElementById("finish-btn").addEventListener("click", () => {
+  document.getElementById("finish-btn").addEventListener("click", async () => {
     financeGateOpened = true;
     refreshUnlockUI();
+    // Whatever's been typed so far — even just a business name, even
+    // nothing at all — gets saved right here, the moment someone commits
+    // to buying. Without this, the project only had a real row (and a
+    // real id for a license to attach to) once someone separately clicked
+    // "שמירה" or finished the whole purchase — so verifying a license
+    // right after landing on this screen could succeed against Gumroad
+    // and still have nothing real to attach to yet.
+    if (typeof saveSiteNow === "function") await saveSiteNow();
   });
 
   document.getElementById("verify-btn").addEventListener("click", verifySiteLicense);

@@ -3,22 +3,42 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google-site-verification" content="w-GXefALTSEde6IQVMNBvUdTEpVhOXfp81liZzSea4s" />
 <title>DeskKit — תבניות עסקיות מוכנות</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="description" content="תבניות קורות חיים ומצגות עסקיות בעיצוב מקצועי, מוכנות לעריכה ולשימוש מיידי.">
+<meta name="description" content="עריכת קורות חיים בעיצוב מקצועי, בניית אתר עסקי והצעות מחיר — הכול במקום אחד, מוכן לשימוש תוך דקות.">
 <link rel="canonical" href="https://deskkit.co.il/index.html">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="he_IL">
 <meta property="og:site_name" content="DeskKit">
 <meta property="og:title" content="DeskKit — תבניות עסקיות מוכנות">
-<meta property="og:description" content="קורות חיים, מצגות, הצעות מחיר ואתר עסקי שלם — מוכנים תוך דקות, בעיצוב מקצועי. בלי מנוי חודשי.">
+<meta property="og:description" content="עריכת קורות חיים, מצגות, הצעות מחיר ובניית אתר עסקי — מוכנים תוך דקות, בעיצוב מקצועי. בלי מנוי חודשי.">
 <meta property="og:url" content="https://deskkit.co.il/index.html">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "DeskKit",
+  "url": "https://deskkit.co.il/",
+  "logo": "https://deskkit.co.il/apple-touch-icon.png",
+  "sameAs": []
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "DeskKit",
+  "url": "https://deskkit.co.il/",
+  "inLanguage": "he-IL"
+}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=23">
+<link rel="stylesheet" href="css/style.css?v=33">
 </head>
 <body>
 <script>
@@ -49,18 +69,18 @@
   <nav class="nav">
     <a href="index.html" class="brand"><span class="brand-badge"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><rect class="bm-fold" x="6" y="4" width="4" height="16" rx="2"/><path class="bm-face" d="M9,4 H13 A8,8 0 0 1 13,20 H9 Z"/></svg></span><span class="brand-text">DeskKit</span></a>
     <div class="nav-links">
-      <a href="index.html" class="active">בית</a>
-      <a href="sites.html?browse=1">אתרים</a>
-      <a href="quote-app.html">הצעות מחיר</a>
-      <a href="products.html?type=cv">קורות חיים</a>
-      <a href="products.html?type=deck">מצגות</a>
-      <a href="products.html?type=xlsx">גליונות</a>
-      <a href="about.html">אודות</a>
-      <a href="contact.html">צור קשר</a>
+      <a href="index.html" class="active" data-i18n="nav_home">בית</a>
+      <a href="sites.html?browse=1" data-i18n="nav_sites">אתרים</a>
+      <a href="quote-app.html" data-i18n="nav_quotes">הצעות מחיר</a>
+      <a href="products.html?type=cv" data-i18n="nav_cv">קורות חיים</a>
+      <a href="products.html?type=deck" data-i18n="nav_decks">מצגות</a>
+      <a href="products.html?type=xlsx" data-i18n="nav_xlsx">גליונות</a>
+      <a href="about.html" data-i18n="nav_about">אודות</a>
+      <a href="contact.html" data-i18n="nav_contact">צור קשר</a>
     </div>
     <div class="nav-end-group">
-      <a href="account.html?redirect=tools.html" id="nav-login-link" class="nav-login nav-login-pending">כניסה</a>
-      <a href="catalog.html" class="nav-cta">לצפייה בקטלוג</a>
+      <a href="account.html?redirect=tools.html" id="nav-login-link" class="nav-login nav-login-pending" data-i18n="nav_login">כניסה</a>
+      <button type="button" id="lang-toggle" class="lang-toggle" aria-label="Switch language">EN</button>
     </div>
     <button class="burger" aria-label="תפריט">☰</button>
   </nav>
@@ -69,25 +89,32 @@
 <section class="home-hero">
   <div class="container home-hero-grid">
     <div class="home-hero-text">
-      <span class="home-hero-eyebrow">כלים דיגיטליים לעסק שלך</span>
-      <h1>תבניות לעיצוב<br>בבילדר חי — <span class="accent">בחינם</span></h1>
-      <p class="lead">בוחרים תבנית, רואים תוצאה בזמן אמת, ומורידים תוך דקות.</p>
+      <span class="home-hero-eyebrow" data-i18n="hero_eyebrow">כלים דיגיטליים לעסק שלך</span>
+      <h1><span data-i18n="hero_h1_1">תבניות לעיצוב</span><br><span data-i18n="hero_h1_2">בבילדר חי — </span><span class="accent" data-i18n="hero_h1_3">בחינם</span></h1>
+      <p class="lead" data-i18n="hero_lead">בוחרים תבנית, רואים תוצאה בזמן אמת, ומורידים תוך דקות.</p>
       <div class="cta-row">
-        <a href="catalog.html" class="btn btn-gold">בואו נתחיל</a>
-        <a href="#how" class="btn btn-outline-dark">איך זה עובד</a>
+        <a href="#tools" class="btn btn-gold" data-i18n="hero_cta_start">בואו נתחיל</a>
+        <a href="#how" class="btn btn-outline-dark" data-i18n="hero_cta_how">איך זה עובד</a>
       </div>
     </div>
     <div class="home-hero-visual" aria-hidden="true">
-      <div class="hhv-glow"></div>
-      <div class="hhv-circle" id="hero-carousel">
-        <img class="hhv-slide active" src="images/previews/cv-general-modern.webp" alt="">
-        <img class="hhv-slide" src="images/previews/site-noir.webp" alt="">
-        <img class="hhv-slide" src="images/previews/quote-modern.webp" alt="">
-        <img class="hhv-slide" src="images/previews/deck-investor-pitch.webp" alt="">
-        <img class="hhv-slide" src="images/previews/cv-design-creative.webp" alt="">
-      </div>
-      <div class="hhv-dots" id="hero-carousel-dots">
-        <span class="active"></span><span></span><span></span><span></span><span></span>
+      <!-- The header's own brand mark (.brand-badge), scaled way up — same
+           teal-gold gradient square, same white "D" shape, left blank in
+           the middle — with real template examples arranged in a neat,
+           composed frame around it, in the colored margin only. -->
+      <div class="hhv-badge">
+        <svg class="hhv-badge-mark" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="6" y="4" width="4" height="16" rx="2"/>
+          <path d="M9,4 H13 A8,8 0 0 1 13,20 H9 Z"/>
+        </svg>
+        <img class="hhv-badge-tile" style="top:5%; inset-inline-start:22%; width:17%; height:13%;" src="images/previews/hero-cv-1.webp" alt="">
+        <img class="hhv-badge-tile" style="top:5%; inset-inline-start:60%; width:17%; height:13%;" src="images/previews/hero-site.webp" alt="">
+        <img class="hhv-badge-tile" style="top:22%; inset-inline-start:5%; width:16%; height:13%;" src="images/previews/xlsx-cashflow.webp" alt="">
+        <img class="hhv-badge-tile" style="top:44%; inset-inline-start:4%; width:16%; height:13%;" src="images/previews/hero-quote.webp" alt="">
+        <img class="hhv-badge-tile" style="top:22%; inset-inline-start:79%; width:16%; height:13%;" src="images/previews/xlsx-timeline.webp" alt="">
+        <img class="hhv-badge-tile" style="top:44%; inset-inline-start:80%; width:16%; height:13%;" src="images/previews/hero-deck.webp" alt="">
+        <img class="hhv-badge-tile" style="top:82%; inset-inline-start:22%; width:17%; height:13%;" src="images/previews/hero-cv-2.webp" alt="">
+        <img class="hhv-badge-tile" style="top:82%; inset-inline-start:60%; width:17%; height:13%;" src="images/previews/xlsx-pnl.webp" alt="">
       </div>
     </div>
   </div>
@@ -95,93 +122,115 @@
 
 <div class="marquee" aria-hidden="true">
   <div class="marquee-track">
-    <span class="marquee-item"><span class="dot"></span>100% חינם</span>
-    <span class="marquee-item"><span class="dot"></span>כניסה מהירה עם Google</span>
-    <span class="marquee-item"><span class="dot"></span>PDF מיידי</span>
-    <span class="marquee-item"><span class="dot"></span>עברית ואנגלית</span>
-    <span class="marquee-item"><span class="dot"></span>15+ תבניות קורות חיים</span>
-    <span class="marquee-item"><span class="dot"></span>5 מצגות עסקיות</span>
-    <span class="marquee-item"><span class="dot"></span>4 גיליונות Excel</span>
-    <span class="marquee-item"><span class="dot"></span>עיצוב שונה בכל תבנית</span>
-    <span class="marquee-item"><span class="dot"></span>בחירת גופן וצבע</span>
-    <span class="marquee-item"><span class="dot"></span>תצוגה חיה בזמן אמת</span>
-    <span class="marquee-item"><span class="dot"></span>בלי מנוי חודשי</span>
-    <span class="marquee-item"><span class="dot"></span>הצעות מחיר מותאמות אישית</span>
-    <span class="marquee-item"><span class="dot"></span>אתר עסקי תוך דקות</span>
-    <span class="marquee-item"><span class="dot"></span>שמירה בענן</span>
-    <span class="marquee-item"><span class="dot"></span>תמיכה מלאה בעברית</span>
-    <span class="marquee-item"><span class="dot"></span>100% חינם</span>
-    <span class="marquee-item"><span class="dot"></span>כניסה מהירה עם Google</span>
-    <span class="marquee-item"><span class="dot"></span>PDF מיידי</span>
-    <span class="marquee-item"><span class="dot"></span>עברית ואנגלית</span>
-    <span class="marquee-item"><span class="dot"></span>15+ תבניות קורות חיים</span>
-    <span class="marquee-item"><span class="dot"></span>5 מצגות עסקיות</span>
-    <span class="marquee-item"><span class="dot"></span>4 גיליונות Excel</span>
-    <span class="marquee-item"><span class="dot"></span>עיצוב שונה בכל תבנית</span>
-    <span class="marquee-item"><span class="dot"></span>בחירת גופן וצבע</span>
-    <span class="marquee-item"><span class="dot"></span>תצוגה חיה בזמן אמת</span>
-    <span class="marquee-item"><span class="dot"></span>בלי מנוי חודשי</span>
-    <span class="marquee-item"><span class="dot"></span>הצעות מחיר מותאמות אישית</span>
-    <span class="marquee-item"><span class="dot"></span>אתר עסקי תוך דקות</span>
-    <span class="marquee-item"><span class="dot"></span>שמירה בענן</span>
-    <span class="marquee-item"><span class="dot"></span>תמיכה מלאה בעברית</span>
-    <span class="marquee-item"><span class="dot"></span>100% חינם</span>
-    <span class="marquee-item"><span class="dot"></span>כניסה מהירה עם Google</span>
-    <span class="marquee-item"><span class="dot"></span>PDF מיידי</span>
-    <span class="marquee-item"><span class="dot"></span>עברית ואנגלית</span>
-    <span class="marquee-item"><span class="dot"></span>15+ תבניות קורות חיים</span>
-    <span class="marquee-item"><span class="dot"></span>5 מצגות עסקיות</span>
-    <span class="marquee-item"><span class="dot"></span>4 גיליונות Excel</span>
-    <span class="marquee-item"><span class="dot"></span>עיצוב שונה בכל תבנית</span>
-    <span class="marquee-item"><span class="dot"></span>בחירת גופן וצבע</span>
-    <span class="marquee-item"><span class="dot"></span>תצוגה חיה בזמן אמת</span>
-    <span class="marquee-item"><span class="dot"></span>בלי מנוי חודשי</span>
-    <span class="marquee-item"><span class="dot"></span>הצעות מחיר מותאמות אישית</span>
-    <span class="marquee-item"><span class="dot"></span>אתר עסקי תוך דקות</span>
-    <span class="marquee-item"><span class="dot"></span>שמירה בענן</span>
-    <span class="marquee-item"><span class="dot"></span>תמיכה מלאה בעברית</span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_free">100% חינם</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_google">כניסה מהירה עם Google</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_pdf">PDF מיידי</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_langs">עברית ואנגלית</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_cv15">15+ תבניות קורות חיים</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_decks5">5 מצגות עסקיות</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_xlsx4">4 גיליונות Excel</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_uniquedesign">עיצוב שונה בכל תבנית</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_fontcolor">בחירת גופן וצבע</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_livepreview">תצוגה חיה בזמן אמת</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_nosub">בלי מנוי חודשי</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_customquotes">הצעות מחיר מותאמות אישית</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_siteminutes">אתר עסקי תוך דקות</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_cloudsave">שמירה בענן</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_hebrewsupport">תמיכה מלאה בעברית</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_free">100% חינם</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_google">כניסה מהירה עם Google</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_pdf">PDF מיידי</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_langs">עברית ואנגלית</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_cv15">15+ תבניות קורות חיים</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_decks5">5 מצגות עסקיות</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_xlsx4">4 גיליונות Excel</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_uniquedesign">עיצוב שונה בכל תבנית</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_fontcolor">בחירת גופן וצבע</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_livepreview">תצוגה חיה בזמן אמת</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_nosub">בלי מנוי חודשי</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_customquotes">הצעות מחיר מותאמות אישית</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_siteminutes">אתר עסקי תוך דקות</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_cloudsave">שמירה בענן</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_hebrewsupport">תמיכה מלאה בעברית</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_free">100% חינם</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_google">כניסה מהירה עם Google</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_pdf">PDF מיידי</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_langs">עברית ואנגלית</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_cv15">15+ תבניות קורות חיים</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_decks5">5 מצגות עסקיות</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_xlsx4">4 גיליונות Excel</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_uniquedesign">עיצוב שונה בכל תבנית</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_fontcolor">בחירת גופן וצבע</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_livepreview">תצוגה חיה בזמן אמת</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_nosub">בלי מנוי חודשי</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_customquotes">הצעות מחיר מותאמות אישית</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_siteminutes">אתר עסקי תוך דקות</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_cloudsave">שמירה בענן</span></span>
+    <span class="marquee-item"><span class="dot"></span><span data-i18n="mq_hebrewsupport">תמיכה מלאה בעברית</span></span>
   </div>
 </div>
 
-<section class="bg-ice">
+<section class="bg-ice" id="tools">
   <div class="container">
-    <div class="section-head">
-      <div class="kicker">הכלים שלנו</div>
-      <h2>הכול מוכן, תוך דקות</h2>
-      <p>קורות חיים, אתר עסקי והצעת מחיר — כל אחד בכלי משלו, בעיצוב מקצועי.</p>
+    <div class="tools-top">
+      <h2 class="tools-heading"><span data-i18n="tools_h_1">באיזה כלי</span><br><span data-i18n="tools_h_2">תשתמשו היום?</span></h2>
+      <div class="tools-top-cards">
+        <div class="card" data-cat="general">
+          <div class="thumb"><img src="images/previews/hero-cv-1.webp" alt="תבנית קורות חיים" loading="lazy"></div>
+          <div class="body">
+            <div class="card-meta">
+              <span class="tag" data-i18n="nav_cv">קורות חיים</span>
+              <span class="tag tag-free" data-i18n="tag_free">חינם</span>
+            </div>
+            <h3 data-i18n="nav_cv">קורות חיים</h3>
+            <a href="products.html?type=cv" class="btn btn-teal card-cta" data-i18n="cta_create">ליצירה</a>
+          </div>
+        </div>
+        <div class="card">
+          <div class="thumb"><img src="images/previews/hero-site.webp" alt="תבנית אתר תדמית" loading="lazy"></div>
+          <div class="body">
+            <div class="card-meta">
+              <span class="tag" data-i18n="nav_sites">אתרים</span>
+              <span class="price">199 ₪ <small data-i18n="price_onetime">חד-פעמי</small></span>
+            </div>
+            <h3 data-i18n="nav_sites">אתרים</h3>
+            <a href="sites.html?browse=1" class="btn btn-teal card-cta" data-i18n="cta_create">ליצירה</a>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="grid">
-      <div class="card" data-cat="general">
-        <div class="thumb"><img src="images/previews/cv-general-modern.webp" alt="תבנית קורות חיים" loading="lazy"></div>
+      <div class="card">
+        <div class="thumb"><img src="images/previews/hero-deck.webp" alt="תבנית מצגת עסקית" loading="lazy"></div>
         <div class="body">
           <div class="card-meta">
-            <span class="tag">קורות חיים</span>
-            <span class="tag tag-free">חינם</span>
+            <span class="tag" data-i18n="nav_decks">מצגות</span>
+            <span class="tag tag-free" data-i18n="tag_free">חינם</span>
           </div>
-          <h3>התאימו קורות חיים משלכם</h3>
-          <a href="products.html?type=cv" class="btn btn-teal card-cta">ליצירה</a>
+          <h3 data-i18n="nav_decks">מצגות</h3>
+          <a href="products.html?type=deck" class="btn btn-teal card-cta" data-i18n="cta_create">ליצירה</a>
         </div>
       </div>
       <div class="card">
-        <div class="thumb"><img src="images/previews/site-noir.webp" alt="תבנית אתר עסקי" loading="lazy"></div>
+        <div class="thumb"><img src="images/previews/xlsx-cashflow.webp" alt="גיליון Excel עסקי" loading="lazy"></div>
         <div class="body">
           <div class="card-meta">
-            <span class="tag">אתר עסקי</span>
-            <span class="price">99 ₪ <small>חד-פעמי</small></span>
+            <span class="tag" data-i18n="nav_xlsx">גליונות</span>
+            <span class="tag tag-free" data-i18n="tag_free">חינם</span>
           </div>
-          <h3>בנו אתר עסקי מרשים</h3>
-          <a href="sites.html?browse=1" class="btn btn-teal card-cta">ליצירה</a>
+          <h3 data-i18n="nav_xlsx">גליונות</h3>
+          <a href="products.html?type=xlsx" class="btn btn-teal card-cta" data-i18n="cta_create">ליצירה</a>
         </div>
       </div>
       <div class="card">
-        <div class="thumb"><img src="images/previews/quote-modern.webp" alt="תבנית הצעת מחיר" loading="lazy"></div>
+        <div class="thumb"><img src="images/previews/hero-quote.webp" alt="תבנית הצעת מחיר" loading="lazy"></div>
         <div class="body">
           <div class="card-meta">
-            <span class="tag">הצעות מחיר</span>
-            <span class="tag tag-free">חינם</span>
+            <span class="tag" data-i18n="nav_quotes">הצעות מחיר</span>
+            <span class="tag tag-free" data-i18n="tag_free">חינם</span>
           </div>
-          <h3>הצעת מחיר מוכנה תוך דקות</h3>
-          <a href="quote-app.html" class="btn btn-teal card-cta">ליצירה</a>
+          <h3 data-i18n="quote_card_title">הצעת מחיר לעסק שלך</h3>
+          <a href="quote-app.html" class="btn btn-teal card-cta" data-i18n="cta_create">ליצירה</a>
         </div>
       </div>
     </div>
@@ -192,21 +241,21 @@
   <div class="container">
     <div class="spotlight">
       <div>
-        <div class="spotlight-kicker">המוצר המשתלם שלנו</div>
-        <h2>בונים לכם אתר עסקי שלם</h2>
-        <p>וויזארד שממלאים תוך דקות, תצוגה חיה שמתעדכנת תוך כדי מילוי, ובחירה מבין כמה עיצובים — ובסוף מורידים את כל קובצי האתר, מוכנים להעלאה לאוויר.</p>
+        <div class="spotlight-kicker" data-i18n="spotlight_kicker">המוצר המשתלם שלנו</div>
+        <h2 data-i18n="spotlight_h2">בונים לכם אתר עסקי שלם</h2>
+        <p data-i18n="spotlight_p">וויזארד שממלאים תוך דקות, תצוגה חיה שמתעדכנת תוך כדי מילוי, ובחירה מבין כמה עיצובים — ובסוף מורידים את כל קובצי האתר, מוכנים להעלאה לאוויר.</p>
         <ul class="spotlight-list">
-          <li>כמה עיצובים מוכנים לבחירה</li>
-          <li>תצוגה חיה לאורך כל התהליך</li>
-          <li>קובצי אתר מוכנים להורדה — בלי צורך בקוד</li>
-          <li>תשלום חד-פעמי, בלי מנוי חודשי</li>
+          <li data-i18n="spotlight_li1">כמה עיצובים מוכנים לבחירה</li>
+          <li data-i18n="spotlight_li2">תצוגה חיה לאורך כל התהליך</li>
+          <li data-i18n="spotlight_li3">קובצי אתר מוכנים להורדה — בלי צורך בקוד</li>
+          <li data-i18n="spotlight_li4">תשלום חד-פעמי, בלי מנוי חודשי</li>
         </ul>
-        <a href="sites.html?browse=1" class="btn btn-gold">בניית האתר שלי</a>
+        <a href="sites.html?browse=1" class="btn btn-gold" data-i18n="spotlight_cta">בניית האתר שלי</a>
       </div>
       <div class="spotlight-visual">
-        <span class="tpl-chip">עסק מקומי</span><span class="tpl-chip">פרילנסר</span><span class="tpl-chip">קטלוג</span>
-        <div class="price-tag">99 ₪</div>
-        <div class="price-note">תשלום חד-פעמי — לא מנוי</div>
+        <span class="tpl-chip" data-i18n="chip_local">עסק מקומי</span><span class="tpl-chip" data-i18n="chip_freelancer">פרילנסר</span><span class="tpl-chip" data-i18n="chip_catalog">קטלוג</span>
+        <div class="price-tag">199 ₪</div>
+        <div class="price-note" data-i18n="price_note">תשלום חד-פעמי — לא מנוי</div>
       </div>
     </div>
   </div>
@@ -215,24 +264,24 @@
 <section id="how">
   <div class="container">
     <div class="section-head">
-      <div class="kicker">איך זה עובד</div>
-      <h2>שלושה צעדים פשוטים</h2>
+      <div class="kicker" data-i18n="how_kicker">איך זה עובד</div>
+      <h2 data-i18n="how_h2">שלושה צעדים פשוטים</h2>
     </div>
     <div class="steps">
       <div class="step">
         <div class="num">1</div>
-        <h4>בוחרים תבנית</h4>
-        <p>עוברים על הקטלוג ובוחרים את המוצר שמתאים לכם.</p>
+        <h4 data-i18n="step1_title">בוחרים תבנית</h4>
+        <p data-i18n="step1_desc">עוברים על התבניות ובוחרים את מה שמתאים לכם.</p>
       </div>
       <div class="step">
         <div class="num">2</div>
-        <h4>עורכים ורואים תוצאה חיה</h4>
-        <p>ממלאים פרטים ובוחרים צבע בבילדר החי.</p>
+        <h4 data-i18n="step2_title">עורכים ורואים תוצאה חיה</h4>
+        <p data-i18n="step2_desc">ממלאים פרטים ובוחרים צבע בבילדר החי.</p>
       </div>
       <div class="step">
         <div class="num">3</div>
-        <h4>מורידים — חינם</h4>
-        <p>ה-PDF האישי שלכם מוכן להורדה מיידית — חינם לגמרי.</p>
+        <h4 data-i18n="step3_title">מורידים — חינם</h4>
+        <p data-i18n="step3_desc">ה-PDF האישי שלכם מוכן להורדה מיידית — חינם לגמרי.</p>
       </div>
     </div>
   </div>
@@ -241,25 +290,25 @@
 <section>
   <div class="container">
     <div class="section-head">
-      <div class="kicker">למה DeskKit</div>
-      <h2>עיצוב שלא נראה כמו כל תבנית אחרת</h2>
-      <p>כל תבנית בנויה מחדש בפריסה משלה — עמודות, גופנים וסידור שונים לגמרי בין תבנית לתבנית.</p>
+      <div class="kicker" data-i18n="features_kicker">למה DeskKit</div>
+      <h2 data-i18n="features_h2">עיצוב שלא נראה כמו כל תבנית אחרת</h2>
+      <p data-i18n="features_p">כל תבנית בנויה מחדש בפריסה משלה — עמודות, גופנים וסידור שונים לגמרי בין תבנית לתבנית.</p>
     </div>
     <div class="features">
       <div class="feature">
         <div class="icon">✦</div>
-        <h4>עיצוב עכשווי</h4>
-        <p>עמודות צד, טיפוגרפיה גדולה, תגיות צבעוניות.</p>
+        <h4 data-i18n="feat1_title">עיצוב עכשווי</h4>
+        <p data-i18n="feat1_desc">עמודות צד, טיפוגרפיה גדולה, תגיות צבעוניות.</p>
       </div>
       <div class="feature">
         <div class="icon">⚡</div>
-        <h4>חינם לגמרי</h4>
-        <p>עורכים, רואים תוצאה חיה ומורידים PDF.</p>
+        <h4 data-i18n="feat2_title">חינם לגמרי</h4>
+        <p data-i18n="feat2_desc">עורכים, רואים תוצאה חיה ומורידים PDF.</p>
       </div>
       <div class="feature">
         <div class="icon">✎</div>
-        <h4>הצבע שלכם</h4>
-        <p>בוחרים צבע ראשי אחד, והבילדר מתאים סביבו את כל העיצוב.</p>
+        <h4 data-i18n="feat3_title">הצבע שלכם</h4>
+        <p data-i18n="feat3_desc">בוחרים צבע ראשי אחד, והבילדר מתאים סביבו את כל העיצוב.</p>
       </div>
     </div>
   </div>
@@ -270,49 +319,65 @@
     <div class="footer-grid">
       <div>
         <h5>DeskKit</h5>
-        <p style="font-size:14px; max-width:320px;">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
+        <p style="font-size:14px; max-width:320px;" data-i18n="footer_blurb">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
       </div>
       <div>
-        <h5>ניווט</h5>
+        <h5 data-i18n="footer_nav_heading">ניווט</h5>
         <ul>
-          <li><a href="catalog.html">קטלוג מוצרים</a></li>
-          <li><a href="products.html?type=cv">קורות חיים</a></li>
-          <li><a href="products.html?type=deck">מצגות</a></li>
-          <li><a href="products.html?type=xlsx">גליונות</a></li>
-          <li><a href="sites.html?browse=1">אתרים</a></li>
-          <li><a href="quote-app.html">הצעות מחיר</a></li>
-          <li><a href="about.html">אודות</a></li>
-          <li><a href="contact.html">צור קשר</a></li>
+          <li><a href="products.html?type=cv" data-i18n="nav_cv">קורות חיים</a></li>
+          <li><a href="products.html?type=deck" data-i18n="nav_decks">מצגות</a></li>
+          <li><a href="products.html?type=xlsx" data-i18n="nav_xlsx">גליונות</a></li>
+          <li><a href="sites.html?browse=1" data-i18n="nav_sites">אתרים</a></li>
+          <li><a href="quote-app.html" data-i18n="nav_quotes">הצעות מחיר</a></li>
+          <li><a href="about.html" data-i18n="nav_about">אודות</a></li>
+          <li><a href="contact.html" data-i18n="nav_contact">צור קשר</a></li>
         </ul>
       </div>
       <div>
-        <h5>מידע</h5>
+        <h5 data-i18n="footer_info_heading">מידע</h5>
         <ul>
-          <li><a href="admin.html">ניהול</a></li>
-          <li><a href="terms.html">מדיניות</a></li>
-          <li><a href="accessibility.html">נגישות</a></li>
+          <li><a href="guides.html" data-i18n="footer_guides">מדריכים</a></li>
+          <li><a href="admin.html" data-i18n="footer_admin">ניהול</a></li>
+          <li><a href="terms.html" data-i18n="footer_terms">מדיניות</a></li>
+          <li><a href="accessibility.html" data-i18n="footer_accessibility">נגישות</a></li>
         </ul>
       </div>
       <div>
-        <h5>צור קשר</h5>
+        <h5 data-i18n="nav_contact">צור קשר</h5>
         <ul>
           <li>digital.dz.studio@gmail.com</li>
         </ul>
       </div>
     </div>
-    <div class="footer-bottom">© 2026 DeskKit. כל הזכויות שמורות.</div>
+    <div class="footer-bottom" data-i18n="footer_copyright">© 2026 DeskKit. כל הזכויות שמורות.</div>
   </div>
 </footer>
 
 <script src="js/products-data.js?v=2"></script>
-<script src="js/catalog.js?v=10"></script>
+<script src="js/catalog.js?v=12"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>
 <script src="js/my-panel.js?v=9"></script>
 <script src="js/domain-guide.js?v=1"></script>
 <script src="js/main.js"></script>
-<script src="js/widgets.js?v=6"></script>
+<script src="js/widgets.js?v=8"></script>
 <script src="js/effects.js"></script>
+<script src="js/i18n.js?v=1"></script>
+<script>
+  // account-settings.js redirects here with this param right after a
+  // self-service account deletion — a plain redirect with no confirmation
+  // would leave someone wondering whether it actually worked.
+  if (new URLSearchParams(location.search).get("accountDeleted") === "1") {
+    const bar = document.createElement("div");
+    bar.className = "cookie-notice";
+    bar.innerHTML = '<p>החשבון והתוכן שלו נמחקו לצמיתות.</p><button type="button" class="btn btn-teal" id="account-deleted-ok">הבנתי</button>';
+    document.body.appendChild(bar);
+    document.getElementById("account-deleted-ok").addEventListener("click", () => {
+      bar.remove();
+      history.replaceState(null, "", location.pathname);
+    });
+  }
+</script>
 </body>
 </html>

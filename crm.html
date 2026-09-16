@@ -3,25 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ארגז הכלים — DeskKit</title>
+<title>מערכת CRM — DeskKit</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="description" content="כל התבניות של DeskKit במקום אחד — קורות חיים, מצגות עסקיות וגיליונות Excel.">
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://deskkit.co.il/crm.html">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=23">
-<link rel="stylesheet" href="css/builder.css?v=2">
+<link rel="stylesheet" href="css/style.css?v=33">
+<link rel="stylesheet" href="css/crm.css?v=1">
 </head>
 <body>
 <script>
-  /* Guesses, synchronously and before first paint, whether "my content"
-     will end up mounted (js/my-panel.js only knows for sure after an
-     async Supabase check) — reserves its 220px margin immediately so
-     the whole page doesn't visibly jump sideways once the real check
-     resolves a beat later. A wrong guess (stale/expired token) just
-     falls back to the old behavior for that one navigation. */
+  /* Same "does the my-content rail belong on this page" guess used
+     site-wide — see index.html's own copy of this script for why it has
+     to run this early, synchronously, before first paint. */
   try {
     for (var i = 0; i < localStorage.length; i++) {
       var k = localStorage.key(i);
@@ -46,32 +44,74 @@
       <a href="index.html">בית</a>
       <a href="sites.html?browse=1">אתרים</a>
       <a href="quote-app.html">הצעות מחיר</a>
-      <a href="products.html?type=cv" data-nav-type="cv">קורות חיים</a>
-      <a href="products.html?type=deck" data-nav-type="deck">מצגות</a>
-      <a href="products.html?type=xlsx" data-nav-type="xlsx">גליונות</a>
+      <a href="products.html?type=cv">קורות חיים</a>
+      <a href="products.html?type=deck">מצגות</a>
+      <a href="products.html?type=xlsx">גליונות</a>
       <a href="about.html">אודות</a>
       <a href="contact.html">צור קשר</a>
     </div>
     <div class="nav-end-group">
       <a href="account.html?redirect=tools.html" id="nav-login-link" class="nav-login nav-login-pending">כניסה</a>
-      <a href="catalog.html" class="nav-cta">לצפייה בקטלוג</a>
     </div>
     <button class="burger" aria-label="תפריט">☰</button>
   </nav>
 </header>
 
-<section class="builder-top no-print">
+<section style="padding-top:0;">
   <div class="container">
-    <h1 style="font-size:26px; margin:6px 0 4px;">ארגז הכלים</h1>
-    <p style="color:var(--grey); font-size:14px; margin:0;">כל התבניות של DeskKit במקום אחד — אתרים, הצעות מחיר, קורות חיים, מצגות וגיליונות. לחיפוש וסינון בתוך כל סוג, כדאי להיכנס לדף הייעודי שלו.</p>
+    <div class="crm-header-bar">
+      <div>
+        <h1>ניהול לקוחות</h1>
+        <p style="margin:4px 0 0; color:var(--grey); font-size:13.5px;">כל הלידים שלכם, לפי שלב במכירה. המידע נשמר בדפדפן הזה בלבד.</p>
+      </div>
+      <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+        <div class="crm-summary">
+          <span class="crm-summary-label">סה"כ בעסקאות פתוחות</span>
+          <span class="crm-summary-total" id="crm-summary-total">₪0</span>
+        </div>
+        <button type="button" class="btn btn-gold" id="crm-add-lead-btn">+ הוספת ליד</button>
+      </div>
+    </div>
+
+    <div class="crm-board" id="crm-board"></div>
   </div>
 </section>
 
-<section>
-  <div class="container">
-    <div id="toolbox-rows"></div>
+<div class="crm-modal" id="crm-modal">
+  <div class="crm-modal-card">
+    <button type="button" class="crm-modal-close" id="crm-modal-close" aria-label="סגירה">✕</button>
+    <h3 id="crm-modal-title">הוספת ליד חדש</h3>
+    <form id="crm-form">
+      <label for="crm-f-name">שם *</label>
+      <input type="text" id="crm-f-name" required>
+
+      <label for="crm-f-phone">טלפון</label>
+      <input type="tel" id="crm-f-phone" dir="ltr">
+
+      <label for="crm-f-email">אימייל</label>
+      <input type="email" id="crm-f-email" dir="ltr">
+
+      <label for="crm-f-amount">סכום עסקה (₪)</label>
+      <input type="number" id="crm-f-amount" min="0" step="1">
+
+      <label for="crm-f-stage">שלב</label>
+      <select id="crm-f-stage">
+        <option value="new">ליד חדש</option>
+        <option value="inprogress">בטיפול / נשלחה הצעה</option>
+        <option value="followup">פולו-אפ</option>
+        <option value="won">נסגר בהצלחה!</option>
+      </select>
+
+      <label for="crm-f-notes">הערות</label>
+      <textarea id="crm-f-notes"></textarea>
+
+      <div class="crm-modal-actions">
+        <button type="button" id="crm-modal-delete" style="display:none;">מחיקת ליד</button>
+        <button type="submit" class="btn btn-teal">שמירה</button>
+      </div>
+    </form>
   </div>
-</section>
+</div>
 
 <footer class="site">
   <div class="container">
@@ -83,7 +123,6 @@
       <div>
         <h5>ניווט</h5>
         <ul>
-          <li><a href="catalog.html">קטלוג מוצרים</a></li>
           <li><a href="products.html?type=cv">קורות חיים</a></li>
           <li><a href="products.html?type=deck">מצגות</a></li>
           <li><a href="products.html?type=xlsx">גליונות</a></li>
@@ -96,6 +135,7 @@
       <div>
         <h5>מידע</h5>
         <ul>
+          <li><a href="guides.html">מדריכים</a></li>
           <li><a href="admin.html">ניהול</a></li>
           <li><a href="terms.html">מדיניות</a></li>
           <li><a href="accessibility.html">נגישות</a></li>
@@ -112,17 +152,12 @@
   </div>
 </footer>
 
-<script src="js/site-templates.js"></script>
-<script src="js/quote-render.js?v=3"></script>
-<script src="js/products-data.js?v=2"></script>
-<script src="js/catalog.js?v=10"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>
 <script src="js/my-panel.js?v=9"></script>
 <script src="js/domain-guide.js?v=1"></script>
 <script src="js/main.js"></script>
-<script src="js/widgets.js?v=6"></script>
-<script src="js/effects.js"></script>
+<script src="js/crm.js?v=1"></script>
 </body>
 </html>

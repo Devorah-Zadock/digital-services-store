@@ -207,7 +207,7 @@ function injectCookieNotice() {
   const bar = document.createElement("div");
   bar.className = "cookie-notice no-print";
   bar.innerHTML = `
-    <p>האתר משתמש באחסון מקומי בדפדפן כדי לשמור עבודה שטרם נשמרה בחשבון.</p>
+    <p>האתר משתמש בעוגיות ואחסון מקומי כדי לשמור את העבודה שלכם. פרטים ב<a href="terms.html#privacy">מדיניות הפרטיות</a>.</p>
     <button type="button" class="btn btn-teal" id="cookie-notice-ok">הבנתי</button>
   `;
   document.body.appendChild(bar);
@@ -217,6 +217,41 @@ function injectCookieNotice() {
     bar.remove();
     document.body.classList.remove("cookie-notice-active");
   });
+}
+
+/* Shared by site-builder.js and schedule-render.js: once the Gumroad
+   checkout link has been opened, clicking it again only reopens the same
+   page — there's nothing new to do there, so it's disabled (visually and
+   for real, via pointer-events) rather than left clickable forever.
+   Deliberately in-memory only (no localStorage): a flag that persisted
+   across reloads turned out to survive a reload or an account switch on
+   the SAME browser too, permanently graying out the button for whoever
+   logs in next on that machine — confusing for account-switch testing,
+   and no less confusing for two different real customers sharing a
+   computer. Guarding against an accidental double-click within the same
+   page visit is all this needs to do. */
+function wireBuyLinkOnce(link) {
+  if (!link) return;
+  link.addEventListener("click", () => {
+    link.classList.add("btn-disabled");
+    link.setAttribute("aria-disabled", "true");
+    link.textContent = "דף הרכישה נפתח ✓";
+  });
+}
+
+/* Shared by site-cloud-save.js and schedule-render.js's receipt senders.
+   Gumroad's `price` is in the smallest unit of the PRODUCT'S OWN currency
+   (e.g. cents for a USD-priced product) — not necessarily ₪. The old code
+   divided by 100 and hardcoded "₪" regardless, so a USD sale showed its
+   dollar amount mislabeled as shekels (163.65 "₪" for what was really
+   $163.65). Reading purchase.currency, which Gumroad always includes,
+   fixes that instead of assuming everyone sells in ILS. */
+const GUMROAD_CURRENCY_SYMBOLS = { ils: "₪", usd: "$", eur: "€", gbp: "£" };
+function formatGumroadAmount(purchase) {
+  if (!purchase || purchase.price == null) return null;
+  const code = String(purchase.currency || "").toLowerCase();
+  const symbol = GUMROAD_CURRENCY_SYMBOLS[code] || (code ? code.toUpperCase() + " " : "");
+  return `${(purchase.price / 100).toFixed(2)} ${symbol}`;
 }
 
 document.addEventListener("DOMContentLoaded", () => {

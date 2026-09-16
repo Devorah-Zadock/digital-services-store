@@ -12,31 +12,31 @@ const CV_TEMPLATES = {
     font: "Arial, sans-serif",
     content: {
       he: {
-        name: "רועי כהן", title: "מפתח Full-Stack",
-        contact: "052-7654321 | roi.cohen@email.com | רמת גן | github.com/roicohen",
+        name: "ישראל ישראלי", title: "מפתח Full-Stack",
+        contact: "052-7654321 | israel@email.com | רמת גן | github.com/israel",
         summary: "מפתח Full-Stack עם 5 שנות ניסיון בבניית מערכות web בקנה מידה גדול. ניסיון מוכח בהובלה טכנית מקצה לקצה — מעיצוב ארכיטקטורה ועד פריסה בענן, עם דגש על קוד נקי וביצועים.",
         jobs: [
           { title: "מפתח Full-Stack בכיר", place: "חברת קלאודטק בע\"מ", dates: "2022 – היום", bullets: "פיתוח וארכיטקטורה של מערכת SaaS עם עשרות אלפי משתמשים פעילים\nהובלת מעבר ל-microservices שקיצר זמני פריסה ב-60%" },
           { title: "מפתח Backend", place: "סטארטאפ פינטק", dates: "2019 – 2022", bullets: "בניית API-ים ב-Node.js ו-PostgreSQL עבור מוצר הליבה" },
         ],
         projects: [
-          { title: "מעקב הוצאות משותף", link: "github.com/roicohen/split-expenses", bullets: "אפליקציית web לחלוקת הוצאות בין שותפים לדירה, עם חישוב איזון אוטומטי" },
-          { title: "צ'אט בזמן אמת", link: "github.com/roicohen/live-chat", bullets: "מערכת צ'אט עם WebSockets ותמיכה בחדרים מרובים" },
+          { title: "מעקב הוצאות משותף", link: "github.com/israel/split-expenses", bullets: "אפליקציית web לחלוקת הוצאות בין שותפים לדירה, עם חישוב איזון אוטומטי" },
+          { title: "צ'אט בזמן אמת", link: "github.com/israel/live-chat", bullets: "מערכת צ'אט עם WebSockets ותמיכה בחדרים מרובים" },
         ],
         education: "B.Sc. הנדסת תוכנה — הטכניון, 2019",
         skills: "JavaScript / TypeScript | React | Node.js | Python | PostgreSQL | Docker | AWS | Git",
       },
       en: {
-        name: "Roi Cohen", title: "Full-Stack Developer",
-        contact: "+972-52-7654321 | roi.cohen@email.com | Ramat Gan | github.com/roicohen",
+        name: "Israel Israeli", title: "Full-Stack Developer",
+        contact: "+972-52-7654321 | israel@email.com | Ramat Gan | github.com/israel",
         summary: "Full-Stack developer with 5 years of experience building large-scale web systems. Proven track record leading technical work end-to-end — from architecture design to cloud deployment, with a focus on clean code and performance.",
         jobs: [
           { title: "Senior Full-Stack Developer", place: "CloudTech Ltd.", dates: "2022 – Present", bullets: "Developed and architected a SaaS platform serving tens of thousands of active users\nLed migration to microservices, cutting deployment time by 60%" },
           { title: "Backend Developer", place: "Fintech Startup", dates: "2019 – 2022", bullets: "Built core-product APIs using Node.js and PostgreSQL" },
         ],
         projects: [
-          { title: "Shared Expense Tracker", link: "github.com/roicohen/split-expenses", bullets: "Web app for splitting expenses between roommates, with automatic balance calculation" },
-          { title: "Real-Time Chat App", link: "github.com/roicohen/live-chat", bullets: "Chat system built with WebSockets, supporting multiple rooms" },
+          { title: "Shared Expense Tracker", link: "github.com/israel/split-expenses", bullets: "Web app for splitting expenses between roommates, with automatic balance calculation" },
+          { title: "Real-Time Chat App", link: "github.com/israel/live-chat", bullets: "Chat system built with WebSockets, supporting multiple rooms" },
         ],
         education: "B.Sc. Software Engineering — Technion, 2019",
         skills: "JavaScript / TypeScript | React | Node.js | Python | PostgreSQL | Docker | AWS | Git",
@@ -50,29 +50,29 @@ const CV_TEMPLATES = {
     font: "Arial, sans-serif",
     content: {
       he: {
-        name: "טל ברק", title: "מפתחת Frontend",
-        contact: "054-1122334 | tal.barak@email.com | חיפה | github.com/talbarak | talbarak.dev",
+        name: "ישראלה ישראלי", title: "מפתחת Frontend",
+        contact: "054-1122334 | israela@email.com | חיפה | github.com/israela | israela.dev",
         summary: "מפתחת Frontend עם 4 שנות ניסיון בבניית ממשקי משתמש מהירים ונגישים. מתמחה ב-React ובמערכות עיצוב (Design Systems), עם עין קפדנית לפרטים ולחוויית משתמש.",
         jobs: [
           { title: "מפתחת Frontend", place: "חברת אפליקוד", dates: "2021 – היום", bullets: "בניית ותחזוקת Design System משותף ל-3 מוצרים\nשיפור ביצועי טעינה ב-45% באמצעות אופטימיזציית bundle" },
           { title: "מפתחת Junior", place: "סוכנות דיגיטל", dates: "2020 – 2021", bullets: "בניית אתרי תדמית ומסחר עבור לקוחות שונים" },
         ],
         projects: [
-          { title: "מעקב הרגלים יומי", link: "github.com/talbarak/habit-tracker", bullets: "אפליקציית PWA למעקב הרגלים עם התראות מקומיות" },
+          { title: "מעקב הרגלים יומי", link: "github.com/israela/habit-tracker", bullets: "אפליקציית PWA למעקב הרגלים עם התראות מקומיות" },
         ],
         education: "B.Sc. מדעי המחשב — אוניברסיטת חיפה, 2020",
         skills: "React | TypeScript | Next.js | Tailwind CSS | Figma-to-Code | Jest | Git",
       },
       en: {
-        name: "Tal Barak", title: "Frontend Developer",
-        contact: "+972-54-1122334 | tal.barak@email.com | Haifa | github.com/talbarak | talbarak.dev",
+        name: "Israela Israeli", title: "Frontend Developer",
+        contact: "+972-54-1122334 | israela@email.com | Haifa | github.com/israela | israela.dev",
         summary: "Frontend developer with 4 years of experience building fast, accessible user interfaces. Specializes in React and design systems, with a keen eye for detail and user experience.",
         jobs: [
           { title: "Frontend Developer", place: "AppliCode", dates: "2021 – Present", bullets: "Built and maintained a shared Design System across 3 products\nImproved load performance by 45% through bundle optimization" },
           { title: "Junior Developer", place: "Digital Agency", dates: "2020 – 2021", bullets: "Built marketing and e-commerce sites for various clients" },
         ],
         projects: [
-          { title: "Daily Habit Tracker", link: "github.com/talbarak/habit-tracker", bullets: "PWA for tracking daily habits with local notifications" },
+          { title: "Daily Habit Tracker", link: "github.com/israela/habit-tracker", bullets: "PWA for tracking daily habits with local notifications" },
         ],
         education: "B.Sc. Computer Science — University of Haifa, 2020",
         skills: "React | TypeScript | Next.js | Tailwind CSS | Figma-to-Code | Jest | Git",
@@ -86,31 +86,31 @@ const CV_TEMPLATES = {
     font: "Arial, sans-serif",
     content: {
       he: {
-        name: "יונתן אדלר", title: "מפתח Full-Stack",
-        contact: "050-3344556 | yonatan.adler@email.com | באר שבע | github.com/yadler",
+        name: "ישראל ישראלי", title: "מפתח Full-Stack",
+        contact: "050-3344556 | israel@email.com | באר שבע | github.com/israel",
         summary: "מפתח Full-Stack עם 3 שנות ניסיון בפיתוח מוצרי SaaS. נהנה לעבוד על כל שכבות המערכת, מבסיס הנתונים ועד חוויית המשתמש, עם דגש על קוד קריא וניתן לתחזוקה.",
         jobs: [
           { title: "מפתח Full-Stack", place: "חברת דאטהפלואו", dates: "2022 – היום", bullets: "פיתוח מודולים חדשים במוצר B2B עם Node.js ו-React\nכתיבת בדיקות אוטומטיות שהעלו את כיסוי הקוד ל-80%" },
           { title: "מפתח בהכשרה", place: "תוכנית הסבה טכנולוגית", dates: "2021 – 2022", bullets: "השתתפות בפרויקט קבוצתי לבניית מערכת ניהול מלאי" },
         ],
         projects: [
-          { title: "עגלת קניות API", link: "github.com/yadler/cart-api", bullets: "REST API לניהול עגלת קניות עם תמיכה בהנחות ומבצעים" },
-          { title: "לוח מחוונים מזג אוויר", link: "github.com/yadler/weather-dash", bullets: "דשבורד תחזית מזג אוויר עם גרפים אינטראקטיביים" },
+          { title: "עגלת קניות API", link: "github.com/israel/cart-api", bullets: "REST API לניהול עגלת קניות עם תמיכה בהנחות ומבצעים" },
+          { title: "לוח מחוונים מזג אוויר", link: "github.com/israel/weather-dash", bullets: "דשבורד תחזית מזג אוויר עם גרפים אינטראקטיביים" },
         ],
         education: "תעודת מפתח Full-Stack — תוכנית הסבה טכנולוגית, 2022",
         skills: "JavaScript | React | Node.js | Express | MongoDB | Git | REST APIs",
       },
       en: {
-        name: "Yonatan Adler", title: "Full-Stack Developer",
-        contact: "+972-50-3344556 | yonatan.adler@email.com | Beer Sheva | github.com/yadler",
+        name: "Israel Israeli", title: "Full-Stack Developer",
+        contact: "+972-50-3344556 | israel@email.com | Beer Sheva | github.com/israel",
         summary: "Full-Stack developer with 3 years of experience building SaaS products. Enjoys working across the full stack, from database to user experience, with a focus on readable, maintainable code.",
         jobs: [
           { title: "Full-Stack Developer", place: "DataFlow Inc.", dates: "2022 – Present", bullets: "Developed new modules for a B2B product using Node.js and React\nWrote automated tests that raised code coverage to 80%" },
           { title: "Developer in Training", place: "Tech Retraining Program", dates: "2021 – 2022", bullets: "Participated in a team project building an inventory management system" },
         ],
         projects: [
-          { title: "Shopping Cart API", link: "github.com/yadler/cart-api", bullets: "REST API for managing a shopping cart with discount and promotion support" },
-          { title: "Weather Dashboard", link: "github.com/yadler/weather-dash", bullets: "Weather forecast dashboard with interactive charts" },
+          { title: "Shopping Cart API", link: "github.com/israel/cart-api", bullets: "REST API for managing a shopping cart with discount and promotion support" },
+          { title: "Weather Dashboard", link: "github.com/israel/weather-dash", bullets: "Weather forecast dashboard with interactive charts" },
         ],
         education: "Full-Stack Developer Certificate — Tech Retraining Program, 2022",
         skills: "JavaScript | React | Node.js | Express | MongoDB | Git | REST APIs",
@@ -124,29 +124,29 @@ const CV_TEMPLATES = {
     font: "Arial, sans-serif",
     content: {
       he: {
-        name: "שירה בן-דוד", title: "מפתחת תוכנה — Junior",
-        contact: "053-7788990 | shira.bd@email.com | מודיעין | github.com/shirabd",
+        name: "ישראלה ישראלי", title: "מפתחת תוכנה — Junior",
+        contact: "053-7788990 | israela@email.com | מודיעין | github.com/israela",
         summary: "בוגרת בוטקאמפ פיתוח Full-Stack עם תשוקה אמיתית לקוד נקי ולפתרון בעיות. מגיעה מרקע של ניתוח נתונים, ומביאה חשיבה אנליטית לכל פרויקט פיתוח.",
         jobs: [
           { title: "סטודנטית מתמחה", place: "מעבדת חדשנות טכנולוגית", dates: "2024 (3 חודשים)", bullets: "סיוע בפיתוח פיצ'רים קטנים במוצר פנימי בהדרכת מפתחים בכירים" },
         ],
         projects: [
-          { title: "אפליקציית מעקב תקציב", link: "github.com/shirabd/budget-app", bullets: "אפליקציית React לניהול תקציב אישי עם גרפים חודשיים" },
-          { title: "פרויקט גמר בוטקאמפ: מעקב כושר", link: "github.com/shirabd/fitness-tracker", bullets: "אפליקציית Full-Stack למעקב אימונים, עם אימות משתמשים ו-API עצמאי" },
+          { title: "אפליקציית מעקב תקציב", link: "github.com/israela/budget-app", bullets: "אפליקציית React לניהול תקציב אישי עם גרפים חודשיים" },
+          { title: "פרויקט גמר בוטקאמפ: מעקב כושר", link: "github.com/israela/fitness-tracker", bullets: "אפליקציית Full-Stack למעקב אימונים, עם אימות משתמשים ו-API עצמאי" },
         ],
         education: "בוטקאמפ פיתוח Full-Stack — מכללת קוד, 2024\nתואר ראשון בכלכלה — האוניברסיטה הפתוחה, 2021",
         skills: "JavaScript | React | Node.js | SQL | Git | HTML/CSS",
       },
       en: {
-        name: "Shira Ben-David", title: "Junior Software Developer",
-        contact: "+972-53-7788990 | shira.bd@email.com | Modiin | github.com/shirabd",
+        name: "Israela Israeli", title: "Junior Software Developer",
+        contact: "+972-53-7788990 | israela@email.com | Modiin | github.com/israela",
         summary: "Full-Stack bootcamp graduate with a genuine passion for clean code and problem solving. Comes from a data analysis background and brings analytical thinking to every development project.",
         jobs: [
           { title: "Development Intern", place: "Tech Innovation Lab", dates: "2024 (3 months)", bullets: "Assisted in building small features for an internal product, mentored by senior developers" },
         ],
         projects: [
-          { title: "Budget Tracking App", link: "github.com/shirabd/budget-app", bullets: "React app for personal budget management with monthly charts" },
-          { title: "Bootcamp Capstone: Fitness Tracker", link: "github.com/shirabd/fitness-tracker", bullets: "Full-Stack workout tracking app with user authentication and a custom API" },
+          { title: "Budget Tracking App", link: "github.com/israela/budget-app", bullets: "React app for personal budget management with monthly charts" },
+          { title: "Bootcamp Capstone: Fitness Tracker", link: "github.com/israela/fitness-tracker", bullets: "Full-Stack workout tracking app with user authentication and a custom API" },
         ],
         education: "Full-Stack Development Bootcamp — Code College, 2024\nB.A. Economics — The Open University, 2021",
         skills: "JavaScript | React | Node.js | SQL | Git | HTML/CSS",
@@ -162,8 +162,8 @@ const CV_TEMPLATES = {
     font: "Arial, sans-serif",
     content: {
       he: {
-        name: "מאיה לוי", title: "מעצבת UX/UI",
-        contact: "053-9988776 | maya.levi@email.com | תל אביב | behance.net/mayalevi",
+        name: "ישראלה ישראלי", title: "מעצבת UX/UI",
+        contact: "053-9988776 | israela@email.com | תל אביב | behance.net/israela",
         summary: "מעצבת UX/UI עם 6 שנות ניסיון בעיצוב מוצרים דיגיטליים מקצה לקצה. משלבת חשיבה אסטרטגית עם ביצוע ויזואלי חד, ומובילה תהליכי מחקר משתמשים לפתרונות מבוססי נתונים.",
         jobs: [
           { title: "מעצבת UX/UI בכירה", place: "סוכנות פיקסל־סטודיו", dates: "2021 – היום", bullets: "עיצוב מוצר מקצה לקצה עבור 8 לקוחות ארגוניים\nבניית Design System שאומץ בכל צוותי המוצר" },
@@ -173,8 +173,8 @@ const CV_TEMPLATES = {
         skills: "Figma | Adobe XD | Photoshop | Illustrator | Design Systems | User Research",
       },
       en: {
-        name: "Maya Levi", title: "UX/UI Designer",
-        contact: "+972-53-9988776 | maya.levi@email.com | Tel Aviv | behance.net/mayalevi",
+        name: "Israela Israeli", title: "UX/UI Designer",
+        contact: "+972-53-9988776 | israela@email.com | Tel Aviv | behance.net/israela",
         summary: "UX/UI designer with 6 years of experience designing digital products end-to-end. Combines strategic thinking with sharp visual execution, leading user research into data-driven solutions.",
         jobs: [
           { title: "Senior UX/UI Designer", place: "Pixel Studio Agency", dates: "2021 – Present", bullets: "Designed end-to-end products for 8 enterprise clients\nBuilt a Design System adopted across all product teams" },
@@ -192,8 +192,8 @@ const CV_TEMPLATES = {
     font: "Arial, sans-serif",
     content: {
       he: {
-        name: "נועם שגיא", title: "מעצב גרפי",
-        contact: "050-4433221 | noam.sagi@email.com | ירושלים | noamsagi.com",
+        name: "ישראל ישראלי", title: "מעצב גרפי",
+        contact: "050-4433221 | israel@email.com | ירושלים | israel-portfolio.co.il",
         summary: "מעצב גרפי עם 3 שנות ניסיון בעיצוב דפוס ודיגיטל כאחד. מתמחה בבניית זהות מותג עקבית — מלוגו ועד חומרים שיווקיים מלאים.",
         jobs: [
           { title: "מעצב גרפי", place: "משרד פרסום סטודיו רימון", dates: "2022 – היום", bullets: "עיצוב קמפיינים רב-ערוציים עבור מותגים מובילים\nאחריות מלאה על מיתוג ועיצוב ל-6 לקוחות קבועים" },
@@ -203,8 +203,8 @@ const CV_TEMPLATES = {
         skills: "Adobe Illustrator | Photoshop | InDesign | Branding | Typography",
       },
       en: {
-        name: "Noam Sagi", title: "Graphic Designer",
-        contact: "+972-50-4433221 | noam.sagi@email.com | Jerusalem | noamsagi.com",
+        name: "Israel Israeli", title: "Graphic Designer",
+        contact: "+972-50-4433221 | israel@email.com | Jerusalem | israel-portfolio.co.il",
         summary: "Graphic designer with 3 years of experience across print and digital media. Specializes in building consistent brand identities — from logo to full marketing collateral.",
         jobs: [
           { title: "Graphic Designer", place: "Rimon Studio Advertising", dates: "2022 – Present", bullets: "Designed multi-channel campaigns for leading brands\nFull ownership of branding and design for 6 retained clients" },
@@ -222,8 +222,8 @@ const CV_TEMPLATES = {
     font: "Arial, sans-serif",
     content: {
       he: {
-        name: "עדי מזרחי", title: "מעצבת UI/UX",
-        contact: "052-6677889 | adi.mizrahi@email.com | נתניה | dribbble.com/adimizrahi",
+        name: "ישראלה ישראלי", title: "מעצבת UI/UX",
+        contact: "052-6677889 | israela@email.com | נתניה | dribbble.com/israela",
         summary: "מעצבת UI/UX עם 4 שנות ניסיון בעיצוב אפליקציות מובייל ו-web. מאמינה בעיצוב מבוסס נתונים ובדיקות משתמשים מתמידות לאורך כל תהליך העבודה.",
         jobs: [
           { title: "מעצבת UI/UX", place: "חברת אפ-סטארט", dates: "2021 – היום", bullets: "עיצוב אפליקציית מובייל עם למעלה ממיליון הורדות\nהובלת בדיקות משתמשים חודשיות ושילוב הממצאים בעיצוב" },
@@ -233,8 +233,8 @@ const CV_TEMPLATES = {
         skills: "Figma | Sketch | Prototyping | User Testing | Design Systems | HTML/CSS",
       },
       en: {
-        name: "Adi Mizrahi", title: "UI/UX Designer",
-        contact: "+972-52-6677889 | adi.mizrahi@email.com | Netanya | dribbble.com/adimizrahi",
+        name: "Israela Israeli", title: "UI/UX Designer",
+        contact: "+972-52-6677889 | israela@email.com | Netanya | dribbble.com/israela",
         summary: "UI/UX designer with 4 years of experience designing mobile and web applications. Believes in data-driven design and continuous user testing throughout the process.",
         jobs: [
           { title: "UI/UX Designer", place: "AppStart Inc.", dates: "2021 – Present", bullets: "Designed a mobile app with over one million downloads\nLed monthly user testing sessions and integrated findings into design" },
@@ -252,8 +252,8 @@ const CV_TEMPLATES = {
     font: "Arial, sans-serif",
     content: {
       he: {
-        name: "בן אזולאי", title: "מעצב מושן ווידאו",
-        contact: "054-9911223 | ben.azulay@email.com | תל אביב | vimeo.com/benazulay",
+        name: "ישראל ישראלי", title: "מעצב מושן ווידאו",
+        contact: "054-9911223 | israel@email.com | תל אביב | vimeo.com/israel",
         summary: "מעצב מושן עם 5 שנות ניסיון בהפקת תוכן וידאו ואנימציה למותגים ולרשתות חברתיות. מומחה ב-After Effects ובסיפור סיפורים ויזואלי קצר וקולע.",
         jobs: [
           { title: "מעצב מושן בכיר", place: "סטודיו הפקות דיגיטל", dates: "2021 – היום", bullets: "הפקת סרטוני מותג ואנימציה ל-20+ קמפיינים בשנה\nניהול תהליך הפקה מקצה לקצה מול לקוחות" },
@@ -263,8 +263,8 @@ const CV_TEMPLATES = {
         skills: "After Effects | Premiere Pro | Cinema 4D | Illustrator | Storyboarding",
       },
       en: {
-        name: "Ben Azulay", title: "Motion & Video Designer",
-        contact: "+972-54-9911223 | ben.azulay@email.com | Tel Aviv | vimeo.com/benazulay",
+        name: "Israel Israeli", title: "Motion & Video Designer",
+        contact: "+972-54-9911223 | israel@email.com | Tel Aviv | vimeo.com/israel",
         summary: "Motion designer with 5 years of experience producing video content and animation for brands and social media. Expert in After Effects and concise, compelling visual storytelling.",
         jobs: [
           { title: "Senior Motion Designer", place: "Digital Productions Studio", dates: "2021 – Present", bullets: "Produced brand videos and animation for 20+ campaigns a year\nManaged end-to-end production process with clients" },
@@ -284,8 +284,8 @@ const CV_TEMPLATES = {
     font: "Georgia, 'Times New Roman', serif",
     content: {
       he: {
-        name: "דנה אברהם", title: "מנהלת חשבונות סוג 3",
-        contact: "052-5566778 | dana.avraham@email.com | פתח תקווה",
+        name: "ישראלה ישראלי", title: "מנהלת חשבונות סוג 3",
+        contact: "052-5566778 | israela@email.com | פתח תקווה",
         summary: "מנהלת חשבונות מוסמכת סוג 3 עם 8 שנות ניסיון בניהול הנהלת חשבונות מלאה, כולל דוחות מע\"מ, ניכויים ומאזני בוחן. מדויקת, אמינה ובעלת ניסיון עשיר בעבודה מול רואי חשבון ורשויות המס.",
         jobs: [
           { title: "מנהלת חשבונות", place: "חברת תעשיות דרום בע\"מ", dates: "2019 – היום", bullets: "ניהול הנהלת חשבונות מלאה עבור חברה עם מחזור של 40 מיליון ש\"ח בשנה\nהפקת דוחות מע\"מ, ניכויים ומאזני בוחן חודשיים" },
@@ -295,8 +295,8 @@ const CV_TEMPLATES = {
         skills: "חשבשבת | Priority | Excel מתקדם | דוחות מע\"מ וניכויים | התאמות בנק",
       },
       en: {
-        name: "Dana Avraham", title: "Bookkeeper (Type 3 Certified)",
-        contact: "+972-52-5566778 | dana.avraham@email.com | Petah Tikva",
+        name: "Israela Israeli", title: "Bookkeeper (Type 3 Certified)",
+        contact: "+972-52-5566778 | israela@email.com | Petah Tikva",
         summary: "Type 3 certified bookkeeper with 8 years of experience managing full-cycle bookkeeping, including VAT reports, tax withholding, and trial balances. Accurate, reliable, with extensive experience working with accountants and tax authorities.",
         jobs: [
           { title: "Bookkeeper", place: "South Industries Ltd.", dates: "2019 – Present", bullets: "Managed full-cycle bookkeeping for a company with 40M NIS annual turnover\nProduced monthly VAT reports, tax withholding, and trial balances" },
@@ -314,8 +314,8 @@ const CV_TEMPLATES = {
     font: "Arial, sans-serif",
     content: {
       he: {
-        name: "ליאת כהן", title: "מנהלת חשבונות סוג 2",
-        contact: "054-2233118 | liat.cohen@email.com | אשדוד",
+        name: "ישראלה ישראלי", title: "מנהלת חשבונות סוג 2",
+        contact: "054-2233118 | israela@email.com | אשדוד",
         summary: "מנהלת חשבונות סוג 2 עם 5 שנות ניסיון, בעלת שליטה מלאה במערכות ממוחשבות ובעבודה מול ספקים ולקוחות. מחפשת להתפתח לתפקיד הנהלת חשבונות סוג 3.",
         jobs: [
           { title: "מנהלת חשבונות", place: "רשת חנויות קמעונאיות", dates: "2021 – היום", bullets: "ניהול הנהלת חשבונות שוטפת ל-12 סניפים\nהתאמות בנק וניהול תזרים מזומנים חודשי" },
@@ -325,8 +325,8 @@ const CV_TEMPLATES = {
         skills: "חשבשבת | Excel | ניהול גבייה | חשבוניות מס | שירות ספקים",
       },
       en: {
-        name: "Liat Cohen", title: "Bookkeeper (Type 2 Certified)",
-        contact: "+972-54-2233118 | liat.cohen@email.com | Ashdod",
+        name: "Israela Israeli", title: "Bookkeeper (Type 2 Certified)",
+        contact: "+972-54-2233118 | israela@email.com | Ashdod",
         summary: "Type 2 certified bookkeeper with 5 years of experience, fully proficient in computerized accounting systems and vendor/client management. Looking to grow into a Type 3 bookkeeping role.",
         jobs: [
           { title: "Bookkeeper", place: "Retail Chain", dates: "2021 – Present", bullets: "Managed day-to-day bookkeeping for 12 branches\nHandled bank reconciliation and monthly cash flow management" },
@@ -344,8 +344,8 @@ const CV_TEMPLATES = {
     font: "Arial, sans-serif",
     content: {
       he: {
-        name: "איתן בר", title: "אנליסט כספים",
-        contact: "050-7799221 | eitan.bar@email.com | תל אביב",
+        name: "ישראל ישראלי", title: "אנליסט כספים",
+        contact: "050-7799221 | israel@email.com | תל אביב",
         summary: "אנליסט כספים עם 4 שנות ניסיון בבניית מודלים פיננסיים, תקציבים ותחזיות. בעל יכולת גבוהה לתרגם נתונים מורכבים לתובנות עסקיות ברורות להנהלה.",
         jobs: [
           { title: "אנליסט כספים", place: "חברת השקעות", dates: "2021 – היום", bullets: "בניית מודלים פיננסיים לתמיכה בהחלטות השקעה\nהכנת דוחות תקציב ותחזית רבעוניים להנהלה הבכירה" },
@@ -355,8 +355,8 @@ const CV_TEMPLATES = {
         skills: "Excel מתקדם | מודלים פיננסיים | Power BI | SQL | ניתוח תקציב",
       },
       en: {
-        name: "Eitan Bar", title: "Finance Analyst",
-        contact: "+972-50-7799221 | eitan.bar@email.com | Tel Aviv",
+        name: "Israel Israeli", title: "Finance Analyst",
+        contact: "+972-50-7799221 | israel@email.com | Tel Aviv",
         summary: "Finance analyst with 4 years of experience building financial models, budgets, and forecasts. Skilled at translating complex data into clear business insights for leadership.",
         jobs: [
           { title: "Finance Analyst", place: "Investment Firm", dates: "2021 – Present", bullets: "Built financial models to support investment decisions\nPrepared quarterly budget and forecast reports for senior leadership" },
@@ -406,8 +406,8 @@ const CV_TEMPLATES = {
     font: "Arial, sans-serif",
     content: {
       he: {
-        name: "עומר פרידמן", title: "רכז/ת תפעול",
-        contact: "058-2233445 | omer.friedman@email.com | ראשון לציון",
+        name: "ישראל ישראלי", title: "רכז/ת תפעול",
+        contact: "058-2233445 | israel@email.com | ראשון לציון",
         summary: "רכז תפעול עם 4 שנות ניסיון בניהול תהליכים עסקיים, תיאום בין מחלקות ושיפור תהליכי עבודה. בעל יכולת ארגון גבוהה ונסיון בעבודה מול ספקים ולקוחות כאחד.",
         jobs: [
           { title: "רכז תפעול", place: "חברת לוגיסטיקה ארצית", dates: "2021 – היום", bullets: "ניהול שוטף של תהליכי אספקה ותיאום מול 30+ ספקים\nהטמעת תהליך עבודה חדש שקיצר זמני אספקה ב-20%" },
@@ -417,8 +417,8 @@ const CV_TEMPLATES = {
         skills: "ניהול פרויקטים | Excel מתקדם | Priority | תקשורת בין-אישית | פתרון בעיות",
       },
       en: {
-        name: "Omer Friedman", title: "Operations Coordinator",
-        contact: "+972-58-2233445 | omer.friedman@email.com | Rishon LeZion",
+        name: "Israel Israeli", title: "Operations Coordinator",
+        contact: "+972-58-2233445 | israel@email.com | Rishon LeZion",
         summary: "Operations coordinator with 4 years of experience managing business processes, cross-department coordination, and workflow improvement. Highly organized, with experience working with both vendors and clients.",
         jobs: [
           { title: "Operations Coordinator", place: "National Logistics Company", dates: "2021 – Present", bullets: "Managed ongoing supply processes and coordination with 30+ vendors\nImplemented a new workflow that cut delivery times by 20%" },
@@ -436,8 +436,8 @@ const CV_TEMPLATES = {
     font: "Arial, sans-serif",
     content: {
       he: {
-        name: "יעל פרץ", title: "מנהלת פיתוח עסקי",
-        contact: "052-8899001 | yael.peretz@email.com | הרצליה | linkedin.com/in/yaelperetz",
+        name: "ישראלה ישראלי", title: "מנהלת פיתוח עסקי",
+        contact: "052-8899001 | israela@email.com | הרצליה | linkedin.com/in/israela",
         summary: "מנהלת פיתוח עסקי עם 6 שנות ניסיון בבניית צנרת מכירות (pipeline) וסגירת עסקאות B2B. מונעת יעדים, עם רקורד מוכח של עמידה ב-120%+ מהיעד השנתי.",
         jobs: [
           { title: "מנהלת פיתוח עסקי", place: "חברת SaaS ישראלית", dates: "2021 – היום", bullets: "בניית צנרת מכירות שהניבה 4 מיליון ש\"ח הכנסה שנתית חדשה\nניהול מו\"מ ישיר עם לקוחות ארגוניים גדולים" },
@@ -447,8 +447,8 @@ const CV_TEMPLATES = {
         skills: "Salesforce | ניהול משא ומתן | Pipeline Management | LinkedIn Sales Navigator | הצגות מכירה",
       },
       en: {
-        name: "Yael Peretz", title: "Business Development Manager",
-        contact: "+972-52-8899001 | yael.peretz@email.com | Herzliya | linkedin.com/in/yaelperetz",
+        name: "Israela Israeli", title: "Business Development Manager",
+        contact: "+972-52-8899001 | israela@email.com | Herzliya | linkedin.com/in/israela",
         summary: "Business development manager with 6 years of experience building sales pipelines and closing B2B deals. Target-driven, with a proven record of exceeding annual quota by 120%+.",
         jobs: [
           { title: "Business Development Manager", place: "Israeli SaaS Company", dates: "2021 – Present", bullets: "Built a sales pipeline generating 4M NIS in new annual revenue\nLed direct negotiations with large enterprise clients" },
@@ -466,8 +466,8 @@ const CV_TEMPLATES = {
     font: "Arial, sans-serif",
     content: {
       he: {
-        name: "נועה כץ", title: "מנהלת הצלחת לקוחות",
-        contact: "053-5566001 | noa.katz@email.com | רעננה | linkedin.com/in/noakatz",
+        name: "ישראלה ישראלי", title: "מנהלת הצלחת לקוחות",
+        contact: "053-5566001 | israela@email.com | רעננה | linkedin.com/in/israela",
         summary: "מנהלת הצלחת לקוחות עם 5 שנות ניסיון בליווי לקוחות עסקיים ובניית מערכות יחסים ארוכות טווח. מתמחה בהפחתת נטישה (churn) ובזיהוי הזדמנויות להרחבת חשבון.",
         jobs: [
           { title: "מנהלת הצלחת לקוחות", place: "חברת SaaS", dates: "2021 – היום", bullets: "ניהול תיק של 40 לקוחות ארגוניים עם שיעור שימור של 95%\nזיהוי הזדמנויות upsell שהובילו לגידול של 25% בהכנסות מלקוחות קיימים" },
@@ -477,8 +477,8 @@ const CV_TEMPLATES = {
         skills: "Salesforce | Zendesk | ניהול קשרי לקוחות | פתרון קונפליקטים | הדרכת לקוחות",
       },
       en: {
-        name: "Noa Katz", title: "Customer Success Manager",
-        contact: "+972-53-5566001 | noa.katz@email.com | Raanana | linkedin.com/in/noakatz",
+        name: "Israela Israeli", title: "Customer Success Manager",
+        contact: "+972-53-5566001 | israela@email.com | Raanana | linkedin.com/in/israela",
         summary: "Customer success manager with 5 years of experience supporting business clients and building long-term relationships. Specializes in reducing churn and identifying account expansion opportunities.",
         jobs: [
           { title: "Customer Success Manager", place: "SaaS Company", dates: "2021 – Present", bullets: "Managed a portfolio of 40 enterprise clients with a 95% retention rate\nIdentified upsell opportunities that grew existing-account revenue by 25%" },

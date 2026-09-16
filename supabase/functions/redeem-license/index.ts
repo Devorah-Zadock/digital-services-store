@@ -22,9 +22,17 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+// Confirmed live: every Response below was built with only these headers,
+// with no Content-Type — Deno defaults a string body to "text/plain",
+// and supabase-js's functions.invoke() decides how to parse the response
+// purely from Content-Type. Without "application/json" here, invoke()
+// returned the body as a raw STRING instead of a parsed object, so
+// `data.success` was always undefined (falsy) on the client — every
+// verification, success or failure alike, was read as a failure.
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Content-Type": "application/json",
 };
 
 Deno.serve(async (req: Request) => {
@@ -42,14 +50,44 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const gumroadRes = await fetch("https://api.gumroad.com/v2/licenses/verify", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ product_id: productId, license_key: licenseKey }),
-    });
-    const gumroadData = await gumroadRes.json();
+    // Confirmed twice in real testing: a license verified within the
+    // first moment or two after a genuine purchase can come back invalid,
+    // then succeed on an immediate retry with the exact same key —
+    // Gumroad's own systems evidently need a beat to catch up right after
+    // a charge completes. Rather than making every customer manually
+    // retry, try up to 3 times with a short pause before giving up.
+    let gumroadData: Record<string, unknown> = {};
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const gumroadRes = await fetch("https://api.gumroad.com/v2/licenses/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ product_id: productId, license_key: licenseKey }),
+      });
+      // Read as text first, not .json() directly: an unexpected non-JSON
+      // reply (an HTML error page, an empty body) would otherwise throw
+      // and get swallowed by the outer catch as a generic 500.
+      const gumroadText = await gumroadRes.text();
+      try {
+        gumroadData = JSON.parse(gumroadText);
+      } catch (_e) {
+        gumroadData = {};
+      }
+      if (gumroadData.success) break;
+      if (attempt < 3) await new Promise((r) => setTimeout(r, 1500));
+    }
     if (!gumroadData.success) {
-      return new Response(JSON.stringify({ success: false, reason: "invalid" }), { status: 200, headers: corsHeaders });
+      // Gumroad's own message ("That license does not exist for the
+      // provided product." / "Invalid product." / etc.) is exactly what
+      // tells apart a wrong product_id from a wrong/reused key — worth
+      // surfacing instead of collapsing everything into one bare "invalid".
+      return new Response(
+        JSON.stringify({
+          success: false,
+          reason: "invalid",
+          gumroadMessage: (gumroadData.message as string) || null,
+        }),
+        { status: 200, headers: corsHeaders }
+      );
     }
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);

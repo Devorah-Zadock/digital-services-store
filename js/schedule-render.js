@@ -14,6 +14,128 @@ function schedEsc(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+/* A small "+" repeated at the bottom of a (possibly long) list, next to
+   the existing one at the top of the card — added a row at a time, a
+   long list of teachers/subjects otherwise means scrolling all the way
+   back up just to add the next one. */
+function schedAddMoreHtml(action, label) {
+  return `<div class="sched-add-more"><button type="button" class="btn-mini" data-action="${action}">+ ${schedEsc(label)}</button></div>`;
+}
+
+/* ---------- paywall (Gumroad license, same pattern as js/site-builder.js) ----------
+   Filling in every setup tab (subjects/classes/teachers/rooms/
+   assignments) stays free and unlimited; only actually running the
+   solver ("🎲 צור מערכת שעות" / "המשך לשפר") requires a redeemed
+   license — same "honest caveat" as everywhere else on this site: a
+   client-side check against Gumroad's API, not real DRM, but the same
+   barrier the CV/sites builders already used successfully before the CV
+   one went free. */
+const SCHEDULE_GUMROAD_CONFIG = { productId: "K122yL6VSdTui67Be5ZiYw==", checkoutUrl: "https://dizstudio.gumroad.com/l/koixys" };
+const SCHEDULE_UNLOCK_KEY = "deskkit_schedule_unlocked_" + SCHEDULE_GUMROAD_CONFIG.productId;
+/* Fixed, not per-project like site templates: there's only one version
+   of this tool, so one purchase should unlock every project this account
+   ever builds here — passed as redeem-license's generic "template" scope
+   key, which it treats as an opaque string. */
+const SCHEDULE_LICENSE_TEMPLATE = "schedule-builder";
+
+function scheduleIsUnlocked() {
+  return localStorage.getItem(SCHEDULE_UNLOCK_KEY) === "1";
+}
+
+let scheduleLastVerifiedPurchase = null;
+let scheduleVerifying = false;
+
+/* Same send-receipt Edge Function the site builder already uses (email +
+   attached PDF, via Resend/PDFShift — see that function's own comment
+   for the two secrets it needs) — just not wired up here until now.
+   Best-effort and silent on failure, same as the site builder's version:
+   a receipt email failing must never block someone who just paid and is
+   waiting to actually use the tool. */
+async function sendSchedulePurchaseReceipt() {
+  try {
+    const { data } = await supabaseClient.auth.getSession();
+    const sessionEmail = data.session && data.session.user && data.session.user.email;
+    const purchase = scheduleLastVerifiedPurchase;
+    const buyerEmail = (purchase && purchase.email) || sessionEmail;
+    if (!buyerEmail) return;
+    const amount = formatGumroadAmount(purchase) || "499.00 ₪";
+    await supabaseClient.functions.invoke("send-receipt", {
+      body: {
+        buyerEmail,
+        buyerName: (purchase && purchase.full_name) || "",
+        itemDescription: "בונה מערכת שעות לבית ספר — DeskKit",
+        amount,
+      },
+    });
+  } catch (err) {
+    // silent — a failed receipt email is a support follow-up, not a
+    // reason to interrupt someone who just finished paying
+  }
+}
+
+function refreshScheduleUnlockUi() {
+  const unlocked = scheduleIsUnlocked();
+  document.getElementById("sched-unlock-gate").hidden = unlocked;
+  document.getElementById("sched-unlock-done").hidden = !unlocked;
+}
+
+/* Verification itself happens server-side in the redeem-license Edge
+   Function (see that file) — it re-verifies the key with Gumroad itself
+   and atomically claims it against this account, so the same purchased
+   key can't unlock a second, unrelated account. */
+async function verifyScheduleLicense() {
+  if (scheduleVerifying) return;
+  const input = document.getElementById("sched-license-input");
+  const note = document.getElementById("sched-license-note");
+  const key = input.value.trim();
+  if (!key) { note.textContent = "יש להזין קוד רישוי."; note.className = "unlock-note err"; return; }
+  if (!scheduleCurrentUserId) { note.textContent = "יש להתחבר לחשבון כדי לפתוח את הכלי."; note.className = "unlock-note err"; return; }
+  scheduleVerifying = true;
+  note.textContent = "בודקים...";
+  note.className = "unlock-note";
+  try {
+    const { data, error } = await supabaseClient.functions.invoke("redeem-license", {
+      body: { licenseKey: key, productId: SCHEDULE_GUMROAD_CONFIG.productId, userId: scheduleCurrentUserId, template: SCHEDULE_LICENSE_TEMPLATE },
+    });
+    if (error || !data) {
+      note.textContent = "שגיאת חיבור לשירות האימות. נסו שוב בעוד רגע.";
+      note.className = "unlock-note err";
+      return;
+    }
+    if (!data.success) {
+      // A real, live escape hatch for a genuinely stuck paying customer —
+      // not just "try again" with nowhere left to go. Prefills the email
+      // with exactly the key they tried, so following up doesn't start
+      // from scratch.
+      const supportMailto = `mailto:digital.dz.studio@gmail.com?subject=${encodeURIComponent("בעיה בקוד רישוי — מערכת שעות")}&body=${encodeURIComponent("הקוד שהזנתי: " + key)}`;
+      const supportLine = `<br>עדיין תקועים? <a href="${supportMailto}" style="color:inherit; text-decoration:underline;">כתבו לנו ונפתור את זה ידנית</a>.`;
+      const invalidMsg = "קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב." + (data.gumroadMessage ? ` (Gumroad: ${data.gumroadMessage})` : "") + supportLine;
+      note.innerHTML = data.reason === "redeemed-elsewhere" ? "קוד הרישוי הזה כבר שימש לפתיחת חשבון אחר." + supportLine : invalidMsg;
+      note.className = "unlock-note err";
+      return;
+    }
+    scheduleLastVerifiedPurchase = data.purchase || null;
+    localStorage.setItem(SCHEDULE_UNLOCK_KEY, "1");
+    note.textContent = "נפתח בהצלחה!";
+    note.className = "unlock-note ok";
+    refreshScheduleUnlockUi();
+    sendSchedulePurchaseReceipt();
+  } catch (err) {
+    note.textContent = "שגיאת חיבור לשירות האימות. נסו שוב בעוד רגע.";
+    note.className = "unlock-note err";
+  } finally {
+    scheduleVerifying = false;
+  }
+}
+
+function wireScheduleUnlock() {
+  const buyLink = document.getElementById("sched-buy-link");
+  buyLink.href = SCHEDULE_GUMROAD_CONFIG.checkoutUrl;
+  wireBuyLinkOnce(buyLink);
+  document.getElementById("sched-verify-btn").addEventListener("click", verifyScheduleLicense);
+  refreshScheduleUnlockUi();
+}
+
 /* ---------- tabs ---------- */
 
 function schedShowTab(tab) {
@@ -54,27 +176,29 @@ function renderSubjectsTab() {
     wrap.innerHTML = '<p class="sched-hint">עוד לא הוספתם מקצועות.</p>';
     return;
   }
-  wrap.innerHTML = scheduleState.subjects.map(subjectRowHtml).join("");
+  wrap.innerHTML = scheduleState.subjects.map(subjectRowHtml).join("") + schedAddMoreHtml("add-subject-bottom", "הוספת מקצוע");
 }
 
 function subjectRowHtml(s) {
   const roomOptions = ['<option value="">ללא חדר מיוחד</option>']
-    .concat(scheduleState.rooms.map((r) => `<option value="${r.id}"${r.id === s.roomId ? " selected" : ""}>${schedEsc(r.name)}</option>`))
+    .concat(scheduleState.rooms.map((r) => `<option value="${r.id}"${r.id === s.roomId ? " selected" : ""}>${schedEsc(scheduleDisplayName(r.name))}</option>`))
     .join("");
   return `<div class="sched-row sched-subject-cols" data-subject-id="${s.id}">
     <input type="color" class="sched-color-input" data-field="color" value="${s.color}">
     <input type="text" class="sched-text-input" data-field="name" value="${schedEsc(s.name)}" placeholder="שם המקצוע">
     <select class="sched-select" data-field="roomId">${roomOptions}</select>
+    <input type="number" class="sched-num-input" data-field="maxConsecutive" min="1" max="${SCHEDULE_MAX_PERIODS}" placeholder="ללא הגבלה" value="${s.maxConsecutive || ""}">
     <button type="button" class="sched-row-del" data-action="delete-subject" title="מחיקה" aria-label="מחיקה">🗑</button>
   </div>`;
 }
 
 function wireSubjectsTab() {
-  document.getElementById("sched-add-subject").addEventListener("click", () => {
-    scheduleAddSubject(scheduleState, "מקצוע חדש", "#1F5C4E", null);
+  const addSubject = () => {
+    scheduleAddSubject(scheduleState, "", "#1F5C4E", null);
     renderSubjectsTab();
     renderAssignmentsTab();
-  });
+  };
+  document.getElementById("sched-add-subject").addEventListener("click", addSubject);
   const wrap = document.getElementById("sched-subjects-list");
   wrap.addEventListener("input", (e) => {
     const row = e.target.closest("[data-subject-id]");
@@ -84,6 +208,7 @@ function wireSubjectsTab() {
     const field = e.target.dataset.field;
     if (field === "name") { s.name = e.target.value; renderAssignmentsTab(); }
     if (field === "color") s.color = e.target.value;
+    if (field === "maxConsecutive") { const v = parseInt(e.target.value, 10); s.maxConsecutive = v > 0 ? v : null; }
   });
   wrap.addEventListener("change", (e) => {
     const row = e.target.closest("[data-subject-id]");
@@ -91,8 +216,14 @@ function wireSubjectsTab() {
     const s = scheduleState.subjects.find((x) => x.id === row.dataset.subjectId);
     if (!s) return;
     if (e.target.dataset.field === "roomId") s.roomId = e.target.value || null;
+    if (e.target.dataset.field === "name") {
+      const trimmed = s.name.trim();
+      const dup = trimmed && scheduleState.subjects.some((x) => x.id !== s.id && x.name.trim().toLowerCase() === trimmed.toLowerCase());
+      if (dup) alert(`כבר יש מקצוע בשם "${trimmed}". כדאי לתת לו שם אחר, כדי לא להתבלבל בין השניים ברשימות ובשיבוצי ההוראה.`);
+    }
   });
   wrap.addEventListener("click", (e) => {
+    if (e.target.closest('[data-action="add-subject-bottom"]')) { addSubject(); return; }
     const btn = e.target.closest('[data-action="delete-subject"]');
     if (!btn) return;
     const row = btn.closest("[data-subject-id]");
@@ -117,25 +248,30 @@ function renderClassesTab() {
   wrap.innerHTML = scheduleState.classes.map((c) => `
     <div class="sched-row sched-class-cols" data-class-id="${c.id}">
       <input type="text" class="sched-text-input" data-field="name" value="${schedEsc(c.name)}" placeholder="שם הכיתה">
+      <input type="number" class="sched-num-input" data-field="maxDailyPeriod" min="1" max="${SCHEDULE_MAX_PERIODS}" placeholder="כל היום" value="${c.maxDailyPeriod || ""}">
       <button type="button" class="sched-row-del" data-action="delete-class" title="מחיקה" aria-label="מחיקה">🗑</button>
-    </div>`).join("");
+    </div>`).join("") + schedAddMoreHtml("add-class-bottom", "הוספת כיתה");
 }
 
 function wireClassesTab() {
-  document.getElementById("sched-add-class").addEventListener("click", () => {
-    scheduleAddClass(scheduleState, "כיתה חדשה");
+  const addClass = () => {
+    scheduleAddClass(scheduleState, "");
     renderClassesTab();
     renderAssignmentsTab();
-  });
+  };
+  document.getElementById("sched-add-class").addEventListener("click", addClass);
   const wrap = document.getElementById("sched-classes-list");
   wrap.addEventListener("input", (e) => {
     const row = e.target.closest("[data-class-id]");
     if (!row) return;
     const c = scheduleState.classes.find((x) => x.id === row.dataset.classId);
     if (!c) return;
-    if (e.target.dataset.field === "name") { c.name = e.target.value; renderAssignmentsTab(); }
+    const field = e.target.dataset.field;
+    if (field === "name") { c.name = e.target.value; renderAssignmentsTab(); }
+    if (field === "maxDailyPeriod") { const v = parseInt(e.target.value, 10); c.maxDailyPeriod = v > 0 ? v : null; }
   });
   wrap.addEventListener("click", (e) => {
+    if (e.target.closest('[data-action="add-class-bottom"]')) { addClass(); return; }
     const btn = e.target.closest('[data-action="delete-class"]');
     if (!btn) return;
     const row = btn.closest("[data-class-id]");
@@ -161,15 +297,16 @@ function renderRoomsTab() {
       <input type="text" class="sched-text-input" data-field="name" value="${schedEsc(r.name)}" placeholder="שם החדר">
       <input type="number" class="sched-num-input" data-field="count" min="1" max="30" value="${r.count}">
       <button type="button" class="sched-row-del" data-action="delete-room" title="מחיקה" aria-label="מחיקה">🗑</button>
-    </div>`).join("");
+    </div>`).join("") + schedAddMoreHtml("add-room-bottom", "הוספת חדר");
 }
 
 function wireRoomsTab() {
-  document.getElementById("sched-add-room").addEventListener("click", () => {
-    scheduleAddRoom(scheduleState, "חדר מיוחד", 1);
+  const addRoom = () => {
+    scheduleAddRoom(scheduleState, "", 1);
     renderRoomsTab();
     renderSubjectsTab();
-  });
+  };
+  document.getElementById("sched-add-room").addEventListener("click", addRoom);
   const wrap = document.getElementById("sched-rooms-list");
   wrap.addEventListener("input", (e) => {
     const row = e.target.closest("[data-room-id]");
@@ -181,6 +318,7 @@ function wireRoomsTab() {
     if (field === "count") r.count = Math.max(1, parseInt(e.target.value, 10) || 1);
   });
   wrap.addEventListener("click", (e) => {
+    if (e.target.closest('[data-action="add-room-bottom"]')) { addRoom(); return; }
     const btn = e.target.closest('[data-action="delete-room"]');
     if (!btn) return;
     const row = btn.closest("[data-room-id]");
@@ -212,10 +350,17 @@ function availabilityGridHtml(teacher) {
   return `<div class="sched-avail-grid" style="--sched-avail-cols:${days};">${rows}</div>`;
 }
 
+/* Collapse state is purely a display preference, not part of the saved
+   project data — it lives here rather than on the teacher object so it
+   survives a full renderTeachersTab() re-render (e.g. from a settings
+   change) without needing to round-trip through Supabase. */
+let scheduleAvailCollapsed = new Set();
+
 function teacherCardHtml(t) {
   const subjectChecks = scheduleState.subjects.length
-    ? scheduleState.subjects.map((s) => `<label class="sched-check"><input type="checkbox" data-field="subject" value="${s.id}"${t.subjectIds.includes(s.id) ? " checked" : ""}> ${schedEsc(s.name)}</label>`).join("")
+    ? scheduleState.subjects.map((s) => `<label class="sched-check"><input type="checkbox" data-field="subject" value="${s.id}"${t.subjectIds.includes(s.id) ? " checked" : ""}> ${schedEsc(scheduleDisplayName(s.name))}</label>`).join("")
     : '<p class="sched-hint">הוסיפו קודם מקצועות בלשונית "מקצועות".</p>';
+  const collapsed = scheduleAvailCollapsed.has(t.id);
   return `<div class="sched-teacher-card" data-teacher-id="${t.id}">
     <div class="sched-teacher-head">
       <input type="text" class="sched-text-input" data-field="name" value="${schedEsc(t.name)}" placeholder="שם המורה">
@@ -223,11 +368,15 @@ function teacherCardHtml(t) {
     </div>
     <div class="sched-teacher-subjects">
       <label class="sched-subfield-label">מקצועות שהמורה מלמד/ת</label>
+      <p class="sched-hint" style="margin:0 0 8px;">סמנו כל מקצוע שהמורה הזו יכולה ללמד — בלשונית "שיבוצי הוראה" אפשר לשבץ אותה רק למקצוע שסימנתם כאן.</p>
       <div class="sched-check-list">${subjectChecks}</div>
     </div>
     <div class="sched-teacher-avail">
-      <label class="sched-subfield-label">שעות לא זמינות (לחיצה על משבצת מסמנת/מבטלת חסימה)</label>
-      ${availabilityGridHtml(t)}
+      <button type="button" class="sched-avail-toggle" data-action="toggle-avail" aria-expanded="${collapsed ? "false" : "true"}">
+        <span class="sched-avail-arrow">${collapsed ? "◂" : "▾"}</span>
+        שעות לא זמינות (לחיצה על משבצת מסמנת/מבטלת חסימה)
+      </button>
+      ${collapsed ? "" : availabilityGridHtml(t)}
     </div>
   </div>`;
 }
@@ -238,15 +387,21 @@ function renderTeachersTab() {
     wrap.innerHTML = '<p class="sched-hint">עוד לא הוספתם מורים.</p>';
     return;
   }
-  wrap.innerHTML = scheduleState.teachers.map(teacherCardHtml).join("");
+  wrap.innerHTML = scheduleState.teachers.map(teacherCardHtml).join("") + schedAddMoreHtml("add-teacher-bottom", "הוספת מורה");
 }
 
 function wireTeachersTab() {
-  document.getElementById("sched-add-teacher").addEventListener("click", () => {
-    scheduleAddTeacher(scheduleState, "מורה חדש/ה");
+  const addTeacher = () => {
+    // Collapse every existing teacher's availability grid first — adding
+    // one more otherwise pushes the new row further down the page each
+    // time, meaning a lot of scrolling back up to reach it.
+    scheduleState.teachers.forEach((t) => scheduleAvailCollapsed.add(t.id));
+    const t = scheduleAddTeacher(scheduleState, "");
+    scheduleAvailCollapsed.add(t.id);
     renderTeachersTab();
     renderAssignmentsTab();
-  });
+  };
+  document.getElementById("sched-add-teacher").addEventListener("click", addTeacher);
   const wrap = document.getElementById("sched-teachers-list");
 
   wrap.addEventListener("input", (e) => {
@@ -271,15 +426,25 @@ function wireTeachersTab() {
   });
 
   wrap.addEventListener("click", (e) => {
+    if (e.target.closest('[data-action="add-teacher-bottom"]')) { addTeacher(); return; }
     const delBtn = e.target.closest('[data-action="delete-teacher"]');
     if (delBtn) {
       const card = delBtn.closest("[data-teacher-id]");
       if (!confirm("למחוק את המורה? שיבוצי הוראה שמשתמשים בו/בה יימחקו גם הם.")) return;
+      scheduleAvailCollapsed.delete(card.dataset.teacherId);
       scheduleRemoveTeacher(scheduleState, card.dataset.teacherId);
       scheduleState.timetable = null;
       renderTeachersTab();
       renderAssignmentsTab();
       renderResultTab();
+      return;
+    }
+    const toggleBtn = e.target.closest('[data-action="toggle-avail"]');
+    if (toggleBtn) {
+      const card = toggleBtn.closest("[data-teacher-id]");
+      const id = card.dataset.teacherId;
+      if (scheduleAvailCollapsed.has(id)) scheduleAvailCollapsed.delete(id); else scheduleAvailCollapsed.add(id);
+      renderTeachersTab();
       return;
     }
     const cell = e.target.closest(".sched-avail-cell");
@@ -298,11 +463,11 @@ function wireTeachersTab() {
 /* ---------- assignments tab ---------- */
 
 function assignmentRowHtml(a) {
-  const classOpts = scheduleState.classes.map((c) => `<option value="${c.id}"${c.id === a.classId ? " selected" : ""}>${schedEsc(c.name)}</option>`).join("");
-  const subjOpts = scheduleState.subjects.map((s) => `<option value="${s.id}"${s.id === a.subjectId ? " selected" : ""}>${schedEsc(s.name)}</option>`).join("");
+  const classOpts = scheduleState.classes.map((c) => `<option value="${c.id}"${c.id === a.classId ? " selected" : ""}>${schedEsc(scheduleDisplayName(c.name))}</option>`).join("");
+  const subjOpts = scheduleState.subjects.map((s) => `<option value="${s.id}"${s.id === a.subjectId ? " selected" : ""}>${schedEsc(scheduleDisplayName(s.name))}</option>`).join("");
   const eligible = scheduleTeachersForSubject(scheduleState, a.subjectId);
   const teacherPool = eligible.length ? eligible : scheduleState.teachers;
-  const teacherOpts = teacherPool.map((t) => `<option value="${t.id}"${t.id === a.teacherId ? " selected" : ""}>${schedEsc(t.name)}</option>`).join("");
+  const teacherOpts = teacherPool.map((t) => `<option value="${t.id}"${t.id === a.teacherId ? " selected" : ""}>${schedEsc(scheduleDisplayName(t.name))}</option>`).join("");
   return `<div class="sched-row sched-assign-cols" data-assignment-id="${a.id}">
     <select class="sched-select" data-field="classId">${classOpts}</select>
     <select class="sched-select" data-field="subjectId">${subjOpts}</select>
@@ -352,7 +517,18 @@ function wireAssignmentsTab() {
     const field = e.target.dataset.field;
     if (field === "classId") a.classId = e.target.value;
     if (field === "teacherId") a.teacherId = e.target.value;
-    if (field === "subjectId") { a.subjectId = e.target.value; renderAssignmentsTab(); }
+    if (field === "subjectId") {
+      a.subjectId = e.target.value;
+      // The teacher dropdown is about to re-render filtered to whoever
+      // teaches the NEW subject — a.teacherId has to move with it, or the
+      // saved assignment would silently keep pointing at a teacher who
+      // (per the checkboxes on their own card) doesn't actually teach
+      // this subject, even though the visible dropdown shows someone else.
+      const eligible = scheduleTeachersForSubject(scheduleState, a.subjectId);
+      const pool = eligible.length ? eligible : scheduleState.teachers;
+      a.teacherId = pool[0] ? pool[0].id : "";
+      renderAssignmentsTab();
+    }
   });
   wrap.addEventListener("click", (e) => {
     const btn = e.target.closest('[data-action="delete-assignment"]');
@@ -382,7 +558,7 @@ function setSolvingUi(active, statusText) {
 }
 
 function runSolver(continueFromCurrent) {
-  if (scheduleSolving) return;
+  if (scheduleSolving || !scheduleIsUnlocked()) return;
   const problem = buildScheduleProblem(scheduleState);
   if (!problem.lessons.length) {
     alert("אין שיעורים לשיבוץ — הוסיפו שיבוצי הוראה בלשונית המתאימה קודם.");
@@ -461,8 +637,8 @@ function resultGridHtml(kind, entityId) {
           : scheduleState.classes.find((c) => c.id === lesson.classId);
         const isConflict = conflicts.has(lid);
         cells += `<div class="sched-grid-cell filled${isConflict ? " conflict" : ""}" draggable="true" data-lesson-id="${lid}" data-day="${d}" data-period="${p}" style="--sched-subj-color:${subj ? subj.color : "#ccc"}">
-          <span class="sched-cell-subj">${schedEsc(subj ? subj.name : "?")}</span>
-          <span class="sched-cell-sub">${schedEsc(other ? other.name : "")}</span>
+          <span class="sched-cell-subj">${schedEsc(subj ? scheduleDisplayName(subj.name) : "?")}</span>
+          <span class="sched-cell-sub">${schedEsc(other ? scheduleDisplayName(other.name) : "")}</span>
         </div>`;
       } else {
         cells += `<div class="sched-grid-cell empty" data-day="${d}" data-period="${p}"></div>`;
@@ -475,7 +651,7 @@ function resultGridHtml(kind, entityId) {
 
 function scheduleEntityOptionsHtml() {
   const list = scheduleResultView.kind === "class" ? scheduleState.classes : scheduleState.teachers;
-  return list.map((x) => `<option value="${x.id}">${schedEsc(x.name)}</option>`).join("");
+  return list.map((x) => `<option value="${x.id}">${schedEsc(scheduleDisplayName(x.name))}</option>`).join("");
 }
 
 function renderResultTab() {
@@ -565,7 +741,7 @@ function buildAllClassesPrintHtml() {
   if (!scheduleState.timetable) return "";
   return scheduleState.classes.map((c) => `
     <div class="sched-print-page">
-      <h2>מערכת שעות — ${schedEsc(c.name)}</h2>
+      <h2>מערכת שעות — ${schedEsc(scheduleDisplayName(c.name))}</h2>
       ${resultGridHtml("class", c.id)}
     </div>`).join("");
 }
@@ -606,12 +782,12 @@ function exportResultCsv() {
       const other = kind === "class"
         ? scheduleState.teachers.find((t) => t.id === lesson.teacherId)
         : scheduleState.classes.find((c) => c.id === lesson.classId);
-      row.push(`${subj ? subj.name : ""} (${other ? other.name : ""})`);
+      row.push(`${subj ? scheduleDisplayName(subj.name) : ""} (${other ? scheduleDisplayName(other.name) : ""})`);
     }
     rows.push(row);
   }
   const csv = rows.map((r) => r.map(csvEscape).join(",")).join("\r\n");
-  downloadTextFile(csv, `מערכת-שעות-${entity.name}.csv`, "text/csv;charset=utf-8;");
+  downloadTextFile(csv, `מערכת-שעות-${scheduleDisplayName(entity.name)}.csv`, "text/csv;charset=utf-8;");
 }
 
 function wirePrintExport() {
@@ -655,6 +831,7 @@ function initSchedulePage() {
   wireRoomsTab();
   wireTeachersTab();
   wireAssignmentsTab();
+  wireScheduleUnlock();
   wireResultControls();
   wireResultGrid();
   wirePrintExport();

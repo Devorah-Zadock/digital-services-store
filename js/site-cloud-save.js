@@ -17,6 +17,40 @@
 let siteCurrentUserId = null;
 let siteProjectId = null;
 let siteIsFinalized = false;
+// Mirrors the site_projects row's own publish_count — read here so
+// site-builder.js can show "X מתוך 5 נשארו" before anyone even clicks
+// פרסום, not just after the Edge Function refuses. See
+// supabase/sql/site_projects_publish_limit.sql and publish-site's
+// PUBLISH_LIMIT for where the actual cap is enforced (server-side —
+// this is display-only, never trust it for the real check).
+let sitePublishCount = 0;
+
+/* Autosave: a refresh with no manual save used to lose everything typed
+   in since the last click of "שמירה" — confirmed live. Every edit inside
+   #wizard-section marks the project dirty; a periodic tick saves it
+   quietly in the background (same status element the manual save button
+   uses), without needing every individual handler in site-builder.js to
+   know about saving. */
+let siteDirty = false;
+let siteAutosaving = false;
+
+function markSiteDirty() {
+  siteDirty = true;
+  const status = document.getElementById("site-save-status");
+  if (status && status.classList.contains("ok")) { status.textContent = ""; status.classList.remove("ok"); }
+}
+
+async function siteAutosaveTick() {
+  if (!siteCurrentUserId || !siteDirty || siteAutosaving) return;
+  siteAutosaving = true;
+  await saveSiteNow();
+  siteAutosaving = false;
+  if (siteProjectId) {
+    siteDirty = false;
+    const status = document.getElementById("site-save-status");
+    if (status) { status.textContent = "נשמר אוטומטית ✓"; status.classList.add("ok"); }
+  }
+}
 
 async function saveSiteNow() {
   if (!siteCurrentUserId) return;
@@ -59,7 +93,7 @@ async function sendPurchaseReceipt() {
     const tplLabel = typeof SITE_TEMPLATES !== "undefined" && SITE_TEMPLATES[siteState.template]
       ? SITE_TEMPLATES[siteState.template].label : siteState.template;
     const bizName = siteState.data && siteState.data.businessName && siteState.data.businessName.trim();
-    const amount = purchase && purchase.price != null ? `${(purchase.price / 100).toFixed(2)} ₪` : null;
+    const amount = formatGumroadAmount(purchase);
 
     await supabaseClient.functions.invoke("send-receipt", {
       body: {
@@ -99,6 +133,21 @@ document.addEventListener("DOMContentLoaded", () => {
     if (user) {
       siteCurrentUserId = user.id;
 
+      // Prefills the Gumroad checkout with the signed-in email — most
+      // buyers want their receipt/license at the same address anyway, and
+      // Gumroad's own field stays a normal, editable input, so anyone who
+      // wants a different receipt email can still just type over it.
+      if (user.email) {
+        const buyLink = document.getElementById("buy-link");
+        if (buyLink && buyLink.href) {
+          try {
+            const url = new URL(buyLink.href);
+            url.searchParams.set("email", user.email);
+            buyLink.href = url.toString();
+          } catch (_e) { /* malformed href — leave it as-is */ }
+        }
+      }
+
       const { data: rows } = await supabaseClient
         .from("site_projects").select("*").eq("user_id", user.id)
         .order("created_at", { ascending: false });
@@ -121,6 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (row) {
           siteProjectId = row.id;
           siteIsFinalized = row.status === "finalized";
+          sitePublishCount = row.publish_count || 0;
           siteState.template = row.template;
           siteState.data = row.data;
           ensurePagesShape(siteState.data);
@@ -133,12 +183,32 @@ document.addEventListener("DOMContentLoaded", () => {
           // project. siteProjectId stays null so the next save creates a
           // new row instead of touching any other template's project.
           siteProjectId = null;
+          sitePublishCount = 0;
           siteIsFinalized = false;
+          // The synchronous loadSiteState() call (before this account was
+          // even known) reads a localStorage cache keyed only by template,
+          // not by account — on a shared/reused browser, that can silently
+          // load a DIFFERENT account's leftover draft for this exact
+          // template. Now that the real signed-in account is confirmed to
+          // have no saved project for it, that stale draft is discarded in
+          // favor of a genuinely fresh one, and the already-rendered form
+          // is refreshed to match.
+          siteState.template = urlTemplate;
+          siteState.data = freshSiteData(urlTemplate);
+          if (typeof showWizard === "function") showWizard();
         }
       }
     }
     if (window.revealGatedPage) window.revealGatedPage();
   });
+
+  const wizard = document.getElementById("wizard-section");
+  if (wizard) {
+    wizard.addEventListener("input", markSiteDirty);
+    wizard.addEventListener("change", markSiteDirty);
+    wizard.addEventListener("click", markSiteDirty);
+  }
+  setInterval(siteAutosaveTick, 20000);
 
   const btn = document.getElementById("site-save-btn");
   const status = document.getElementById("site-save-status");
@@ -148,6 +218,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.disabled = true;
       await saveSiteNow();
       btn.disabled = false;
+      siteDirty = false;
       status.textContent = "נשמר ✓";
       status.classList.add("ok");
       if (window.refreshMyPanel) window.refreshMyPanel();

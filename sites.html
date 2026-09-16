@@ -3,15 +3,32 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>בניית אתר עסקי — DeskKit</title>
+<title>בניית אתר תדמית — DeskKit</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="description" content="בנו אתר עסקי שלם תוך דקות, ראו תצוגה חיה, והורידו את הקבצים המוכנים.">
+<meta name="description" content="בנו אתר עסקי שלם תוך דקות, ראו תצוגה חיה, והורידו את הקבצים המוכנים. 199 ₪ בתשלום חד-פעמי, בלי מנוי חודשי.">
+<link rel="canonical" href="https://deskkit.co.il/sites.html">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "בניית אתר עסקי — DeskKit",
+  "description": "וויזארד לבניית אתר עסקי שלם עם תצוגה חיה בזמן אמת, כמה עיצובים לבחירה, וקובצי אתר מוכנים להורדה — בלי צורך בקוד.",
+  "brand": { "@type": "Brand", "name": "DeskKit" },
+  "offers": {
+    "@type": "Offer",
+    "price": "199",
+    "priceCurrency": "ILS",
+    "availability": "https://schema.org/InStock",
+    "url": "https://deskkit.co.il/sites.html"
+  }
+}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=23">
+<link rel="stylesheet" href="css/style.css?v=33">
 <link rel="stylesheet" href="css/builder.css?v=2">
 <style>
   .services-item { border: 1px solid #EDEFEE; border-radius: 8px; padding: 12px; margin-bottom: 12px; display: grid; gap: 8px; }
@@ -38,6 +55,12 @@
   }
   .preview-tab-btn.active { border-color: var(--teal); background: var(--ice); color: var(--teal-dark); }
   .finish-gate-note { font-size: 12px; color: var(--grey); margin: 10px 0 0; line-height: 1.65; }
+  .field-hint { font-size: 12px; color: var(--grey); margin: 2px 0 8px; line-height: 1.5; }
+  .site-gallery-preview { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .site-gallery-preview:empty { display: none; }
+  .site-gallery-thumb { position: relative; width: 64px; height: 64px; border-radius: 8px; overflow: hidden; border: 1px solid #E2E7E4; }
+  .site-gallery-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .site-gallery-thumb button { position: absolute; top: 2px; inset-inline-end: 2px; width: 18px; height: 18px; border-radius: 50%; border: none; background: rgba(0,0,0,.6); color: #fff; font-size: 11px; line-height: 1; cursor: pointer; padding: 0; }
   body.preview-focus header.site,
   body.preview-focus .my-sites-rail,
   body.preview-focus .my-panel-reopen,
@@ -52,7 +75,11 @@
   body.preview-focus .fab-feedback,
   body.preview-focus .fab-a11y,
   body.preview-focus .cookie-notice { display: none !important; }
-  body.preview-focus { margin-inline-start: 0 !important; }
+  /* body.has-sites-rail reserves its 220px via padding-inline-start (see
+     style.css), not margin — so zeroing only the margin above still left
+     a stray blank strip the width of that rail whenever the account had
+     saved sites, confirmed live. */
+  body.preview-focus { margin-inline-start: 0 !important; padding-inline-start: 0 !important; }
   /* .container's own max-width otherwise still caps this at 1120px —
      "full preview" should mean the customer's real, edge-to-edge width,
      not DeskKit's own editor layout width. */
@@ -65,9 +92,12 @@
      document flow, above the iframe, can never overlap the site's own
      header regardless of template layout. */
   body.preview-focus #site-preview-frame { height: calc(100vh - 48px); border: none; border-radius: 0; display: block; }
+  /* Deliberately neutral, not DeskKit's own teal — this bar sits directly
+     above a customer's own site, which can be any color scheme, and
+     DeskKit's brand green clashed visibly with darker/warmer templates. */
   #close-preview-bar {
     height: 48px; box-sizing: border-box; display: flex; align-items: center; justify-content: flex-end;
-    padding: 0 16px; background: var(--teal-dark);
+    padding: 0 16px; background: #1A1A1A;
   }
   #close-preview-btn {
     background: rgba(255,255,255,.12); color: #fff; border: none; border-radius: 8px;
@@ -120,7 +150,6 @@
     </div>
     <div class="nav-end-group">
       <a href="account.html?redirect=tools.html" id="nav-login-link" class="nav-login nav-login-pending">כניסה</a>
-      <a href="catalog.html" class="nav-cta">לצפייה בקטלוג</a>
     </div>
     <button class="burger" aria-label="תפריט">☰</button>
   </nav>
@@ -129,8 +158,8 @@
 <section class="builder-top no-print">
   <div class="container builder-top-row">
     <div>
-      <h1 style="font-size:26px; margin:6px 0 4px;">בניית אתר עסקי</h1>
-      <p style="color:var(--grey); font-size:14px; margin:0;">בוחרים עיצוב, ממלאים את פרטי העסק, ורואים תצוגה חיה. ההורדה של קובצי האתר המוכנים היא בתשלום חד-פעמי — בלי מנוי חודשי.</p>
+      <h1 style="font-size:26px; margin:6px 0 4px;">בניית אתר תדמית</h1>
+      <p style="color:var(--grey); font-size:14px; margin:0;">בוחרים עיצוב, ממלאים את פרטי העסק, ורואים תצוגה חיה. ההורדה של קובצי האתר המוכנים היא בתשלום חד-פעמי — בלי מנוי חודשי. <a href="guide-business-website.html" style="color:var(--teal); font-weight:600;">מה חייב להיות באתר עסקי? מדריך קצר</a></p>
     </div>
     <div class="builder-save-ctrl" id="site-save-ctrl" style="display:none;">
       <span class="builder-save-status" id="site-save-status"></span>
@@ -185,7 +214,19 @@
       </div>
     </div>
 
-    <div class="field"><label for="s-video">קישור לסרטון (יוטיוב, אופציונלי)</label><input id="s-video" type="text" dir="ltr" placeholder="https://youtube.com/watch?v=..."></div>
+    <div class="field">
+      <label>גלריית תמונות מתחלפות (אופציונלי)</label>
+      <p class="field-hint">מעלים כמה תמונות — התמונה הראשית באתר תתחלף ביניהן אוטומטית. אם יש כאן תמונות, הן מחליפות את "התמונה הראשית" שלמעלה. עד 5 תמונות.</p>
+      <div id="s-gallery-preview" class="site-gallery-preview"></div>
+      <label class="btn-mini photo-upload-btn" for="s-gallery">הוספת תמונה לגלריה</label>
+      <input type="file" id="s-gallery" accept="image/*" multiple style="display:none;">
+    </div>
+
+    <div class="field">
+      <label for="s-video">קישור לסרטון (יוטיוב, אופציונלי)</label>
+      <input id="s-video" type="text" dir="ltr" placeholder="https://youtube.com/watch?v=...">
+      <label class="page-toggle" style="margin-top:8px;"><input type="checkbox" id="s-video-bg"> הצגת הסרטון כרקע לכותרת הראשית (ללא קול, מתנגן אוטומטית בלולאה) — נתמך כרגע בחלק מהעיצובים</label>
+    </div>
 
     <hr class="sep">
 
@@ -225,6 +266,7 @@
         </div>
         <div id="unlock-pending" style="display:none;">
           <p style="margin:0 0 12px; font-size:14px; font-weight:600; color:var(--teal-dark);">האתר מוכן — נשאר רק לפתוח את ההורדה.</p>
+          <p class="finish-gate-note">התוכנה פועלת באופן אוטומטי לחלוטין וללא תמיכה אנושית/טלפונית — המחיר הנמוך והחד-פעמי מתאפשר הודות לשירות עצמי מלא (Self-Service).</p>
           <a href="#" id="buy-link" target="_blank" rel="noopener" class="btn btn-gold" style="width:100%; box-sizing:border-box; text-align:center; display:block; margin-bottom:14px;">רכישת קוד פתיחה</a>
           <div class="unlock-box">
             <input type="text" id="license-input" placeholder="קוד רישוי (מהמייל של הרכישה)" dir="ltr">
@@ -235,6 +277,7 @@
         <div id="unlock-done" style="display:none;">
           <p id="unlock-done-heading" style="margin:0 0 12px; font-size:15px; font-weight:700; color:var(--teal-dark);">האתר שלכם פתוח לעריכה ולפרסום.</p>
           <button type="button" class="btn btn-gold" id="publish-site-btn" style="width:100%;">פרסום — קבלת קישור חי</button>
+          <p class="finish-gate-note" id="publish-remaining"></p>
           <p class="finish-gate-note" id="publish-note"></p>
           <button type="button" class="btn-mini" id="download-zip-btn" style="width:100%; margin-top:14px;">הורדת קובצי האתר (ZIP) — לשמור עותק אצלכם</button>
           <div class="go-live-box">
@@ -258,7 +301,6 @@
       <div>
         <h5>ניווט</h5>
         <ul>
-          <li><a href="catalog.html">קטלוג מוצרים</a></li>
           <li><a href="products.html?type=cv">קורות חיים</a></li>
           <li><a href="products.html?type=deck">מצגות</a></li>
           <li><a href="products.html?type=xlsx">גליונות</a></li>
@@ -270,6 +312,7 @@
       <div>
         <h5>מידע</h5>
         <ul>
+          <li><a href="guides.html">מדריכים</a></li>
           <li><a href="admin.html">ניהול</a></li>
           <li><a href="terms.html">מדיניות</a></li>
           <li><a href="accessibility.html">נגישות</a></li>
@@ -288,15 +331,15 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="js/color-utils.js"></script>
-<script src="js/site-templates.js"></script>
-<script src="js/site-builder.js?v=9"></script>
+<script src="js/site-templates.js?v=9"></script>
+<script src="js/site-builder.js?v=25"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>
 <script src="js/my-panel.js?v=9"></script>
 <script src="js/domain-guide.js?v=1"></script>
-<script src="js/site-cloud-save.js?v=2"></script>
+<script src="js/site-cloud-save.js?v=6"></script>
 <script src="js/main.js"></script>
-<script src="js/widgets.js?v=6"></script>
+<script src="js/widgets.js?v=8"></script>
 </body>
 </html>

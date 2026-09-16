@@ -7,13 +7,30 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="description" content="בונים מערכת שעות לבית ספר עם שיבוץ אוטומטי חכם לפי אילוצים — בלי התנגשויות, עם עריכה ידנית והדפסה.">
+<meta name="description" content="בונים מערכת שעות לבית ספר עם שיבוץ אוטומטי חכם לפי אילוצים — בלי התנגשויות, עם עריכה ידנית והדפסה. 499 ₪ בתשלום חד-פעמי.">
+<link rel="canonical" href="https://deskkit.co.il/schedule-builder.html">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "בונה מערכת שעות לבית ספר — DeskKit",
+  "description": "שיבוץ אוטומטי חכם למערכת שעות של בית ספר לפי אילוצי מורים, כיתות וחדרים — בלי התנגשויות, עם עריכה ידנית בגרירה, הדפסה וייצוא.",
+  "brand": { "@type": "Brand", "name": "DeskKit" },
+  "offers": {
+    "@type": "Offer",
+    "price": "499",
+    "priceCurrency": "ILS",
+    "availability": "https://schema.org/InStock",
+    "url": "https://deskkit.co.il/schedule-builder.html"
+  }
+}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=23">
+<link rel="stylesheet" href="css/style.css?v=33">
 <link rel="stylesheet" href="css/builder.css?v=2">
-<link rel="stylesheet" href="css/schedule.css?v=1">
+<link rel="stylesheet" href="css/schedule.css?v=2">
 </head>
 <body>
 <script>
@@ -54,7 +71,6 @@
     </div>
     <div class="nav-end-group">
       <a href="account.html?redirect=schedule-builder.html" id="nav-login-link" class="nav-login nav-login-pending">כניסה</a>
-      <a href="catalog.html" class="nav-cta">לצפייה בקטלוג</a>
     </div>
     <button class="burger" aria-label="תפריט">☰</button>
   </nav>
@@ -63,7 +79,7 @@
 <section class="builder-top no-print">
   <div class="container builder-top-row">
     <div class="sched-name-wrap">
-      <div class="breadcrumb"><a href="tools.html">כלים לעסק</a> / בונה מערכת שעות</div>
+      <div class="breadcrumb"><a href="tools.html">כלים לעסק</a> / בונה מערכת שעות · <a href="guide-school-schedule.html">איך זה עובד? מדריך קצר</a></div>
       <input type="text" id="sched-name-input" class="sched-name-input" placeholder="שם הפרויקט (למשל: תשפ״ו סמסטר א׳)">
     </div>
     <div class="builder-save-ctrl">
@@ -109,7 +125,8 @@
         <h3>מקצועות</h3>
         <button type="button" class="btn-mini" id="sched-add-subject">+ הוספת מקצוע</button>
       </div>
-      <div class="sched-col-labels sched-subject-cols"><span>צבע</span><span>שם המקצוע</span><span>חדר נדרש</span><span></span></div>
+      <p class="sched-hint">"מקס׳ שעות רצופות" — משאירים ריק אם אין הגבלה; ממלאים למשל 2 כדי שהמקצוע לא יופיע 3 שעות ברצף לאותה כיתה באותו יום.</p>
+      <div class="sched-col-labels sched-subject-cols"><span>צבע</span><span>שם המקצוע</span><span>חדר נדרש</span><span>מקס׳ שעות רצופות</span><span></span></div>
       <div id="sched-subjects-list"></div>
     </div>
   </div>
@@ -120,6 +137,8 @@
         <h3>כיתות</h3>
         <button type="button" class="btn-mini" id="sched-add-class">+ הוספת כיתה</button>
       </div>
+      <p class="sched-hint">"עד כמה שעות ביום" — משאירים ריק אם הכיתה יכולה ללמוד כל שעות היום; ממלאים למשל 6 אם הכיתה מסיימת אחרי השיעור השישי.</p>
+      <div class="sched-col-labels sched-class-cols"><span>שם הכיתה</span><span>עד כמה שעות ביום</span><span></span></div>
       <div id="sched-classes-list"></div>
     </div>
   </div>
@@ -160,14 +179,27 @@
 
   <div class="sched-tab-panel" data-tab-panel="result">
     <div class="sched-card no-print" id="sched-result-controls">
-      <div class="sched-result-head">
-        <h3>יצירת מערכת שעות</h3>
-        <div class="sched-result-actions">
-          <button type="button" class="btn btn-gold" id="sched-generate-btn">🎲 צור מערכת שעות</button>
-          <button type="button" class="btn-mini" id="sched-improve-btn" hidden>המשך לשפר</button>
+      <div id="sched-unlock-gate">
+        <h3 style="margin:0 0 6px;">יצירת מערכת שעות אוטומטית <span class="price" style="font-size:15px;">499 ₪ <small>חד-פעמי</small></span></h3>
+        <p class="sched-hint" style="margin:0 0 10px;">מילוי המקצועות, הכיתות, המורים והאילוצים חינמי וללא הגבלה. יצירת מערכת השעות עצמה — השיבוץ האוטומטי החכם שפותר את כל ההתנגשויות — היא כלי בתשלום חד-פעמי.</p>
+        <p class="sched-hint" style="margin:0 0 14px;">התוכנה פועלת באופן אוטומטי לחלוטין וללא תמיכה אנושית/טלפונית — המחיר הנמוך והחד-פעמי מתאפשר הודות לשירות עצמי מלא (Self-Service).</p>
+        <a href="#" id="sched-buy-link" target="_blank" rel="noopener" class="btn btn-gold" style="width:100%; box-sizing:border-box; text-align:center; display:block; margin-bottom:14px;">רכישת קוד פתיחה</a>
+        <div class="unlock-box">
+          <input type="text" id="sched-license-input" placeholder="קוד רישוי (מהמייל של הרכישה)" dir="ltr">
+          <div class="unlock-note" id="sched-license-note"></div>
+          <button type="button" class="btn btn-teal" id="sched-verify-btn" style="width:100%;">אימות ופתיחה</button>
         </div>
       </div>
-      <div id="sched-solver-status" class="sched-solver-status"></div>
+      <div id="sched-unlock-done" hidden>
+        <div class="sched-result-head">
+          <h3>יצירת מערכת שעות</h3>
+          <div class="sched-result-actions">
+            <button type="button" class="btn btn-gold" id="sched-generate-btn">🎲 צור מערכת שעות</button>
+            <button type="button" class="btn-mini" id="sched-improve-btn" hidden>המשך לשפר</button>
+          </div>
+        </div>
+        <div id="sched-solver-status" class="sched-solver-status"></div>
+      </div>
     </div>
 
     <div id="sched-result-view" hidden>
@@ -204,7 +236,6 @@
       <div>
         <h5>ניווט</h5>
         <ul>
-          <li><a href="catalog.html">קטלוג מוצרים</a></li>
           <li><a href="products.html?type=cv">קורות חיים</a></li>
           <li><a href="products.html?type=deck">מצגות</a></li>
           <li><a href="products.html?type=xlsx">גליונות</a></li>
@@ -217,6 +248,7 @@
       <div>
         <h5>מידע</h5>
         <ul>
+          <li><a href="guides.html">מדריכים</a></li>
           <li><a href="admin.html">ניהול</a></li>
           <li><a href="terms.html">מדיניות</a></li>
           <li><a href="accessibility.html">נגישות</a></li>
@@ -234,7 +266,7 @@
 </footer>
 
 <script src="js/schedule-content.js"></script>
-<script src="js/schedule-render.js"></script>
+<script src="js/schedule-render.js?v=2"></script>
 <script>window.deferReveal = true;</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
@@ -243,9 +275,9 @@
 <script src="js/domain-guide.js?v=1"></script>
 <script src="js/require-auth.js"></script>
 <script src="js/usage-log.js?v=1"></script>
-<script src="js/schedule-cloud-save.js"></script>
+<script src="js/schedule-cloud-save.js?v=2"></script>
 <script src="js/main.js"></script>
-<script src="js/widgets.js?v=6"></script>
+<script src="js/widgets.js?v=8"></script>
 <script src="js/effects.js"></script>
 </body>
 </html>

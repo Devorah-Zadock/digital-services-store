@@ -8,7 +8,14 @@
    kept incrementally rather than recomputed from scratch on every move —
    with a few hundred lessons and tens of thousands of SA iterations, a
    full O(lessons) rescan per move would burn the whole time budget on
-   bookkeeping instead of search. */
+   bookkeeping instead of search.
+
+   importScripts pulls in schedule-content.js's scheduleConsecutiveExcess
+   and SCHEDULE_TEACHER_DAY_WEIGHT so the max-consecutive-subject and
+   day-compaction math here can never drift from what schedule-content.js
+   itself (the shared from-scratch evaluator, and schedule-render.js's
+   conflict highlighting) computes for the exact same placement. */
+importScripts("schedule-content.js");
 
 function gapCost(sortedPeriods) {
   if (sortedPeriods.length === 0) return 0;
@@ -34,11 +41,16 @@ function makeSolverState(problem) {
   problem.subjectRoom.forEach((sr) => { subjectRoomMap[sr.subjectId] = sr.roomId; });
   const roomCap = {};
   problem.roomCount.forEach((r) => { roomCap[r.id] = r.count; });
+  const subjectMaxMap = {};
+  (problem.subjectMaxConsecutive || []).forEach((s) => { subjectMaxMap[s.subjectId] = s.max; });
+  const classMaxPeriodMap = {};
+  (problem.classMaxPeriod || []).forEach((c) => { classMaxPeriodMap[c.classId] = c.maxPeriod; });
   return {
     days: problem.days, periods: problem.periods,
-    teacherUnavailSet, subjectRoomMap, roomCap,
+    teacherUnavailSet, subjectRoomMap, roomCap, subjectMaxMap, classMaxPeriodMap,
     teacherCnt: Object.create(null), classCnt: Object.create(null), roomCnt: Object.create(null),
-    teacherDayPeriods: Object.create(null), classSubjDay: Object.create(null),
+    teacherDayPeriods: Object.create(null), teacherDayCount: Object.create(null),
+    classSubjDayPeriods: Object.create(null),
     placement: Object.create(null), hard: 0, soft: 0,
   };
 }
@@ -51,6 +63,8 @@ function trialHardDelta(S, lesson, day, period) {
   const roomId = S.subjectRoomMap[lesson.subjectId];
   if (roomId && (S.roomCnt[roomId + "#" + sk] || 0) >= (S.roomCap[roomId] || 1)) d++;
   if (S.teacherUnavailSet[lesson.teacherId] && S.teacherUnavailSet[lesson.teacherId].has(sk)) d++;
+  const maxPeriod = S.classMaxPeriodMap[lesson.classId];
+  if (maxPeriod && period >= maxPeriod) d++;
   return d;
 }
 
@@ -75,16 +89,27 @@ function place(S, lesson, day, period) {
   }
   if (S.teacherUnavailSet[lesson.teacherId] && S.teacherUnavailSet[lesson.teacherId].has(sk)) S.hard += 1;
 
+  const maxPeriod = S.classMaxPeriodMap[lesson.classId];
+  if (maxPeriod && period >= maxPeriod) S.hard += 1;
+
   const tdKey = lesson.teacherId + "#" + day;
   const arr = S.teacherDayPeriods[tdKey] || (S.teacherDayPeriods[tdKey] = []);
   S.soft -= gapCost(arr);
   insertSorted(arr, period);
   S.soft += gapCost(arr);
 
-  const csdKey = lesson.classId + "#" + lesson.subjectId + "#" + day;
-  const csd = S.classSubjDay[csdKey] || 0;
-  if (csd >= 1) S.soft += 0.5;
-  S.classSubjDay[csdKey] = csd + 1;
+  const tdCount = S.teacherDayCount[tdKey] || 0;
+  if (tdCount === 0) S.soft += SCHEDULE_TEACHER_DAY_WEIGHT; // this teacher's first lesson today — one more active day
+  S.teacherDayCount[tdKey] = tdCount + 1;
+
+  const maxConsecutive = S.subjectMaxMap[lesson.subjectId];
+  if (maxConsecutive) {
+    const csdKey = lesson.classId + "#" + lesson.subjectId + "#" + day;
+    const carr = S.classSubjDayPeriods[csdKey] || (S.classSubjDayPeriods[csdKey] = []);
+    S.hard -= scheduleConsecutiveExcess(carr, maxConsecutive);
+    insertSorted(carr, period);
+    S.hard += scheduleConsecutiveExcess(carr, maxConsecutive);
+  }
 
   S.placement[lesson.id] = { day, period };
 }
@@ -114,16 +139,27 @@ function remove(S, lesson) {
   }
   if (S.teacherUnavailSet[lesson.teacherId] && S.teacherUnavailSet[lesson.teacherId].has(sk)) S.hard -= 1;
 
+  const maxPeriod = S.classMaxPeriodMap[lesson.classId];
+  if (maxPeriod && period >= maxPeriod) S.hard -= 1;
+
   const tdKey = lesson.teacherId + "#" + day;
   const arr = S.teacherDayPeriods[tdKey];
   S.soft -= gapCost(arr);
   removeOne(arr, period);
   S.soft += gapCost(arr);
 
-  const csdKey = lesson.classId + "#" + lesson.subjectId + "#" + day;
-  const csd = S.classSubjDay[csdKey] || 0;
-  if (csd >= 2) S.soft -= 0.5;
-  S.classSubjDay[csdKey] = csd - 1;
+  const tdCount = (S.teacherDayCount[tdKey] || 0) - 1;
+  S.teacherDayCount[tdKey] = tdCount;
+  if (tdCount === 0) S.soft -= SCHEDULE_TEACHER_DAY_WEIGHT; // this teacher has no more lessons today — one fewer active day
+
+  const maxConsecutive = S.subjectMaxMap[lesson.subjectId];
+  if (maxConsecutive) {
+    const csdKey = lesson.classId + "#" + lesson.subjectId + "#" + day;
+    const carr = S.classSubjDayPeriods[csdKey];
+    S.hard -= scheduleConsecutiveExcess(carr, maxConsecutive);
+    removeOne(carr, period);
+    S.hard += scheduleConsecutiveExcess(carr, maxConsecutive);
+  }
 
   delete S.placement[lesson.id];
 }

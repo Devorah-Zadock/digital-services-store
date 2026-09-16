@@ -21,6 +21,42 @@ function waLink(phone) {
   const digits = String(phone || "").replace(/[^\d]/g, "").replace(/^0/, "972");
   return digits ? `https://wa.me/${digits}` : "";
 }
+
+/* Drop-in replacement for every template's own "d.heroImage ? <img
+   class=...> : ..." spot — d.heroImages (2+ photos) renders a slow
+   crossfading slideshow instead of one static photo, using the exact
+   same class the single-image version used (so each template's own
+   sizing/shape CSS for that class still applies unchanged), and falls
+   straight back to the old single d.heroImage when there's no gallery.
+   The actual cycling (.site-hero-slideshow CSS + heroSlideshowScript())
+   is shared and injected once per page via siteDoc(), not per template. */
+function heroHasImage(d) {
+  return !!(d.heroImage || (d.heroImages && d.heroImages.length));
+}
+function heroMediaHtml(d, imgClass) {
+  const images = (d.heroImages && d.heroImages.length) ? d.heroImages : (d.heroImage ? [d.heroImage] : []);
+  if (!images.length) return "";
+  const cls = imgClass ? ` ${imgClass}` : "";
+  if (images.length === 1) return `<img class="${imgClass || ""}" src="${images[0]}" alt="">`;
+  return `<div class="site-hero-slideshow${cls}">${images.map((src, i) =>
+    `<img class="site-hero-slide${i === 0 ? " active" : ""}" src="${src}" alt="">`).join("")}</div>`;
+}
+/* Runs on every page regardless of whether it actually has a slideshow —
+   querySelectorAll on an absent class is just an empty, harmless no-op. */
+function heroSlideshowScript() {
+  return `<script>
+    document.querySelectorAll(".site-hero-slideshow").forEach(function (wrap) {
+      var slides = wrap.querySelectorAll(".site-hero-slide");
+      if (slides.length < 2) return;
+      var i = 0;
+      setInterval(function () {
+        slides[i].classList.remove("active");
+        i = (i + 1) % slides.length;
+        slides[i].classList.add("active");
+      }, 4200);
+    });
+  </script>`;
+}
 function siteFontImport() {
   return `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap" rel="stylesheet">`;
 }
@@ -41,6 +77,20 @@ function siteBaseCss() {
     .site-search-empty { text-align:center; color:#888; font-size:14px; padding:26px 0; }
     .site-hero-photo { display:block; margin:26px auto 0; border-radius:18px; max-width:320px; width:100%; box-shadow:0 18px 40px rgba(0,0,0,.25); }
     .site-hero-photo.round { border-radius:50%; width:132px; height:132px; object-fit:cover; margin:0 auto 18px; }
+    /* Slides are position:absolute (needed so they can stack and cross-
+       fade), which takes them out of flow — without an explicit size the
+       wrapper itself would collapse to zero height. A generic 4:3 default
+       covers the plain/no-class case; anything that already sets its own
+       explicit width+height (like .site-hero-photo.round) simply wins,
+       since aspect-ratio only fills in a dimension left auto. */
+    .site-hero-slideshow { position:relative; overflow:hidden; aspect-ratio:4/3; }
+    .site-reveal { opacity:0; transform:translateY(18px); transition:opacity .7s ease, transform .7s ease; }
+    .site-reveal.site-in { opacity:1; transform:translateY(0); }
+    .site-hero-videobg { position:absolute; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+    .site-hero-videobg iframe { position:absolute; top:50%; left:50%; width:177.78vh; min-width:100%; height:56.25vw; min-height:100%; transform:translate(-50%,-50%); border:0; }
+    .site-hero-videobg::after { content:""; position:absolute; inset:0; background:rgba(0,0,0,.42); }
+    .site-hero-slideshow .site-hero-slide { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity 1.4s ease; }
+    .site-hero-slideshow .site-hero-slide.active { opacity:1; }
     .site-video-wrap { position:relative; padding-bottom:56.25%; height:0; overflow:hidden; border-radius:14px; box-shadow:0 16px 34px rgba(0,0,0,.14); max-width:780px; margin:0 auto; }
     .site-video-wrap iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
   `;
@@ -61,6 +111,36 @@ function videoEmbedSrc(url) {
 }
 function videoEmbedHtml(embedSrc) {
   return `<div class="site-video-wrap"><iframe src="${embedSrc}" title="סרטון" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+}
+
+/* Same YouTube/Vimeo URL d.videoUrl already uses for the embedded video
+   section, but with autoplay+mute+loop+no-controls params so it can play
+   silently behind a hero instead of needing a click. Muted autoplay is
+   what every major browser actually allows without the visitor's own
+   interaction — a background video that needed sound would just never
+   start. */
+function videoBgEmbedSrc(url) {
+  if (!url) return null;
+  const u = String(url).trim();
+  let m = u.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{6,})/);
+  if (m) return `https://www.youtube.com/embed/${m[1]}?autoplay=1&mute=1&loop=1&playlist=${m[1]}&controls=0&showinfo=0&modestbranding=1&playsinline=1&rel=0&disablekb=1&iv_load_policy=3`;
+  m = u.match(/vimeo\.com\/(\d+)/);
+  if (m) return `https://player.vimeo.com/video/${m[1]}?autoplay=1&muted=1&loop=1&background=1&controls=0`;
+  return null;
+}
+/* Full-bleed, click-through (pointer-events:none — a hero CTA sitting on
+   top must stay clickable) video layer with its own built-in dark
+   overlay, so it's legible under white hero text regardless of what the
+   video itself looks like. The oversized iframe + translate(-50%,-50%)
+   centering is the standard "cover" trick for a 16:9 embed: sized off
+   the viewport's own aspect so it always fills the box and crops
+   overflow, the same way object-fit:cover does for a plain <img> (an
+   <iframe> has no object-fit support of its own). */
+function heroVideoBgHtml(d) {
+  if (!d.heroVideoBg) return "";
+  const src = videoBgEmbedSrc(d.videoUrl);
+  if (!src) return "";
+  return `<div class="site-hero-videobg"><iframe src="${src}" title="" tabindex="-1" aria-hidden="true" allow="autoplay; encrypted-media"></iframe></div>`;
 }
 function waFabHtml(d) {
   const href = waLink(d.whatsapp || d.phone);
@@ -97,12 +177,22 @@ function primaryCtaHref(d, page) {
   if (wa) return { href: wa, label: "שליחת הודעה בוואטסאפ", external: true };
   if (d.email) return { href: `mailto:${d.email}`, label: "שליחת מייל", external: false };
   if (d.phone) return { href: `tel:${d.phone}`, label: "התקשרות עכשיו", external: false };
-  if (d.pages && d.pages.contact && page !== "contact") return { href: "contact.html", label: "יצירת קשר", external: false };
+  // Same relative "contact.html" the real nav links use, so it needs the
+  // same page: "contact" marker — see the comment above previewNavScript().
+  if (d.pages && d.pages.contact && page !== "contact") return { href: "contact.html", label: "יצירת קשר", external: false, page: "contact" };
   return null;
 }
 function ctaHtml(cta, cls) {
   if (!cta) return "";
-  return `<a class="${cls}" href="${escapeHtmlS(cta.href)}"${cta.external ? ' target="_blank" rel="noopener"' : ""}>${escapeHtmlS(cta.label)}</a>`;
+  // Confirmed live: without data-site-nav, this exact relative "contact.html"
+  // link (a customer with no phone/email/WhatsApp set yet, but a separate
+  // Contact page turned on) navigated the PREVIEW IFRAME for real instead of
+  // switching its tab — since a srcdoc iframe has no URL of its own, the
+  // relative link resolved against the editor page's own URL and silently
+  // opened DeskKit's own contact page. The real nav links already carry this
+  // marker for exactly this reason; the CTA button just never got it.
+  const navAttrs = cta.page ? ` data-site-nav data-page="${cta.page}"` : "";
+  return `<a class="${cls}" href="${escapeHtmlS(cta.href)}"${cta.external ? ' target="_blank" rel="noopener"' : ""}${navAttrs}>${escapeHtmlS(cta.label)}</a>`;
 }
 
 /* Builds the shared multi-page nav links (Home / About / Contact) — only
@@ -133,6 +223,22 @@ function previewNavScript() {
         a.addEventListener("click", function (e) {
           e.preventDefault();
           try { window.parent.postMessage({ deskkitPreviewNav: a.getAttribute("data-page") }, "*"); } catch (err) {}
+        });
+      });
+      // Confirmed live: a plain "#some-id" in-page anchor has the exact
+      // same problem as a relative page link above — a srcdoc iframe has
+      // no URL of its own, so the browser resolves "#ag-contact" against
+      // the EDITOR page's URL, and a native click does a real navigation
+      // into the live editor page (loaded for real, nested inside the
+      // preview) instead of scrolling to the section on the SAME page.
+      // Handled manually here instead of relying on native anchor
+      // navigation, which only works when the document has a real URL.
+      document.querySelectorAll('a[href^="#"]:not([data-site-nav])').forEach(function (a) {
+        a.addEventListener("click", function (e) {
+          e.preventDefault();
+          var id = a.getAttribute("href").slice(1);
+          var target = id && document.getElementById(id);
+          if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
         });
       });
     }
@@ -184,6 +290,8 @@ ${siteFontImport()}
 </head>
 <body>
 ${body}
+${heroSlideshowScript()}
+${scrollRevealScript()}
 </body>
 </html>`;
 }
@@ -191,7 +299,7 @@ ${body}
 /* ---------- Template 1: local service business ---------- */
 function renderLocalServiceSite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const pal = derivePalette(d.primaryColor || "#2563EB");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
@@ -209,6 +317,7 @@ function renderLocalServiceSite(d, page) {
     .ls-hero { position:relative; overflow:hidden; text-align:center; color:#fff; padding:100px 0 112px;
       background: radial-gradient(circle at 22% 20%, rgba(255,255,255,.18), transparent 55%),
                   linear-gradient(155deg, #${pal.primaryDark} 0%, #${pal.primary} 60%, #${pal.primaryDark} 130%); }
+    .ls-hero .container { position:relative; z-index:1; }
     .ls-hero .eyebrow { background:rgba(255,255,255,.16); color:#fff; margin-bottom:20px; }
     .ls-hero h1 { font-family:'Frank Ruhl Libre',serif; font-size:48px; font-weight:700; margin:0 0 18px; line-height:1.25; }
     .ls-hero p { font-size:18px; opacity:.92; max-width:560px; margin:0 auto 34px; }
@@ -250,13 +359,13 @@ function renderLocalServiceSite(d, page) {
       <section class="ls-hero" style="padding:70px 0 54px;"><div class="container">
         <span class="eyebrow">מי אנחנו</span><h1 style="font-size:36px;">${escapeHtmlS(dd.businessName)}</h1>
       </div></section>
-      <section class="ls-about" style="padding:64px 0;"><div class="container"><p>${nl2brS(dd.about)}</p></div></section>`;
+      <section class="ls-about site-reveal" style="padding:64px 0;"><div class="container"><p>${nl2brS(dd.about)}</p></div></section>`;
   } else if (page === "contact") {
     main = `
       <section class="ls-hero" style="padding:70px 0 54px;"><div class="container">
         <span class="eyebrow">נשמח לשמוע מכם</span><h1 style="font-size:36px;">יצירת קשר</h1>
       </div></section>
-      <section class="ls-contact"><div class="container">
+      <section class="ls-contact site-reveal"><div class="container">
         ${dd._hasContact ? `
           ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
           ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
@@ -267,26 +376,26 @@ function renderLocalServiceSite(d, page) {
   } else {
     const showSearch = dd._services.length >= 3;
     main = `
-      <section class="ls-hero"><div class="container">
+      <section class="ls-hero">${heroVideoBgHtml(d)}<div class="container">
         <span class="eyebrow">שירות מקצועי ואמין</span>
         <h1>${escapeHtmlS(dd.businessName)}</h1>
         <p>${escapeHtmlS(dd.tagline)}</p>
         ${ctaHtml(cta, "ls-cta")}
-        ${d.heroImage ? `<img class="site-hero-photo" src="${d.heroImage}" alt="">` : ""}
+        ${heroMediaHtml(d, "site-hero-photo")}
       </div></section>
-      <section class="ls-section"><div class="container">
+      <section class="ls-section site-reveal"><div class="container">
         <div class="head"><span class="eyebrow">מה אנחנו מציעים</span><h2>השירותים שלנו</h2>
         ${showSearch ? searchBoxHtml("#ls-services-grid", "חיפוש שירות...") : ""}</div>
         <div class="ls-services" id="ls-services-grid">${dd._services.map((s, i) => `
           <div class="ls-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><div class="num">${String(i + 1).padStart(2, "0")}</div><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price-tag">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
         ${showSearch ? searchScriptHtml() : ""}
       </div></section>
-      ${embedSrc ? `<section class="ls-section" style="padding-top:0;"><div class="container">
+      ${embedSrc ? `<section class="ls-section site-reveal" style="padding-top:0;"><div class="container">
         <div class="head"><span class="eyebrow">סרטון</span><h2>הכירו אותנו</h2></div>
         ${videoEmbedHtml(embedSrc)}
       </div></section>` : ""}
-      ${(!d.pages || !d.pages.about) ? `<section class="ls-about"><div class="container"><span class="eyebrow" style="background:#fff; color:#${pal.primaryDark};">מי אנחנו</span><h2>קצת עלינו</h2><p>${nl2brS(dd.about)}</p></div></section>` : ""}
-      ${(!d.pages || !d.pages.contact) ? `<section class="ls-contact"><div class="container">
+      ${(!d.pages || !d.pages.about) ? `<section class="ls-about site-reveal"><div class="container"><span class="eyebrow" style="background:#fff; color:#${pal.primaryDark};">מי אנחנו</span><h2>קצת עלינו</h2><p>${nl2brS(dd.about)}</p></div></section>` : ""}
+      ${(!d.pages || !d.pages.contact) ? `<section class="ls-contact site-reveal"><div class="container">
         <h2>יצירת קשר</h2>
         ${dd._hasContact ? `
           ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
@@ -303,7 +412,7 @@ function renderLocalServiceSite(d, page) {
 /* ---------- Template 2: freelancer / consultant ---------- */
 function renderFreelancerSite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const pal = derivePalette(d.primaryColor || "#7C3AED");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
@@ -350,7 +459,7 @@ function renderFreelancerSite(d, page) {
         <span class="eyebrow">נשמח לשמוע מכם</span>
         <div class="fr-name" style="font-size:34px;">יצירת קשר</div>
       </section>
-      <section class="fr-cta">
+      <section class="fr-cta site-reveal">
         <h2>בואו נדבר</h2>
         ${wa ? `<a class="btn" href="${wa}" target="_blank" rel="noopener">וואטסאפ</a>` : ""}
         ${d.email ? `<a class="btn" href="mailto:${escapeHtmlS(d.email)}">שליחת מייל</a>` : ""}
@@ -361,7 +470,7 @@ function renderFreelancerSite(d, page) {
     const services = dd._services;
     main = `
       <section class="fr-hero">
-        ${d.heroImage ? `<img class="site-hero-photo round" src="${d.heroImage}" alt="">` : ""}
+        ${heroMediaHtml(d, "site-hero-photo round")}
         <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "פרילנסר / יועץ"}</span>
         <div class="fr-name">${escapeHtmlS(dd.businessName)}</div>
         <div class="fr-role">${escapeHtmlS(dd.tagline)}</div>
@@ -371,7 +480,7 @@ function renderFreelancerSite(d, page) {
         <div class="fr-tags">${services.map((s) => `<span class="fr-tag">${escapeHtmlS(s.name)}</span>`).join("")}</div>
       </div>
       ${embedSrc ? `<div class="fr-body" style="padding-top:0;">${videoEmbedHtml(embedSrc)}</div>` : ""}
-      <section class="fr-cta">
+      <section class="fr-cta site-reveal">
         <h2>בואו נדבר</h2>
         ${wa ? `<a class="btn" href="${wa}" target="_blank" rel="noopener">וואטסאפ</a>` : ""}
         ${d.email ? `<a class="btn" href="mailto:${escapeHtmlS(d.email)}">שליחת מייל</a>` : ""}
@@ -386,7 +495,7 @@ function renderFreelancerSite(d, page) {
 /* ---------- Template 3: small catalog / shop ---------- */
 function renderCatalogSite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const pal = derivePalette(d.primaryColor || "#C2410C");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
@@ -443,7 +552,7 @@ function renderCatalogSite(d, page) {
       <section class="cat-title" style="padding:56px 0 48px;"><div class="container">
         <span class="eyebrow">נשמח לשמוע מכם</span><h1>יצירת קשר</h1>
       </div></section>
-      <section class="cat-info"><div class="container">
+      <section class="cat-info site-reveal"><div class="container">
         ${dd._hasContact ? `
           ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
           ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
@@ -460,7 +569,7 @@ function renderCatalogSite(d, page) {
         <h1>${escapeHtmlS(dd.businessName)}</h1>
         <p>${escapeHtmlS(dd.tagline)}</p>
         <div class="stats">${services.length} מוצרים/שירותים זמינים</div>
-        ${d.heroImage ? `<img class="site-hero-photo" src="${d.heroImage}" alt="">` : ""}
+        ${heroMediaHtml(d, "site-hero-photo")}
       </div></section>
       <div class="container">
         ${showSearch ? searchBoxHtml("#cat-grid", "חיפוש מוצר או שירות...") : ""}
@@ -483,13 +592,13 @@ function renderCatalogSite(d, page) {
 /* ---------- Template 4: modern gallery / editorial ---------- */
 function renderGallerySite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const pal = derivePalette(d.primaryColor || "#B5175A");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
   const cta = primaryCtaHref(d, page);
   const embedSrc = videoEmbedSrc(d.videoUrl);
-  const hasPhoto = !!d.heroImage;
+  const hasPhoto = heroHasImage(d);
   const css = `
     .gl-nav { background:#fff; padding:18px 0; }
     .gl-nav .row { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
@@ -544,13 +653,13 @@ function renderGallerySite(d, page) {
   let main;
   if (page === "about") {
     main = `
-      <section class="gl-about"><div class="container">
+      <section class="gl-about site-reveal"><div class="container">
         <blockquote>${nl2brS(dd.about)}</blockquote>
         <cite>${escapeHtmlS(dd.businessName)}</cite>
       </div></section>`;
   } else if (page === "contact") {
     main = `
-      <section class="gl-contact"><div class="container">
+      <section class="gl-contact site-reveal"><div class="container">
         <h2>יצירת קשר</h2>
         ${dd._hasContact ? `
           ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
@@ -569,7 +678,7 @@ function renderGallerySite(d, page) {
         <p class="gl-tagline">${escapeHtmlS(dd.tagline)}</p>
         ${ctaHtml(cta, "gl-cta")}
       </div></section>
-      <section class="gl-section"><div class="container">
+      <section class="gl-section site-reveal"><div class="container">
         <div class="gl-section-head"><div><span class="gl-kicker">מה אנחנו מציעים</span><h2>השירותים שלנו</h2></div>
         ${showSearch ? searchBoxHtml("#gl-bento", "חיפוש שירות...") : ""}</div>
         <div class="gl-bento" id="gl-bento">${dd._services.map((s) => `
@@ -577,8 +686,8 @@ function renderGallerySite(d, page) {
         ${showSearch ? searchScriptHtml() : ""}
       </div></section>
       ${embedSrc ? `<div class="container"><div style="padding:0 0 40px;">${videoEmbedHtml(embedSrc)}</div></div>` : ""}
-      ${(!d.pages || !d.pages.about) ? `<section class="gl-about"><div class="container"><blockquote>${nl2brS(dd.about)}</blockquote><cite>${escapeHtmlS(dd.businessName)}</cite></div></section>` : ""}
-      ${(!d.pages || !d.pages.contact) ? `<section class="gl-contact"><div class="container">
+      ${(!d.pages || !d.pages.about) ? `<section class="gl-about site-reveal"><div class="container"><blockquote>${nl2brS(dd.about)}</blockquote><cite>${escapeHtmlS(dd.businessName)}</cite></div></section>` : ""}
+      ${(!d.pages || !d.pages.contact) ? `<section class="gl-contact site-reveal"><div class="container">
         <h2>יצירת קשר</h2>
         ${dd._hasContact ? `
           ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
@@ -595,7 +704,7 @@ function renderGallerySite(d, page) {
 /* ---------- Template 5: bold / neo-brutalist ---------- */
 function renderBoldSite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const pal = derivePalette(d.primaryColor || "#B5175A");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
@@ -647,7 +756,7 @@ function renderBoldSite(d, page) {
 
   let main;
   if (page === "about") {
-    main = `<section class="nb-about last"><div class="container"><p>${nl2brS(dd.about)}</p></div></section>`;
+    main = `<section class="nb-about site-reveal last"><div class="container"><p>${nl2brS(dd.about)}</p></div></section>`;
   } else if (page === "contact") {
     main = `
       <section class="nb-hero last"><div class="container">
@@ -668,18 +777,18 @@ function renderBoldSite(d, page) {
         <h1>${escapeHtmlS(dd.businessName)}</h1>
         <p>${escapeHtmlS(dd.tagline)}</p>
         ${ctaHtml(cta, "nb-cta")}
-        ${d.heroImage ? `<img class="nb-hero-photo" src="${d.heroImage}" alt="">` : ""}
+        ${heroMediaHtml(d, "nb-hero-photo")}
       </div></section>
-      <section class="nb-section"><div class="container">
+      <section class="nb-section site-reveal"><div class="container">
         <div class="nb-section-head"><span class="nb-tag">מה אנחנו מציעים</span><h2>השירותים שלנו</h2>
         ${showSearch ? searchBoxHtml("#nb-grid", "חיפוש שירות...") : ""}</div>
         <div class="nb-grid" id="nb-grid">${dd._services.map((s) => `
           <div class="nb-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
         ${showSearch ? searchScriptHtml() : ""}
       </div></section>
-      ${embedSrc ? `<section class="nb-section"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : ""}
-      ${(!d.pages || !d.pages.about) ? `<section class="nb-about"><div class="container"><p>${nl2brS(dd.about)}</p></div></section>` : ""}
-      ${(!d.pages || !d.pages.contact) ? `<section class="nb-contact last"><div class="container">
+      ${embedSrc ? `<section class="nb-section site-reveal"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : ""}
+      ${(!d.pages || !d.pages.about) ? `<section class="nb-about site-reveal"><div class="container"><p>${nl2brS(dd.about)}</p></div></section>` : ""}
+      ${(!d.pages || !d.pages.contact) ? `<section class="nb-contact site-reveal last"><div class="container">
         ${dd._hasContact ? `
           ${d.phone ? `<span class="line">טלפון: ${escapeHtmlS(d.phone)}</span>` : ""}
           ${d.email ? `<span class="line">מייל: ${escapeHtmlS(d.email)}</span>` : ""}
@@ -695,13 +804,13 @@ function renderBoldSite(d, page) {
 /* ---------- Template 6: elegant split-hero (events / boutique) ---------- */
 function renderElegantSite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const pal = derivePalette(d.primaryColor || "#B8860B");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
   const cta = primaryCtaHref(d, page);
   const embedSrc = videoEmbedSrc(d.videoUrl);
-  const hasPhoto = !!d.heroImage;
+  const hasPhoto = heroHasImage(d);
   const css = `
     .eg-nav { padding:26px 0; }
     .eg-nav .row { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; }
@@ -753,10 +862,10 @@ function renderElegantSite(d, page) {
   if (page === "about") {
     main = `
       <div class="container"><div class="eg-rule" style="margin:36px auto 0;"></div></div>
-      <section class="eg-about"><div class="container"><blockquote>${nl2brS(dd.about)}</blockquote></div></section>`;
+      <section class="eg-about site-reveal"><div class="container"><blockquote>${nl2brS(dd.about)}</blockquote></div></section>`;
   } else if (page === "contact") {
     main = `
-      <section class="eg-contact"><div class="container">
+      <section class="eg-contact site-reveal"><div class="container">
         <span class="eg-kicker">נשמח לשמוע מכם</span>
         <h2 style="font-family:'Frank Ruhl Libre',serif; font-size:30px; margin:12px 0 26px;">יצירת קשר</h2>
         ${dd._hasContact ? `
@@ -777,7 +886,7 @@ function renderElegantSite(d, page) {
             <p>${escapeHtmlS(dd.tagline)}</p>
             ${ctaHtml(cta, "eg-cta")}
           </div>
-          <div class="eg-hero-photo-wrap"><img src="${d.heroImage}" alt=""></div>
+          <div class="eg-hero-photo-wrap">${heroMediaHtml(d, "")}</div>
         ` : `
           <div class="eg-hero-text">
             <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "עסק בוטיק"}</span>
@@ -787,7 +896,7 @@ function renderElegantSite(d, page) {
           </div>
         `}
       </div></section>
-      <section class="eg-section" style="padding-top:0;"><div class="container">
+      <section class="eg-section site-reveal" style="padding-top:0;"><div class="container">
         <div class="eg-section-head"><span class="eg-kicker">מה אנחנו מציעים</span><h2>השירותים שלנו</h2>
         ${showSearch ? searchBoxHtml("#eg-offerings", "חיפוש שירות...") : ""}</div>
         <div class="eg-offerings" id="eg-offerings">${dd._services.map((s) => `
@@ -798,8 +907,8 @@ function renderElegantSite(d, page) {
         ${showSearch ? searchScriptHtml() : ""}
       </div></section>
       ${embedSrc ? `<div class="container"><div style="padding:0 0 50px;">${videoEmbedHtml(embedSrc)}</div></div>` : ""}
-      ${(!d.pages || !d.pages.about) ? `<section class="eg-about"><div class="container"><span class="eg-kicker">מי אנחנו</span><blockquote style="margin-top:18px;">${nl2brS(dd.about)}</blockquote></div></section>` : ""}
-      ${(!d.pages || !d.pages.contact) ? `<section class="eg-contact"><div class="container">
+      ${(!d.pages || !d.pages.about) ? `<section class="eg-about site-reveal"><div class="container"><span class="eg-kicker">מי אנחנו</span><blockquote style="margin-top:18px;">${nl2brS(dd.about)}</blockquote></div></section>` : ""}
+      ${(!d.pages || !d.pages.contact) ? `<section class="eg-contact site-reveal"><div class="container">
         <span class="eg-kicker">נשמח לשמוע מכם</span>
         <h2 style="font-family:'Frank Ruhl Libre',serif; font-size:30px; margin:12px 0 26px;">יצירת קשר</h2>
         ${dd._hasContact ? `
@@ -817,7 +926,7 @@ function renderElegantSite(d, page) {
 /* ---------- Template 7: process / how-we-work ---------- */
 function renderProcessSite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const pal = derivePalette(d.primaryColor || "#2563EB");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
@@ -873,13 +982,13 @@ function renderProcessSite(d, page) {
       <section class="pr-hero" style="padding:70px 0 54px;"><div class="container">
         <span class="eyebrow">מי אנחנו</span><h1 style="font-size:36px;">${escapeHtmlS(dd.businessName)}</h1>
       </div></section>
-      <section class="pr-about"><div class="container"><p>${nl2brS(dd.about)}</p></div></section>`;
+      <section class="pr-about site-reveal"><div class="container"><p>${nl2brS(dd.about)}</p></div></section>`;
   } else if (page === "contact") {
     main = `
       <section class="pr-hero" style="padding:70px 0 54px;"><div class="container">
         <span class="eyebrow">נשמח לשמוע מכם</span><h1 style="font-size:36px;">יצירת קשר</h1>
       </div></section>
-      <section class="pr-contact"><div class="container">
+      <section class="pr-contact site-reveal"><div class="container">
         ${dd._hasContact ? `
           ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
           ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
@@ -895,9 +1004,9 @@ function renderProcessSite(d, page) {
         <h1>${escapeHtmlS(dd.businessName)}</h1>
         <p>${escapeHtmlS(dd.tagline)}</p>
         ${ctaHtml(cta, "pr-cta")}
-        ${d.heroImage ? `<img class="site-hero-photo" src="${d.heroImage}" alt="">` : ""}
+        ${heroMediaHtml(d, "site-hero-photo")}
       </div></section>
-      <section class="pr-steps"><div class="container">
+      <section class="pr-steps site-reveal"><div class="container">
         <div class="pr-steps-head"><span class="eyebrow">התהליך שלנו</span><h2>שלב אחר שלב</h2>
         ${showSearch ? searchBoxHtml("#pr-timeline", "חיפוש...") : ""}</div>
         <div class="pr-timeline" id="pr-timeline">${dd._services.map((s, i) => `
@@ -910,8 +1019,8 @@ function renderProcessSite(d, page) {
         ${showSearch ? searchScriptHtml() : ""}
       </div></section>
       ${embedSrc ? `<div class="container"><div style="padding:0 0 50px;">${videoEmbedHtml(embedSrc)}</div></div>` : ""}
-      ${(!d.pages || !d.pages.about) ? `<section class="pr-about"><div class="container"><span class="eyebrow">מי אנחנו</span><p>${nl2brS(dd.about)}</p></div></section>` : ""}
-      ${(!d.pages || !d.pages.contact) ? `<section class="pr-contact"><div class="container">
+      ${(!d.pages || !d.pages.about) ? `<section class="pr-about site-reveal"><div class="container"><span class="eyebrow">מי אנחנו</span><p>${nl2brS(dd.about)}</p></div></section>` : ""}
+      ${(!d.pages || !d.pages.contact) ? `<section class="pr-contact site-reveal"><div class="container">
         <h2>יצירת קשר</h2>
         ${dd._hasContact ? `
           ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
@@ -928,7 +1037,7 @@ function renderProcessSite(d, page) {
 /* ---------- Template 8: creative portfolio (personal) ---------- */
 function renderPortfolioSite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const pal = derivePalette(d.primaryColor || "#7C3AED");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
@@ -955,7 +1064,7 @@ function renderPortfolioSite(d, page) {
     .po-work-head h2 { font-size:27px; margin:10px 0 0; }
     .po-work-row { display:grid; grid-template-columns:60px 1fr auto; align-items:baseline; gap:18px; padding:24px 0; border-top:1px solid #EDEDED; }
     .po-work-row:last-child { border-bottom:1px solid #EDEDED; }
-    .po-work-idx { font-size:14px; font-weight:800; color:#${pal.primary}; }
+    .po-work-idx { font-size:34px; font-weight:800; color:#${pal.primary}; line-height:1; }
     .po-work-main h3 { margin:0 0 6px; font-size:18px; font-weight:800; }
     .po-work-main p { margin:0; font-size:13.5px; color:#777; max-width:480px; }
     .po-work-row .price { font-weight:800; color:#${pal.primaryDark}; font-size:14.5px; white-space:nowrap; }
@@ -976,13 +1085,13 @@ function renderPortfolioSite(d, page) {
   let main;
   if (page === "about") {
     main = `
-      <section class="po-work" style="padding-top:44px;"><div class="container" style="max-width:680px;">
+      <section class="po-work site-reveal" style="padding-top:44px;"><div class="container" style="max-width:680px;">
         <div class="po-work-head"><span class="kicker">מי אני</span><h2>${escapeHtmlS(dd.businessName)}</h2></div>
         <p style="font-size:16px; line-height:1.85; color:#333;">${nl2brS(dd.about)}</p>
       </div></section>`;
   } else if (page === "contact") {
     main = `
-      <section class="po-cta">
+      <section class="po-cta site-reveal">
         <h2>בואו נדבר</h2>
         ${wa ? `<a class="btn" href="${wa}" target="_blank" rel="noopener">וואטסאפ</a>` : ""}
         ${d.email ? `<a class="btn" href="mailto:${escapeHtmlS(d.email)}">שליחת מייל</a>` : ""}
@@ -992,16 +1101,16 @@ function renderPortfolioSite(d, page) {
   } else {
     const services = dd._services;
     main = `
-      <section class="po-hero"><div class="container" style="display:grid; grid-template-columns:${d.heroImage ? "1fr auto" : "1fr"}; align-items:center; gap:36px;">
+      <section class="po-hero"><div class="container" style="display:grid; grid-template-columns:${heroHasImage(d) ? "1fr auto" : "1fr"}; align-items:center; gap:36px;">
         <div>
           <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "תיק עבודות"}</span>
           <h1>${escapeHtmlS(dd.businessName)}</h1>
           <p>${escapeHtmlS(dd.tagline)}</p>
           ${ctaHtml(cta, "po-work-idx")}
         </div>
-        ${d.heroImage ? `<img class="po-hero-photo" src="${d.heroImage}" alt="">` : ""}
+        ${heroMediaHtml(d, "po-hero-photo")}
       </div></section>
-      <section class="po-work"><div class="container">
+      <section class="po-work site-reveal"><div class="container">
         <div class="po-work-head"><span class="kicker">מה אני עושה</span><h2>עבודות ושירותים</h2></div>
         ${services.map((s, i) => `
           <div class="po-work-row">
@@ -1011,8 +1120,8 @@ function renderPortfolioSite(d, page) {
           </div>`).join("")}
       </div></section>
       ${embedSrc ? `<div class="container"><div style="padding:0 0 50px;">${videoEmbedHtml(embedSrc)}</div></div>` : ""}
-      ${(!d.pages || !d.pages.about) ? `<section class="po-work" style="padding-top:0;"><div class="container" style="max-width:680px;"><div class="po-work-head"><span class="kicker">מי אני</span><h2>עליי</h2></div><p style="font-size:15.5px; line-height:1.85; color:#333;">${nl2brS(dd.about)}</p></div></section>` : ""}
-      <section class="po-cta">
+      ${(!d.pages || !d.pages.about) ? `<section class="po-work site-reveal" style="padding-top:0;"><div class="container" style="max-width:680px;"><div class="po-work-head"><span class="kicker">מי אני</span><h2>עליי</h2></div><p style="font-size:15.5px; line-height:1.85; color:#333;">${nl2brS(dd.about)}</p></div></section>` : ""}
+      <section class="po-cta site-reveal">
         <h2>בואו נדבר</h2>
         ${wa ? `<a class="btn" href="${wa}" target="_blank" rel="noopener">וואטסאפ</a>` : ""}
         ${d.email ? `<a class="btn" href="mailto:${escapeHtmlS(d.email)}">שליחת מייל</a>` : ""}
@@ -1027,7 +1136,7 @@ function renderPortfolioSite(d, page) {
 /* ---------- Template 9: boutique shop with a featured item (shop) ---------- */
 function renderBoutiqueSite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const pal = derivePalette(d.primaryColor || "#C2410C");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
@@ -1085,7 +1194,7 @@ function renderBoutiqueSite(d, page) {
   } else if (page === "contact") {
     main = `
       <section class="bq-banner bq-banner-noimg"><div class="bq-banner-inner"><span class="eyebrow">נשמח לשמוע מכם</span><h1>יצירת קשר</h1></div></section>
-      <section class="bq-info"><div class="container">
+      <section class="bq-info site-reveal"><div class="container">
         ${dd._hasContact ? `
           ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
           ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
@@ -1099,8 +1208,8 @@ function renderBoutiqueSite(d, page) {
     const rest = services.slice(1);
     const showSearch = rest.length >= 3;
     main = `
-      <section class="bq-banner ${d.heroImage ? "" : "bq-banner-noimg"}">
-        ${d.heroImage ? `<img src="${d.heroImage}" alt="">` : ""}
+      <section class="bq-banner ${heroHasImage(d) ? "" : "bq-banner-noimg"}">
+        ${heroMediaHtml(d, "")}
         <div class="bq-banner-inner">
           <span class="eyebrow">חנות בוטיק</span>
           <h1>${escapeHtmlS(dd.businessName)}</h1>
@@ -1108,7 +1217,7 @@ function renderBoutiqueSite(d, page) {
         </div>
       </section>
       <div class="container">
-        <section class="bq-featured"><div class="bq-featured-card">
+        <section class="bq-featured site-reveal"><div class="bq-featured-card">
           <div class="bq-featured-price">${featured.price ? escapeHtmlS(featured.price) : ""}</div>
           <div>
             <span class="bq-featured-tag">המומלץ שלנו</span>
@@ -1139,7 +1248,7 @@ function renderBoutiqueSite(d, page) {
 /* ---------- Template 10: dark luxury (events / boutique) ---------- */
 function renderNoirSite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const pal = derivePalette(d.primaryColor || "#B8860B");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
@@ -1188,10 +1297,10 @@ function renderNoirSite(d, page) {
 
   let main;
   if (page === "about") {
-    main = `<section class="nr-about"><div class="container"><span class="nr-kicker">מי אנחנו</span><blockquote style="margin-top:16px;">${nl2brS(dd.about)}</blockquote></div></section>`;
+    main = `<section class="nr-about site-reveal"><div class="container"><span class="nr-kicker">מי אנחנו</span><blockquote style="margin-top:16px;">${nl2brS(dd.about)}</blockquote></div></section>`;
   } else if (page === "contact") {
     main = `
-      <section class="nr-contact"><div class="container">
+      <section class="nr-contact site-reveal"><div class="container">
         <span class="nr-kicker">נשמח לשמוע מכם</span>
         <h2 style="font-family:'Frank Ruhl Libre',serif; font-style:italic; font-size:28px; margin:12px 0 26px; color:#fff;">יצירת קשר</h2>
         ${dd._hasContact ? `
@@ -1204,7 +1313,7 @@ function renderNoirSite(d, page) {
   } else {
     main = `
       <section class="nr-hero">
-        ${d.heroImage ? `<img src="${d.heroImage}" alt="">` : ""}
+        ${d.heroVideoBg && videoBgEmbedSrc(d.videoUrl) ? heroVideoBgHtml(d) : heroMediaHtml(d, "")}
         <div class="nr-hero-inner">
           <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "אירוע ובוטיק"}</span>
           <h1>${escapeHtmlS(dd.businessName)}</h1>
@@ -1212,15 +1321,15 @@ function renderNoirSite(d, page) {
           ${ctaHtml(cta, "nr-cta")}
         </div>
       </section>
-      <section class="nr-menu"><div class="container">
+      <section class="nr-menu site-reveal"><div class="container">
         <div class="nr-menu-head"><span class="nr-kicker">מה אנחנו מציעים</span><h2>השירותים שלנו</h2></div>
         <div class="nr-menu-list">${dd._services.map((s) => `
           <div class="nr-menu-row"><span class="name">${escapeHtmlS(s.name)}</span><span class="leader"></span>${s.price ? `<span class="price">${escapeHtmlS(s.price)}</span>` : ""}</div>
           ${s.desc ? `<div class="nr-menu-desc">${escapeHtmlS(s.desc)}</div>` : ""}`).join("")}</div>
       </div></section>
       ${embedSrc ? `<div class="container"><div style="padding:0 0 50px;">${videoEmbedHtml(embedSrc)}</div></div>` : ""}
-      ${(!d.pages || !d.pages.about) ? `<section class="nr-about"><div class="container"><span class="nr-kicker">מי אנחנו</span><blockquote style="margin-top:16px;">${nl2brS(dd.about)}</blockquote></div></section>` : ""}
-      ${(!d.pages || !d.pages.contact) ? `<section class="nr-contact"><div class="container">
+      ${(!d.pages || !d.pages.about) ? `<section class="nr-about site-reveal"><div class="container"><span class="nr-kicker">מי אנחנו</span><blockquote style="margin-top:16px;">${nl2brS(dd.about)}</blockquote></div></section>` : ""}
+      ${(!d.pages || !d.pages.contact) ? `<section class="nr-contact site-reveal"><div class="container">
         <span class="nr-kicker">נשמח לשמוע מכם</span>
         <h2 style="font-family:'Frank Ruhl Libre',serif; font-style:italic; font-size:28px; margin:12px 0 26px; color:#fff;">יצירת קשר</h2>
         ${dd._hasContact ? `
@@ -1235,20 +1344,24 @@ function renderNoirSite(d, page) {
   return siteDoc({ title: titles[page], description: dd.tagline, css }, `${header}${main}${footer}`).replace("<body>", '<body class="nr-body">');
 }
 
-/* Small reveal-on-scroll used only by this template: headings/cards start
-   faded + shifted down and settle into place the first time they cross
-   into view. Respects prefers-reduced-motion by simply never hiding
-   anything in the first place, rather than hiding then trying to detect
-   the media query in JS. */
+/* Reveal-on-scroll — originally built for the studio template only
+   (.ag-reveal/.ag-in), now shared by every template via .site-reveal:
+   content sections start faded + shifted down and settle into place the
+   first time they cross into view. Injected once in siteDoc(), so no
+   per-template footer wiring needed. Respects prefers-reduced-motion by
+   simply never hiding anything in the first place, rather than hiding
+   then trying to detect the media query in JS. Hero sections are
+   deliberately left out (see each template's render function) — nothing
+   above the fold should start invisible on a slow connection. */
 function scrollRevealScript() {
   return `<script>
     if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches && "IntersectionObserver" in window) {
       var io = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
-          if (entry.isIntersecting) { entry.target.classList.add("ag-in"); io.unobserve(entry.target); }
+          if (entry.isIntersecting) { entry.target.classList.add("site-in"); io.unobserve(entry.target); }
         });
       }, { threshold: 0.2 });
-      document.querySelectorAll(".ag-reveal").forEach(function (el) { io.observe(el); });
+      document.querySelectorAll(".site-reveal").forEach(function (el) { io.observe(el); });
     }
   </script>`;
 }
@@ -1256,12 +1369,18 @@ function scrollRevealScript() {
 /* ---------- Template 11: creative studio (asymmetric split hero, dark) ---------- */
 function renderStudioSite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#1F5C4E");
+  const pal = derivePalette(d.primaryColor || "#B5175A");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
   const embedSrc = videoEmbedSrc(d.videoUrl);
   const inPageRail = !navLinksHtml && page === "index";
+  // This template builds its own hero CTA below instead of going through
+  // ctaHtml() (it always shows the same "רוצה להכיר יותר?" label no matter
+  // where it points) — primaryCtaHref() is only reused here for the actual
+  // href/marker logic, so it doesn't repeat the same relative-link-in-an-
+  // iframe bug ctaHtml() was just fixed for.
+  const heroCta = primaryCtaHref(d, page);
   const railLinks = navLinksHtml
     ? navLinksHtml
     : inPageRail
@@ -1296,8 +1415,6 @@ function renderStudioSite(d, page) {
     .ag-cta { display:inline-flex; align-items:center; gap:8px; background:#${pal.primary}; color:#0C0C0E; font-weight:800; padding:13px 26px; border-radius:30px; font-size:14px; width:fit-content; }
     @media (max-width:760px) { .ag-hero { grid-template-columns:1fr; } .ag-hero-text { padding:48px 24px; } .ag-hero-text h1 { font-size:38px; } .ag-hero-art { min-height:260px; } }
 
-    .ag-reveal { opacity:0; transform:translateY(18px); transition:opacity .7s ease, transform .7s ease; }
-    .ag-reveal.ag-in { opacity:1; transform:translateY(0); }
 
     .ag-section { padding:80px 0; border-top:1px solid #232321; }
     .ag-kicker { font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#${pal.ice}; }
@@ -1316,11 +1433,15 @@ function renderStudioSite(d, page) {
     .ag-footer { border-top:1px solid #232321; padding:26px 0; text-align:center; font-size:11.5px; letter-spacing:.03em; color:#7A7975; }
   `;
   const rail = railLinks ? `<div class="ag-rail"><div class="ag-rail-inner">${railLinks}</div></div>` : "";
-  const footer = `<div class="ag-footer">© ${new Date().getFullYear()} ${escapeHtmlS(dd.businessName)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}${scrollRevealScript()}`;
+  // previewNavScript() is also what makes this template's own in-page
+  // rail links (#ag-services / #ag-about / #ag-contact) safe inside the
+  // preview iframe — needed here even with no navLinksHtml (single-page
+  // mode is exactly when those in-page anchors exist).
+  const footer = `<div class="ag-footer">© ${new Date().getFullYear()} ${escapeHtmlS(dd.businessName)}</div>${waFabHtml(d)}${(navLinksHtml || inPageRail) ? previewNavScript() : ""}`;
 
   function contactBlock(heading) {
     return `
-      <section class="ag-section" id="ag-contact"><div class="container ag-reveal">
+      <section class="ag-section" id="ag-contact"><div class="container site-reveal">
         <span class="ag-kicker">נשמח לשמוע מכם</span>
         <h2>${heading}</h2>
         <div class="ag-contact-lines">
@@ -1337,7 +1458,7 @@ function renderStudioSite(d, page) {
   let main;
   if (page === "about") {
     main = `
-      <section class="ag-section" style="border-top:none; padding-top:64px;"><div class="container ag-reveal">
+      <section class="ag-section" style="border-top:none; padding-top:64px;"><div class="container site-reveal">
         <span class="ag-kicker">נעים להכיר</span>
         <h2>${escapeHtmlS(dd.businessName)}</h2>
         <p class="ag-about-body">${nl2brS(dd.about)}</p>
@@ -1356,10 +1477,10 @@ function renderStudioSite(d, page) {
           <span class="kicker">${dd.tagline ? "ברוכים הבאים" : "סטודיו יצירתי"}</span>
           <h1>${escapeHtmlS(dd.businessName)}</h1>
           <p>${escapeHtmlS(dd.tagline)}</p>
-          <a class="ag-cta" href="${wa || (d.email ? "mailto:" + d.email : inPageRail ? "#ag-contact" : "#")}"${wa ? ' target="_blank" rel="noopener"' : ""}>רוצה להכיר יותר? ‹</a>
+          <a class="ag-cta" href="${escapeHtmlS(heroCta ? heroCta.href : (inPageRail ? "#ag-contact" : "#"))}"${heroCta && heroCta.external ? ' target="_blank" rel="noopener"' : ""}${heroCta && heroCta.page ? ' data-site-nav data-page="contact"' : ""}>רוצה להכיר יותר? ‹</a>
         </div>
       </section>
-      <section class="ag-section" id="ag-services" style="border-top:none;"><div class="container ag-reveal">
+      <section class="ag-section" id="ag-services" style="border-top:none;"><div class="container site-reveal">
         <span class="ag-kicker">זה מה שהעסק שלך מקבל</span>
         <h2>השירותים שלנו</h2>
         <div class="ag-grid">${services.map((s) => `
@@ -1367,7 +1488,7 @@ function renderStudioSite(d, page) {
       </div></section>
       ${embedSrc ? `<section class="ag-section"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : ""}
       ${(!d.pages || !d.pages.about) ? `
-      <section class="ag-section" id="ag-about"><div class="container ag-reveal">
+      <section class="ag-section" id="ag-about"><div class="container site-reveal">
         <span class="ag-kicker">נעים להכיר</span>
         <h2>${escapeHtmlS(dd.businessName)}</h2>
         <p class="ag-about-body">${nl2brS(dd.about)}</p>
@@ -1388,16 +1509,32 @@ const SITE_CATEGORIES = [
   { slug: "events", label: "אירועים ובוטיק" },
 ];
 
+/* Ordered so the visually striking designs lead the default "הכל" catalog
+   view — the flat, business-card-plain ones (local-service, freelancer,
+   catalog) used to sit first purely because of object key order, which
+   made the whole catalog read as bland at a glance even though the more
+   distinctive templates were there too, just scrolled past. */
 const SITE_TEMPLATES = {
-  "local-service": { label: "עסק שירות מקומי", category: "עסקי שירות", categorySlug: "service", desc: "Hero גדול, כרטיסי שירותים, וואטסאפ צף", thumb: "images/previews/site-local-service.webp", render: renderLocalServiceSite },
-  "freelancer": { label: "פרילנסר / יועץ", category: "תדמית אישית", categorySlug: "personal", desc: "מינימלי וממורכז, מתאים למותג אישי", thumb: "images/previews/site-freelancer.webp", render: renderFreelancerSite },
-  "catalog": { label: "קטלוג קטן", category: "קטלוג ומכירות", categorySlug: "shop", desc: "רשת מוצרים עם תגי מחיר וניווט עליון", thumb: "images/previews/site-catalog.webp", render: renderCatalogSite },
-  "gallery": { label: "גלריה מודרנית", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "תמונה מלאה ברקע, עיצוב עיתונאי ואלגנטי", thumb: "images/previews/site-gallery.webp", render: renderGallerySite },
-  "bold": { label: "נועז ומודרני", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "מסגרות עבות, צללים חדים, טיפוגרפיה גדולה", thumb: "images/previews/site-bold.webp", render: renderBoldSite },
-  "elegant": { label: "אלגנטי ומעוצב", category: "אירועים ובוטיק", categorySlug: "events", desc: "טיפוגרפיה עדינה, תמונה מפוצלת, מתאים לאירועים ועסקי בוטיק", thumb: "images/previews/site-elegant.webp", render: renderElegantSite },
-  "process": { label: "תהליך עבודה", category: "עסקי שירות", categorySlug: "service", desc: "ציר זמן ממוספר שמראה איך אתם עובדים, שלב אחר שלב", thumb: "images/previews/site-process.webp", render: renderProcessSite },
-  "portfolio": { label: "תיק עבודות יצירתי", category: "תדמית אישית", categorySlug: "personal", desc: "כותרת אישית גדולה ורשימת עבודות ממוספרת, בסגנון פורטפוליו", thumb: "images/previews/site-portfolio.webp", render: renderPortfolioSite },
-  "boutique": { label: "חנות בוטיק", category: "קטלוג ומכירות", categorySlug: "shop", desc: "מוצר מומלץ בכרטיס גדול, ואחריו רשת המוצרים הנוספים", thumb: "images/previews/site-boutique.webp", render: renderBoutiqueSite },
-  "noir": { label: "יוקרתי כהה", category: "אירועים ובוטיק", categorySlug: "events", desc: "רקע כהה, טיפוגרפיה איטלקית עדינה, ורשימת שירותים בסגנון תפריט", thumb: "images/previews/site-noir.webp", render: renderNoirSite },
-  "studio": { label: "סטודיו קריאייטיב", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "הירו א-סימטרי כהה, ניווט צדי אנכי, וטקסטים שנכנסים באנימציה בגלילה", thumb: "images/previews/site-studio.webp", render: renderStudioSite },
+  "studio": { label: "סטודיו קריאייטיב", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "הירו א-סימטרי כהה, ניווט צדי אנכי, וטקסטים שנכנסים באנימציה בגלילה", thumb: "images/previews/site-studio.webp", render: renderStudioSite,
+    features: ["הירו א-סימטרי כהה עם ניווט צדי אנכי", "טקסטים שנכנסים באנימציה תוך כדי גלילה", "עיצוב נועז שממש לא נראה כמו \"תבנית\"", "מתאים לסטודיו עיצוב או מותג יצירתי"] },
+  "noir": { label: "יוקרתי כהה", category: "אירועים ובוטיק", categorySlug: "events", desc: "רקע כהה, טיפוגרפיה איטלקית עדינה, ורשימת שירותים בסגנון תפריט", thumb: "images/previews/site-noir.webp", render: renderNoirSite,
+    features: ["רקע כהה ויוקרתי עם וידאו רקע אפשרי", "טיפוגרפיה איטלקית עדינה", "רשימת שירותים בסגנון תפריט מסעדה", "מתאים לאירועים ומותגים יוקרתיים"] },
+  "bold": { label: "נועז ומודרני", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "מסגרות עבות, צללים חדים, טיפוגרפיה גדולה", thumb: "images/previews/site-bold.webp", render: renderBoldSite,
+    features: ["טיפוגרפיה גדולה ותוססת שקופצת לעין", "מסגרות עבות וצללים חדים", "גלריית תמונות מתחלפות בכותרת", "מתאים למותגים שרוצים לבלוט"] },
+  "elegant": { label: "אלגנטי ומעוצב", category: "אירועים ובוטיק", categorySlug: "events", desc: "טיפוגרפיה עדינה, תמונה מפוצלת, מתאים לאירועים ועסקי בוטיק", thumb: "images/previews/site-elegant.webp", render: renderElegantSite,
+    features: ["פריסה מפוצלת: תמונה בצד, טקסט בצד", "גלריית תמונות מתחלפות", "טיפוגרפיה עדינה שמתאימה לאירועים", "מושלם לעסקי בוטיק ואירועים"] },
+  "gallery": { label: "גלריה מודרנית", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "תמונה מלאה ברקע, עיצוב עיתונאי ואלגנטי", thumb: "images/previews/site-gallery.webp", render: renderGallerySite,
+    features: ["תמונת רקע מלאה בכותרת, בסגנון עיתונאי", "פריסת \"בֶּנְטוֹ\" מודרנית למוצרים או עבודות", "טיפוגרפיה עדינה ואלגנטית", "צבע ראשי לבחירה שצובע את כל האתר"] },
+  "portfolio": { label: "תיק עבודות יצירתי", category: "תדמית אישית", categorySlug: "personal", desc: "כותרת אישית גדולה ורשימת עבודות ממוספרת, בסגנון פורטפוליו", thumb: "images/previews/site-portfolio.webp", render: renderPortfolioSite,
+    features: ["כותרת אישית גדולה עם שם ותפקיד", "רשימת עבודות ממוספרת בסגנון פורטפוליו", "גלריית תמונות מתחלפות", "מתאים למעצבים, יוצרים ואנשי מקצוע יצירתיים"] },
+  "boutique": { label: "חנות בוטיק", category: "קטלוג ומכירות", categorySlug: "shop", desc: "מוצר מומלץ בכרטיס גדול, ואחריו רשת המוצרים הנוספים", thumb: "images/previews/site-boutique.webp", render: renderBoutiqueSite,
+    features: ["מוצר מומלץ בכרטיס גדול ובולט", "רשת מוצרים נוספים מתחתיו", "גלריית תמונות מתחלפות בכותרת", "מתאים לחנות בוטיק עם מוצר דגל"] },
+  "process": { label: "תהליך עבודה", category: "עסקי שירות", categorySlug: "service", desc: "ציר זמן ממוספר שמראה איך אתם עובדים, שלב אחר שלב", thumb: "images/previews/site-process.webp", render: renderProcessSite,
+    features: ["ציר זמן ממוספר שמראה איך אתם עובדים", "בונה אמון עוד לפני שיחת המכירה הראשונה", "גלריית תמונות מתחלפות בכותרת", "מתאים לעסקי שירות עם תהליך עבודה ברור"] },
+  "local-service": { label: "עסק שירות מקומי", category: "עסקי שירות", categorySlug: "service", desc: "Hero גדול, כרטיסי שירותים, וואטסאפ צף", thumb: "images/previews/site-local-service.webp", render: renderLocalServiceSite,
+    features: ["תמונת רקע גדולה בכותרת — אפשר גם וידאו רקע נגן אוטומטית", "גלריית תמונות מתחלפות בכותרת", "כפתור וואטסאפ צף בכל העמודים", "כרטיסי שירותים עם תיאור ומחיר"] },
+  "freelancer": { label: "פרילנסר / יועץ", category: "תדמית אישית", categorySlug: "personal", desc: "מינימלי וממורכז, מתאים למותג אישי", thumb: "images/previews/site-freelancer.webp", render: renderFreelancerSite,
+    features: ["עיצוב ממורכז ונקי, בלי רעשי רקע", "תמונה אישית או גלריית תמונות מתחלפות", "מתאים למותג אישי או ייעוץ פרטני", "צבע ראשי לבחירה שצובע את כל האתר"] },
+  "catalog": { label: "קטלוג קטן", category: "קטלוג ומכירות", categorySlug: "shop", desc: "רשת מוצרים עם תגי מחיר וניווט עליון", thumb: "images/previews/site-catalog.webp", render: renderCatalogSite,
+    features: ["רשת מוצרים עם תגי מחיר ברורים", "ניווט עליון קבוע בין העמודים", "גלריית תמונות מתחלפות בכותרת", "מתאים לחנות קטנה או תפריט שירותים"] },
 };
