@@ -74,6 +74,7 @@
 
 .export-panel { background: var(--ice); border-radius: var(--radius); padding: 22px; display: flex; flex-direction: column; gap: 12px; }
 .export-panel .btn { width: 100%; text-align: center; box-sizing: border-box; }
+.export-panel .btn-outline-dark { background: var(--white); box-shadow: 0 2px 8px rgba(22,63,53,.1); }
 
 .lang-switch-big { display: flex; gap: 12px; flex: none; }
 .lang-big {
