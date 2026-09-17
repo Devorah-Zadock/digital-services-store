@@ -13,7 +13,7 @@
 
 * { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; overflow-x: hidden; }
 
 body {
   margin: 0;
@@ -21,6 +21,7 @@ body {
   color: var(--white);
   background: var(--navy-deep);
   line-height: 1.65;
+  overflow-x: hidden;
 }
 
 img { max-width: 100%; display: block; }
@@ -38,12 +39,18 @@ img { max-width: 100%; display: block; }
 
 a { color: inherit; }
 
+/* Hidden via a transform (off-canvas), not a huge right offset — a large
+   position:absolute offset still counts toward the page's scrollable
+   width, which was silently doubling the document width on phones and
+   showing as a cut-off/shifted layout. */
 .skip-link {
-  position: absolute; right: -9999px; top: 0;
+  position: absolute; right: 16px; top: 0;
+  transform: translateY(-150%);
   background: var(--gold); color: var(--navy-deep);
   padding: 10px 16px; border-radius: 8px; z-index: 200;
+  transition: transform .2s ease;
 }
-.skip-link:focus { right: 16px; top: 16px; }
+.skip-link:focus { transform: translateY(16px); }
 
 /* Buttons */
 .btn {

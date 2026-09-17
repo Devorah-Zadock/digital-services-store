@@ -1,3 +1,10 @@
+if ('scrollRestoration' in history) {
+  history.scrollRestoration = 'manual';
+}
+if (!location.hash) {
+  window.scrollTo(0, 0);
+}
+
 document.body.classList.add('ready');
 
 const revealTargets = document.querySelectorAll('.reveal');
