@@ -397,11 +397,12 @@ body.has-sites-rail .nav-account-wrap { display: none; }
    ========================================================================== */
 body.home-neo {
   --hn-bg: #FAFAFA; --hn-ink: #1A1A1A; --hn-action: #000000;
-  /* The single accent color for the whole homepage — a deep, quiet wine
-     tone, used sparingly (a hover state, a headline figure) so it reads as
-     a deliberate touch of color against the black/white palette, not a
-     second brand color competing with it. */
-  --hn-accent: #7A2048;
+  /* The single accent color for the whole homepage — a deep turquoise,
+     used thin and sparingly (a border, a headline figure, a hover tint)
+     so it reads as a deliberate touch of color against the black/white
+     palette, not a second brand color competing with it. */
+  --hn-accent: #0E8C8C;
+  --hn-accent-pale: #DFF3F3;
   --hn-dark: #0D0D14; --hn-dark-text: #F2F2F0; --hn-dark-text-dim: #B8B8C0;
   --hn-grey: #6B6B6B; --hn-border: #EAEAEA; --hn-radius: 8px;
   background: var(--hn-bg); color: var(--hn-ink);
@@ -520,31 +521,39 @@ body.home-neo .hn-card {
   padding: 32px 28px; display: flex; flex-direction: column; gap: 16px;
 }
 body.home-neo .hn-card > * { position: relative; z-index: 2; }
-/* On hover, a real product mockup fades in behind the card's own text —
-   one per tool, via a per-tool class — with a near-opaque white scrim
-   layered between the image and the text (z-index 1, above the image at
-   0, below the content at 2) so the photo reads as a subtle textured
-   backdrop, never competing with legibility. Not used on the featured
-   tile, which is already visually distinct (dark, not a plain card). */
+/* On hover, a real product mockup takes over the card as a full photo
+   background — clearly visible, not veiled under a white scrim — with a
+   dark gradient rising from the bottom to keep the text/button legible
+   over whatever the photo looks like there. The image itself slowly
+   zooms (a quiet Ken Burns drift, not a card lift) so the motion reads as
+   "looking into the photo" rather than the card jumping up. Not used on
+   the featured tile, which is already visually distinct (dark, not a
+   plain card). */
 body.home-neo .hn-card::before {
   content: ""; position: absolute; inset: 0; z-index: 0;
   background-size: cover; background-position: center;
-  opacity: 0; transition: opacity .4s ease;
+  opacity: 0; transform: scale(1); transition: opacity .5s ease, transform 3s ease;
 }
+/* Darkest at the bottom (behind the button) but never fully clear at the
+   top either — the heading sits up there, and a fully transparent top
+   would leave white text unreadable over whatever the photo happens to
+   show in that corner. */
 body.home-neo .hn-card::after {
   content: ""; position: absolute; inset: 0; z-index: 1;
-  background: linear-gradient(175deg, rgba(255,255,255,.78) 0%, rgba(255,255,255,.5) 45%, rgba(255,255,255,.8) 100%);
+  background: linear-gradient(0deg, rgba(13,13,20,.92) 0%, rgba(13,13,20,.62) 45%, rgba(13,13,20,.4) 100%);
   opacity: 0; transition: opacity .4s ease;
 }
-body.home-neo .hn-card:hover::before, body.home-neo .hn-card:hover::after { opacity: 1; }
+body.home-neo .hn-card:hover::before { opacity: 1; transform: scale(1.12); }
+body.home-neo .hn-card:hover::after { opacity: 1; }
 body.home-neo .hn-card-cv::before { background-image: url("../images/previews/hero-cv-1.webp"); }
 body.home-neo .hn-card-deck::before { background-image: url("../images/previews/hero-deck.webp"); }
 body.home-neo .hn-card-xlsx::before { background-image: url("../images/previews/xlsx-cashflow.webp"); }
 body.home-neo .hn-card-quote::before { background-image: url("../images/previews/hero-quote.webp"); }
 @media (prefers-reduced-motion: reduce) {
-  body.home-neo .hn-card::before, body.home-neo .hn-card::after { transition: none; }
+  body.home-neo .hn-card::before, body.home-neo .hn-card::after { transition: opacity .3s ease; }
+  body.home-neo .hn-card:hover::before { transform: none; }
 }
-body.home-neo .hn-card h3 { margin: 0; font-size: 19px; font-weight: 700; }
+body.home-neo .hn-card h3 { margin: 0; font-size: 19px; font-weight: 700; transition: color .3s ease; }
 body.home-neo .hn-tag {
   align-self: flex-start; font-size: 12.5px; font-weight: 600; color: var(--hn-grey);
   border: 1px solid var(--hn-border); border-radius: var(--hn-radius); padding: 4px 10px;
@@ -559,8 +568,8 @@ body.home-neo .hn-card-featured {
 body.home-neo .hn-card-featured::before, body.home-neo .hn-card-featured::after { content: none; }
 body.home-neo .hn-card-featured h3 { color: var(--hn-dark-text); font-size: 22px; }
 body.home-neo .hn-card-featured .hn-tag { color: var(--hn-dark-text-dim); border-color: rgba(255,255,255,.18); }
-body.home-neo .hn-card-featured .hn-btn-flat { background: var(--hn-bg); color: var(--hn-ink); }
-body.home-neo .hn-card-featured:hover .hn-btn-flat { background: var(--hn-accent); color: var(--hn-dark-text); }
+body.home-neo .hn-card-featured .hn-btn-flat { background: var(--hn-bg); color: var(--hn-ink); transition: background .3s ease, border-color .3s ease, color .3s ease; }
+body.home-neo .hn-card-featured:hover .hn-btn-flat { background: transparent; border-color: var(--hn-accent); color: var(--hn-dark-text); }
 @media (max-width: 900px) {
   body.home-neo .hn-tools-grid { grid-template-columns: 1fr 1fr; grid-template-rows: none; grid-template-areas: none; }
   body.home-neo .hn-card-featured { grid-column: span 2; }
@@ -615,8 +624,8 @@ body.home-neo .hn-step-num {
   font-size: 110px; font-weight: 800; color: #EFEFEF; line-height: 1; margin-bottom: -34px;
   transition: color .3s ease;
 }
-body.home-neo .hn-steps-row .hn-step:nth-child(2) .hn-step-num { color: #F3E4EA; }
-body.home-neo .hn-steps-row .hn-step:nth-child(3) .hn-step-num { color: #EACBD7; }
+body.home-neo .hn-steps-row .hn-step:nth-child(2) .hn-step-num { color: var(--hn-accent-pale); }
+body.home-neo .hn-steps-row .hn-step:nth-child(3) .hn-step-num { color: #B9E0E0; }
 body.home-neo .hn-step h4 { position: relative; font-size: 19px; font-weight: 700; margin: 0 0 10px; }
 body.home-neo .hn-step p { position: relative; font-size: 14.5px; color: var(--hn-grey); line-height: 1.7; margin: 0; }
 @media (max-width: 800px) { body.home-neo .hn-steps-row { grid-template-columns: 1fr; gap: 56px; } }
@@ -630,7 +639,7 @@ body.home-neo .hn-adv-card {
 body.home-neo .hn-adv-card:hover { transform: translateY(-4px); box-shadow: 0 16px 32px rgba(0,0,0,.08); border-color: #C4C4C4; }
 body.home-neo .hn-adv-icon {
   display: flex; align-items: center; justify-content: center; width: 42px; height: 42px;
-  border-radius: 50%; background: #F3E4EA; color: var(--hn-accent); margin-bottom: 18px;
+  border-radius: 50%; background: var(--hn-accent-pale); color: var(--hn-accent); margin-bottom: 18px;
 }
 body.home-neo .hn-adv-icon svg { width: 20px; height: 20px; }
 body.home-neo .hn-adv-card h4 { font-size: 17px; font-weight: 700; margin: 0 0 10px; }
@@ -681,14 +690,16 @@ body.home-neo .hn-advantages-row .hn-adv-card:nth-child(1) { transition-delay: 0
 body.home-neo .hn-advantages-row .hn-adv-card:nth-child(2) { transition-delay: .12s; }
 body.home-neo .hn-advantages-row .hn-adv-card:nth-child(3) { transition-delay: .24s; }
 
-/* Tool-card hover: lift, deepen the shadow, darken the border, and the
-   button inside reacts too — a coordinated "whole card responds"
-   effect rather than just the card or just the button moving alone. */
-body.home-neo .hn-card { transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease; }
-body.home-neo .hn-card:hover { transform: translateY(-4px); box-shadow: 0 16px 32px rgba(0,0,0,.1); border-color: #C4C4C4; }
-body.home-neo .hn-card:hover h3 { text-shadow: 0 1px 6px rgba(255,255,255,.85); }
-body.home-neo .hn-card .hn-btn-flat { transition: background .3s ease, transform .3s ease; }
-body.home-neo .hn-card:hover .hn-btn-flat { background: var(--hn-accent); transform: translateX(4px); }
+/* Tool-card hover: no lift — the photo taking over (see ::before/::after
+   above) and its slow zoom already carry the motion, so the card itself
+   just deepens its shadow and the text/tag/button invert to light, since
+   they now sit over a dark photo instead of the plain white card. */
+body.home-neo .hn-card { transition: box-shadow .3s ease, border-color .3s ease; }
+body.home-neo .hn-card:hover { box-shadow: 0 20px 40px rgba(0,0,0,.18); border-color: transparent; }
+body.home-neo .hn-card:hover h3 { color: var(--hn-dark-text); }
+body.home-neo .hn-card:hover .hn-tag { color: var(--hn-dark-text-dim); border-color: rgba(255,255,255,.3); }
+body.home-neo .hn-card .hn-btn-flat { transition: background .3s ease, border-color .3s ease, color .3s ease; }
+body.home-neo .hn-card:hover .hn-btn-flat { background: transparent; border-color: var(--hn-accent); color: var(--hn-dark-text); }
 @media (prefers-reduced-motion: reduce) {
   body.home-neo .hn-card, body.home-neo .hn-card:hover,
   body.home-neo .hn-card .hn-btn-flat, body.home-neo .hn-card:hover .hn-btn-flat { transition: none; transform: none; }
