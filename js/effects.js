@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // same concern doesn't apply, and body.home-neo gives them their own
   // heavier reveal + stagger timing in css/style.css.
   const revealTargets = document.querySelectorAll(
-    ".feature, .step, .banner, .section-head, .hn-section-h, .hn-card, .hn-adv-card, .hn-step, .hn-flagship-text, .hn-flagship-price-box"
+    ".feature, .step, .banner, .section-head, .hn-section-h, .hn-card, .hn-adv-row, .hn-step, .hn-flagship-text, .hn-flagship-price-box"
   );
   if ("IntersectionObserver" in window && revealTargets.length) {
     revealTargets.forEach((el) => el.classList.add("reveal"));

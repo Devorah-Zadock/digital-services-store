@@ -125,16 +125,20 @@ body.has-sites-rail header.site {
 }
 .brand {
   position: absolute; top: 50%; inset-inline-start: 24px; transform: translateY(-50%);
-  font-family: 'Space Grotesk', Arial, sans-serif; font-size: 21px; font-weight: 600; color: #1A1A1A;
-  display: flex; align-items: center; gap: 11px; letter-spacing: -.01em;
+  font-family: 'Space Grotesk', Arial, sans-serif; font-size: 22px; color: #1A1A1A;
+  display: flex; align-items: center; letter-spacing: -.01em;
 }
-/* Site-wide wordmark: a document-with-a-spark mark (the product IS smart
-   documents) in a small solid badge — same everywhere the brand or a link
-   back to the homepage appears, not just the homepage itself. */
-.brand-badge {
-  width: 26px; height: 26px; border-radius: 7px; background: #0D0D14;
-  display: flex; align-items: center; justify-content: center; flex: none;
-}
+/* Wordmark only, no icon/badge — "Desk" regular, "Kit" bold in the accent
+   turquoise. Same everywhere the brand or a link back to the homepage
+   appears, not just the homepage itself.
+   direction:ltr lives on .brand-text, NOT .brand itself — .brand's own
+   inset-inline-start positioning depends on ITS direction, and forcing
+   ltr there flipped it to the physical left (the wrong side of the RTL
+   header) instead of just reordering the two words inside it. */
+.brand-text { direction: ltr; }
+.brand-badge { display: none; }
+.brand-desk { font-weight: 500; }
+.brand-kit { font-weight: 700; color: #14B8B8; }
 .nav-end-group {
   position: absolute; top: 50%; inset-inline-end: 24px; transform: translateY(-50%);
   display: flex; align-items: center; gap: 14px;
@@ -143,10 +147,6 @@ body.has-sites-rail header.site {
   .nav { justify-content: space-between; padding-inline-end: 24px; }
   .nav-end-group { position: static; transform: none; }
 }
-.brand .brand-mark { width: 16px; height: 16px; flex: none; }
-.brand .brand-mark .bm-doc { fill: #fff; }
-.brand .brand-mark .bm-fold { fill: rgba(255,255,255,.5); }
-.brand .brand-mark .bm-spark { fill: #14B8B8; }
 .nav-links { display: flex; align-items: center; gap: 28px; font-size: 15px; font-weight: 500; }
 .nav-links a { color: var(--dark); opacity: .85; padding: 6px 0; border-bottom: 2px solid transparent; transition: opacity .15s ease, border-color .15s ease; }
 .nav-links a:hover, .nav-links a.active { opacity: 1; border-color: var(--gold); }
@@ -410,6 +410,17 @@ body.home-neo {
   background: var(--hn-bg); color: var(--hn-ink);
   font-family: 'Assistant', Arial, sans-serif;
 }
+/* Bug fix, placed early on purpose: body.home-neo .reveal (specificity
+   0,2,1) was beating the base .reveal.in-view rule (0,2,0) in style.css,
+   so home-neo elements NEVER actually settled to their resting position
+   after the entrance animation — they stayed permanently offset at
+   translateY(30px), which then made any :hover transform on the same
+   element jump from that stale 30px baseline instead of from 0, reading
+   as a jarring, unstable layout. This override (same specificity as the
+   entrance rule) fixes that — and it has to sit BEFORE every section's
+   own :hover rule below, so a tied-specificity :hover rule still wins by
+   coming later in the file once the card/step is done entering. */
+body.home-neo .reveal.in-view { transform: translateY(0); }
 body.home-neo header.site { background: var(--hn-bg); }
 body.home-neo .burger { color: var(--hn-ink); }
 body.home-neo .lang-toggle { background: var(--hn-bg); border-color: var(--hn-border); color: var(--hn-ink); border-radius: var(--hn-radius); }
@@ -528,50 +539,46 @@ body.home-neo .marquee-item { color: var(--hn-grey); }
 body.home-neo .marquee-item .dot { background: var(--hn-ink); }
 
 /* ---------- Tools grid ---------- */
-/* Asymmetric on purpose: the site builder — the one paid, flagship tool —
-   gets its own tall tile at the (visual, RTL) top-right instead of sitting
-   in line with the four free tools, which fill a plain 2x2 to its side. */
-body.home-neo .hn-tools-grid {
-  display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr);
-  grid-template-areas: "featured cv deck" "featured xlsx quote";
-  gap: 24px;
-}
-body.home-neo .hn-card-cv { grid-area: cv; }
-body.home-neo .hn-card-deck { grid-area: deck; }
-body.home-neo .hn-card-xlsx { grid-area: xlsx; }
-body.home-neo .hn-card-quote { grid-area: quote; }
-body.home-neo .hn-card-featured { grid-area: featured; }
+/* Every card — including the featured one — is the exact same fixed
+   size, in plain grid auto-flow. The featured tile is only visually
+   distinct (dark), never a different shape: a fixed height means content
+   length never changes a card's box, so nothing in this grid ever grows
+   taller or wider than its neighbors. */
+body.home-neo .hn-tools-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
 body.home-neo .hn-card {
-  position: relative; overflow: hidden; isolation: isolate;
+  position: relative; overflow: hidden;
   background: var(--hn-bg); border: 1px solid var(--hn-border); border-radius: 16px;
-  padding: 32px 28px; display: flex; flex-direction: column; gap: 14px;
-  transition: transform .35s ease, box-shadow .35s ease, border-color .35s ease;
+  height: 230px; box-sizing: border-box; padding: 28px; display: flex; flex-direction: column; gap: 12px;
+  transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
 }
-body.home-neo .hn-card > * { position: relative; z-index: 2; }
+/* Text and icon are ordinary flex children with fixed positions in the
+   column — nothing about the hover state below touches their layout, so
+   they never shift, even by a pixel. */
+body.home-neo .hn-card > * { position: relative; z-index: 1; }
 body.home-neo .hn-card-icon {
   display: flex; align-items: center; justify-content: center; width: 40px; height: 40px;
-  border-radius: 50%; background: var(--hn-accent-pale); color: var(--hn-accent); margin-bottom: 4px;
+  border-radius: 50%; background: var(--hn-accent-pale); color: var(--hn-accent); flex: none;
 }
 body.home-neo .hn-card-icon svg { width: 19px; height: 19px; }
-/* On hover the card lifts slightly (scale, not translate) and its own
-   product photo appears behind a frosted-glass layer: backdrop-filter
-   blurs the photo, a translucent white tint keeps it a "glass panel" over
-   the image rather than the image itself, so text on top stays fully
-   legible without needing to invert to light colors. Not used on the
-   featured tile, which is already visually distinct (dark, not a plain
-   card). */
+/* The product photo is the card's own faint background — never a
+   blur/glass overlay, never anything that could visually "get stuck" —
+   just a plain image at low opacity (never above ~0.2) so it reads as
+   ambient texture behind the text, not a competing layer. */
 body.home-neo .hn-card::before {
-  content: ""; position: absolute; inset: -4px; z-index: 0;
+  content: ""; position: absolute; inset: 0; z-index: 0;
   background-size: cover; background-position: center;
-  opacity: 0; transition: opacity .5s ease;
-}
-body.home-neo .hn-card::after {
-  content: ""; position: absolute; inset: 0; z-index: 1;
-  background: rgba(255,255,255,.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   opacity: 0; transition: opacity .4s ease;
 }
-body.home-neo .hn-card:hover { transform: scale(1.03); box-shadow: 0 20px 40px rgba(0,0,0,.14); border-color: transparent; }
-body.home-neo .hn-card:hover::before, body.home-neo .hn-card:hover::after { opacity: 1; }
+/* transition re-declared here (not just on the base .hn-card rule) so
+   this :hover's higher specificity also wins the transition-duration
+   itself, not just the transform value — otherwise the .reveal rule's
+   own (slower, entrance-only) transition timing wins the tie and the
+   hover would animate at the wrong speed. */
+body.home-neo .hn-card:hover {
+  transform: translateY(-3px); box-shadow: 0 12px 28px rgba(0,0,0,.1); border-color: #C4C4C4;
+  transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+}
+body.home-neo .hn-card:hover::before { opacity: .18; }
 body.home-neo .hn-card-cv::before { background-image: url("../images/previews/hero-cv-1.webp"); }
 body.home-neo .hn-card-deck::before { background-image: url("../images/previews/hero-deck.webp"); }
 body.home-neo .hn-card-xlsx::before { background-image: url("../images/previews/xlsx-cashflow.webp"); }
@@ -579,7 +586,7 @@ body.home-neo .hn-card-quote::before { background-image: url("../images/previews
 @media (prefers-reduced-motion: reduce) {
   body.home-neo .hn-card { transition: box-shadow .3s ease, border-color .3s ease; }
   body.home-neo .hn-card:hover { transform: none; }
-  body.home-neo .hn-card::before, body.home-neo .hn-card::after { transition: opacity .3s ease; }
+  body.home-neo .hn-card::before { transition: opacity .3s ease; }
 }
 body.home-neo .hn-card h3 { margin: 0; font-size: 19px; font-weight: 700; }
 body.home-neo .hn-tag {
@@ -587,43 +594,34 @@ body.home-neo .hn-tag {
   border: 1px solid var(--hn-border); border-radius: var(--hn-radius); padding: 4px 10px;
 }
 body.home-neo .hn-tag-paid { color: var(--hn-ink); }
-/* The CTA is invisible at rest and floats up into view on hover — on a
-   touch device there is no hover, so it stays shown there instead of
-   disappearing forever. */
+/* The CTA fades in on hover — opacity only, no movement, so it can never
+   shift or clip the text around it. On a touch device there is no hover,
+   so it stays shown there instead of disappearing forever. */
 body.home-neo .hn-card .hn-btn-flat {
-  margin-top: auto; opacity: 0; transform: translateY(10px); pointer-events: none;
-  transition: opacity .35s ease, transform .35s ease;
+  margin-top: auto; opacity: 0; pointer-events: none; transition: opacity .3s ease;
 }
-body.home-neo .hn-card:hover .hn-btn-flat { opacity: 1; transform: translateY(0); pointer-events: auto; }
+body.home-neo .hn-card:hover .hn-btn-flat { opacity: 1; pointer-events: auto; }
 @media (hover: none) {
-  body.home-neo .hn-card .hn-btn-flat { opacity: 1; transform: none; pointer-events: auto; }
+  body.home-neo .hn-card .hn-btn-flat { opacity: 1; pointer-events: auto; }
 }
 @media (prefers-reduced-motion: reduce) {
-  body.home-neo .hn-card .hn-btn-flat { transition: opacity .2s ease; transform: none; }
+  body.home-neo .hn-card .hn-btn-flat { transition: opacity .2s ease; }
 }
-/* The featured tile: dark, not bordered like the others — reads as a
-   small banner embedded in the grid rather than "one more card". Its CTA
-   stays always visible (it's the flagship tool, not a hover reveal). */
-body.home-neo .hn-card-featured {
-  background: var(--hn-dark); border-color: transparent; justify-content: center;
-}
-body.home-neo .hn-card-featured::before, body.home-neo .hn-card-featured::after { content: none; }
-body.home-neo .hn-card-featured h3 { color: var(--hn-dark-text); font-size: 22px; }
+/* The featured tile: dark, same size as the rest — visually distinct by
+   color alone. Its CTA stays always visible (it's the flagship tool, not
+   a hover reveal). */
+body.home-neo .hn-card-featured { background: var(--hn-dark); border-color: transparent; }
+body.home-neo .hn-card-featured::before { content: none; }
+body.home-neo .hn-card-featured h3 { color: var(--hn-dark-text); }
 body.home-neo .hn-card-featured .hn-card-icon { background: rgba(255,255,255,.1); color: #14B8B8; }
 body.home-neo .hn-card-featured .hn-tag { color: var(--hn-dark-text-dim); border-color: rgba(255,255,255,.18); }
 body.home-neo .hn-card-featured .hn-btn-flat {
-  background: var(--hn-bg); color: var(--hn-ink); opacity: 1; transform: none; pointer-events: auto;
+  background: var(--hn-bg); color: var(--hn-ink); opacity: 1; pointer-events: auto;
   transition: background .3s ease, border-color .3s ease, color .3s ease;
 }
 body.home-neo .hn-card-featured:hover .hn-btn-flat { background: transparent; border-color: var(--hn-accent); color: var(--hn-dark-text); }
-@media (max-width: 900px) {
-  body.home-neo .hn-tools-grid { grid-template-columns: 1fr 1fr; grid-template-rows: none; grid-template-areas: none; }
-  body.home-neo .hn-card-featured { grid-column: span 2; }
-}
-@media (max-width: 600px) {
-  body.home-neo .hn-tools-grid { grid-template-columns: 1fr; }
-  body.home-neo .hn-card-featured { grid-column: span 1; }
-}
+@media (max-width: 900px) { body.home-neo .hn-tools-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { body.home-neo .hn-tools-grid { grid-template-columns: 1fr; } }
 
 /* ---------- Flagship banner ---------- */
 body.home-neo .hn-flagship { background: var(--hn-dark); color: var(--hn-dark-text); }
@@ -667,7 +665,7 @@ body.home-neo .hn-steps { background: var(--hn-dark); }
 body.home-neo .hn-steps .hn-section-h { color: var(--hn-dark-text); }
 body.home-neo .hn-steps-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
 body.home-neo .hn-step { position: relative; padding-top: 8px; transition: transform .3s ease; }
-body.home-neo .hn-step:hover { transform: translateY(-4px); }
+body.home-neo .hn-step:hover { transform: translateY(-4px); transition: transform .3s ease; }
 /* At rest the giant numeral is barely there — a faint watermark. As each
    step scrolls into view it glows turquoise, one after another (staggered
    via transition-delay on the numeral itself, offset from the card's own
@@ -685,27 +683,32 @@ body.home-neo .hn-step p { position: relative; font-size: 14.5px; color: var(--h
 @media (max-width: 800px) { body.home-neo .hn-steps-row { grid-template-columns: 1fr; gap: 56px; } }
 @media (prefers-reduced-motion: reduce) {
   body.home-neo .hn-step-num { transition: color .3s ease, text-shadow .3s ease; }
+  body.home-neo .hn-step { transition: none; }
+  body.home-neo .hn-step:hover { transform: none; }
 }
 
 /* ---------- Advantages ---------- */
-body.home-neo .hn-advantages-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
-body.home-neo .hn-adv-card {
-  border: 1px solid var(--hn-border); border-radius: var(--hn-radius); padding: 32px 28px;
-  transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
-}
-body.home-neo .hn-adv-card:hover { transform: translateY(-4px); box-shadow: 0 16px 32px rgba(0,0,0,.08); border-color: #C4C4C4; }
+/* Deliberately NOT another row of 3 equal cards — that's the steps
+   section right above it. A left/right split (heading+intro vs. a
+   compact stacked list) reads as a different section, not a repeat. */
+body.home-neo .hn-advantages { background: var(--hn-accent-pale); }
+body.home-neo .hn-advantages-split { display: grid; grid-template-columns: .8fr 1.2fr; gap: 64px; align-items: start; }
+body.home-neo .hn-advantages-intro .hn-section-h { text-align: start; margin-bottom: 16px; }
+body.home-neo .hn-advantages-intro p { font-size: 15.5px; color: var(--hn-grey); line-height: 1.8; max-width: 360px; margin: 0; }
+body.home-neo .hn-advantages-list { display: flex; flex-direction: column; gap: 28px; }
+body.home-neo .hn-adv-row { display: flex; gap: 18px; align-items: flex-start; }
 body.home-neo .hn-adv-icon {
   display: flex; align-items: center; justify-content: center; width: 42px; height: 42px;
-  border-radius: 50%; background: var(--hn-accent-pale); color: var(--hn-accent); margin-bottom: 18px;
+  border-radius: 50%; background: var(--hn-bg); color: var(--hn-accent); flex: none;
 }
 body.home-neo .hn-adv-icon svg { width: 20px; height: 20px; }
-body.home-neo .hn-adv-card h4 { font-size: 17px; font-weight: 700; margin: 0 0 10px; }
-@media (prefers-reduced-motion: reduce) {
-  body.home-neo .hn-step, body.home-neo .hn-step:hover,
-  body.home-neo .hn-adv-card, body.home-neo .hn-adv-card:hover { transition: none; transform: none; }
+body.home-neo .hn-adv-row h4 { font-size: 17px; font-weight: 700; margin: 0 0 6px; }
+body.home-neo .hn-adv-row p { font-size: 14px; color: var(--hn-grey); line-height: 1.7; margin: 0; }
+@media (max-width: 800px) {
+  body.home-neo .hn-advantages-split { grid-template-columns: 1fr; gap: 32px; }
+  body.home-neo .hn-advantages-intro .hn-section-h { text-align: center; }
+  body.home-neo .hn-advantages-intro p { max-width: none; text-align: center; margin-inline: auto; }
 }
-body.home-neo .hn-adv-card p { font-size: 14px; color: var(--hn-grey); line-height: 1.7; margin: 0; }
-@media (max-width: 800px) { body.home-neo .hn-advantages-row { grid-template-columns: 1fr; } }
 
 /* ---------- Motion: hero entrance + scroll-reveal + card hover ---------- */
 /* Hero content is above the fold, so it animates in immediately on load
@@ -743,9 +746,9 @@ body.home-neo .hn-tools-grid .hn-card:nth-child(5) { transition-delay: .4s; }
 body.home-neo .hn-steps-row .hn-step:nth-child(1) { transition-delay: 0s; }
 body.home-neo .hn-steps-row .hn-step:nth-child(2) { transition-delay: .12s; }
 body.home-neo .hn-steps-row .hn-step:nth-child(3) { transition-delay: .24s; }
-body.home-neo .hn-advantages-row .hn-adv-card:nth-child(1) { transition-delay: 0s; }
-body.home-neo .hn-advantages-row .hn-adv-card:nth-child(2) { transition-delay: .12s; }
-body.home-neo .hn-advantages-row .hn-adv-card:nth-child(3) { transition-delay: .24s; }
+body.home-neo .hn-advantages-list .hn-adv-row:nth-child(1) { transition-delay: 0s; }
+body.home-neo .hn-advantages-list .hn-adv-row:nth-child(2) { transition-delay: .12s; }
+body.home-neo .hn-advantages-list .hn-adv-row:nth-child(3) { transition-delay: .24s; }
 
 
 @media (max-width: 700px) {

@@ -42,6 +42,7 @@ const I18N = {
     step3_title: "הקובץ שלכם מוכן", step3_desc: "מורידים את המסמך המוכן שלכם או מעלים את האתר לאוויר ברגע.",
 
     features_kicker: "למה DeskKit", features_h2: "עיצוב ייחודי, בשפה שלך",
+    features_intro: "לא עוד תבנית גנרית — כל מסמך ואתר מותאמים אליכם, מהצבעים ועד הטיפוגרפיה.",
     feat1_title: "עיצוב עכשווי", feat1_desc: "עמודות צד, טיפוגרפיה גדולה, תגיות צבעוניות.",
     feat2_title: "כלים פתוחים בחינם", feat2_desc: "עורכים את קורות החיים, המצגות או הצעות המחיר ומורידים PDF ללא עלות.",
     feat3_title: "הצבע שלכם", feat3_desc: "בוחרים צבע ראשי אחד, והבילדר מתאים סביבו את כל המסמך או האתר.",
@@ -81,6 +82,7 @@ const I18N = {
     step3_title: "Your file is ready", step3_desc: "Download your finished document, or publish your site instantly.",
 
     features_kicker: "Why DeskKit", features_h2: "Distinctive design, in your own language",
+    features_intro: "No generic template — every document and site is tailored to you, from colors to typography.",
     feat1_title: "Modern design", feat1_desc: "Side columns, bold typography, colorful tags.",
     feat2_title: "Free, open tools", feat2_desc: "Edit your resume, decks or price quotes and download a PDF at no cost.",
     feat3_title: "Your own color", feat3_desc: "Pick one primary color, and the builder adapts the whole document or site around it.",
