@@ -177,14 +177,8 @@ body.ready .hero-content > h1 { animation: heroRise .7s ease .2s both, titleShim
 .section-lead { text-align: center; color: var(--muted); max-width: 620px; margin: 0 auto 44px; }
 
 /* Cards */
-/* Flex + centered, not grid: with 13 items no fixed column count divides evenly,
-   and a centered last row reads intentional where a flush-left grid gap doesn't. */
-/* 13 real items never divide evenly into any column count, so instead of
-   letting the last one float alone (reads as a mistake), it spans the full
-   row width and becomes a deliberate-looking closing banner. */
+/* 12 items, 4 columns: an exact 3x4, so every card is the same size with no leftover row. */
 .card-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
-.card-grid .card:last-child { grid-column: 1 / -1; }
-.card-grid .card:last-child .card-ico { margin-inline: auto; }
 .card {
   background: linear-gradient(160deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
   border: 1px solid rgba(255,255,255,.08);
@@ -193,7 +187,6 @@ body.ready .hero-content > h1 { animation: heroRise .7s ease .2s both, titleShim
 }
 .card:hover { transform: translateY(-4px); border-color: rgba(212,175,55,.5); }
 .card-ico { width: 30px; height: 30px; stroke-width: 1.5; color: var(--gold); display: block; margin-bottom: 12px; }
-.card-grid .card:last-child { text-align: center; }
 .card h3 { margin: 0; font-size: 17px; }
 .card p { margin: 8px 0 0; color: var(--muted); font-size: 14.5px; }
 
