@@ -127,10 +127,14 @@ body.has-sites-rail header.site {
   position: absolute; top: 50%; inset-inline-start: 24px; transform: translateY(-50%);
   font-size: 23px; font-weight: 800; color: #1A1A1A; display: flex; align-items: center; gap: 11px; letter-spacing: -.01em;
 }
-/* Site-wide wordmark: the old teal-gold square icon is retired in favor
-   of a plain text logo with a small ✦ mark — same everywhere the brand
-   or a link back to the homepage appears, not just the homepage itself. */
-.brand-text::before { content: "✦"; font-size: 16px; margin-inline-end: 8px; }
+/* Site-wide wordmark: the old teal-gold gradient square is retired in
+   favor of a small solid monogram badge built from the same D-shaped mark
+   — same everywhere the brand or a link back to the homepage appears, not
+   just the homepage itself. */
+.brand-badge {
+  width: 26px; height: 26px; border-radius: 7px; background: #0D0D14;
+  display: flex; align-items: center; justify-content: center; flex: none;
+}
 .nav-end-group {
   position: absolute; top: 50%; inset-inline-end: 24px; transform: translateY(-50%);
   display: flex; align-items: center; gap: 14px;
@@ -139,8 +143,7 @@ body.has-sites-rail header.site {
   .nav { justify-content: space-between; padding-inline-end: 24px; }
   .nav-end-group { position: static; transform: none; }
 }
-.brand-badge { display: none; }
-.brand .brand-mark { width: 20px; height: 20px; flex: none; }
+.brand .brand-mark { width: 16px; height: 16px; flex: none; }
 .brand .brand-mark .bm-face, .brand .brand-mark .bm-fold { fill: #fff; }
 .nav-links { display: flex; align-items: center; gap: 28px; font-size: 15px; font-weight: 500; }
 .nav-links a { color: var(--dark); opacity: .85; padding: 6px 0; border-bottom: 2px solid transparent; transition: opacity .15s ease, border-color .15s ease; }
@@ -425,7 +428,10 @@ body.home-neo .nav-links a.active, body.home-neo .nav-links a:hover { color: var
 body.home-neo .hn-hero, body.home-neo .hn-tools, body.home-neo .hn-flagship,
 body.home-neo .hn-steps, body.home-neo .hn-advantages { padding-block: 120px; }
 body.home-neo .hn-tools { position: relative; }
-body.home-neo .hn-section-h { font-size: 34px; font-weight: 700; margin: 0 0 64px; letter-spacing: -.01em; }
+/* A rounder, friendlier display face for section headlines only — the
+   body keeps Assistant, this is used sparingly so it reads as a deliberate
+   accent, not a full typeface swap. */
+body.home-neo .hn-section-h { font-family: 'Secular One', 'Assistant', Arial, sans-serif; font-size: 38px; font-weight: 400; margin: 0 0 64px; letter-spacing: 0; }
 body.home-neo .hn-center { text-align: center; }
 body.home-neo .hn-btn {
   display: inline-block; padding: 14px 28px; border-radius: var(--hn-radius);
@@ -458,9 +464,16 @@ body.home-neo .hn-mock {
   position: absolute; width: 340px; height: 240px; border-radius: var(--hn-radius);
   overflow: hidden; box-shadow: 0 12px 32px rgba(0,0,0,.08); border: 1px solid var(--hn-border);
 }
-body.home-neo .hn-mock img { width: 100%; height: 100%; object-fit: cover; display: block; transition: opacity .7s ease, transform .35s ease; }
-body.home-neo .hn-mock:hover img { transform: scale(1.07); }
-@media (prefers-reduced-motion: reduce) { body.home-neo .hn-mock img { transition: opacity .01s linear, transform .01s linear; } }
+/* Two stacked layers so the incoming image fades in ON TOP of the still-
+   visible outgoing one — never a gap where the box briefly shows nothing. */
+body.home-neo .hn-mock-img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block;
+  transition: opacity .7s ease, transform .35s ease;
+}
+body.home-neo .hn-mock-img-a { opacity: 1; z-index: 1; }
+body.home-neo .hn-mock-img-b { opacity: 0; z-index: 0; }
+body.home-neo .hn-mock:hover .hn-mock-img { transform: scale(1.07); }
+@media (prefers-reduced-motion: reduce) { body.home-neo .hn-mock-img { transition: opacity .01s linear, transform .01s linear; } }
 body.home-neo .hn-mock-back { top: 8%; right: 4%; }
 body.home-neo .hn-mock-front { bottom: 4%; right: 22%; }
 @media (max-width: 900px) {
@@ -520,7 +533,7 @@ body.home-neo .hn-card::before {
 }
 body.home-neo .hn-card::after {
   content: ""; position: absolute; inset: 0; z-index: 1;
-  background: linear-gradient(175deg, rgba(255,255,255,.88) 0%, rgba(255,255,255,.68) 45%, rgba(255,255,255,.88) 100%);
+  background: linear-gradient(175deg, rgba(255,255,255,.78) 0%, rgba(255,255,255,.5) 45%, rgba(255,255,255,.8) 100%);
   opacity: 0; transition: opacity .4s ease;
 }
 body.home-neo .hn-card:hover::before, body.home-neo .hn-card:hover::after { opacity: 1; }
@@ -582,12 +595,28 @@ body.home-neo .footer-grid h5 { color: var(--hn-dark-text); }
 body.home-neo .footer-grid ul a:hover { color: var(--hn-accent); }
 body.home-neo .footer-bottom { color: #7A7A82; }
 
+/* ---------- Floating widgets ---------- */
+/* Same reasoning as the footer above: these are shared, sitewide widgets
+   still in the old teal/gold, so the recolor to the black/white/accent
+   palette is scoped to the homepage only. */
+body.home-neo .fab-chat { background: var(--hn-dark); }
+body.home-neo .fab-feedback { background: var(--hn-accent); color: var(--hn-dark-text); }
+body.home-neo .fab-a11y { border-color: var(--hn-border); color: var(--hn-ink); }
+body.home-neo .fab-a11y:hover { border-color: var(--hn-accent); }
+
 /* ---------- Three steps ---------- */
 body.home-neo .hn-steps-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
-body.home-neo .hn-step { position: relative; padding-top: 8px; }
+body.home-neo .hn-step { position: relative; padding-top: 8px; transition: transform .3s ease; }
+body.home-neo .hn-step:hover { transform: translateY(-4px); }
+/* The giant background numeral shifts from flat grey to the accent color
+   step by step — a quiet "getting closer to done" cue instead of three
+   identical grey digits. */
 body.home-neo .hn-step-num {
   font-size: 110px; font-weight: 800; color: #EFEFEF; line-height: 1; margin-bottom: -34px;
+  transition: color .3s ease;
 }
+body.home-neo .hn-steps-row .hn-step:nth-child(2) .hn-step-num { color: #F3E4EA; }
+body.home-neo .hn-steps-row .hn-step:nth-child(3) .hn-step-num { color: #EACBD7; }
 body.home-neo .hn-step h4 { position: relative; font-size: 19px; font-weight: 700; margin: 0 0 10px; }
 body.home-neo .hn-step p { position: relative; font-size: 14.5px; color: var(--hn-grey); line-height: 1.7; margin: 0; }
 @media (max-width: 800px) { body.home-neo .hn-steps-row { grid-template-columns: 1fr; gap: 56px; } }
@@ -596,8 +625,19 @@ body.home-neo .hn-step p { position: relative; font-size: 14.5px; color: var(--h
 body.home-neo .hn-advantages-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
 body.home-neo .hn-adv-card {
   border: 1px solid var(--hn-border); border-radius: var(--hn-radius); padding: 32px 28px;
+  transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
 }
+body.home-neo .hn-adv-card:hover { transform: translateY(-4px); box-shadow: 0 16px 32px rgba(0,0,0,.08); border-color: #C4C4C4; }
+body.home-neo .hn-adv-icon {
+  display: flex; align-items: center; justify-content: center; width: 42px; height: 42px;
+  border-radius: 50%; background: #F3E4EA; color: var(--hn-accent); margin-bottom: 18px;
+}
+body.home-neo .hn-adv-icon svg { width: 20px; height: 20px; }
 body.home-neo .hn-adv-card h4 { font-size: 17px; font-weight: 700; margin: 0 0 10px; }
+@media (prefers-reduced-motion: reduce) {
+  body.home-neo .hn-step, body.home-neo .hn-step:hover,
+  body.home-neo .hn-adv-card, body.home-neo .hn-adv-card:hover { transition: none; transform: none; }
+}
 body.home-neo .hn-adv-card p { font-size: 14px; color: var(--hn-grey); line-height: 1.7; margin: 0; }
 @media (max-width: 800px) { body.home-neo .hn-advantages-row { grid-template-columns: 1fr; } }
 
@@ -645,7 +685,8 @@ body.home-neo .hn-advantages-row .hn-adv-card:nth-child(3) { transition-delay: .
    button inside reacts too — a coordinated "whole card responds"
    effect rather than just the card or just the button moving alone. */
 body.home-neo .hn-card { transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease; }
-body.home-neo .hn-card:hover { transform: translateY(-8px); box-shadow: 0 22px 44px rgba(0,0,0,.1); border-color: #C4C4C4; }
+body.home-neo .hn-card:hover { transform: translateY(-4px); box-shadow: 0 16px 32px rgba(0,0,0,.1); border-color: #C4C4C4; }
+body.home-neo .hn-card:hover h3 { text-shadow: 0 1px 6px rgba(255,255,255,.85); }
 body.home-neo .hn-card .hn-btn-flat { transition: background .3s ease, transform .3s ease; }
 body.home-neo .hn-card:hover .hn-btn-flat { background: var(--hn-accent); transform: translateX(4px); }
 @media (prefers-reduced-motion: reduce) {

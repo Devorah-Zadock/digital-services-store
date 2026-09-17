@@ -4,17 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="google-site-verification" content="w-GXefALTSEde6IQVMNBvUdTEpVhOXfp81liZzSea4s" />
-<title>DeskKit — תבניות עסקיות מוכנות</title>
+<title>DeskKit — בניית אתרים, קורות חיים והצעות מחיר</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="description" content="עריכת קורות חיים בעיצוב מקצועי, בניית אתר עסקי והצעות מחיר — הכול במקום אחד, מוכן לשימוש תוך דקות.">
+<meta name="description" content="בנו אתר עסקי, קורות חיים ומצגות מקצועיות תוך דקות — עריכה חיה בדפדפן, בלי התקנות ובלי מנוי חודשי. הורדה מיידית של הקובץ המוכן.">
 <link rel="canonical" href="https://deskkit.co.il/index.html">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="he_IL">
 <meta property="og:site_name" content="DeskKit">
-<meta property="og:title" content="DeskKit — תבניות עסקיות מוכנות">
-<meta property="og:description" content="עריכת קורות חיים, מצגות, הצעות מחיר ובניית אתר עסקי — מוכנים תוך דקות, בעיצוב מקצועי. בלי מנוי חודשי.">
+<meta property="og:title" content="DeskKit — בניית אתרים, קורות חיים והצעות מחיר">
+<meta property="og:description" content="בנו אתר עסקי, קורות חיים ומצגות מקצועיות תוך דקות — עריכה חיה בדפדפן, בלי התקנות ובלי מנוי חודשי.">
 <meta property="og:url" content="https://deskkit.co.il/index.html">
 <script type="application/ld+json">
 {
@@ -37,8 +37,8 @@
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&family=Assistant:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=43">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&family=Assistant:wght@400;500;600;700;800&family=Secular+One&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=44">
 </head>
 <body class="home-neo">
 <script>
@@ -101,26 +101,41 @@
          soft shadow, offset behind one another, no rotation and no round
          shapes, in place of the earlier collage/mask treatments. -->
     <div class="hn-hero-visual" aria-hidden="true">
-      <div class="hn-mock hn-mock-back" data-cycle="images/previews/hero-cv-1.webp,images/previews/hero-cv-2.webp,images/previews/xlsx-cashflow.webp"><img src="images/previews/hero-cv-1.webp" alt=""></div>
-      <div class="hn-mock hn-mock-front" data-cycle="images/previews/hero-site.webp,images/previews/hero-deck.webp,images/previews/hero-quote.webp"><img src="images/previews/hero-site.webp" alt=""></div>
+      <div class="hn-mock hn-mock-back" data-cycle="images/previews/hero-cv-1.webp,images/previews/cv-design-creative.webp,images/previews/cv-dev-minimal.webp,images/previews/xlsx-cashflow.webp,images/previews/quote-modern.webp,images/previews/cv-accounting-modern.webp,images/previews/hero-cv-2.webp,images/previews/cv-general-modern.webp">
+        <img class="hn-mock-img hn-mock-img-a" src="images/previews/hero-cv-1.webp" alt="">
+        <img class="hn-mock-img hn-mock-img-b" src="images/previews/hero-cv-1.webp" alt="">
+      </div>
+      <div class="hn-mock hn-mock-front" data-cycle="images/previews/hero-site.webp,images/previews/deck-investor-pitch.webp,images/previews/site-boutique.webp,images/previews/quote-elegant.webp,images/previews/deck-product-launch.webp,images/previews/site-studio.webp,images/previews/hero-deck.webp,images/previews/hero-quote.webp">
+        <img class="hn-mock-img hn-mock-img-a" src="images/previews/hero-site.webp" alt="">
+        <img class="hn-mock-img hn-mock-img-b" src="images/previews/hero-site.webp" alt="">
+      </div>
     </div>
   </div>
 </section>
 <script>
-  // Crossfades each hero mockup through its own small image set every
-  // 3s — independent timers per mock, so the two boxes don't visibly
-  // change in lockstep. Skipped entirely under prefers-reduced-motion.
+  // True crossfade, not fade-to-white-then-in: two stacked <img> layers per
+  // mock, the hidden one gets the next image while invisible, then fades in
+  // ON TOP of the still-fully-visible current one, so there's never a gap
+  // where neither is showing. Independent timers per mock. Skipped entirely
+  // under prefers-reduced-motion.
   document.addEventListener("DOMContentLoaded", () => {
     if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     document.querySelectorAll(".hn-mock[data-cycle]").forEach((mock) => {
       const images = mock.dataset.cycle.split(",");
-      const img = mock.querySelector("img");
-      if (!img || images.length < 2) return;
+      const layerA = mock.querySelector(".hn-mock-img-a");
+      const layerB = mock.querySelector(".hn-mock-img-b");
+      if (!layerA || !layerB || images.length < 2) return;
       let i = 0;
+      let topIsB = false; // which layer is currently on top/visible
       setInterval(() => {
         i = (i + 1) % images.length;
-        img.style.opacity = "0";
-        setTimeout(() => { img.src = images[i]; img.style.opacity = "1"; }, 700);
+        const hidden = topIsB ? layerA : layerB;
+        const visible = topIsB ? layerB : layerA;
+        hidden.src = images[i];
+        hidden.style.zIndex = "2";
+        visible.style.zIndex = "1";
+        requestAnimationFrame(() => { hidden.style.opacity = "1"; visible.style.opacity = "0"; });
+        topIsB = !topIsB;
       }, 3000);
     });
   });
@@ -251,14 +266,17 @@
     <h2 class="hn-section-h hn-center" data-i18n="features_h2">עיצוב ייחודי, בשפה שלך</h2>
     <div class="hn-advantages-row">
       <div class="hn-adv-card">
+        <span class="hn-adv-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 9v12"/></svg></span>
         <h4 data-i18n="feat1_title">עיצוב עכשווי</h4>
         <p data-i18n="feat1_desc">עמודות צד, טיפוגרפיה גדולה, תגיות צבעוניות.</p>
       </div>
       <div class="hn-adv-card">
+        <span class="hn-adv-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg></span>
         <h4 data-i18n="feat2_title">כלים פתוחים בחינם</h4>
         <p data-i18n="feat2_desc">עורכים את קורות החיים, המצגות או הצעות המחיר ומורידים PDF ללא עלות.</p>
       </div>
       <div class="hn-adv-card">
+        <span class="hn-adv-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="8" r="1.4" fill="currentColor" stroke="none"/><circle cx="15.5" cy="11.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="8.5" cy="11.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="10.5" cy="15.5" r="1.4" fill="currentColor" stroke="none"/></svg></span>
         <h4 data-i18n="feat3_title">הצבע שלכם</h4>
         <p data-i18n="feat3_desc">בוחרים צבע ראשי אחד, והבילדר מתאים סביבו את כל המסמך או האתר.</p>
       </div>
