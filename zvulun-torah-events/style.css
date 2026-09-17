@@ -179,18 +179,31 @@ body.ready .hero-content > h1 { animation: heroRise .7s ease .2s both, titleShim
 /* Cards */
 /* Flex + centered, not grid: with 13 items no fixed column count divides evenly,
    and a centered last row reads intentional where a flush-left grid gap doesn't. */
-.card-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 22px; }
+/* 13 real items never divide evenly into any column count, so instead of
+   letting the last one float alone (reads as a mistake), it spans the full
+   row width and becomes a deliberate-looking closing banner. */
+.card-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+.card-grid .card:last-child { grid-column: 1 / -1; }
+.card-grid .card:last-child .card-ico { margin-inline: auto; }
 .card {
-  flex: 1 1 220px; max-width: 260px;
   background: linear-gradient(160deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
   border: 1px solid rgba(255,255,255,.08);
-  border-radius: var(--radius); padding: 26px 22px;
+  border-radius: var(--radius); padding: 22px 18px;
   transition: transform .15s ease, border-color .15s ease;
 }
 .card:hover { transform: translateY(-4px); border-color: rgba(212,175,55,.5); }
-.card-ico { width: 32px; height: 32px; stroke-width: 1.5; color: var(--gold); display: block; margin-bottom: 14px; }
+.card-ico { width: 30px; height: 30px; stroke-width: 1.5; color: var(--gold); display: block; margin-bottom: 12px; }
+.card-grid .card:last-child { text-align: center; }
 .card h3 { margin: 0; font-size: 17px; }
 .card p { margin: 8px 0 0; color: var(--muted); font-size: 14.5px; }
+
+/* Chuppah showcase */
+.chuppah-photo {
+  aspect-ratio: 16 / 9; max-height: 520px; width: 100%; margin-top: 34px;
+  border-radius: var(--radius); background-color: var(--navy-light);
+  background-size: cover; background-position: center;
+  border: 1px solid rgba(212,175,55,.25); box-shadow: var(--shadow);
+}
 
 /* Addons */
 .addons-list {
@@ -271,8 +284,8 @@ body.ready .hero-content > h1 { animation: heroRise .7s ease .2s both, titleShim
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .mobile-cta { display: flex; }
   .site-footer { padding-bottom: 100px; }
-  .card-grid { gap: 12px; }
-  .card { flex-basis: calc(50% - 6px); max-width: calc(50% - 6px); padding: 16px 12px; text-align: center; }
+  .card-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .card { padding: 16px 12px; text-align: center; }
   .card-ico { width: 24px; height: 24px; margin: 0 auto 8px; }
   .card h3 { font-size: 14px; line-height: 1.3; }
   .addons-list { grid-template-columns: repeat(2, 1fr); max-width: 480px; }
@@ -280,6 +293,7 @@ body.ready .hero-content > h1 { animation: heroRise .7s ease .2s both, titleShim
 
 @media (max-width: 560px) {
   .gallery-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
+  .chuppah-photo { aspect-ratio: 4 / 3; max-height: none; }
 }
 
 /* Gentle scroll-in reveal */
