@@ -393,7 +393,13 @@ body.has-sites-rail .nav-account-wrap { display: none; }
    instead, right here.
    ========================================================================== */
 body.home-neo {
-  --hn-bg: #FAFAFA; --hn-ink: #1A1A1A; --hn-action: #000000; --hn-blue: #1040C0;
+  --hn-bg: #FAFAFA; --hn-ink: #1A1A1A; --hn-action: #000000;
+  /* The single accent color for the whole homepage — a deep, quiet wine
+     tone, used sparingly (a hover state, a headline figure) so it reads as
+     a deliberate touch of color against the black/white palette, not a
+     second brand color competing with it. */
+  --hn-accent: #7A2048;
+  --hn-dark: #0D0D14; --hn-dark-text: #F2F2F0; --hn-dark-text-dim: #B8B8C0;
   --hn-grey: #6B6B6B; --hn-border: #EAEAEA; --hn-radius: 8px;
   background: var(--hn-bg); color: var(--hn-ink);
   font-family: 'Assistant', Arial, sans-serif;
@@ -452,7 +458,7 @@ body.home-neo .hn-mock {
   position: absolute; width: 340px; height: 240px; border-radius: var(--hn-radius);
   overflow: hidden; box-shadow: 0 12px 32px rgba(0,0,0,.08); border: 1px solid var(--hn-border);
 }
-body.home-neo .hn-mock img { width: 100%; height: 100%; object-fit: cover; display: block; transition: opacity .4s ease, transform .35s ease; }
+body.home-neo .hn-mock img { width: 100%; height: 100%; object-fit: cover; display: block; transition: opacity .7s ease, transform .35s ease; }
 body.home-neo .hn-mock:hover img { transform: scale(1.07); }
 @media (prefers-reduced-motion: reduce) { body.home-neo .hn-mock img { transition: opacity .01s linear, transform .01s linear; } }
 body.home-neo .hn-mock-back { top: 8%; right: 4%; }
@@ -482,7 +488,19 @@ body.home-neo .marquee-item { color: var(--hn-grey); }
 body.home-neo .marquee-item .dot { background: var(--hn-ink); }
 
 /* ---------- Tools grid ---------- */
-body.home-neo .hn-tools-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+/* Asymmetric on purpose: the site builder — the one paid, flagship tool —
+   gets its own tall tile at the (visual, RTL) top-right instead of sitting
+   in line with the four free tools, which fill a plain 2x2 to its side. */
+body.home-neo .hn-tools-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr);
+  grid-template-areas: "featured cv deck" "featured xlsx quote";
+  gap: 24px;
+}
+body.home-neo .hn-card-cv { grid-area: cv; }
+body.home-neo .hn-card-deck { grid-area: deck; }
+body.home-neo .hn-card-xlsx { grid-area: xlsx; }
+body.home-neo .hn-card-quote { grid-area: quote; }
+body.home-neo .hn-card-featured { grid-area: featured; }
 body.home-neo .hn-card {
   position: relative; overflow: hidden; isolation: isolate;
   background: var(--hn-bg); border: 1px solid var(--hn-border); border-radius: var(--hn-radius);
@@ -490,11 +508,11 @@ body.home-neo .hn-card {
 }
 body.home-neo .hn-card > * { position: relative; z-index: 2; }
 /* On hover, a real product mockup fades in behind the card's own text —
-   one per tool, via nth-child since the grid's order is fixed — with a
-   near-opaque white scrim layered between the image and the text
-   (z-index 1, above the image at 0, below the content at 2) so the
-   photo reads as a subtle textured backdrop, never competing with
-   legibility. */
+   one per tool, via a per-tool class — with a near-opaque white scrim
+   layered between the image and the text (z-index 1, above the image at
+   0, below the content at 2) so the photo reads as a subtle textured
+   backdrop, never competing with legibility. Not used on the featured
+   tile, which is already visually distinct (dark, not a plain card). */
 body.home-neo .hn-card::before {
   content: ""; position: absolute; inset: 0; z-index: 0;
   background-size: cover; background-position: center;
@@ -502,15 +520,14 @@ body.home-neo .hn-card::before {
 }
 body.home-neo .hn-card::after {
   content: ""; position: absolute; inset: 0; z-index: 1;
-  background: linear-gradient(175deg, rgba(255,255,255,.94) 0%, rgba(255,255,255,.82) 45%, rgba(255,255,255,.94) 100%);
+  background: linear-gradient(175deg, rgba(255,255,255,.88) 0%, rgba(255,255,255,.68) 45%, rgba(255,255,255,.88) 100%);
   opacity: 0; transition: opacity .4s ease;
 }
 body.home-neo .hn-card:hover::before, body.home-neo .hn-card:hover::after { opacity: 1; }
-body.home-neo .hn-tools-grid .hn-card:nth-child(1)::before { background-image: url("../images/previews/hero-cv-1.webp"); }
-body.home-neo .hn-tools-grid .hn-card:nth-child(2)::before { background-image: url("../images/previews/hero-site.webp"); }
-body.home-neo .hn-tools-grid .hn-card:nth-child(3)::before { background-image: url("../images/previews/hero-deck.webp"); }
-body.home-neo .hn-tools-grid .hn-card:nth-child(4)::before { background-image: url("../images/previews/xlsx-cashflow.webp"); }
-body.home-neo .hn-tools-grid .hn-card:nth-child(5)::before { background-image: url("../images/previews/hero-quote.webp"); }
+body.home-neo .hn-card-cv::before { background-image: url("../images/previews/hero-cv-1.webp"); }
+body.home-neo .hn-card-deck::before { background-image: url("../images/previews/hero-deck.webp"); }
+body.home-neo .hn-card-xlsx::before { background-image: url("../images/previews/xlsx-cashflow.webp"); }
+body.home-neo .hn-card-quote::before { background-image: url("../images/previews/hero-quote.webp"); }
 @media (prefers-reduced-motion: reduce) {
   body.home-neo .hn-card::before, body.home-neo .hn-card::after { transition: none; }
 }
@@ -521,22 +538,49 @@ body.home-neo .hn-tag {
 }
 body.home-neo .hn-tag-paid { color: var(--hn-ink); }
 body.home-neo .hn-card .hn-btn-flat { margin-top: auto; }
-@media (max-width: 900px) { body.home-neo .hn-tools-grid { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 600px) { body.home-neo .hn-tools-grid { grid-template-columns: 1fr; } }
+/* The featured tile: dark, not bordered like the others — reads as a
+   small banner embedded in the grid rather than "one more card". */
+body.home-neo .hn-card-featured {
+  background: var(--hn-dark); border-color: transparent; justify-content: center;
+}
+body.home-neo .hn-card-featured::before, body.home-neo .hn-card-featured::after { content: none; }
+body.home-neo .hn-card-featured h3 { color: var(--hn-dark-text); font-size: 22px; }
+body.home-neo .hn-card-featured .hn-tag { color: var(--hn-dark-text-dim); border-color: rgba(255,255,255,.18); }
+body.home-neo .hn-card-featured .hn-btn-flat { background: var(--hn-bg); color: var(--hn-ink); }
+body.home-neo .hn-card-featured:hover .hn-btn-flat { background: var(--hn-accent); color: var(--hn-dark-text); }
+@media (max-width: 900px) {
+  body.home-neo .hn-tools-grid { grid-template-columns: 1fr 1fr; grid-template-rows: none; grid-template-areas: none; }
+  body.home-neo .hn-card-featured { grid-column: span 2; }
+}
+@media (max-width: 600px) {
+  body.home-neo .hn-tools-grid { grid-template-columns: 1fr; }
+  body.home-neo .hn-card-featured { grid-column: span 1; }
+}
 
 /* ---------- Flagship banner ---------- */
-body.home-neo .hn-flagship { background: #0D0D14; color: #F2F2F0; }
+body.home-neo .hn-flagship { background: var(--hn-dark); color: var(--hn-dark-text); }
 body.home-neo .hn-flagship-split { display: grid; grid-template-columns: 1.3fr .7fr; gap: 48px; align-items: center; }
 body.home-neo .hn-flagship-text h2 { font-size: 30px; font-weight: 700; margin: 0 0 16px; line-height: 1.3; }
-body.home-neo .hn-flagship-text p { font-size: 15.5px; color: #B8B8C0; line-height: 1.8; margin: 0; max-width: 460px; }
+body.home-neo .hn-flagship-text p { font-size: 15.5px; color: var(--hn-dark-text-dim); line-height: 1.8; margin: 0; max-width: 460px; }
 body.home-neo .hn-flagship-price-box {
   background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.14); border-radius: var(--hn-radius);
   padding: 28px; text-align: center;
 }
-body.home-neo .hn-flagship-price { font-size: 34px; font-weight: 800; }
-body.home-neo .hn-flagship-price-note { font-size: 13px; color: #B8B8C0; margin: 4px 0 20px; }
+body.home-neo .hn-flagship-price { font-size: 34px; font-weight: 800; color: var(--hn-accent); }
+body.home-neo .hn-flagship-price-note { font-size: 13px; color: var(--hn-dark-text-dim); margin: 4px 0 20px; }
 body.home-neo .hn-flagship-price-box .hn-btn { width: 100%; box-sizing: border-box; }
 @media (max-width: 800px) { body.home-neo .hn-flagship-split { grid-template-columns: 1fr; } }
+
+/* ---------- Footer ---------- */
+/* The shared footer is still teal/gold on every other page (not yet
+   redesigned), so this override is scoped to the homepage only — matching
+   the same dark tone as the flagship banner above it, so the two dark
+   sections read as one deliberate palette instead of a leftover old brand
+   color breaking the black/white/accent scheme. */
+body.home-neo footer.site { background: var(--hn-dark); color: var(--hn-dark-text-dim); }
+body.home-neo .footer-grid h5 { color: var(--hn-dark-text); }
+body.home-neo .footer-grid ul a:hover { color: var(--hn-accent); }
+body.home-neo .footer-bottom { color: #7A7A82; }
 
 /* ---------- Three steps ---------- */
 body.home-neo .hn-steps-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
@@ -603,7 +647,7 @@ body.home-neo .hn-advantages-row .hn-adv-card:nth-child(3) { transition-delay: .
 body.home-neo .hn-card { transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease; }
 body.home-neo .hn-card:hover { transform: translateY(-8px); box-shadow: 0 22px 44px rgba(0,0,0,.1); border-color: #C4C4C4; }
 body.home-neo .hn-card .hn-btn-flat { transition: background .3s ease, transform .3s ease; }
-body.home-neo .hn-card:hover .hn-btn-flat { background: var(--hn-blue); transform: translateX(4px); }
+body.home-neo .hn-card:hover .hn-btn-flat { background: var(--hn-accent); transform: translateX(4px); }
 @media (prefers-reduced-motion: reduce) {
   body.home-neo .hn-card, body.home-neo .hn-card:hover,
   body.home-neo .hn-card .hn-btn-flat, body.home-neo .hn-card:hover .hn-btn-flat { transition: none; transform: none; }

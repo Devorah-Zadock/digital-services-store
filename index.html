@@ -38,7 +38,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&family=Assistant:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=42">
+<link rel="stylesheet" href="css/style.css?v=43">
 </head>
 <body class="home-neo">
 <script>
@@ -108,7 +108,7 @@
 </section>
 <script>
   // Crossfades each hero mockup through its own small image set every
-  // 2s — independent timers per mock, so the two boxes don't visibly
+  // 3s — independent timers per mock, so the two boxes don't visibly
   // change in lockstep. Skipped entirely under prefers-reduced-motion.
   document.addEventListener("DOMContentLoaded", () => {
     if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -120,8 +120,8 @@
       setInterval(() => {
         i = (i + 1) % images.length;
         img.style.opacity = "0";
-        setTimeout(() => { img.src = images[i]; img.style.opacity = "1"; }, 400);
-      }, 2000);
+        setTimeout(() => { img.src = images[i]; img.style.opacity = "1"; }, 700);
+      }, 3000);
     });
   });
 </script>
@@ -178,29 +178,29 @@
 
 <section class="hn-tools" id="tools">
   <div class="container">
-    <h2 class="hn-section-h hn-center" data-i18n="tools_h">במה נתחיל לעבוד היום?</h2>
+    <h2 class="hn-section-h hn-center" data-i18n="tools_h">מה תרצו לעצב היום?</h2>
     <div class="hn-tools-grid">
-      <div class="hn-card">
+      <div class="hn-card hn-card-cv">
         <h3 data-i18n="nav_cv">קורות חיים</h3>
         <span class="hn-tag" data-i18n="tag_free">חינם</span>
         <a href="products.html?type=cv" class="hn-btn hn-btn-flat" data-i18n="cta_create">כניסה לכלי</a>
       </div>
-      <div class="hn-card">
+      <div class="hn-card hn-card-featured">
         <h3 data-i18n="nav_sites">אתר תדמית</h3>
         <span class="hn-tag hn-tag-paid">199 ₪ <span data-i18n="price_onetime">חד-פעמי</span></span>
         <a href="sites.html?browse=1" class="hn-btn hn-btn-flat" data-i18n="cta_create">כניסה לכלי</a>
       </div>
-      <div class="hn-card">
+      <div class="hn-card hn-card-deck">
         <h3 data-i18n="nav_decks">מצגת</h3>
         <span class="hn-tag" data-i18n="tag_free">חינם</span>
         <a href="products.html?type=deck" class="hn-btn hn-btn-flat" data-i18n="cta_create">כניסה לכלי</a>
       </div>
-      <div class="hn-card">
+      <div class="hn-card hn-card-xlsx">
         <h3 data-i18n="nav_xlsx">אקסל</h3>
         <span class="hn-tag" data-i18n="tag_free">חינם</span>
         <a href="products.html?type=xlsx" class="hn-btn hn-btn-flat" data-i18n="cta_create">כניסה לכלי</a>
       </div>
-      <div class="hn-card">
+      <div class="hn-card hn-card-quote">
         <h3 data-i18n="quote_card_title">הצעת מחיר</h3>
         <span class="hn-tag" data-i18n="tag_free">חינם</span>
         <a href="quote-app.html" class="hn-btn hn-btn-flat" data-i18n="cta_create">כניסה לכלי</a>

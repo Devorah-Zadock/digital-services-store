@@ -28,7 +28,7 @@ const I18N = {
     mq_livepreview: "תצוגה חיה בזמן אמת", mq_nosub: "בלי מנוי חודשי", mq_customquotes: "הצעות מחיר מותאמות אישית",
     mq_siteminutes: "אתר עסקי תוך דקות", mq_cloudsave: "שמירה בענן", mq_hebrewsupport: "תמיכה מלאה בעברית",
 
-    tools_h: "במה נתחיל לעבוד היום?", tag_free: "חינם", cta_create: "בואו נתחיל",
+    tools_h: "מה תרצו לעצב היום?", tag_free: "חינם", cta_create: "בואו נתחיל",
     price_onetime: "חד-פעמי", quote_card_title: "הצעת מחיר לעסק שלך",
 
     flagship_h2: "אתר תדמית שלם לעסק שלך. בלי קוד, בלי מנוי חודשי.",
@@ -67,7 +67,7 @@ const I18N = {
     mq_livepreview: "Real-time live preview", mq_nosub: "No monthly subscription", mq_customquotes: "Custom price quotes",
     mq_siteminutes: "Business site in minutes", mq_cloudsave: "Cloud save", mq_hebrewsupport: "Full Hebrew support",
 
-    tools_h: "Which tool should we start with today?", tag_free: "Free", cta_create: "Let's get started",
+    tools_h: "What would you like to design today?", tag_free: "Free", cta_create: "Let's get started",
     price_onetime: "one-time", quote_card_title: "A price quote for your business",
 
     flagship_h2: "A complete business site. No code, no monthly subscription.",
