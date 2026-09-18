@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=52">
+<link rel="stylesheet" href="css/style.css?v=53">
 <style>
   .pv-topbar {
     background: var(--white); border-bottom: 1px solid #EAEDEC; padding: 14px 24px;
@@ -30,10 +30,14 @@
   /* Deck slide viewer — full-bleed colored card matching the real
      slide's own background/text colors and relative font sizes, so it
      reads as "the actual slide" rather than a generic content list. */
+  /* Fixed height (not min-height): a longer slide used to grow this box
+     taller than the others, so the frame visibly changed size — even
+     needing to scroll — as you paged through a deck. overflow-y is a
+     safety net only, for content longer than any real slide should be. */
   .pv-slide-card {
     border-radius: 14px; overflow: hidden; box-shadow: 0 16px 40px rgba(0,0,0,.14);
-    min-height: 420px; display: flex; flex-direction: column; justify-content: center;
-    padding: 60px 56px; gap: 14px; text-align: center;
+    height: 460px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center;
+    padding: 60px 56px; gap: 14px; text-align: center; overflow-y: auto;
   }
   .pv-slide-card .pv-line { line-height: 1.5; }
   .pv-slide-nav {

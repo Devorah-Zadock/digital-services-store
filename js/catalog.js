@@ -141,6 +141,13 @@ function initProductPage() {
   if (canonicalTag) canonicalTag.setAttribute("href", "https://deskkit.co.il/product.html?slug=" + p.slug);
   const pType = productType(p);
   const pTypeLabel = (PRODUCT_TYPES.find((t) => t.slug === pType) || {}).label || "קטלוג";
+  // product.html is one shared shell for every product type, but its nav
+  // markup had "קורות חיים" hardcoded as the active link — so a deck or
+  // xlsx product page still showed the CV tab highlighted. Set it here
+  // instead, based on the product actually being shown.
+  document.querySelectorAll(".nav-links a").forEach((a) => {
+    a.classList.toggle("active", a.getAttribute("href") === `products.html?type=${pType}`);
+  });
   root.innerHTML = `
     <div class="product-hero">
       <div class="thumb"><img src="images/previews/${p.image}" alt="תצוגה מקדימה של ${p.title}"></div>

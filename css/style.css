@@ -1,11 +1,16 @@
+/* Sitewide palette: black/white with turquoise as the one accent — the
+   same system the homepage already uses (--hn-*), just under the names
+   every other page's CSS already references. Values only; every rule
+   that reads var(--teal)/var(--gold)/etc. below repaints automatically,
+   with no need to touch each page individually. */
 :root {
-  --teal: #1F5C4E;
-  --teal-dark: #163F35;
-  --teal-light: #2C7562;
-  --ice: #E8F1EE;
-  --gold: #C99A3B;
-  --gold-light: #E3BE6E;
-  --dark: #1E1E1E;
+  --teal: #1A1A1A;
+  --teal-dark: #0D0D14;
+  --teal-light: #2A2A32;
+  --ice: #EAF6F6;
+  --gold: #0E8C8C;
+  --gold-light: #14B8B8;
+  --dark: #1A1A1A;
   --grey: #6B6B6B;
   --grey-light: #F4F6F5;
   --white: #FFFFFF;
@@ -18,13 +23,13 @@
   --vivid-violet: #7B5CFF;
   --radius: 14px;
   --radius-sm: 8px;
-  --shadow: 0 10px 30px rgba(22, 63, 53, 0.10);
-  --shadow-lg: 0 24px 60px rgba(22, 63, 53, 0.18);
+  --shadow: 0 10px 30px rgba(13, 13, 20, 0.10);
+  --shadow-lg: 0 24px 60px rgba(13, 13, 20, 0.18);
   --max: 1120px;
 
   /* Category accents — used to give the catalog visual variety instead of
      every product looking the same teal/gold regardless of type. */
-  --cat-general: #1F5C4E; --cat-general-bg: #E8F1EE;
+  --cat-general: #1A1A1A; --cat-general-bg: #EAF6F6;
   --cat-dev:     #2B6CB0; --cat-dev-bg:     #E4EEF7;
   --cat-design:  #C2622D; --cat-design-bg:  #F7E8DE;
   --cat-accounting: #6B46C1; --cat-accounting-bg: #EDE7F9;
@@ -371,7 +376,7 @@ body.has-sites-rail .nav-account-wrap { display: none; }
   content: "";
   position: absolute; inset: 0; z-index: -1;
   background:
-    radial-gradient(480px 480px at 12% 15%, rgba(201,154,59,.32), transparent 65%),
+    radial-gradient(480px 480px at 12% 15%, rgba(14,140,140,.32), transparent 65%),
     radial-gradient(420px 420px at 88% 85%, rgba(0,200,150,.3), transparent 60%),
     radial-gradient(circle at 50% 120%, rgba(123,92,255,.2), transparent 55%);
 }
@@ -379,7 +384,7 @@ body.has-sites-rail .nav-account-wrap { display: none; }
   content: "";
   position: absolute; z-index: -1; inset-inline-end: -80px; top: -90px;
   width: 280px; height: 280px; border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, rgba(201,154,59,.35), rgba(201,154,59,0) 70%);
+  background: radial-gradient(circle at 35% 35%, rgba(14,140,140,.35), rgba(14,140,140,0) 70%);
   animation: floatSlow 9s ease-in-out infinite;
 }
 .hero h1 {
@@ -772,15 +777,15 @@ body.home-neo .hn-advantages-list .hn-adv-row:nth-child(3) { transition-delay: .
 }
 .btn-gold {
   background: linear-gradient(135deg, var(--gold-light), var(--gold)); color: var(--teal-dark);
-  box-shadow: 0 10px 26px rgba(201,154,59,.35);
+  box-shadow: 0 10px 26px rgba(14,140,140,.35);
 }
-.btn-gold:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(201,154,59,.45); }
+.btn-gold:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(14,140,140,.45); }
 .btn-outline { background: transparent; color: var(--white); border: 1.5px solid rgba(255,255,255,.6); }
 .btn-outline:hover { background: rgba(255,255,255,.14); transform: translateY(-2px); }
 .btn-outline-dark { background: transparent; color: var(--teal-dark); border: 1.5px solid var(--teal-dark); }
 .btn-outline-dark:hover { background: var(--teal-dark); color: var(--white); transform: translateY(-2px); }
-.btn-teal { background: linear-gradient(135deg, var(--teal), var(--teal-light)); color: var(--white); box-shadow: 0 8px 20px rgba(22,63,53,.2); }
-.btn-teal:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(22,63,53,.3); }
+.btn-teal { background: linear-gradient(135deg, var(--teal), var(--teal-light)); color: var(--white); box-shadow: 0 8px 20px rgba(13,13,20,.2); }
+.btn-teal:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(13,13,20,.3); }
 .btn-disabled, .btn-disabled:hover {
   pointer-events: none; opacity: .55; box-shadow: none; transform: none; cursor: default;
 }
@@ -885,7 +890,7 @@ section { padding: 88px 0; }
   width: 26px; height: 26px; border-radius: 50%;
   background: linear-gradient(135deg, var(--teal-light), var(--teal));
   display: flex; align-items: center; justify-content: center;
-  font-size: 13px; box-shadow: 0 4px 10px rgba(22,63,53,.25);
+  font-size: 13px; box-shadow: 0 4px 10px rgba(13,13,20,.25);
 }
 .price { font-size: 16px; font-weight: 700; color: var(--teal-dark); }
 .price small { font-size: 13px; color: var(--grey); font-weight: 400; }
@@ -955,7 +960,7 @@ section { padding: 88px 0; }
 .banner::before {
   content: ""; position: absolute; z-index: -1; inset-inline-start: -40px; bottom: -60px;
   width: 200px; height: 200px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(201,154,59,.35), transparent 70%);
+  background: radial-gradient(circle, rgba(14,140,140,.35), transparent 70%);
 }
 .banner::after {
   content: ""; position: absolute; z-index: -1; inset-inline-end: -50px; top: -70px;
@@ -1006,7 +1011,7 @@ section { padding: 88px 0; }
   width: 48px; height: 48px; border-radius: 50%;
   background: linear-gradient(135deg, var(--teal), var(--teal-light)); color: var(--white);
   display: flex; align-items: center; justify-content: center; font-weight: 700; margin: 0 auto 14px;
-  box-shadow: 0 8px 18px rgba(22,63,53,.28);
+  box-shadow: 0 8px 18px rgba(13,13,20,.28);
 }
 .step h4 { margin: 0 0 6px; font-size: 16px; }
 .step p { margin: 0; color: var(--grey); font-size: 14px; }
