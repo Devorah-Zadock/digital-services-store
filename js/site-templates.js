@@ -2523,7 +2523,15 @@ function renderPlaygroundSite(d, page) {
       height:76px; min-width:120px; border-radius:38px; font-weight:800; font-size:15px; color:#0F1020;
       box-shadow:0 10px 26px rgba(0,0,0,.28); user-select:none;
     }
-    .pg-physics.pg-active .pg-bubble { position:absolute; top:0; inset-inline-start:0; will-change:transform; }
+    /* Deliberately physical "left", not the logical inset-inline-start —
+       confirmed live: in this RTL site, inset-inline-start:0 anchors the
+       bubble's untransformed position to the container's RIGHT edge, but
+       the physics script's translate(x,y) math is always physical
+       left-to-right (CSS transforms ignore dir). The two disagreeing sent
+       every bubble rendering hundreds of pixels off to the right, often
+       entirely outside the viewport — which is exactly why none of them
+       were visible or draggable. */
+    .pg-physics.pg-active .pg-bubble { position:absolute; top:0; left:0; will-change:transform; }
     .pg-bubble .price { display:block; font-size:11.5px; font-weight:700; opacity:.75; margin-top:2px; }
 
     .pg-section { padding:64px 0; }
@@ -2559,106 +2567,102 @@ function renderPlaygroundSite(d, page) {
     </filter>
   </svg>`;
 
+  // Small hand-rolled physics (gravity + wall/bubble collision + pointer
+  // drag) instead of loading a physics engine off a CDN — confirmed live,
+  // twice, that the CDN load kept failing for real visitors (network
+  // policy, ad-blocker, or just a slow connection racing the 4s timeout),
+  // which left the whole services section empty. This has zero external
+  // dependency, so there is nothing left that can fail to load; it also
+  // never touches wheel events at all, so page scroll was never at risk
+  // here the way Matter.js's own Mouse module silently broke it.
   const physicsScript = `<script>
     (function () {
       var wrap = document.getElementById("pg-physics");
       if (!wrap) return;
-      var bubbles = Array.prototype.slice.call(wrap.querySelectorAll(".pg-bubble"));
-      if (!bubbles.length) return;
+      var els = Array.prototype.slice.call(wrap.querySelectorAll(".pg-bubble"));
+      if (!els.length) return;
       if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-      var script = document.createElement("script");
-      script.src = "https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js";
-      var timedOut = false;
-      var timer = setTimeout(function () { timedOut = true; }, 4000);
-      script.onload = function () {
-        clearTimeout(timer);
-        if (timedOut || !window.Matter) return;
-        startPhysics();
-      };
-      script.onerror = function () { clearTimeout(timer); };
-      document.body.appendChild(script);
+      wrap.classList.add("pg-active");
+      var W = wrap.clientWidth, H = wrap.clientHeight;
+      var GRAVITY = 0.6, DAMPING = 0.985, BOUNCE = 0.42;
 
-      function startPhysics() {
-        // Guards against a second init if this ever runs twice in the same
-        // document, and lets any failure below fall straight back to the
-        // plain static layout instead of leaving the section half-built —
-        // an exception here must never mean an empty screen where the
-        // services used to be.
-        if (wrap.dataset.pgStarted) return;
-        wrap.dataset.pgStarted = "1";
-        try {
-          var Engine = Matter.Engine, World = Matter.World,
-              Body = Matter.Body, Runner = Matter.Runner, Mouse = Matter.Mouse, MouseConstraint = Matter.MouseConstraint;
-          wrap.classList.add("pg-active");
-          var w = wrap.clientWidth, h = wrap.clientHeight;
-          var engine = Engine.create();
-          engine.gravity.y = 0.55;
-          var world = engine.world;
-          var wallOpts = { isStatic: true, restitution: 0.35, friction: 0.15 };
-          var ground = Matter.Bodies.rectangle(w / 2, h + 24, w * 2, 48, wallOpts);
-          var left = Matter.Bodies.rectangle(-24, h / 2, 48, h * 2, wallOpts);
-          var right = Matter.Bodies.rectangle(w + 24, h / 2, 48, h * 2, wallOpts);
-          var ceiling = Matter.Bodies.rectangle(w / 2, -200, w * 2, 40, wallOpts);
-          World.add(world, [ground, left, right, ceiling]);
+      var bodies = els.map(function (el, i) {
+        var w = el.offsetWidth, h = el.offsetHeight;
+        el.style.width = w + "px";
+        return {
+          el: el, w: w, h: h, r: Math.max(w, h) / 2,
+          x: w / 2 + Math.random() * Math.max(1, W - w),
+          y: -40 - i * 100,
+          vx: (Math.random() - 0.5) * 2, vy: 0,
+          angle: (Math.random() - 0.5) * 0.3, va: (Math.random() - 0.5) * 0.02,
+          dragging: false,
+        };
+      });
 
-          var bodies = bubbles.map(function (el, i) {
-            var bw = el.offsetWidth, bh = el.offsetHeight;
-            el.style.width = bw + "px";
-            var x = 40 + Math.random() * Math.max(1, w - bw - 80);
-            var y = -100 - i * 90;
-            var body = Matter.Bodies.rectangle(x + bw / 2, y + bh / 2, bw, bh, {
-              chamfer: { radius: bh / 2 }, restitution: 0.45, friction: 0.25, frictionAir: 0.012,
-              angle: (Math.random() - 0.5) * 0.4,
-            });
-            Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.08);
-            World.add(world, body);
-            return { el: el, body: body, w: bw, h: bh };
-          });
-
-          var mouse = Mouse.create(wrap);
-          mouse.pixelRatio = window.devicePixelRatio || 1;
-          // Matter's Mouse unconditionally calls preventDefault() on wheel
-          // events over its element — confirmed live: this silently blocked
-          // page scroll anywhere over the physics box (only the empty
-          // margins to its sides still scrolled). Removing its own wheel
-          // listeners leaves drag/click handling intact but stops it from
-          // swallowing the scroll wheel.
-          ["mousewheel", "DOMMouseScroll", "wheel"].forEach(function (evt) {
-            mouse.element.removeEventListener(evt, mouse.mousewheel);
-          });
-          var mouseConstraint = MouseConstraint.create(engine, {
-            mouse: mouse, constraint: { stiffness: 0.18, render: { visible: false } },
-          });
-          World.add(world, mouseConstraint);
-          // Prevents the page itself from scrolling while dragging a bubble —
-          // Matter's default mouse wheel passthrough is fine, but touchmove
-          // during an active drag should not also pan the page.
-          wrap.addEventListener("touchmove", function (e) { if (mouseConstraint.body) e.preventDefault(); }, { passive: false });
-
-          var runner = Runner.create();
-          Runner.run(runner, engine);
-
-          function sync() {
-            bodies.forEach(function (b) {
-              var x = b.body.position.x - b.w / 2, y = b.body.position.y - b.h / 2;
-              b.el.style.transform = "translate(" + x + "px," + y + "px) rotate(" + b.body.angle + "rad)";
-            });
-            requestAnimationFrame(sync);
+      function step() {
+        bodies.forEach(function (b) {
+          if (b.dragging) return;
+          b.vy += GRAVITY;
+          b.vx *= DAMPING; b.vy *= DAMPING;
+          b.x += b.vx; b.y += b.vy;
+          b.angle += b.va; b.va *= 0.98;
+          var halfW = b.w / 2, halfH = b.h / 2;
+          if (b.y + halfH > H) { b.y = H - halfH; b.vy = -b.vy * BOUNCE; b.vx *= 0.9; }
+          if (b.y - halfH < 0) { b.y = halfH; b.vy = -b.vy * BOUNCE; }
+          if (b.x - halfW < 0) { b.x = halfW; b.vx = -b.vx * BOUNCE; }
+          if (b.x + halfW > W) { b.x = W - halfW; b.vx = -b.vx * BOUNCE; }
+        });
+        for (var i = 0; i < bodies.length; i++) {
+          for (var j = i + 1; j < bodies.length; j++) {
+            var a = bodies[i], c = bodies[j];
+            var dx = c.x - a.x, dy = c.y - a.y;
+            var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
+            var minDist = a.r + c.r;
+            if (dist < minDist) {
+              var overlap = (minDist - dist) / 2;
+              var nx = dx / dist, ny = dy / dist;
+              if (!a.dragging) { a.x -= nx * overlap; a.y -= ny * overlap; }
+              if (!c.dragging) { c.x += nx * overlap; c.y += ny * overlap; }
+              var avgVx = (a.vx + c.vx) / 2, avgVy = (a.vy + c.vy) / 2;
+              if (!a.dragging) { a.vx = avgVx * 0.9; a.vy = avgVy * 0.9; }
+              if (!c.dragging) { c.vx = avgVx * 0.9; c.vy = avgVy * 0.9; }
+            }
           }
-          sync();
-
-          window.addEventListener("resize", function () {
-            var nw = wrap.clientWidth, nh = wrap.clientHeight;
-            Body.setPosition(ground, { x: nw / 2, y: nh + 24 });
-            Body.setPosition(right, { x: nw + 24, y: nh / 2 });
-            w = nw; h = nh;
-          });
-        } catch (err) {
-          wrap.classList.remove("pg-active");
-          wrap.dataset.pgStarted = "";
         }
+        bodies.forEach(function (b) {
+          b.el.style.transform = "translate(" + (b.x - b.w / 2) + "px," + (b.y - b.h / 2) + "px) rotate(" + b.angle + "rad)";
+        });
+        requestAnimationFrame(step);
       }
+      step();
+
+      var active = null, offX = 0, offY = 0, lastX = 0, lastY = 0;
+      bodies.forEach(function (b) {
+        b.el.style.touchAction = "none";
+        b.el.addEventListener("pointerdown", function (e) {
+          active = b; b.dragging = true; b.vx = 0; b.vy = 0;
+          try { b.el.setPointerCapture(e.pointerId); } catch (err) {}
+          var rect = wrap.getBoundingClientRect();
+          offX = (e.clientX - rect.left) - b.x;
+          offY = (e.clientY - rect.top) - b.y;
+          lastX = e.clientX; lastY = e.clientY;
+        });
+      });
+      wrap.addEventListener("pointermove", function (e) {
+        if (!active) return;
+        var rect = wrap.getBoundingClientRect();
+        active.x = (e.clientX - rect.left) - offX;
+        active.y = (e.clientY - rect.top) - offY;
+        active.vx = e.clientX - lastX; active.vy = e.clientY - lastY;
+        lastX = e.clientX; lastY = e.clientY;
+      });
+      window.addEventListener("pointerup", function () {
+        if (active) active.dragging = false;
+        active = null;
+      });
+
+      window.addEventListener("resize", function () { W = wrap.clientWidth; H = wrap.clientHeight; });
     })();
   </script>`;
 
