@@ -17,7 +17,7 @@ const I18N = {
     nav_decks: "מצגות", nav_xlsx: "גליונות", nav_about: "אודות", nav_contact: "צור קשר",
     nav_login: "כניסה",
 
-    hero_eyebrow: "התחנה הראשונה של העסק שלך",
+    hero_eyebrow: "עריכת קורות חיים · בניית אתרים · הצעות מחיר",
     hero_h1: "מסמכים עסקיים ואתרי תדמית. מעוצבים, מוכנים ובלחיצת כפתור.",
     hero_lead: "בוחרים תבנית, עורכים אונליין בבילדר חי, ומורידים קובץ מוכן ברגע. בלי אותיות קטנות, בלי מנוי חודשי.",
     hero_cta_start: "ליצירה בחינם", hero_cta_how: "איך זה עובד?",
@@ -57,7 +57,7 @@ const I18N = {
     nav_decks: "Decks", nav_xlsx: "Spreadsheets", nav_about: "About", nav_contact: "Contact",
     nav_login: "Sign in",
 
-    hero_eyebrow: "The first stop for your business",
+    hero_eyebrow: "CV Editing · Website Building · Price Quotes",
     hero_h1: "Business documents and websites. Designed, ready, one click away.",
     hero_lead: "Pick a template, edit it live online, and download a ready file in seconds. No fine print, no monthly subscription.",
     hero_cta_start: "Start for free", hero_cta_how: "How it works?",
