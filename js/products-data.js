@@ -673,3 +673,14 @@ function productSubtopic(p) {
   if (p.categorySlug === "deck" || p.categorySlug === "xlsx") return p.topicSlug || "";
   return p.categorySlug;
 }
+/* The catalog card's colored tag showed the flat type label ("מצגות" /
+   "גיליונות") for every deck/xlsx product regardless of topic, so the
+   new per-topic card color (see .card[data-cat=…] in style.css) had
+   nothing matching in the visible text. Falls back to p.category (CV
+   items, or a deck/xlsx item somehow missing a topicSlug) unchanged. */
+function productSubtopicLabel(p) {
+  const topic = productSubtopic(p);
+  const list = TYPE_SUBTOPICS[productType(p)] || [];
+  const match = list.find((t) => t.slug === topic);
+  return (match && match.label) || p.category;
+}

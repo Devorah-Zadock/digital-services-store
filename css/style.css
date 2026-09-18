@@ -35,6 +35,32 @@
   --cat-accounting: #6B46C1; --cat-accounting-bg: #EDE7F9;
   --cat-deck:    #B83280; --cat-deck-bg:    #F7E1EE;
   --cat-xlsx:    #2F855A; --cat-xlsx-bg:    #E3F1E9;
+
+  /* Deck/xlsx sub-topic accents (e.g. --cat-deck-business) — deck and
+     xlsx products already carry a finer topicSlug (used for the filter
+     tabs on products.html) on top of their flat categorySlug ("deck"/
+     "xlsx"), but catalog cards colored by categorySlug alone made every
+     deck card pink and every xlsx card green regardless of topic. These
+     let the card thumb color vary by topic instead, same as CV cards
+     already do by profession. */
+  --cat-deck-business:   #2C4A7C; --cat-deck-business-bg:   #E9EEF6;
+  --cat-deck-marketing:  #D6473C; --cat-deck-marketing-bg:  #F8E8E7;
+  --cat-deck-creative:   #A6266B; --cat-deck-creative-bg:   #F8E7F0;
+  --cat-xlsx-finance:    #2F855A; --cat-xlsx-finance-bg:    #E9F6F0;
+  --cat-xlsx-customers:  #0E8C8C; --cat-xlsx-customers-bg:  #E7F8F8;
+  --cat-xlsx-operations: #B7791F; --cat-xlsx-operations-bg: #F8F1E7;
+  --cat-xlsx-projects:   #5A67D8; --cat-xlsx-projects-bg:   #E7E9F8;
+  --cat-xlsx-sales:      #C53030; --cat-xlsx-sales-bg:      #F8E7E7;
+  --cat-xlsx-hr:         #D53F8C; --cat-xlsx-hr-bg:         #F8E7F0;
+
+  /* Site-template category accents — same idea, for the "אתרים" catalog,
+     which previously had no per-category colors at all and so every
+     template thumb fell back to the same plain --ice tint. */
+  --cat-site-service:  #2C7A7B; --cat-site-service-bg:  #E9F6F6;
+  --cat-site-personal: #805AD5; --cat-site-personal-bg: #EDE8F8;
+  --cat-site-shop:     #B7502A; --cat-site-shop-bg:     #F8ECE7;
+  --cat-site-creative: #A6266B; --cat-site-creative-bg: #F8E7F0;
+  --cat-site-events:   #9C6B1F; --cat-site-events-bg:   #F8F2E7;
 }
 
 * { box-sizing: border-box; }
@@ -879,6 +905,25 @@ section { padding: 88px 0; }
 .card[data-cat="accounting"] { --cat-c: var(--cat-accounting); --cat-bg: var(--cat-accounting-bg); }
 .card[data-cat="deck"] { --cat-c: var(--cat-deck); --cat-bg: var(--cat-deck-bg); }
 .card[data-cat="xlsx"] { --cat-c: var(--cat-xlsx); --cat-bg: var(--cat-xlsx-bg); }
+/* Deck/xlsx cards are tagged by their finer topicSlug (business/finance/…)
+   rather than the flat "deck"/"xlsx" categorySlug above, so each product's
+   actual topic — not just its file type — drives the card color. "creative"
+   is shared with the site-template category of the same name below. */
+.card[data-cat="business"] { --cat-c: var(--cat-deck-business); --cat-bg: var(--cat-deck-business-bg); }
+.card[data-cat="marketing"] { --cat-c: var(--cat-deck-marketing); --cat-bg: var(--cat-deck-marketing-bg); }
+.card[data-cat="creative"] { --cat-c: var(--cat-deck-creative); --cat-bg: var(--cat-deck-creative-bg); }
+.card[data-cat="finance"] { --cat-c: var(--cat-xlsx-finance); --cat-bg: var(--cat-xlsx-finance-bg); }
+.card[data-cat="customers"] { --cat-c: var(--cat-xlsx-customers); --cat-bg: var(--cat-xlsx-customers-bg); }
+.card[data-cat="operations"] { --cat-c: var(--cat-xlsx-operations); --cat-bg: var(--cat-xlsx-operations-bg); }
+.card[data-cat="projects"] { --cat-c: var(--cat-xlsx-projects); --cat-bg: var(--cat-xlsx-projects-bg); }
+.card[data-cat="sales"] { --cat-c: var(--cat-xlsx-sales); --cat-bg: var(--cat-xlsx-sales-bg); }
+.card[data-cat="hr"] { --cat-c: var(--cat-xlsx-hr); --cat-bg: var(--cat-xlsx-hr-bg); }
+/* Site-template categories (sites.html catalog) — previously uncolored,
+   so every site card fell back to the same plain --ice tint. */
+.card[data-cat="service"] { --cat-c: var(--cat-site-service); --cat-bg: var(--cat-site-service-bg); }
+.card[data-cat="personal"] { --cat-c: var(--cat-site-personal); --cat-bg: var(--cat-site-personal-bg); }
+.card[data-cat="shop"] { --cat-c: var(--cat-site-shop); --cat-bg: var(--cat-site-shop-bg); }
+.card[data-cat="events"] { --cat-c: var(--cat-site-events); --cat-bg: var(--cat-site-events-bg); }
 .card h3 { margin: 0; font-size: 16.5px; color: var(--dark); line-height: 1.35; }
 .card .card-cta { margin-top: auto; text-align: center; padding: 9px 20px; font-size: 13.5px; }
 /* Small "new" indicator as a corner dot over the thumbnail, instead of a

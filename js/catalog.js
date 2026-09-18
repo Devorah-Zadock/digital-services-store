@@ -6,11 +6,11 @@ function escapeHtmlC(s) {
 function cardHtml(p) {
   const actionLabel = p.downloadUrl ? "להורדה" : (p.price === 0 ? "לעריכה" : "לצפייה");
   return `
-    <div class="card" data-cat="${p.categorySlug}">
+    <div class="card" data-cat="${productSubtopic(p)}">
       <div class="thumb"><img src="images/previews/${p.image}" alt="${p.title}" loading="lazy"></div>
       <div class="body">
         <div class="card-meta">
-          <span class="tag">${p.category}</span>
+          <span class="tag">${productSubtopicLabel(p)}</span>
           ${p.price === 0 ? `<span class="tag tag-free">חינם</span>` : `<span class="price">${money(p.price)}</span>`}
         </div>
         <h3>${p.title}</h3>
