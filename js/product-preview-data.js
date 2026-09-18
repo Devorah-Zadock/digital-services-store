@@ -2725,5 +2725,698 @@ const PRODUCT_PREVIEW_DATA = {
         }
       ]
     ]
+  },
+  "deck-cinematic-pitch": {
+  "type": "deck",
+  "slides": [
+    {
+      "bg": "0D0D12",
+      "blocks": [
+        {
+          "text": "ברוכים הבאים",
+          "size": 14.0,
+          "bold": true,
+          "color": "14B8B8"
+        },
+        {
+          "text": "שם החברה שלכם",
+          "size": 44.0,
+          "bold": true,
+          "color": "FFFFFF"
+        },
+        {
+          "text": "משפט אחד שמסביר את החזון שלכם",
+          "size": 18.0,
+          "bold": false,
+          "color": "A8A8B8"
+        },
+        {
+          "text": "תבנית מצגת עסקית — Cinematic Dark",
+          "size": 11.0,
+          "bold": false,
+          "color": "6E6E86"
+        }
+      ]
+    },
+    {
+      "bg": "0D0D12",
+      "blocks": [
+        {
+          "text": "החזון שלנו",
+          "size": 30.0,
+          "bold": true,
+          "color": "14B8B8"
+        },
+        {
+          "text": "אנחנו מאמינים שכל עסק ראוי לכלים ברמה עולמית. אנחנו בונים פתרונות שמשלבים טכנולוגיה מתקדמת עם עיצוב שמרגיש כמו העתיד — כדי שתוכלו להתמקד במה שאתם עושים הכי טוב.",
+          "size": 16.0,
+          "bold": false,
+          "color": "FFFFFF"
+        },
+        {
+          "text": "1",
+          "size": 15.0,
+          "bold": true,
+          "color": "14B8B8"
+        },
+        {
+          "text": "מהירות",
+          "size": 16.0,
+          "bold": true,
+          "color": "FFFFFF"
+        },
+        {
+          "text": "פתרונות שנפרסים תוך ימים, לא חודשים",
+          "size": 13.0,
+          "bold": false,
+          "color": "A8A8B8"
+        },
+        {
+          "text": "2",
+          "size": 15.0,
+          "bold": true,
+          "color": "14B8B8"
+        },
+        {
+          "text": "שקיפות",
+          "size": 16.0,
+          "bold": true,
+          "color": "FFFFFF"
+        },
+        {
+          "text": "אתם יודעים בדיוק איפה כל שקל הולך",
+          "size": 13.0,
+          "bold": false,
+          "color": "A8A8B8"
+        },
+        {
+          "text": "3",
+          "size": 15.0,
+          "bold": true,
+          "color": "14B8B8"
+        },
+        {
+          "text": "תוצאות",
+          "size": 16.0,
+          "bold": true,
+          "color": "FFFFFF"
+        },
+        {
+          "text": "כל מה שאנחנו בונים נמדד ומוכיח את עצמו",
+          "size": 13.0,
+          "bold": false,
+          "color": "A8A8B8"
+        }
+      ]
+    },
+    {
+      "bg": "0D0D12",
+      "blocks": [
+        {
+          "text": "מה אנחנו מציעים",
+          "size": 30.0,
+          "bold": true,
+          "color": "14B8B8"
+        },
+        {
+          "text": "1",
+          "size": 20.0,
+          "bold": true,
+          "color": "14B8B8"
+        },
+        {
+          "text": "אסטרטגיה",
+          "size": 18.0,
+          "bold": true,
+          "color": "FFFFFF"
+        },
+        {
+          "text": "בונים תוכנית עבודה מותאמת למטרות שלכם",
+          "size": 13.0,
+          "bold": false,
+          "color": "A8A8B8"
+        },
+        {
+          "text": "2",
+          "size": 20.0,
+          "bold": true,
+          "color": "14B8B8"
+        },
+        {
+          "text": "פיתוח",
+          "size": 18.0,
+          "bold": true,
+          "color": "FFFFFF"
+        },
+        {
+          "text": "מבצעים בטכנולוגיה מתקדמת ובזמן אמת",
+          "size": 13.0,
+          "bold": false,
+          "color": "A8A8B8"
+        },
+        {
+          "text": "3",
+          "size": 20.0,
+          "bold": true,
+          "color": "14B8B8"
+        },
+        {
+          "text": "צמיחה",
+          "size": 18.0,
+          "bold": true,
+          "color": "FFFFFF"
+        },
+        {
+          "text": "מלווים אתכם גם אחרי ההשקה, לתוצאות מתמשכות",
+          "size": 13.0,
+          "bold": false,
+          "color": "A8A8B8"
+        }
+      ]
+    },
+    {
+      "bg": "0D0D12",
+      "blocks": [
+        {
+          "text": "צמיחה שנה אחר שנה",
+          "size": 30.0,
+          "bold": true,
+          "color": "14B8B8"
+        },
+        {
+          "text": "30",
+          "size": 15.0,
+          "bold": true,
+          "color": "FFFFFF"
+        },
+        {
+          "text": "שנה 1",
+          "size": 12.0,
+          "bold": true,
+          "color": "A8A8B8"
+        },
+        {
+          "text": "85",
+          "size": 15.0,
+          "bold": true,
+          "color": "FFFFFF"
+        },
+        {
+          "text": "שנה 2",
+          "size": 12.0,
+          "bold": true,
+          "color": "A8A8B8"
+        },
+        {
+          "text": "190",
+          "size": 15.0,
+          "bold": true,
+          "color": "FFFFFF"
+        },
+        {
+          "text": "שנה 3",
+          "size": 12.0,
+          "bold": true,
+          "color": "A8A8B8"
+        },
+        {
+          "text": "340",
+          "size": 15.0,
+          "bold": true,
+          "color": "FFFFFF"
+        },
+        {
+          "text": "שנה 4",
+          "size": 12.0,
+          "bold": true,
+          "color": "A8A8B8"
+        }
+      ]
+    },
+    {
+      "bg": "0D0D12",
+      "blocks": [
+        {
+          "text": "למה לבחור בנו",
+          "size": 30.0,
+          "bold": true,
+          "color": "14B8B8"
+        },
+        {
+          "text": "צוות מומחים עם ניסיון מוכח בתעשייה",
+          "size": 17.0,
+          "bold": false,
+          "color": "FFFFFF"
+        },
+        {
+          "text": "ליווי אישי מהרגע הראשון ועד להשקה",
+          "size": 17.0,
+          "bold": false,
+          "color": "FFFFFF"
+        },
+        {
+          "text": "טכנולוגיה שגדלה יחד אתכם",
+          "size": 17.0,
+          "bold": false,
+          "color": "FFFFFF"
+        },
+        {
+          "text": "שקיפות מלאה בתהליך ובתמחור",
+          "size": 17.0,
+          "bold": false,
+          "color": "FFFFFF"
+        }
+      ]
+    },
+    {
+      "bg": "0D0D12",
+      "blocks": [
+        {
+          "text": "בואו נדבר",
+          "size": 40.0,
+          "bold": true,
+          "color": "FFFFFF"
+        },
+        {
+          "text": "hello@yourcompany.co.il  ·  050-000-0000",
+          "size": 16.0,
+          "bold": false,
+          "color": "14B8B8"
+        },
+        {
+          "text": "תודה שהקדשתם מזמנכם",
+          "size": 12.0,
+          "bold": false,
+          "color": "A8A8B8"
+        }
+      ]
+    }
+  ]
+},
+  "deck-editorial-brand": {
+  "type": "deck",
+  "slides": [
+    {
+      "bg": "FBF6F0",
+      "blocks": [
+        {
+          "text": "תבנית מצגת עסקית",
+          "size": 12.0,
+          "bold": false,
+          "color": "8A8272"
+        },
+        {
+          "text": "שם המותג שלכם",
+          "size": 52.0,
+          "bold": false,
+          "color": "2A2620"
+        },
+        {
+          "text": "עיצוב, יופי ותשומת לב לפרטים",
+          "size": 16.0,
+          "bold": false,
+          "color": "8A8272"
+        }
+      ]
+    },
+    {
+      "bg": "FBF6F0",
+      "blocks": [
+        {
+          "text": "מי אנחנו",
+          "size": 13.0,
+          "bold": true,
+          "color": "C97B63"
+        },
+        {
+          "text": "“אנחנו מאמינים שעיצוב טוב הוא לא תוספת — הוא השפה שבה המותג שלכם מדבר אל העולם. כל פרט, מהצבע ועד הרווח הלבן, מספר את הסיפור שלכם.”",
+          "size": 26.0,
+          "bold": false,
+          "color": "2A2620"
+        }
+      ]
+    },
+    {
+      "bg": "FBF6F0",
+      "blocks": [
+        {
+          "text": "מה אנחנו מציעים",
+          "size": 30.0,
+          "bold": false,
+          "color": "2A2620"
+        },
+        {
+          "text": "01",
+          "size": 22.0,
+          "bold": false,
+          "color": "C97B63"
+        },
+        {
+          "text": "מיתוג",
+          "size": 22.0,
+          "bold": true,
+          "color": "2A2620"
+        },
+        {
+          "text": "זהות ויזואלית שמספרת את הסיפור הנכון",
+          "size": 14.0,
+          "bold": false,
+          "color": "8A8272"
+        },
+        {
+          "text": "02",
+          "size": 22.0,
+          "bold": false,
+          "color": "C97B63"
+        },
+        {
+          "text": "עיצוב מוצר",
+          "size": 22.0,
+          "bold": true,
+          "color": "2A2620"
+        },
+        {
+          "text": "חוויה שמרגישה כמו פרימיום, מהקצה עד הקצה",
+          "size": 14.0,
+          "bold": false,
+          "color": "8A8272"
+        },
+        {
+          "text": "03",
+          "size": 22.0,
+          "bold": false,
+          "color": "C97B63"
+        },
+        {
+          "text": "קמפיינים",
+          "size": 22.0,
+          "bold": true,
+          "color": "2A2620"
+        },
+        {
+          "text": "תוכן שמרגש ומניע לפעולה",
+          "size": 14.0,
+          "bold": false,
+          "color": "8A8272"
+        }
+      ]
+    },
+    {
+      "bg": "FBF6F0",
+      "blocks": [
+        {
+          "text": "התוצאות מדברות בעד עצמן",
+          "size": 24.0,
+          "bold": false,
+          "color": "2A2620"
+        },
+        {
+          "text": "98%",
+          "size": 52.0,
+          "bold": false,
+          "color": "C97B63"
+        },
+        {
+          "text": "שביעות רצון לקוחות",
+          "size": 13.0,
+          "bold": false,
+          "color": "8A8272"
+        },
+        {
+          "text": "250+",
+          "size": 52.0,
+          "bold": false,
+          "color": "C97B63"
+        },
+        {
+          "text": "פרויקטים שהושלמו",
+          "size": 13.0,
+          "bold": false,
+          "color": "8A8272"
+        },
+        {
+          "text": "12",
+          "size": 52.0,
+          "bold": false,
+          "color": "C97B63"
+        },
+        {
+          "text": "שנות ניסיון משותפות",
+          "size": 13.0,
+          "bold": false,
+          "color": "8A8272"
+        }
+      ]
+    },
+    {
+      "bg": "F1E9DD",
+      "blocks": [
+        {
+          "text": "יוקרה היא לא רעש — היא הבחירה להשאיר רק את מה שבאמת חשוב.",
+          "size": 30.0,
+          "bold": false,
+          "color": "2A2620"
+        }
+      ]
+    },
+    {
+      "bg": "FBF6F0",
+      "blocks": [
+        {
+          "text": "נשמח להכיר",
+          "size": 36.0,
+          "bold": false,
+          "color": "2A2620"
+        },
+        {
+          "text": "hello@yourbrand.co.il · 050-000-0000",
+          "size": 15.0,
+          "bold": false,
+          "color": "8A8272"
+        }
+      ]
+    }
+  ]
+},
+  "deck-neopop-business": {
+  "type": "deck",
+  "slides": [
+    {
+      "bg": "E8FF3D",
+      "blocks": [
+        {
+          "text": "שם העסק שלכם",
+          "size": 54.0,
+          "bold": true,
+          "color": "000000"
+        },
+        {
+          "text": "2026",
+          "size": 16.0,
+          "bold": true,
+          "color": "FFFFFF"
+        },
+        {
+          "text": "מצגת עסקית שמרימה אנרגיה",
+          "size": 15.0,
+          "bold": true,
+          "color": "E8FF3D"
+        }
+      ]
+    },
+    {
+      "bg": "FFFFFF",
+      "blocks": [
+        {
+          "text": "מי אנחנו",
+          "size": 22.0,
+          "bold": true,
+          "color": "FFFFFF"
+        },
+        {
+          "text": "אנחנו לא עוד עסק אפור. אנחנו כאן כדי לזעזע, להפתיע ולגרום לכם להרגיש משהו. כל פרויקט הוא הזדמנות לעשות את זה אחרת — בגדול, בצבעוני, ובלי פחד.",
+          "size": 18.0,
+          "bold": true,
+          "color": "000000"
+        },
+        {
+          "text": "★",
+          "size": 40.0,
+          "bold": true,
+          "color": "000000"
+        }
+      ]
+    },
+    {
+      "bg": "2A4BFF",
+      "blocks": [
+        {
+          "text": "מה אנחנו עושים",
+          "size": 30.0,
+          "bold": true,
+          "color": "FFFFFF"
+        },
+        {
+          "text": "1",
+          "size": 40.0,
+          "bold": true,
+          "color": "000000"
+        },
+        {
+          "text": "יצירה",
+          "size": 20.0,
+          "bold": true,
+          "color": "000000"
+        },
+        {
+          "text": "2",
+          "size": 40.0,
+          "bold": true,
+          "color": "000000"
+        },
+        {
+          "text": "אסטרטגיה",
+          "size": 20.0,
+          "bold": true,
+          "color": "000000"
+        },
+        {
+          "text": "3",
+          "size": 40.0,
+          "bold": true,
+          "color": "000000"
+        },
+        {
+          "text": "ביצוע",
+          "size": 20.0,
+          "bold": true,
+          "color": "000000"
+        }
+      ]
+    },
+    {
+      "bg": "E8FF3D",
+      "blocks": [
+        {
+          "text": "המספרים שלנו",
+          "size": 30.0,
+          "bold": true,
+          "color": "000000"
+        },
+        {
+          "text": "150+",
+          "size": 26.0,
+          "bold": true,
+          "color": "FFFFFF"
+        },
+        {
+          "text": "לקוחות מרוצים",
+          "size": 14.0,
+          "bold": true,
+          "color": "000000"
+        },
+        {
+          "text": "4.9",
+          "size": 26.0,
+          "bold": true,
+          "color": "FFFFFF"
+        },
+        {
+          "text": "דירוג ממוצע",
+          "size": 14.0,
+          "bold": true,
+          "color": "000000"
+        },
+        {
+          "text": "x3",
+          "size": 26.0,
+          "bold": true,
+          "color": "FFFFFF"
+        },
+        {
+          "text": "צמיחה בשנה האחרונה",
+          "size": 14.0,
+          "bold": true,
+          "color": "000000"
+        }
+      ]
+    },
+    {
+      "bg": "FF7A1A",
+      "blocks": [
+        {
+          "text": "למה אנחנו?",
+          "size": 32.0,
+          "bold": true,
+          "color": "FFFFFF"
+        },
+        {
+          "text": "✓",
+          "size": 20.0,
+          "bold": true,
+          "color": "000000"
+        },
+        {
+          "text": "אנרגיה שאי אפשר להתעלם ממנה",
+          "size": 18.0,
+          "bold": true,
+          "color": "FFFFFF"
+        },
+        {
+          "text": "✓",
+          "size": 20.0,
+          "bold": true,
+          "color": "000000"
+        },
+        {
+          "text": "תוצאות שמדברות בעד עצמן",
+          "size": 18.0,
+          "bold": true,
+          "color": "FFFFFF"
+        },
+        {
+          "text": "✓",
+          "size": 20.0,
+          "bold": true,
+          "color": "000000"
+        },
+        {
+          "text": "צוות שבאמת אוהב את מה שהוא עושה",
+          "size": 18.0,
+          "bold": true,
+          "color": "FFFFFF"
+        },
+        {
+          "text": "✓",
+          "size": 20.0,
+          "bold": true,
+          "color": "000000"
+        },
+        {
+          "text": "אפס שעמום, המון תוצאות",
+          "size": 18.0,
+          "bold": true,
+          "color": "FFFFFF"
+        }
+      ]
+    },
+    {
+      "bg": "000000",
+      "blocks": [
+        {
+          "text": "בואו נדבר!",
+          "size": 38.0,
+          "bold": true,
+          "color": "000000"
+        },
+        {
+          "text": "hello@yourbusiness.co.il · 050-000-0000",
+          "size": 15.0,
+          "bold": true,
+          "color": "000000"
+        }
+      ]
+    }
+  ]
   }
 };
