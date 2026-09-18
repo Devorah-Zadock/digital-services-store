@@ -407,9 +407,20 @@ body.home-neo {
   --hn-accent-pale: #DFF3F3;
   --hn-dark: #0D0D14; --hn-dark-text: #F2F2F0; --hn-dark-text-dim: #B8B8C0;
   --hn-grey: #6B6B6B; --hn-border: #EAEAEA; --hn-radius: 8px;
-  background: var(--hn-bg); color: var(--hn-ink);
+  color: var(--hn-ink);
   font-family: 'Assistant', Arial, sans-serif;
+  /* A slow-moving wash behind the entire page — every color in it is
+     within a couple of points of --hn-bg, so it reads as a living
+     surface rather than flat white without ever touching text contrast.
+     Sections with their own opaque background (flagship, steps, the
+     cards themselves) simply paint over it, so it only shows through
+     hero/marquee/tools' empty space. */
+  background: linear-gradient(120deg, #FAFAFA 0%, #F1FBFB 22%, #FAFAFA 45%, #FCFAFB 68%, #EFFAFA 85%, #FAFAFA 100%);
+  background-size: 320% 320%;
+  animation: hnPageWash 26s ease-in-out infinite alternate;
 }
+@keyframes hnPageWash { 0% { background-position: 0% 20%; } 100% { background-position: 100% 80%; } }
+@media (prefers-reduced-motion: reduce) { body.home-neo { animation: none; } }
 /* Bug fix, placed early on purpose: body.home-neo .reveal (specificity
    0,2,1) was beating the base .reveal.in-view rule (0,2,0) in style.css,
    so home-neo elements NEVER actually settled to their resting position
@@ -558,27 +569,42 @@ body.home-neo .hn-card > * { position: relative; z-index: 1; }
 body.home-neo .hn-card-icon {
   display: flex; align-items: center; justify-content: center; width: 40px; height: 40px;
   border-radius: 50%; background: var(--hn-accent-pale); color: var(--hn-accent); flex: none;
+  transition: transform .35s ease, background .35s ease, color .35s ease;
 }
 body.home-neo .hn-card-icon svg { width: 19px; height: 19px; }
-/* The product photo is the card's own faint background — never a
-   blur/glass overlay, never anything that could visually "get stuck" —
-   just a plain image at low opacity (never above ~0.2) so it reads as
-   ambient texture behind the text, not a competing layer. */
+body.home-neo .hn-card:hover .hn-card-icon { transform: scale(1.15) rotate(-6deg); background: rgba(255,255,255,.16); color: #14B8B8; }
+/* The product photo, and a moving turquoise/ink gradient on top of it —
+   together, not a flat low-opacity tint — so hovering a card feels like
+   a real, designed moment instead of a faded screenshot. Text inverts to
+   light on top of it, since the card is now a genuinely dark surface.
+   Nothing here is positioned outside the card's own fixed box, so it
+   never affects layout. */
 body.home-neo .hn-card::before {
   content: ""; position: absolute; inset: 0; z-index: 0;
   background-size: cover; background-position: center;
-  opacity: 0; transition: opacity .4s ease;
+  opacity: 0; transition: opacity .45s ease;
 }
+body.home-neo .hn-card::after {
+  content: ""; position: absolute; inset: 0; z-index: 0;
+  background: linear-gradient(120deg, rgba(14,140,140,.82) 0%, rgba(13,13,20,.72) 45%, rgba(20,184,184,.55) 100%);
+  background-size: 220% 220%;
+  opacity: 0; transition: opacity .45s ease;
+  animation: hnCardGradient 7s ease-in-out infinite;
+}
+@keyframes hnCardGradient { 0% { background-position: 0% 30%; } 50% { background-position: 100% 70%; } 100% { background-position: 0% 30%; } }
 /* transition re-declared here (not just on the base .hn-card rule) so
    this :hover's higher specificity also wins the transition-duration
    itself, not just the transform value — otherwise the .reveal rule's
    own (slower, entrance-only) transition timing wins the tie and the
    hover would animate at the wrong speed. */
 body.home-neo .hn-card:hover {
-  transform: translateY(-3px); box-shadow: 0 12px 28px rgba(0,0,0,.1); border-color: #C4C4C4;
+  transform: translateY(-3px); box-shadow: 0 16px 36px rgba(14,140,140,.28); border-color: transparent;
   transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
 }
-body.home-neo .hn-card:hover::before { opacity: .18; }
+body.home-neo .hn-card:hover::before { opacity: .5; }
+body.home-neo .hn-card:hover::after { opacity: 1; }
+body.home-neo .hn-card:hover h3 { color: var(--hn-dark-text); }
+body.home-neo .hn-card:hover .hn-tag { color: var(--hn-dark-text-dim); border-color: rgba(255,255,255,.3); }
 body.home-neo .hn-card-cv::before { background-image: url("../images/previews/hero-cv-1.webp"); }
 body.home-neo .hn-card-deck::before { background-image: url("../images/previews/hero-deck.webp"); }
 body.home-neo .hn-card-xlsx::before { background-image: url("../images/previews/xlsx-cashflow.webp"); }
@@ -586,32 +612,39 @@ body.home-neo .hn-card-quote::before { background-image: url("../images/previews
 @media (prefers-reduced-motion: reduce) {
   body.home-neo .hn-card { transition: box-shadow .3s ease, border-color .3s ease; }
   body.home-neo .hn-card:hover { transform: none; }
-  body.home-neo .hn-card::before { transition: opacity .3s ease; }
+  body.home-neo .hn-card::before, body.home-neo .hn-card::after { transition: opacity .3s ease; animation: none; }
+  body.home-neo .hn-card:hover .hn-card-icon { transform: none; }
 }
-body.home-neo .hn-card h3 { margin: 0; font-size: 19px; font-weight: 700; }
+body.home-neo .hn-card h3 { margin: 0; font-size: 19px; font-weight: 700; transition: color .3s ease; }
 body.home-neo .hn-tag {
   align-self: flex-start; font-size: 12.5px; font-weight: 600; color: var(--hn-grey);
   border: 1px solid var(--hn-border); border-radius: var(--hn-radius); padding: 4px 10px;
+  transition: color .3s ease, border-color .3s ease;
 }
 body.home-neo .hn-tag-paid { color: var(--hn-ink); }
-/* The CTA fades in on hover — opacity only, no movement, so it can never
-   shift or clip the text around it. On a touch device there is no hover,
-   so it stays shown there instead of disappearing forever. */
+/* The CTA fades and scales in on hover, with its own turquoise gradient
+   and glow instead of a flat black block. Scale/opacity only, so it can
+   never shift or clip the text around it. On a touch device there is no
+   hover, so it stays shown there instead of disappearing forever. */
 body.home-neo .hn-card .hn-btn-flat {
-  margin-top: auto; opacity: 0; pointer-events: none; transition: opacity .3s ease;
+  margin-top: auto; opacity: 0; transform: scale(.92); pointer-events: none;
+  transition: opacity .3s ease, transform .3s ease, box-shadow .3s ease;
+  background: linear-gradient(135deg, #14B8B8, #0E8C8C); color: #fff;
 }
-body.home-neo .hn-card:hover .hn-btn-flat { opacity: 1; pointer-events: auto; }
+body.home-neo .hn-card:hover .hn-btn-flat {
+  opacity: 1; transform: scale(1); pointer-events: auto; box-shadow: 0 10px 24px rgba(20,184,184,.4);
+}
 @media (hover: none) {
-  body.home-neo .hn-card .hn-btn-flat { opacity: 1; pointer-events: auto; }
+  body.home-neo .hn-card .hn-btn-flat { opacity: 1; transform: none; pointer-events: auto; }
 }
 @media (prefers-reduced-motion: reduce) {
-  body.home-neo .hn-card .hn-btn-flat { transition: opacity .2s ease; }
+  body.home-neo .hn-card .hn-btn-flat { transition: opacity .2s ease; transform: none; }
 }
 /* The featured tile: dark, same size as the rest — visually distinct by
    color alone. Its CTA stays always visible (it's the flagship tool, not
    a hover reveal). */
 body.home-neo .hn-card-featured { background: var(--hn-dark); border-color: transparent; }
-body.home-neo .hn-card-featured::before { content: none; }
+body.home-neo .hn-card-featured::before, body.home-neo .hn-card-featured::after { content: none; }
 body.home-neo .hn-card-featured h3 { color: var(--hn-dark-text); }
 body.home-neo .hn-card-featured .hn-card-icon { background: rgba(255,255,255,.1); color: #14B8B8; }
 body.home-neo .hn-card-featured .hn-tag { color: var(--hn-dark-text-dim); border-color: rgba(255,255,255,.18); }
