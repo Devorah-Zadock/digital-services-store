@@ -129,12 +129,13 @@ function openPanelAccountMenu(wrap, email) {
   setTimeout(() => document.addEventListener("click", onPanelAccountOutsideClick, true), 0);
 }
 
-/* Not-built-yet state: plain text, not a row that looks clickable
-   everywhere — only the trailing call-to-action reads as a link. */
+/* Not-built-yet state: a small dashed "create new" chip instead of a
+   sentence explaining the absence — reads as an invitation, not an
+   apology, and takes far less vertical space per empty category. */
 function myPanelEmptyRowHtml(opts) {
-  return `<div class="my-panel-empty-row">
-    ${myPanelEscapeHtml(opts.text)} <a href="${opts.href}" class="my-panel-empty-link">${myPanelEscapeHtml(opts.linkText)}</a>
-  </div>`;
+  return `<a href="${opts.href}" class="my-panel-empty-cta">
+    <span class="my-panel-empty-plus">+</span> צור חדש
+  </a>`;
 }
 
 function myPanelRowHtml(opts) {
@@ -181,31 +182,14 @@ function myPanelCurrentContext() {
   return null;
 }
 
-async function loadMyPanel(user) {
-  const sitesList = document.getElementById("my-panel-sites");
-  const cvList = document.getElementById("my-panel-cv");
-  const quotesList = document.getElementById("my-panel-quotes");
-  const schedulesList = document.getElementById("my-panel-schedules");
-  if (!sitesList || !cvList) return;
-  const ctx = myPanelCurrentContext();
-
-  const { data: sites } = await supabaseClient
-    .from("site_projects").select("id, template, data, published_url")
-    .eq("user_id", user.id).order("created_at", { ascending: false });
-
-  // One row per template is the data model's own guarantee (each save
-  // reuses the same row via its id), but de-duping here too means a
-  // stray duplicate never shows as two seemingly-identical rows with
-  // nothing to tell them apart.
-  const seenTemplates = new Set();
-  const dedupedSites = (sites || []).filter((s) => {
-    if (seenTemplates.has(s.template)) return false;
-    seenTemplates.add(s.template);
-    return true;
-  });
-
-  if (dedupedSites.length) {
-    sitesList.innerHTML = dedupedSites.map((s) => {
+/* Shared render helpers — each takes plain already-fetched data (never
+   talks to Supabase itself), so the exact same rendering runs whether
+   the data came from the instant sessionStorage cache below or from a
+   live fetch, and the two paths can never visually drift apart. */
+function myPanelRenderSites(sites, ctx, el) {
+  if (!el) return;
+  if (sites && sites.length) {
+    el.innerHTML = sites.map((s) => {
       const bizName = s.data && s.data.businessName && s.data.businessName.trim();
       return myPanelRowHtml({
         kind: "site",
@@ -218,13 +202,14 @@ async function loadMyPanel(user) {
       });
     }).join("");
   } else {
-    sitesList.innerHTML = myPanelEmptyRowHtml({ href: "sites.html?browse=1", text: "עדיין לא בנית אתר —", linkText: "ליצירה" });
+    el.innerHTML = myPanelEmptyRowHtml({ href: "sites.html?browse=1" });
   }
-
-  const { data: cv } = await supabaseClient.from("cv_saves").select("data").eq("user_id", user.id).maybeSingle();
-  const cvName = cv && cv.data && cv.data.content && cv.data.content.name && cv.data.content.name.trim();
+}
+function myPanelRenderCv(cv, ctx, el) {
+  if (!el) return;
   if (cv) {
-    cvList.innerHTML = myPanelRowHtml({
+    const cvName = cv.data && cv.data.content && cv.data.content.name && cv.data.content.name.trim();
+    el.innerHTML = myPanelRowHtml({
       kind: "cv",
       href: "builder.html",
       name: cvName || "קורות חיים (ללא שם)",
@@ -232,50 +217,136 @@ async function loadMyPanel(user) {
       active: !!(ctx && ctx.kind === "cv"),
     });
   } else {
-    cvList.innerHTML = myPanelEmptyRowHtml({ href: "builder.html", text: "עדיין לא ערכת קורות חיים —", linkText: "ליצירה" });
+    el.innerHTML = myPanelEmptyRowHtml({ href: "builder.html" });
+  }
+}
+function myPanelRenderQuotes(quotes, ctx, el) {
+  if (!el) return;
+  if (quotes && quotes.length) {
+    el.innerHTML = quotes.map((q) => {
+      const d = q.data || {};
+      const label = (d.recipient && d.recipient.trim()) || (d.eventName && d.eventName.trim());
+      return myPanelRowHtml({
+        kind: "quote",
+        href: "quote-app.html?quote=" + encodeURIComponent(q.id),
+        name: label || "הצעת מחיר (ללא שם)",
+        sub: d.eventName && d.recipient ? d.eventName : "",
+        deleteAttr: "quote:" + q.id,
+        active: !!(ctx && ctx.kind === "quote" && ctx.id === q.id),
+      });
+    }).join("");
+  } else {
+    el.innerHTML = myPanelEmptyRowHtml({ href: "quote-app.html" });
+  }
+}
+function myPanelRenderSchedules(schedules, ctx, el) {
+  if (!el) return;
+  if (schedules && schedules.length) {
+    el.innerHTML = schedules.map((s) => {
+      const d = s.data || {};
+      return myPanelRowHtml({
+        kind: "schedule",
+        href: "schedule-builder.html?schedule=" + encodeURIComponent(s.id),
+        name: (d.name && d.name.trim()) || "מערכת שעות (ללא שם)",
+        deleteAttr: "schedule:" + s.id,
+        active: !!(ctx && ctx.kind === "schedule" && ctx.id === s.id),
+      });
+    }).join("");
+  } else {
+    el.innerHTML = myPanelEmptyRowHtml({ href: "schedule-builder.html" });
+  }
+}
+
+/* sessionStorage, not localStorage: this is a snapshot to render instantly
+   while the real fetch below catches up, not a source of truth — scoping
+   it to the tab/session means a stale snapshot never outlives the browser
+   session it was read in, and a different account in another tab can't
+   read it either. */
+const MY_PANEL_CACHE_KEY = "deskkit_panel_cache_v1";
+function myPanelReadCache(userId) {
+  try {
+    const raw = sessionStorage.getItem(MY_PANEL_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && parsed.userId === userId ? parsed : null;
+  } catch (err) {
+    return null;
+  }
+}
+function myPanelWriteCache(userId, bundle) {
+  try { sessionStorage.setItem(MY_PANEL_CACHE_KEY, JSON.stringify(Object.assign({ userId }, bundle))); } catch (err) { /* ignore */ }
+}
+
+/* The actual Supabase round-trip — all four lists in parallel instead of
+   one after another, since none of them depend on each other. Always
+   runs (even right after a cache-render) so the rail catches anything
+   that changed since the last snapshot; the difference caching makes is
+   that the rail no longer has to sit empty *waiting* on this to finish. */
+async function myPanelFetchAndRender(user, ctx, els) {
+  const [sitesRes, cvRes, quotesRes, schedulesRes] = await Promise.all([
+    supabaseClient.from("site_projects").select("id, template, data, published_url").eq("user_id", user.id).order("created_at", { ascending: false }),
+    supabaseClient.from("cv_saves").select("data").eq("user_id", user.id).maybeSingle(),
+    els.quotesList
+      ? supabaseClient.from("quote_saves").select("id, data").eq("user_id", user.id).order("updated_at", { ascending: false })
+      : Promise.resolve({ data: null }),
+    els.schedulesList
+      ? supabaseClient.from("schedule_projects").select("id, data").eq("user_id", user.id).order("updated_at", { ascending: false })
+      : Promise.resolve({ data: null }),
+  ]);
+
+  // One row per template is the data model's own guarantee (each save
+  // reuses the same row via its id), but de-duping here too means a
+  // stray duplicate never shows as two seemingly-identical rows with
+  // nothing to tell them apart.
+  const seenTemplates = new Set();
+  const sites = (sitesRes.data || []).filter((s) => {
+    if (seenTemplates.has(s.template)) return false;
+    seenTemplates.add(s.template);
+    return true;
+  });
+  const cv = cvRes.data || null;
+  const quotes = quotesRes.data || [];
+  const schedules = schedulesRes.data || [];
+
+  myPanelRenderSites(sites, ctx, els.sitesList);
+  myPanelRenderCv(cv, ctx, els.cvList);
+  myPanelRenderQuotes(quotes, ctx, els.quotesList);
+  myPanelRenderSchedules(schedules, ctx, els.schedulesList);
+
+  myPanelWriteCache(user.id, { sites, cv, quotes, schedules });
+}
+
+/* Instant-from-cache, then quietly reconciled in the background: this is
+   a plain static multi-page site (no client-side router), so every
+   internal navigation is a real page load that remounts the rail from
+   scratch (see mountMyPanel) — previously that meant re-running all four
+   Supabase queries, with the rail sitting empty until they resolved, on
+   every single click. Rendering last session's cached snapshot
+   synchronously first means the rail already looks correct the instant
+   it paints; the fetch that follows still runs (a plain navigation isn't
+   a "the user changed something" event, so it can't just be skipped —
+   the content may well have changed from another tab or device), it
+   just no longer has to be waited on to show *something* correct. */
+async function loadMyPanel(user, opts) {
+  const forceRefresh = !!(opts && opts.forceRefresh);
+  const els = {
+    sitesList: document.getElementById("my-panel-sites"),
+    cvList: document.getElementById("my-panel-cv"),
+    quotesList: document.getElementById("my-panel-quotes"),
+    schedulesList: document.getElementById("my-panel-schedules"),
+  };
+  if (!els.sitesList || !els.cvList) return;
+  const ctx = myPanelCurrentContext();
+
+  const cached = !forceRefresh && myPanelReadCache(user.id);
+  if (cached) {
+    myPanelRenderSites(cached.sites, ctx, els.sitesList);
+    myPanelRenderCv(cached.cv, ctx, els.cvList);
+    myPanelRenderQuotes(cached.quotes, ctx, els.quotesList);
+    myPanelRenderSchedules(cached.schedules, ctx, els.schedulesList);
   }
 
-  if (quotesList) {
-    const { data: quotes } = await supabaseClient
-      .from("quote_saves").select("id, data")
-      .eq("user_id", user.id).order("updated_at", { ascending: false });
-    if (quotes && quotes.length) {
-      quotesList.innerHTML = quotes.map((q) => {
-        const d = q.data || {};
-        const label = (d.recipient && d.recipient.trim()) || (d.eventName && d.eventName.trim());
-        return myPanelRowHtml({
-          kind: "quote",
-          href: "quote-app.html?quote=" + encodeURIComponent(q.id),
-          name: label || "הצעת מחיר (ללא שם)",
-          sub: d.eventName && d.recipient ? d.eventName : "",
-          deleteAttr: "quote:" + q.id,
-          active: !!(ctx && ctx.kind === "quote" && ctx.id === q.id),
-        });
-      }).join("");
-    } else {
-      quotesList.innerHTML = myPanelEmptyRowHtml({ href: "quote-app.html", text: "עדיין לא שמרתם הצעת מחיר —", linkText: "ליצירה" });
-    }
-  }
-
-  if (schedulesList) {
-    const { data: schedules } = await supabaseClient
-      .from("schedule_projects").select("id, data")
-      .eq("user_id", user.id).order("updated_at", { ascending: false });
-    if (schedules && schedules.length) {
-      schedulesList.innerHTML = schedules.map((s) => {
-        const d = s.data || {};
-        return myPanelRowHtml({
-          kind: "schedule",
-          href: "schedule-builder.html?schedule=" + encodeURIComponent(s.id),
-          name: (d.name && d.name.trim()) || "מערכת שעות (ללא שם)",
-          deleteAttr: "schedule:" + s.id,
-          active: !!(ctx && ctx.kind === "schedule" && ctx.id === s.id),
-        });
-      }).join("");
-    } else {
-      schedulesList.innerHTML = myPanelEmptyRowHtml({ href: "schedule-builder.html", text: "עדיין לא בנית מערכת שעות —", linkText: "ליצירה" });
-    }
-  }
+  await myPanelFetchAndRender(user, ctx, els);
 }
 
 async function deleteMyPanelItem(kind, id, button) {
@@ -294,7 +365,7 @@ async function deleteMyPanelItem(kind, id, button) {
   } else if (kind === "schedule") {
     await supabaseClient.from("schedule_projects").delete().eq("id", id).eq("user_id", user.id);
   }
-  await loadMyPanel(user);
+  await loadMyPanel(user, { forceRefresh: true });
 }
 
 function myPanelSectionsHtml() {
@@ -447,7 +518,7 @@ function updatePanelAccountEmail(email) {
 window.refreshMyPanel = function refreshMyPanel() {
   supabaseClient.auth.getSession().then(({ data }) => {
     const user = data.session && data.session.user;
-    if (user) loadMyPanel(user);
+    if (user) loadMyPanel(user, { forceRefresh: true });
   });
 };
 

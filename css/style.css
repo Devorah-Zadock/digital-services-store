@@ -290,37 +290,42 @@ body.has-sites-rail .nav-account-wrap { display: none; }
    rail just opens it upward since its trigger sits at the very bottom. */
 .nav-account-dropdown.dropup { top: auto; bottom: calc(100% + 8px); inset-inline-end: auto; inset-inline: 8px; min-width: 0; }
 
-/* Category labels ("אתרים", "קורות חיים"…) read as quiet premium
-   sub-headings, not loud section titles — small, medium-grey, a touch
-   of letter-spacing, not bold-dark like page headings elsewhere. */
-.my-panel-section { margin-bottom: 4px; }
+/* Category labels ("אתרים", "קורות חיים"…) each get their own quiet
+   pill-shaped band — a subtle background instead of plain floating
+   text — so the rail visually separates into distinct groups at a
+   glance instead of reading as one long, undifferentiated list. */
+.my-panel-section { margin-bottom: 10px; }
 .my-panel-section-head {
   width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  background: none; border: none; cursor: pointer; padding: 14px 6px 10px; font-family: inherit;
-  font-size: 11.5px; font-weight: 600; letter-spacing: .05em; color: #9A9A9A;
+  background: #F7F8F7; border: none; border-radius: 8px; cursor: pointer; padding: 8px 10px; font-family: inherit;
+  font-size: 11.5px; font-weight: 700; letter-spacing: .04em; color: #5A5F5C;
+  transition: background .15s ease;
 }
-.my-panel-section-head svg { width: 11px; height: 11px; transition: transform .15s ease; }
+.my-panel-section-head:hover { background: #EFF1EF; }
+.my-panel-section-head svg { width: 11px; height: 11px; flex-shrink: 0; color: #B0B4B1; transition: transform .15s ease; }
 .my-panel-section.collapsed .my-panel-section-head svg { transform: rotate(180deg); }
 .my-panel-section.collapsed .my-panel-section-list { display: none; }
-.my-sites-list, .my-panel-section-list { display: flex; flex-direction: column; gap: 6px; }
+.my-sites-list, .my-panel-section-list { display: flex; flex-direction: column; gap: 6px; padding-top: 8px; }
 .my-site-row { display: block; padding: 10px 10px; border-radius: 4px; text-decoration: none; color: #1A1A1A; transition: background .15s ease; }
 .my-site-row:hover { background: #F5F5F5; }
 .my-site-row.active { background: #F5F5F5; box-shadow: inset 2px 0 0 #1A1A1A; }
 .my-site-row-name { display: block; font-size: 13px; font-weight: 600; line-height: 1.4; }
 .my-site-row-tpl { display: block; font-size: 11px; color: #9A9A9A; line-height: 1.4; }
 
-/* The rail's own row treatment — a small thumbnail + text, closer to a
-   card than a plain link, so "my content" reads as things you made
-   rather than a menu. Kept separate from .my-site-row above (still
-   used as-is by account-settings.html's own dashboard) since this one
-   needs the extra thumbnail element the simpler list doesn't have. */
+/* The rail's own row treatment — a small thumbnail + text sitting in an
+   actual bordered card (not just a hover-tinted strip of text), so "my
+   content" reads as distinct tiles you made rather than a dense menu.
+   Kept separate from .my-site-row above (still used as-is by
+   account-settings.html's own dashboard) since this one needs the
+   extra thumbnail element the simpler list doesn't have. */
 .my-panel-card {
   flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px;
-  padding: 10px 8px; border-radius: 4px; text-decoration: none; color: #1A1A1A;
-  transition: background .15s ease;
+  padding: 9px 10px; border-radius: 10px; border: 1px solid transparent;
+  text-decoration: none; color: #1A1A1A;
+  transition: background .15s ease, border-color .15s ease, transform .15s ease;
 }
-.my-panel-card:hover { background: #F5F5F5; }
-.my-panel-card.active { background: #F5F5F5; box-shadow: inset 2px 0 0 #1A1A1A; }
+.my-panel-card:hover { background: #FAFAFA; border-color: #EEEEEE; transform: translateY(-1px); }
+.my-panel-card.active { background: var(--ice); border-color: #D3EDED; box-shadow: inset 2px 0 0 var(--teal); }
 /* One uniform, linear-stroke icon treatment for every content kind —
    no per-kind color (gold for CV, purple for quotes, blue for
    schedules) left over from the old rail. */
@@ -328,15 +333,22 @@ body.has-sites-rail .nav-account-wrap { display: none; }
   flex: none; width: 32px; height: 32px; border-radius: 8px;
   background: #F5F5F5; color: #6B6B6B; display: flex; align-items: center; justify-content: center;
 }
+.my-panel-card.active .my-panel-card-thumb { background: #fff; color: var(--teal-dark); }
 .my-panel-card-info { min-width: 0; }
 .my-panel-card-name { display: block; font-size: 13px; font-weight: 600; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .my-panel-card-tpl { display: block; font-size: 11px; color: #9A9A9A; line-height: 1.4; }
 
-/* Not-built-yet placeholder: soft, quiet text — this is an absence, not
-   something that should draw the eye the way real content does. */
-.my-panel-empty-row { padding: 10px 10px; font-size: 13px; font-weight: 500; color: #B0B0B0; line-height: 1.5; }
-.my-panel-empty-link { color: #1A1A1A; font-weight: 600; text-decoration: none; }
-.my-panel-empty-link:hover { text-decoration: underline; }
+/* Empty-category state: a small dashed-border "create new" chip instead
+   of a sentence of explanatory text — reads as an invitation, not as
+   an apology for having nothing there yet. */
+.my-panel-empty-cta {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px; border-radius: 10px; border: 1.5px dashed #DADFDD;
+  color: #7A7F7C; font-size: 12.5px; font-weight: 700; text-decoration: none;
+  transition: border-color .15s ease, color .15s ease, background .15s ease;
+}
+.my-panel-empty-cta:hover { border-color: var(--teal); color: var(--teal-dark); background: var(--ice); }
+.my-panel-empty-plus { font-size: 15px; line-height: 1; font-weight: 400; }
 
 /* A delete button sits beside the link (never inside it, so its click
    never also fires the link's navigation) — used both by the global
