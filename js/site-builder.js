@@ -57,6 +57,7 @@ const SITE_DEFAULT = {
   email: "",
   address: "",
   services: [{ name: "", desc: "", price: "" }],
+  headings: { services: "", about: "", contact: "" },
   pages: { about: false, contact: false },
   heroImage: "",
   heroImages: [],
@@ -76,7 +77,7 @@ const SITE_TEMPLATE_DEFAULT_COLOR = {
   "gallery": "#B5175A", "bold": "#B5175A", "studio": "#B5175A",
   "elegant": "#B8860B", "noir": "#B8860B",
   "bento": "#0E8C8C", "cinematic": "#4338CA", "brutal": "#FFC800",
-  "neon": "#A855F7", "chaos": "#CCFF00", "luxury3d": "#B08D57",
+  "neon": "#A855F7", "chaos": "#CCFF00", "luxury3d": "#B08D57", "playground": "#7C5CFF",
 };
 function freshSiteData(template) {
   const data = JSON.parse(JSON.stringify(SITE_DEFAULT));
@@ -100,6 +101,10 @@ function ensurePagesShape(data) {
   // become a real array, not stay undefined, the first time it loads.
   if (!Array.isArray(data.heroImages)) data.heroImages = [];
   data.heroVideoBg = !!data.heroVideoBg;
+  // Same backfill for data saved before the custom-headings feature
+  // existed — an absent object here just means "use every template
+  // default", never a crash reading data.headings.services below.
+  if (!data.headings || typeof data.headings !== "object") data.headings = { services: "", about: "", contact: "" };
   return data;
 }
 
@@ -226,6 +231,32 @@ function renderFormValues() {
   renderPhotoPreview();
   renderGalleryPreview();
   renderServicesList();
+  renderHeadingsFields();
+}
+
+/* Populates the 3 suggestion dropdowns (services/about/contact) and the
+   free-text inputs next to them — role-aware for "services", since a
+   boutique's grid reads as products and a portfolio's reads as work even
+   though they're all still the same d.services array under the hood. */
+function renderHeadingsFields() {
+  const d = ensurePagesShape(siteState.data);
+  const role = TEMPLATE_SECTION_ROLE[siteState.template] || "services";
+  const specs = [
+    { key: "services", bank: role },
+    { key: "about", bank: "about" },
+    { key: "contact", bank: "contact" },
+  ];
+  specs.forEach((spec) => {
+    const select = document.getElementById(`h-${spec.key}-pick`);
+    const input = document.getElementById(`h-${spec.key}`);
+    if (!select || !input) return;
+    const options = HEADING_SUGGESTIONS[spec.bank] || [];
+    select.innerHTML = `<option value="">בחירת ניסוח מוכן…</option>` +
+      options.map((o) => `<option value="${escapeHtmlS(o)}">${escapeHtmlS(o)}</option>`).join("") +
+      `<option value="__custom__">✏️ אחר — הקלידו למטה</option>`;
+    select.value = "";
+    input.value = d.headings[spec.key] || "";
+  });
 }
 
 function renderPhotoPreview() {
@@ -317,6 +348,22 @@ function wireForm() {
   document.getElementById("s-color").addEventListener("input", (e) => {
     siteState.data.primaryColor = e.target.value;
     renderSitePreview();
+  });
+
+  ["services", "about", "contact"].forEach((key) => {
+    const select = document.getElementById(`h-${key}-pick`);
+    const input = document.getElementById(`h-${key}`);
+    if (!select || !input) return;
+    select.addEventListener("change", () => {
+      if (!select.value || select.value === "__custom__") { input.focus(); return; }
+      input.value = select.value;
+      siteState.data.headings[key] = select.value;
+      renderSitePreview();
+    });
+    input.addEventListener("input", () => {
+      siteState.data.headings[key] = input.value;
+      renderSitePreview();
+    });
   });
 
   document.getElementById("s-photo").addEventListener("change", (e) => {
