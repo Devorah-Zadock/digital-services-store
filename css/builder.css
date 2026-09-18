@@ -112,7 +112,14 @@
   body, .builder-wrap, .container, .builder-preview, .preview-sticky { all: unset; display: block; }
   #preview-doc, #quote-preview { height: auto !important; overflow: visible !important; }
   #preview-doc .cv-doc { box-shadow: none; margin: 0; width: 100% !important; transform: none !important; }
-  #quote-preview .quote-doc { box-shadow: none; margin: 0; width: 100% !important; }
+  /* fitQuotePreviewToContainer() (js/quote-render.js) sets an inline
+     transform:translateX()scale() on .quote-doc to shrink the fixed
+     794px-wide document into whatever the on-screen preview pane's
+     width happens to be. That inline style survives into print/PDF
+     unless explicitly cleared here — otherwise the printed page is a
+     shrunk copy of the doc sitting inside the full A4 box, which reads
+     as the content being cut off / not reaching the page's edges. */
+  #quote-preview .quote-doc { box-shadow: none; margin: 0; width: 100% !important; transform: none !important; }
   @page { size: A4; margin: 0; }
   .cv-pdf-credit {
     display: block; position: fixed; bottom: 12px; inset-inline-end: 20px;

@@ -98,7 +98,7 @@ function wireQuoteForm() {
     renderQuotePreview();
   });
 
-  document.getElementById("quote-download-btn").addEventListener("click", () => window.print());
+  document.getElementById("quote-download-btn").addEventListener("click", () => downloadQuotePdf());
 }
 
 function showBuilder() {

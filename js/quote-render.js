@@ -228,3 +228,54 @@ window.addEventListener("resize", () => {
   clearTimeout(window._fitQuotePreviewTimer);
   window._fitQuotePreviewTimer = setTimeout(fitQuotePreviewToContainer, 150);
 });
+
+/* Real PDF file, no browser print dialog — shared by quote-app.js and
+   quote-builder.js. window.print() always hands control to the browser's
+   own print UI (destination picker, page-setup screen, an explicit
+   "Print"/"Save" click); there's no way to skip that for a genuine
+   window.print() call. This instead rasterizes the already-rendered
+   .quote-doc with html2canvas and embeds that image into a single-page
+   A4 PDF via jsPDF, then triggers pdf.save() — a direct file download,
+   no dialog. Falls back to the old print flow if either library failed
+   to load (e.g. the CDN request was blocked), so the button never just
+   does nothing. */
+async function downloadQuotePdf() {
+  const wrap = document.getElementById("quote-preview");
+  const doc = wrap && wrap.querySelector(".quote-doc");
+  if (!doc) return;
+  if (!window.html2canvas || !(window.jspdf && window.jspdf.jsPDF)) {
+    window.print();
+    return;
+  }
+
+  // .quote-doc is scaled down (see fitQuotePreviewToContainer) to fit the
+  // on-screen preview pane — reset that before capturing so the PDF is
+  // rendered from the document's real, full-size layout.
+  const prevTransform = doc.style.transform;
+  const prevTransition = doc.style.transition;
+  doc.style.transition = "none";
+  doc.style.transform = "none";
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+
+  let canvas;
+  try {
+    canvas = await window.html2canvas(doc, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+  } finally {
+    doc.style.transform = prevTransform;
+    doc.style.transition = prevTransition;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ unit: "mm", format: "a4" });
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
+  let imgW = pageW;
+  let imgH = (canvas.height / canvas.width) * imgW;
+  if (imgH > pageH) {
+    imgW = imgW * (pageH / imgH);
+    imgH = pageH;
+  }
+  const x = (pageW - imgW) / 2;
+  pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", x, 0, imgW, imgH);
+  pdf.save("הצעת-מחיר.pdf");
+}

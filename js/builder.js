@@ -276,7 +276,12 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("font-select").innerHTML = FONT_OPTIONS.map((f) => `<option value="${f.id}">${f.label}</option>`).join("");
 
   wireStaticInputs();
-  document.getElementById("download-btn").addEventListener("click", () => window.print());
+  document.getElementById("download-btn").addEventListener("click", () => {
+    window.print();
+    if (window.showUpsellBanner) {
+      showUpsellBanner("מעבר לקורות החיים המרשימים שבניתם, הגיע הזמן שגם לעסק שלכם יהיה אתר תדמית יפהפה.", "רוצה להיראות עוד יותר מקצועי?");
+    }
+  });
 
   const startSlug = new URLSearchParams(location.search).get("template");
   const startLang = new URLSearchParams(location.search).get("lang");

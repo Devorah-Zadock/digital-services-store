@@ -238,10 +238,10 @@ function wireQuoteFormQA() {
     renderQuotePreviewQA();
   });
 
-  document.getElementById("quote-download-btn").addEventListener("click", () => {
-    window.print();
+  document.getElementById("quote-download-btn").addEventListener("click", async () => {
+    await downloadQuotePdf();
     if (window.showUpsellBanner) {
-      showUpsellBanner("רוצה להיראות אפילו יותר מקצועי מול הלקוחות שלך? במקום רק לשלוח הצעות מחיר ב-PDF, הגיע הזמן שיהיה לעסק שלך אתר תדמית יפהפה.");
+      showUpsellBanner("במקום רק לשלוח הצעות מחיר ב-PDF, הגיע הזמן שיהיה לעסק שלך אתר תדמית יפהפה.", "רוצה להיראות עוד יותר מקצועי?");
     }
   });
   document.getElementById("qa-edit-profile").addEventListener("click", showProfileEditor);

@@ -208,8 +208,13 @@ function handleGatedDownload(p) {
     document.body.appendChild(a);
     a.click();
     a.remove();
-    if (productType(p) === "xlsx" && window.showUpsellBanner) {
-      showUpsellBanner("רוצה להיראות אפילו יותר מקצועי מול הלקוחות שלך? מעבר לגיליונות הניהול הפנימיים, הגיע הזמן שיהיה לעסק שלך גם אתר תדמית יפהפה.");
+    const pType = productType(p);
+    if (window.showUpsellBanner) {
+      if (pType === "xlsx") {
+        showUpsellBanner("מעבר לגיליונות הניהול הפנימיים, הגיע הזמן שיהיה לעסק שלך גם אתר תדמית יפהפה.", "רוצה להיראות עוד יותר מקצועי?");
+      } else if (pType === "deck") {
+        showUpsellBanner("מעבר למצגת המקצועית שהורדתם, הגיע הזמן שיהיה לעסק שלך גם אתר תדמית יפהפה.", "רוצה להיראות עוד יותר מקצועי?");
+      }
     }
   });
 }
