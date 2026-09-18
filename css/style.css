@@ -441,7 +441,7 @@ body.has-sites-rail .nav-account-wrap { display: none; }
    instead, right here.
    ========================================================================== */
 body.home-neo {
-  --hn-bg: #FAFAFA; --hn-ink: #1A1A1A; --hn-action: #000000;
+  --hn-bg: #FAFAFA; --hn-ink: #1A1A1A; --hn-action: #0E8C8C;
   /* The single accent color for the whole homepage — a deep turquoise,
      used thin and sparingly (a border, a headline figure, a hover tint)
      so it reads as a deliberate touch of color against the black/white
@@ -539,7 +539,7 @@ body.home-neo .hn-btn-gold:hover { opacity: .85; }
 body.home-neo .hn-hero { padding-bottom: 80px; }
 body.home-neo .hn-hero-split { display: grid; grid-template-columns: 55% 45%; gap: 40px; align-items: center; }
 body.home-neo .hn-hero-text { max-width: 520px; }
-body.home-neo .hn-hero-eyebrow { display: block; font-size: 13.5px; font-weight: 600; color: var(--hn-grey); margin-bottom: 18px; }
+body.home-neo .hn-hero-eyebrow { display: block; font-size: 13.5px; font-weight: 700; color: var(--hn-action); margin-bottom: 18px; }
 body.home-neo .hn-hero-text h1 { font-size: 44px; font-weight: 700; line-height: 1.28; margin: 0 0 22px; color: var(--hn-ink); }
 body.home-neo .hn-hero-lead { font-size: 16.5px; color: #6E6E5E; line-height: 1.8; margin: 0 0 34px; }
 body.home-neo .hn-cta-row { display: flex; gap: 14px; flex-wrap: wrap; }
