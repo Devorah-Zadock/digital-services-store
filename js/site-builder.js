@@ -334,6 +334,22 @@ function renderSitePreview() {
   saveSiteState();
 }
 
+/* Every keystroke in a text field used to call renderSitePreview()
+   directly — harmless for a plain template (the iframe just reloads a new
+   document instantly), but confirmed live to break the playground
+   template specifically: setting .srcdoc is a hard navigation that tears
+   down the previous document, so typing a few characters quickly fired
+   off several overlapping Matter.js CDN loads and physics inits in a row,
+   leaving the services section empty. Debouncing text-input-driven
+   re-renders (not click/change-driven ones, which already fire once per
+   action) fixes that at the source without templates needing to know
+   about it. */
+let sitePreviewRenderTimer = null;
+function scheduleSitePreviewRender() {
+  clearTimeout(sitePreviewRenderTimer);
+  sitePreviewRenderTimer = setTimeout(renderSitePreview, 500);
+}
+
 function wireForm() {
   const map = {
     "s-name": "businessName", "s-tagline": "tagline", "s-about": "about",
@@ -342,12 +358,12 @@ function wireForm() {
   Object.entries(map).forEach(([id, key]) => {
     document.getElementById(id).addEventListener("input", (e) => {
       siteState.data[key] = e.target.value;
-      renderSitePreview();
+      scheduleSitePreviewRender();
     });
   });
   document.getElementById("s-color").addEventListener("input", (e) => {
     siteState.data.primaryColor = e.target.value;
-    renderSitePreview();
+    scheduleSitePreviewRender();
   });
 
   ["services", "about", "contact"].forEach((key) => {
@@ -362,7 +378,7 @@ function wireForm() {
     });
     input.addEventListener("input", () => {
       siteState.data.headings[key] = input.value;
-      renderSitePreview();
+      scheduleSitePreviewRender();
     });
   });
 
@@ -432,7 +448,7 @@ function wireForm() {
 
   document.getElementById("s-video").addEventListener("input", (e) => {
     siteState.data.videoUrl = e.target.value;
-    renderSitePreview();
+    scheduleSitePreviewRender();
   });
   const videoBgCheckbox = document.getElementById("s-video-bg");
   if (videoBgCheckbox) {
@@ -461,7 +477,7 @@ function wireForm() {
     const key = e.target.dataset.key;
     if (idx === undefined) return;
     siteState.data.services[idx][key] = e.target.value;
-    renderSitePreview();
+    scheduleSitePreviewRender();
   });
   document.getElementById("services-list").addEventListener("click", (e) => {
     const idx = e.target.dataset.serviceRemove;

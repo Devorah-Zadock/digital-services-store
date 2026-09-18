@@ -2496,10 +2496,10 @@ function renderPlaygroundSite(d, page) {
     .pg-nav nav a.active, .pg-nav nav a:hover { color:#fff; }
 
     .pg-hero { text-align:center; padding:70px 24px 30px; }
-    .pg-kicker { display:inline-block; font-size:12px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:#B8B6D6; margin-bottom:18px; }
+    .pg-kicker { display:inline-block; font-size:12px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:#${pal.headerAccentText}; margin-bottom:18px; }
     .pg-hero h1 {
       font-size:min(15vw, 74px); font-weight:900; letter-spacing:-.02em; line-height:1.03; margin:0 0 18px;
-      background:linear-gradient(90deg, ${PG_ACCENTS.join(", ")}, ${PG_ACCENTS[0]});
+      background:linear-gradient(90deg, #${pal.primary}, ${PG_ACCENTS.join(", ")}, #${pal.primary});
       background-size:300% 100%; -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent;
       animation:pg-gradient-move 7s ease-in-out infinite;
     }
@@ -2508,7 +2508,7 @@ function renderPlaygroundSite(d, page) {
     .pg-hero p { font-size:16.5px; color:#C7C5E0; max-width:480px; margin:0 auto 30px; }
 
     .pg-cta-wrap { display:inline-block; }
-    .pg-cta { display:inline-flex; align-items:center; gap:8px; background:#fff; color:#0F1020; font-weight:900; padding:16px 36px; border-radius:40px; font-size:15px; }
+    .pg-cta { display:inline-flex; align-items:center; gap:8px; background:#${pal.primary}; color:#fff; font-weight:900; padding:16px 36px; border-radius:40px; font-size:15px; }
 
     .pg-physics-wrap { padding:50px 0 20px; }
     .pg-physics-head { text-align:center; margin-bottom:8px; }
@@ -2528,7 +2528,7 @@ function renderPlaygroundSite(d, page) {
 
     .pg-section { padding:64px 0; }
     .pg-section-head { text-align:center; margin-bottom:30px; }
-    .pg-kicker2 { font-size:12px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:#B8B6D6; }
+    .pg-kicker2 { font-size:12px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:#${pal.headerAccentText}; }
     .pg-section-head h2 { font-size:29px; font-weight:900; color:#fff; margin:10px 0 0; }
     .pg-panel { max-width:640px; margin:0 auto; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); border-radius:22px; padding:36px; text-align:center; }
     .pg-panel p { font-size:16px; color:#D6D4EC; line-height:1.8; margin:0; }
@@ -2580,63 +2580,84 @@ function renderPlaygroundSite(d, page) {
       document.body.appendChild(script);
 
       function startPhysics() {
-        var Engine = Matter.Engine, World = Matter.World,
-            Body = Matter.Body, Runner = Matter.Runner, Mouse = Matter.Mouse, MouseConstraint = Matter.MouseConstraint;
-        wrap.classList.add("pg-active");
-        var w = wrap.clientWidth, h = wrap.clientHeight;
-        var engine = Engine.create();
-        engine.gravity.y = 0.55;
-        var world = engine.world;
-        var wallOpts = { isStatic: true, restitution: 0.35, friction: 0.15 };
-        var ground = Matter.Bodies.rectangle(w / 2, h + 24, w * 2, 48, wallOpts);
-        var left = Matter.Bodies.rectangle(-24, h / 2, 48, h * 2, wallOpts);
-        var right = Matter.Bodies.rectangle(w + 24, h / 2, 48, h * 2, wallOpts);
-        var ceiling = Matter.Bodies.rectangle(w / 2, -200, w * 2, 40, wallOpts);
-        World.add(world, [ground, left, right, ceiling]);
+        // Guards against a second init if this ever runs twice in the same
+        // document, and lets any failure below fall straight back to the
+        // plain static layout instead of leaving the section half-built —
+        // an exception here must never mean an empty screen where the
+        // services used to be.
+        if (wrap.dataset.pgStarted) return;
+        wrap.dataset.pgStarted = "1";
+        try {
+          var Engine = Matter.Engine, World = Matter.World,
+              Body = Matter.Body, Runner = Matter.Runner, Mouse = Matter.Mouse, MouseConstraint = Matter.MouseConstraint;
+          wrap.classList.add("pg-active");
+          var w = wrap.clientWidth, h = wrap.clientHeight;
+          var engine = Engine.create();
+          engine.gravity.y = 0.55;
+          var world = engine.world;
+          var wallOpts = { isStatic: true, restitution: 0.35, friction: 0.15 };
+          var ground = Matter.Bodies.rectangle(w / 2, h + 24, w * 2, 48, wallOpts);
+          var left = Matter.Bodies.rectangle(-24, h / 2, 48, h * 2, wallOpts);
+          var right = Matter.Bodies.rectangle(w + 24, h / 2, 48, h * 2, wallOpts);
+          var ceiling = Matter.Bodies.rectangle(w / 2, -200, w * 2, 40, wallOpts);
+          World.add(world, [ground, left, right, ceiling]);
 
-        var bodies = bubbles.map(function (el, i) {
-          var bw = el.offsetWidth, bh = el.offsetHeight;
-          el.style.width = bw + "px";
-          var x = 40 + Math.random() * Math.max(1, w - bw - 80);
-          var y = -100 - i * 90;
-          var body = Matter.Bodies.rectangle(x + bw / 2, y + bh / 2, bw, bh, {
-            chamfer: { radius: bh / 2 }, restitution: 0.45, friction: 0.25, frictionAir: 0.012,
-            angle: (Math.random() - 0.5) * 0.4,
+          var bodies = bubbles.map(function (el, i) {
+            var bw = el.offsetWidth, bh = el.offsetHeight;
+            el.style.width = bw + "px";
+            var x = 40 + Math.random() * Math.max(1, w - bw - 80);
+            var y = -100 - i * 90;
+            var body = Matter.Bodies.rectangle(x + bw / 2, y + bh / 2, bw, bh, {
+              chamfer: { radius: bh / 2 }, restitution: 0.45, friction: 0.25, frictionAir: 0.012,
+              angle: (Math.random() - 0.5) * 0.4,
+            });
+            Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.08);
+            World.add(world, body);
+            return { el: el, body: body, w: bw, h: bh };
           });
-          Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.08);
-          World.add(world, body);
-          return { el: el, body: body, w: bw, h: bh };
-        });
 
-        var mouse = Mouse.create(wrap);
-        mouse.pixelRatio = window.devicePixelRatio || 1;
-        var mouseConstraint = MouseConstraint.create(engine, {
-          mouse: mouse, constraint: { stiffness: 0.18, render: { visible: false } },
-        });
-        World.add(world, mouseConstraint);
-        // Prevents the page itself from scrolling while dragging a bubble —
-        // Matter's default mouse wheel passthrough is fine, but touchmove
-        // during an active drag should not also pan the page.
-        wrap.addEventListener("touchmove", function (e) { if (mouseConstraint.body) e.preventDefault(); }, { passive: false });
-
-        var runner = Runner.create();
-        Runner.run(runner, engine);
-
-        function sync() {
-          bodies.forEach(function (b) {
-            var x = b.body.position.x - b.w / 2, y = b.body.position.y - b.h / 2;
-            b.el.style.transform = "translate(" + x + "px," + y + "px) rotate(" + b.body.angle + "rad)";
+          var mouse = Mouse.create(wrap);
+          mouse.pixelRatio = window.devicePixelRatio || 1;
+          // Matter's Mouse unconditionally calls preventDefault() on wheel
+          // events over its element — confirmed live: this silently blocked
+          // page scroll anywhere over the physics box (only the empty
+          // margins to its sides still scrolled). Removing its own wheel
+          // listeners leaves drag/click handling intact but stops it from
+          // swallowing the scroll wheel.
+          ["mousewheel", "DOMMouseScroll", "wheel"].forEach(function (evt) {
+            mouse.element.removeEventListener(evt, mouse.mousewheel);
           });
-          requestAnimationFrame(sync);
+          var mouseConstraint = MouseConstraint.create(engine, {
+            mouse: mouse, constraint: { stiffness: 0.18, render: { visible: false } },
+          });
+          World.add(world, mouseConstraint);
+          // Prevents the page itself from scrolling while dragging a bubble —
+          // Matter's default mouse wheel passthrough is fine, but touchmove
+          // during an active drag should not also pan the page.
+          wrap.addEventListener("touchmove", function (e) { if (mouseConstraint.body) e.preventDefault(); }, { passive: false });
+
+          var runner = Runner.create();
+          Runner.run(runner, engine);
+
+          function sync() {
+            bodies.forEach(function (b) {
+              var x = b.body.position.x - b.w / 2, y = b.body.position.y - b.h / 2;
+              b.el.style.transform = "translate(" + x + "px," + y + "px) rotate(" + b.body.angle + "rad)";
+            });
+            requestAnimationFrame(sync);
+          }
+          sync();
+
+          window.addEventListener("resize", function () {
+            var nw = wrap.clientWidth, nh = wrap.clientHeight;
+            Body.setPosition(ground, { x: nw / 2, y: nh + 24 });
+            Body.setPosition(right, { x: nw + 24, y: nh / 2 });
+            w = nw; h = nh;
+          });
+        } catch (err) {
+          wrap.classList.remove("pg-active");
+          wrap.dataset.pgStarted = "";
         }
-        sync();
-
-        window.addEventListener("resize", function () {
-          var nw = wrap.clientWidth, nh = wrap.clientHeight;
-          Body.setPosition(ground, { x: nw / 2, y: nh + 24 });
-          Body.setPosition(right, { x: nw + 24, y: nh / 2 });
-          w = nw; h = nh;
-        });
       }
     })();
   </script>`;
@@ -2674,7 +2695,7 @@ function renderPlaygroundSite(d, page) {
         <p class="pg-physics-hint">🖱️ אפשר לגרור את הבועות</p>
       </div>
         <div class="pg-physics" id="pg-physics">${dd._services.map((s, i) => `
-          <div class="pg-bubble" style="background:${PG_ACCENTS[i % PG_ACCENTS.length]};"><span>${escapeHtmlS(s.name)}${s.price ? `<span class="price">${escapeHtmlS(s.price)}</span>` : ""}</span></div>`).join("")}</div>
+          <div class="pg-bubble" style="background:${i === 0 ? "#" + pal.primary : PG_ACCENTS[(i - 1) % PG_ACCENTS.length]};"><span>${escapeHtmlS(s.name)}${s.price ? `<span class="price">${escapeHtmlS(s.price)}</span>` : ""}</span></div>`).join("")}</div>
       </div>
       ${embedSrc ? `<section class="pg-section site-reveal"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : ""}
       ${(!d.pages || !d.pages.about) ? `<section class="pg-section site-reveal" style="text-align:center;"><div class="container"><span class="pg-kicker2">מי אנחנו</span><h2 style="font-size:26px; font-weight:900; color:#fff; margin:10px 0 26px;">${escapeHtmlS(heading(d, "about", "קצת עלינו"))}</h2><div class="pg-panel"><p>${nl2brS(dd.about)}</p></div></div></section>` : ""}
