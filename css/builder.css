@@ -89,7 +89,7 @@
   transition: border-color .15s ease, background .15s ease, box-shadow .15s ease, color .15s ease;
 }
 .lang-big .dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #C7CFCB; position: relative; flex: none; transition: border-color .15s ease; }
-.lang-big.active { border-color: var(--teal); background: var(--ice); color: var(--teal-dark); box-shadow: 0 6px 16px rgba(31,92,78,.14); }
+.lang-big.active { border-color: var(--teal); background: var(--ice); color: var(--teal-dark); box-shadow: 0 6px 16px rgba(13,13,20,.14); }
 .lang-big.active .dot { border-color: var(--teal); }
 .lang-big.active .dot::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--teal); }
 

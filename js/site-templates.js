@@ -58,7 +58,7 @@ function heroSlideshowScript() {
   </script>`;
 }
 function siteFontImport() {
-  return `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap" rel="stylesheet">`;
+  return `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap" rel="stylesheet">`;
 }
 function siteBaseCss() {
   return `
@@ -1500,6 +1500,394 @@ function renderStudioSite(d, page) {
   return siteDoc({ title: titles[page], description: dd.tagline, css }, `${rail}${main}${footer}`).replace("<body>", '<body class="ag-body">');
 }
 
+/* ---------- Template 12: bento grid (modular, apple-widget style) ---------- */
+function renderBentoSite(d, page) {
+  page = page || "index";
+  const pal = derivePalette(d.primaryColor || "#0E8C8C");
+  const dd = withFallback(d);
+  const wa = waLink(d.whatsapp || d.phone);
+  const navLinksHtml = siteNavLinks(d, page);
+  const cta = primaryCtaHref(d, page);
+  const embedSrc = videoEmbedSrc(d.videoUrl);
+  const hasPhoto = heroHasImage(d);
+  const css = `
+    .bt-nav { background:#fff; border-bottom:1px solid #ECECEC; padding:18px 0; }
+    .bt-nav .row { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+    .bt-nav .biz { font-weight:800; font-size:19px; letter-spacing:-.01em; color:#111; }
+    .bt-nav nav { display:flex; gap:18px; }
+    .bt-nav nav a { font-size:13.5px; font-weight:600; color:#666; }
+    .bt-nav nav a.active { color:#${pal.primaryDark}; }
+
+    .bt-hero { padding:64px 0 48px; text-align:center; }
+    .bt-hero .eyebrow { background:#${pal.ice}; color:#${pal.primaryDark}; margin-bottom:18px; }
+    .bt-hero h1 { font-size:42px; font-weight:800; letter-spacing:-.02em; margin:0 0 14px; color:#111; }
+    .bt-cta { display:inline-block; background:#${pal.primary}; color:#fff; font-weight:800; padding:15px 34px; border-radius:16px; font-size:15px; box-shadow:0 14px 30px rgba(0,0,0,.14); transition:transform .2s ease, box-shadow .2s ease; }
+    .bt-cta:hover { transform:translateY(-3px); box-shadow:0 18px 36px rgba(0,0,0,.2); }
+
+    .bt-section { padding:16px 0 80px; }
+    .bt-grid { display:grid; grid-template-columns:repeat(4, 1fr); grid-auto-rows:172px; gap:18px; }
+    .bt-cell {
+      position:relative; overflow:hidden; border-radius:24px; background:#fff;
+      border:1px solid #EFEFEF; box-shadow:0 4px 18px rgba(0,0,0,.05);
+      padding:24px; display:flex; flex-direction:column; justify-content:flex-start;
+      transition:transform .3s ease, background .3s ease, box-shadow .3s ease;
+    }
+    .bt-cell:hover { transform:translateY(-6px); box-shadow:0 20px 40px rgba(0,0,0,.14); }
+    .bt-cell-accent, .bt-cell-photo { justify-content:flex-end; }
+    .bt-cell-label { font-size:11.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:#${pal.primary}; margin-bottom:6px; }
+    .bt-cell h3 { margin:0 0 6px; font-size:17px; font-weight:800; color:#111; }
+    .bt-cell p { margin:0; font-size:13px; color:#666; line-height:1.55; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .bt-cell .price { margin-top:10px; font-weight:800; color:#${pal.primaryDark}; font-size:14px; }
+    .bt-cell-dark { background:#111; border-color:#111; justify-content:center; }
+    .bt-cell-dark .bt-cell-label { color:#${pal.ice}; }
+    .bt-cell-dark h3, .bt-cell-dark p, .bt-cell-dark .line { color:#fff; }
+    .bt-cell-accent { background:linear-gradient(150deg, #${pal.primary}, #${pal.primaryDark}); border-color:transparent; }
+    .bt-cell-accent .bt-cell-label, .bt-cell-accent h3 { color:#fff; }
+
+    .bt-span-2x1 { grid-column:span 2; }
+    .bt-span-1x2 { grid-row:span 2; }
+    .bt-span-2x2 { grid-column:span 2; grid-row:span 2; }
+
+    .bt-clock { font-size:34px; font-weight:800; color:#111; letter-spacing:-.02em; }
+    .bt-clock-date { font-size:12px; color:#888; margin-top:4px; }
+    .bt-cell-photo { padding:0; }
+    .bt-cell-photo img, .bt-cell-photo .site-hero-slideshow { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+    .bt-cell-video { padding:0; }
+    .bt-cell-video iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
+    .bt-cell .line { font-size:13px; margin-bottom:4px; display:block; -webkit-line-clamp:unset; }
+    .bt-cta-mini { display:inline-block; align-self:flex-start; margin-top:10px; background:#fff; color:#111; font-weight:800; font-size:12.5px; padding:8px 16px; border-radius:10px; }
+
+    .bt-footer { border-top:1px solid #ECECEC; padding:24px 0; text-align:center; font-size:12px; color:#999; }
+
+    @media (max-width:820px) { .bt-grid { grid-template-columns:repeat(2, 1fr); grid-auto-rows:150px; } .bt-span-2x2 { grid-column:span 2; } }
+    @media (max-width:520px) {
+      .bt-grid { grid-template-columns:1fr; grid-auto-rows:auto; }
+      .bt-span-2x1, .bt-span-2x2 { grid-column:span 1; }
+      .bt-span-1x2, .bt-span-2x2 { grid-row:auto; }
+      .bt-cell { min-height:160px; }
+      .bt-hero h1 { font-size:32px; }
+    }
+  `;
+  const header = `
+    <header class="bt-nav"><div class="container row">
+      <div class="biz">${escapeHtmlS(dd.businessName)}</div>
+      ${navLinksHtml ? `<nav>${navLinksHtml}</nav>` : ""}
+    </div></header>`;
+  const footer = `<div class="bt-footer">© ${new Date().getFullYear()} ${escapeHtmlS(dd.businessName)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
+  const clockScript = `<script>
+    (function () {
+      var clockEl = document.getElementById("bt-clock");
+      var dateEl = document.getElementById("bt-date");
+      if (!clockEl) return;
+      function pad(n) { return String(n).padStart(2, "0"); }
+      function tick() {
+        var now = new Date();
+        clockEl.textContent = pad(now.getHours()) + ":" + pad(now.getMinutes());
+        if (dateEl) dateEl.textContent = now.toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" });
+      }
+      tick();
+      setInterval(tick, 15000);
+    })();
+  </script>`;
+
+  let main;
+  if (page === "about") {
+    main = `
+      <section class="bt-hero" style="padding:56px 0 20px;"><div class="container">
+        <span class="eyebrow">מי אנחנו</span><h1 style="font-size:34px;">${escapeHtmlS(dd.businessName)}</h1>
+      </div></section>
+      <section class="bt-section site-reveal"><div class="container">
+        <div class="bt-cell" style="max-width:640px; margin:0 auto; min-height:0;">
+          <div class="bt-cell-label">הסיפור שלנו</div>
+          <p style="-webkit-line-clamp:unset;">${nl2brS(dd.about)}</p>
+        </div>
+      </div></section>`;
+  } else if (page === "contact") {
+    main = `
+      <section class="bt-hero" style="padding:56px 0 20px;"><div class="container">
+        <span class="eyebrow">נשמח לשמוע מכם</span><h1 style="font-size:34px;">יצירת קשר</h1>
+      </div></section>
+      <section class="bt-section site-reveal"><div class="container">
+        <div class="bt-cell bt-cell-dark" style="max-width:640px; margin:0 auto; min-height:0;">
+          <div class="bt-cell-label">פרטי קשר</div>
+          ${dd._hasContact ? `
+            ${d.phone ? `<span class="line">טלפון: ${escapeHtmlS(d.phone)}</span>` : ""}
+            ${d.email ? `<span class="line">מייל: ${escapeHtmlS(d.email)}</span>` : ""}
+            ${d.address ? `<span class="line">כתובת: ${escapeHtmlS(d.address)}</span>` : ""}
+          ` : `<span class="line">פרטו כאן טלפון, מייל וכתובת.</span>`}
+          ${wa ? `<a class="bt-cta-mini" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}
+        </div>
+      </div></section>`;
+  } else {
+    const cellsList = [];
+    cellsList.push(`<div class="bt-cell bt-span-2x1 bt-cell-accent"><div class="bt-cell-label">ברוכים הבאים</div><h3 style="font-size:20px;">${escapeHtmlS(dd.tagline)}</h3></div>`);
+    cellsList.push(`<div class="bt-cell"><div class="bt-cell-label">השעה עכשיו</div><div class="bt-clock" id="bt-clock">--:--</div><div class="bt-clock-date" id="bt-date"></div></div>`);
+    if (hasPhoto) cellsList.push(`<div class="bt-cell bt-cell-photo bt-span-1x2">${heroMediaHtml(d, "")}</div>`);
+    if (!d.pages || !d.pages.about) {
+      cellsList.push(`<div class="bt-cell bt-span-2x1"><div class="bt-cell-label">מי אנחנו</div><p>${escapeHtmlS(dd.about)}</p></div>`);
+    }
+    if (embedSrc) {
+      cellsList.push(`<div class="bt-cell bt-cell-video bt-span-2x1"><iframe src="${embedSrc}" title="סרטון" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`);
+    }
+    dd._services.forEach((s) => {
+      cellsList.push(`<div class="bt-cell"><div class="bt-cell-label">שירות</div><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`);
+    });
+    if (!d.pages || !d.pages.contact) {
+      cellsList.push(`<div class="bt-cell bt-span-2x2 bt-cell-dark"><div class="bt-cell-label">יצירת קשר</div>${dd._hasContact ? `${d.phone ? `<span class="line">טלפון: ${escapeHtmlS(d.phone)}</span>` : ""}${d.email ? `<span class="line">מייל: ${escapeHtmlS(d.email)}</span>` : ""}${d.address ? `<span class="line">כתובת: ${escapeHtmlS(d.address)}</span>` : ""}` : `<span class="line">פרטו כאן טלפון, מייל וכתובת.</span>`}${wa ? `<a class="bt-cta-mini" href="${wa}" target="_blank" rel="noopener">וואטסאפ</a>` : ""}</div>`);
+    }
+    main = `
+      <section class="bt-hero"><div class="container">
+        <span class="eyebrow">עסק מודולרי, מותאם אישית</span>
+        <h1>${escapeHtmlS(dd.businessName)}</h1>
+        ${ctaHtml(cta, "bt-cta")}
+      </div></section>
+      <section class="bt-section site-reveal"><div class="container">
+        <div class="bt-grid">${cellsList.join("")}</div>
+      </div></section>
+      ${clockScript}
+    `;
+  }
+  const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
+  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${header}${main}${footer}`);
+}
+
+/* ---------- Template 13: cinematic dark (glassmorphism, mouse-glow) ---------- */
+function renderCinematicSite(d, page) {
+  page = page || "index";
+  const pal = derivePalette(d.primaryColor || "#4338CA");
+  const rgb = hexToRgb(pal.primary);
+  const glowRgba = `${rgb.r},${rgb.g},${rgb.b}`;
+  const dd = withFallback(d);
+  const wa = waLink(d.whatsapp || d.phone);
+  const navLinksHtml = siteNavLinks(d, page);
+  const cta = primaryCtaHref(d, page);
+  const embedSrc = videoEmbedSrc(d.videoUrl);
+  const css = `
+    body.cd-body { background:#050505; color:#EDEDED; }
+    .cd-glow { position:fixed; inset:0; z-index:0; pointer-events:none; transition:background .25s ease;
+      background: radial-gradient(650px circle at 50% 20%, rgba(${glowRgba},.16), transparent 45%); }
+    .cd-nav, .cd-hero, .cd-section, .cd-footer { position:relative; z-index:1; }
+    .cd-nav { padding:26px 0; }
+    .cd-nav .row { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; }
+    .cd-nav .biz { font-weight:800; font-size:18px; letter-spacing:-.01em; color:#fff; }
+    .cd-nav nav { display:flex; gap:20px; }
+    .cd-nav nav a { font-size:13px; font-weight:600; color:#9A9A9A; }
+    .cd-nav nav a.active, .cd-nav nav a:hover { color:#fff; }
+
+    .cd-hero { text-align:center; padding:90px 24px 70px; }
+    .cd-kicker { display:inline-block; font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#${pal.ice}; margin-bottom:20px; }
+    .cd-hero h1 { font-size:60px; font-weight:800; letter-spacing:-.03em; line-height:1.05; margin:0 0 18px; color:#fff; }
+    .cd-hero p { font-size:16.5px; color:#B4B4B4; max-width:520px; margin:0 auto 34px; }
+    .cd-cta { display:inline-flex; align-items:center; gap:8px; padding:15px 34px; border-radius:40px;
+      background:rgba(255,255,255,.07); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+      border:1px solid rgba(255,255,255,.22); color:#fff; font-weight:700; font-size:14.5px; transition:background .2s ease, border-color .2s ease, transform .2s ease; }
+    .cd-cta:hover { background:#${pal.primary}; border-color:#${pal.primary}; transform:translateY(-2px); }
+    @media (max-width:640px) { .cd-hero h1 { font-size:38px; } }
+
+    .cd-section { padding:70px 0; }
+    .cd-section-head { text-align:center; margin-bottom:36px; }
+    .cd-section-head h2 { font-size:30px; font-weight:800; color:#fff; margin:10px 0 0; letter-spacing:-.01em; }
+    .cd-section .site-search-input { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.18); color:#fff; }
+
+    .cd-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:22px; }
+    .cd-card { background:rgba(255,255,255,.045); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+      border:1px solid rgba(255,255,255,.1); border-radius:20px; padding:28px; transition:transform .25s ease, border-color .25s ease, background .25s ease; }
+    .cd-card:hover { transform:translateY(-5px); border-color:rgba(255,255,255,.25); background:rgba(255,255,255,.07); }
+    .cd-card h3 { margin:0 0 8px; font-size:17px; font-weight:700; color:#fff; }
+    .cd-card p { margin:0 0 10px; font-size:13.5px; color:#AFAFAF; line-height:1.6; }
+    .cd-card .price { font-weight:700; color:#${pal.ice}; font-size:14px; }
+
+    .cd-photo { border-radius:24px; overflow:hidden; margin:44px auto 0; max-width:640px; border:1px solid rgba(255,255,255,.1); }
+    .cd-photo img, .cd-photo .site-hero-slideshow { display:block; width:100%; }
+
+    .cd-panel { max-width:640px; margin:0 auto; background:rgba(255,255,255,.045); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+      border:1px solid rgba(255,255,255,.1); border-radius:24px; padding:44px 36px; text-align:center; }
+    .cd-panel p { font-size:16px; color:#C6C6C6; line-height:1.8; margin:0; }
+    .cd-panel .line { font-size:14.5px; color:#C6C6C6; margin-bottom:8px; }
+
+    .cd-footer { border-top:1px solid rgba(255,255,255,.08); padding:26px 0; text-align:center; font-size:12px; color:#777; }
+  `;
+  const header = `
+    <header class="cd-nav"><div class="container row">
+      <div class="biz">${escapeHtmlS(dd.businessName)}</div>
+      ${navLinksHtml ? `<nav>${navLinksHtml}</nav>` : ""}
+    </div></header>`;
+  const footer = `<div class="cd-footer">© ${new Date().getFullYear()} ${escapeHtmlS(dd.businessName)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
+  const glowScript = `<script>
+    (function () {
+      var glow = document.getElementById("cd-glow");
+      if (!glow || !window.matchMedia || window.matchMedia("(pointer: coarse)").matches) return;
+      document.addEventListener("mousemove", function (e) {
+        var x = (e.clientX / window.innerWidth * 100).toFixed(1);
+        var y = (e.clientY / window.innerHeight * 100).toFixed(1);
+        glow.style.background = "radial-gradient(650px circle at " + x + "% " + y + "%, rgba(${glowRgba},.16), transparent 45%)";
+      });
+    })();
+  </script>`;
+
+  let main;
+  if (page === "about") {
+    main = `
+      <section class="cd-section site-reveal" style="padding-top:56px;"><div class="container" style="text-align:center;">
+        <span class="cd-kicker">מי אנחנו</span><h2 style="font-size:32px; font-weight:800; color:#fff; margin:10px 0 26px;">${escapeHtmlS(dd.businessName)}</h2>
+        <div class="cd-panel"><p>${nl2brS(dd.about)}</p></div>
+      </div></section>`;
+  } else if (page === "contact") {
+    main = `
+      <section class="cd-section site-reveal" style="padding-top:56px;"><div class="container" style="text-align:center;">
+        <span class="cd-kicker">נשמח לשמוע מכם</span><h2 style="font-size:32px; font-weight:800; color:#fff; margin:10px 0 26px;">יצירת קשר</h2>
+        <div class="cd-panel">
+          ${dd._hasContact ? `
+            ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
+            ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
+            ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
+          ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת.</div>`}
+          ${wa ? `<a class="cd-cta" style="margin-top:18px;" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}
+        </div>
+      </div></section>`;
+  } else {
+    const showSearch = dd._services.length >= 3;
+    main = `
+      <section class="cd-hero"><div class="container">
+        <span class="cd-kicker">${dd.tagline ? "ברוכים הבאים" : "חוויה פרימיום"}</span>
+        <h1>${escapeHtmlS(dd.businessName)}</h1>
+        <p>${escapeHtmlS(dd.tagline)}</p>
+        ${ctaHtml(cta, "cd-cta")}
+        ${heroHasImage(d) ? `<div class="cd-photo">${heroMediaHtml(d, "")}</div>` : ""}
+      </div></section>
+      <section class="cd-section site-reveal"><div class="container">
+        <div class="cd-section-head"><span class="cd-kicker">מה אנחנו מציעים</span><h2>השירותים שלנו</h2>
+        ${showSearch ? searchBoxHtml("#cd-grid", "חיפוש שירות...") : ""}</div>
+        <div class="cd-grid" id="cd-grid">${dd._services.map((s) => `
+          <div class="cd-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
+        ${showSearch ? searchScriptHtml() : ""}
+      </div></section>
+      ${embedSrc ? `<section class="cd-section site-reveal" style="padding-top:0;"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : ""}
+      ${(!d.pages || !d.pages.about) ? `<section class="cd-section site-reveal" style="text-align:center;"><div class="container"><span class="cd-kicker">מי אנחנו</span><h2 style="font-size:28px; font-weight:800; color:#fff; margin:10px 0 26px;">קצת עלינו</h2><div class="cd-panel"><p>${nl2brS(dd.about)}</p></div></div></section>` : ""}
+      ${(!d.pages || !d.pages.contact) ? `<section class="cd-section site-reveal" style="text-align:center;"><div class="container"><span class="cd-kicker">נשמח לשמוע מכם</span><h2 style="font-size:28px; font-weight:800; color:#fff; margin:10px 0 26px;">יצירת קשר</h2><div class="cd-panel">
+        ${dd._hasContact ? `
+          ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
+          ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
+          ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
+        ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת.</div>`}
+      </div></div></section>` : ""}
+    `;
+  }
+  const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
+  const glowDiv = `<div class="cd-glow" id="cd-glow"></div>`;
+  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${glowDiv}${header}${main}${footer}${glowScript}`).replace("<body>", '<body class="cd-body">');
+}
+
+/* ---------- Template 14: neo-brutalism (bold color blocks, arcade press) ---------- */
+function renderBrutalSite(d, page) {
+  page = page || "index";
+  const pal = derivePalette(d.primaryColor || "#FFC800");
+  const dd = withFallback(d);
+  const wa = waLink(d.whatsapp || d.phone);
+  const navLinksHtml = siteNavLinks(d, page);
+  const cta = primaryCtaHref(d, page);
+  const embedSrc = videoEmbedSrc(d.videoUrl);
+  const tickerText = [dd.businessName, dd.tagline].filter(Boolean).join(" ★ ") || dd.businessName;
+  const css = `
+    body.br-body { background:#${pal.ice}; }
+    .br-nav { background:#fff; border-bottom:4px solid #000; padding:16px 0; }
+    .br-nav .row { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+    .br-nav .biz { font-weight:900; font-size:20px; letter-spacing:-.01em; color:#000; }
+    .br-nav nav { display:flex; gap:14px; flex-wrap:wrap; }
+    .br-nav nav a { font-size:13px; font-weight:800; color:#000; padding:5px 4px; }
+    .br-nav nav a.active { background:#000; color:#${pal.ice}; padding:5px 10px; }
+
+    .br-ticker { background:#000; color:#${pal.ice}; overflow:hidden; padding:12px 0; border-bottom:4px solid #000; direction:ltr; }
+    .br-ticker-track { display:flex; width:max-content; animation:br-marquee 18s linear infinite; }
+    .br-ticker-item { font-size:15px; font-weight:900; letter-spacing:.02em; white-space:nowrap; padding:0 22px; direction:rtl; }
+    @keyframes br-marquee { from { transform:translateX(0); } to { transform:translateX(-50%); } }
+    @media (prefers-reduced-motion: reduce) { .br-ticker-track { animation:none; } }
+
+    .br-hero { padding:76px 0; text-align:center; border-bottom:4px solid #000; }
+    .br-hero .eyebrow { background:#000; color:#${pal.ice}; font-weight:900; border-radius:0; }
+    .br-hero h1 { font-weight:900; font-size:50px; letter-spacing:-.02em; margin:18px 0 16px; line-height:1.08; color:#000; }
+    .br-hero p { font-size:17px; font-weight:700; max-width:480px; margin:0 auto 30px; color:#000; }
+    .br-btn { display:inline-block; background:#${pal.primary}; color:#000; font-weight:900; padding:16px 36px; border:4px solid #000; box-shadow:6px 6px 0 #000; font-size:15.5px; transition:transform .08s ease, box-shadow .08s ease; }
+    .br-btn:active { box-shadow:0 0 0 #000; transform:translate(6px,6px); }
+    .br-hero-photo { border:4px solid #000; box-shadow:8px 8px 0 #000; max-width:320px; width:100%; margin:32px auto 0; }
+
+    .br-section { padding:70px 0; border-bottom:4px solid #000; }
+    .br-section.last { border-bottom:none; }
+    .br-section-head { text-align:center; margin-bottom:36px; }
+    .br-section-head h2 { font-weight:900; font-size:32px; margin:10px 0 0; color:#000; }
+    .br-tag { display:inline-block; background:#000; color:#${pal.ice}; font-size:11.5px; font-weight:900; letter-spacing:.05em; padding:6px 14px; }
+    .br-section .site-search-input { border-radius:0; border:3px solid #000; font-weight:700; }
+
+    .br-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:26px; }
+    .br-card { background:#fff; border:4px solid #000; box-shadow:7px 7px 0 #000; padding:26px; transition:transform .15s ease, box-shadow .15s ease; }
+    .br-card:hover { transform:translate(-3px,-3px); box-shadow:10px 10px 0 #000; }
+    .br-card h3 { font-size:18px; font-weight:900; margin:0 0 8px; color:#000; }
+    .br-card p { font-size:13.5px; color:#333; margin:0 0 10px; font-weight:600; }
+    .br-card .price { display:inline-block; background:#${pal.ice}; border:3px solid #000; font-weight:900; padding:5px 12px; font-size:13.5px; }
+
+    .br-about { background:#000; color:#${pal.ice}; text-align:center; }
+    .br-about p { font-size:19px; font-weight:700; max-width:700px; margin:0 auto; line-height:1.6; }
+
+    .br-contact { text-align:center; }
+    .br-contact .line { display:inline-block; background:#fff; border:3px solid #000; padding:9px 18px; margin:5px; font-weight:800; font-size:13.5px; }
+
+    .br-footer { border-top:4px solid #000; padding:24px 0; text-align:center; font-size:12.5px; font-weight:800; color:#000; }
+  `;
+  const header = `
+    <header class="br-nav"><div class="container row">
+      <div class="biz">${escapeHtmlS(dd.businessName)}</div>
+      ${navLinksHtml ? `<nav>${navLinksHtml}</nav>` : ""}
+    </div></header>
+    <div class="br-ticker"><div class="br-ticker-track">${Array(6).fill(`<span class="br-ticker-item">${escapeHtmlS(tickerText)}</span>`).join("")}</div></div>`;
+  const footer = `<div class="br-footer">© ${new Date().getFullYear()} ${escapeHtmlS(dd.businessName)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
+
+  let main;
+  if (page === "about") {
+    main = `<section class="br-section br-about site-reveal last"><div class="container"><p>${nl2brS(dd.about)}</p></div></section>`;
+  } else if (page === "contact") {
+    main = `
+      <section class="br-section br-contact site-reveal last"><div class="container">
+        <div class="br-section-head"><span class="br-tag">נשמח לשמוע מכם</span><h2>יצירת קשר</h2></div>
+        ${dd._hasContact ? `
+          ${d.phone ? `<span class="line">טלפון: ${escapeHtmlS(d.phone)}</span>` : ""}
+          ${d.email ? `<span class="line">מייל: ${escapeHtmlS(d.email)}</span>` : ""}
+          ${d.address ? `<span class="line">כתובת: ${escapeHtmlS(d.address)}</span>` : ""}
+        ` : `<p style="font-weight:700;">פרטו כאן טלפון, מייל וכתובת ליצירת קשר.</p>`}
+        <div style="margin-top:22px;">${wa ? `<a class="br-btn" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}</div>
+      </div></section>`;
+  } else {
+    const showSearch = dd._services.length >= 3;
+    main = `
+      <section class="br-hero"><div class="container">
+        <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "עסק שמעז לבלוט"}</span>
+        <h1>${escapeHtmlS(dd.businessName)}</h1>
+        <p>${escapeHtmlS(dd.tagline)}</p>
+        ${ctaHtml(cta, "br-btn")}
+        ${heroMediaHtml(d, "br-hero-photo")}
+      </div></section>
+      <section class="br-section site-reveal"><div class="container">
+        <div class="br-section-head"><span class="br-tag">מה אנחנו מציעים</span><h2>השירותים שלנו</h2>
+        ${showSearch ? searchBoxHtml("#br-grid", "חיפוש שירות...") : ""}</div>
+        <div class="br-grid" id="br-grid">${dd._services.map((s) => `
+          <div class="br-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
+        ${showSearch ? searchScriptHtml() : ""}
+      </div></section>
+      ${embedSrc ? `<section class="br-section site-reveal"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : ""}
+      ${(!d.pages || !d.pages.about) ? `<section class="br-section br-about site-reveal"><div class="container"><p>${nl2brS(dd.about)}</p></div></section>` : ""}
+      ${(!d.pages || !d.pages.contact) ? `<section class="br-section br-contact site-reveal last"><div class="container">
+        <div class="br-section-head"><span class="br-tag">נשמח לשמוע מכם</span><h2>יצירת קשר</h2></div>
+        ${dd._hasContact ? `
+          ${d.phone ? `<span class="line">טלפון: ${escapeHtmlS(d.phone)}</span>` : ""}
+          ${d.email ? `<span class="line">מייל: ${escapeHtmlS(d.email)}</span>` : ""}
+          ${d.address ? `<span class="line">כתובת: ${escapeHtmlS(d.address)}</span>` : ""}
+        ` : `<p style="font-weight:700;">פרטו כאן טלפון, מייל וכתובת.</p>`}
+      </div></section>` : ""}
+    `;
+  }
+  const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
+  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${header}${main}${footer}`).replace("<body>", '<body class="br-body">');
+}
+
 const SITE_CATEGORIES = [
   { slug: "all", label: "הכל" },
   { slug: "service", label: "עסקי שירות" },
@@ -1537,4 +1925,10 @@ const SITE_TEMPLATES = {
     features: ["עיצוב ממורכז ונקי, בלי רעשי רקע", "תמונה אישית או גלריית תמונות מתחלפות", "מתאים למותג אישי או ייעוץ פרטני", "צבע ראשי לבחירה שצובע את כל האתר"] },
   "catalog": { label: "קטלוג קטן", category: "קטלוג ומכירות", categorySlug: "shop", desc: "רשת מוצרים עם תגי מחיר וניווט עליון", thumb: "images/previews/site-catalog.webp", render: renderCatalogSite,
     features: ["רשת מוצרים עם תגי מחיר ברורים", "ניווט עליון קבוע בין העמודים", "גלריית תמונות מתחלפות בכותרת", "מתאים לחנות קטנה או תפריט שירותים"] },
+  "bento": { label: "רשת משבצות דינמית", category: "עסקי שירות", categorySlug: "service", desc: "לוח משבצות א-סימטרי בסגנון בנטו, עם שעון חי ותוכן מודולרי לכל עסק", thumb: "images/previews/site-bento.webp", render: renderBentoSite,
+    features: ["פריסת בנטו א-סימטרית בהשראת ממשקי פרימיום", "שעון חי שמתעדכן בזמן אמת", "כל משבצת נערכת בנפרד — גמיש לכל סוג עסק", "מתאים לסטודיו, מרפאה, מסעדה או סוכנות"] },
+  "cinematic": { label: "קולנועי כהה", category: "תדמית אישית", categorySlug: "personal", desc: "מוד כהה יוקרתי עם זכוכית מטושטשת, הילה שעוקבת אחרי העכבר וטיפוגרפיה ענקית", thumb: "images/previews/site-cinematic.webp", render: renderCinematicSite,
+    features: ["רקע כהה עם אפקט זכוכית מטושטשת (Glassmorphism)", "הילה זוהרת שעוקבת אחרי תנועת העכבר", "טיפוגרפיה ענקית שמרגישה כמו אפליקציית פרימיום", "מתאים לעורכי דין, יועצים ומותגים יוקרתיים"] },
+  "brutal": { label: "נאו-ברוטליזם נועז", category: "קטלוג ומכירות", categorySlug: "shop", desc: "רקעי צבע עזים, מסגרות שחורות עבות, וכפתורי לחיצה בסגנון ארקייד", thumb: "images/previews/site-brutal.webp", render: renderBrutalSite,
+    features: ["רקעים צבעוניים נועזים עם מסגרות שחורות עבות", "כפתורים שנלחצים פיזית בלחיצה, כמו במכונת ארקייד", "כותרת נעה בלולאה (Marquee) בסגנון בורסה", "מתאים לחנויות, מאמנים ומותגים צעירים ותוססים"] },
 };
