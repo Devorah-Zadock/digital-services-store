@@ -76,6 +76,7 @@ const SITE_TEMPLATE_DEFAULT_COLOR = {
   "gallery": "#B5175A", "bold": "#B5175A", "studio": "#B5175A",
   "elegant": "#B8860B", "noir": "#B8860B",
   "bento": "#0E8C8C", "cinematic": "#4338CA", "brutal": "#FFC800",
+  "neon": "#A855F7", "chaos": "#CCFF00", "luxury3d": "#B08D57",
 };
 function freshSiteData(template) {
   const data = JSON.parse(JSON.stringify(SITE_DEFAULT));

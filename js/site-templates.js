@@ -1888,6 +1888,501 @@ function renderBrutalSite(d, page) {
   return siteDoc({ title: titles[page], description: dd.tagline, css }, `${header}${main}${footer}`).replace("<body>", '<body class="br-body">');
 }
 
+/* ---------- Template 15: neon future (cyberpunk agency) ---------- */
+function renderNeonSite(d, page) {
+  page = page || "index";
+  const pal = derivePalette(d.primaryColor || "#A855F7");
+  const dd = withFallback(d);
+  const wa = waLink(d.whatsapp || d.phone);
+  const navLinksHtml = siteNavLinks(d, page);
+  const cta = primaryCtaHref(d, page);
+  const embedSrc = videoEmbedSrc(d.videoUrl);
+  const css = `
+    body.nf-body { background:#0A0518; color:#F0EAFF; }
+    .nf-mesh { position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+    .nf-blob { position:absolute; border-radius:50%; filter:blur(80px); opacity:.5; }
+    .nf-blob-1 { width:520px; height:520px; background:#7C3AED; top:-12%; left:-10%; animation:nf-float1 22s ease-in-out infinite; }
+    .nf-blob-2 { width:480px; height:480px; background:#EC4899; top:28%; right:-16%; animation:nf-float2 26s ease-in-out infinite; }
+    .nf-blob-3 { width:420px; height:420px; background:#22D3EE; bottom:-18%; left:22%; animation:nf-float3 30s ease-in-out infinite; }
+    @keyframes nf-float1 { 0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(60px,80px) scale(1.15);} }
+    @keyframes nf-float2 { 0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(-70px,50px) scale(.9);} }
+    @keyframes nf-float3 { 0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(40px,-60px) scale(1.1);} }
+    @media (prefers-reduced-motion:reduce) { .nf-blob { animation:none; } }
+
+    .nf-nav, .nf-hero, .nf-section, .nf-footer { position:relative; z-index:1; }
+    .nf-nav { padding:24px 0; }
+    .nf-nav .row { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; }
+    .nf-nav .biz { font-weight:800; font-size:18px; color:#fff; letter-spacing:-.01em; }
+    .nf-nav nav { display:flex; gap:20px; }
+    .nf-nav nav a { font-size:13px; font-weight:600; color:#C9BFEA; }
+    .nf-nav nav a.active, .nf-nav nav a:hover { color:#fff; }
+
+    .nf-hero { text-align:center; padding:100px 24px 80px; }
+    .nf-kicker { display:inline-block; font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#22D3EE; margin-bottom:22px; }
+    .nf-hero h1 { font-size:60px; font-weight:800; letter-spacing:-.02em; line-height:1.1; margin:0 0 20px; color:#fff; }
+    .nf-word { display:inline-block; opacity:0; transform:translateY(40px); transition:opacity .7s cubic-bezier(.2,.8,.2,1), transform .7s cubic-bezier(.2,.8,.2,1); }
+    .nf-split-in .nf-word { opacity:1; transform:translateY(0); }
+    .nf-hero p { font-size:16px; color:#C9BFEA; max-width:520px; margin:0 auto 34px; }
+    .nf-cta { display:inline-flex; align-items:center; gap:8px; padding:16px 36px; border-radius:40px;
+      background:rgba(255,255,255,.08); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+      border:1px solid rgba(255,255,255,.25); color:#fff; font-weight:700; font-size:14.5px;
+      transition:box-shadow .3s ease, background .3s ease, transform .2s ease; }
+    .nf-cta:hover { background:#${pal.primary}; box-shadow:0 0 44px rgba(168,85,247,.55); transform:translateY(-2px); }
+    @media (max-width:640px) { .nf-hero h1 { font-size:36px; } }
+
+    .nf-section { padding:80px 0; }
+    .nf-section-head { text-align:center; margin-bottom:40px; }
+    .nf-section-head h2 { font-size:32px; font-weight:800; color:#fff; margin:10px 0 0; }
+    .nf-section .site-search-input { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.18); color:#fff; }
+    .nf-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:22px; }
+    .nf-card { background:rgba(255,255,255,.05); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+      border:1px solid rgba(255,255,255,.12); border-radius:20px; padding:28px;
+      transition:transform .3s ease, border-color .3s ease, box-shadow .3s ease; }
+    .nf-card:hover { transform:translateY(-6px); border-color:rgba(168,85,247,.55); box-shadow:0 20px 50px rgba(124,58,237,.25); }
+    .nf-card h3 { margin:0 0 8px; font-size:17px; font-weight:700; color:#fff; }
+    .nf-card p { margin:0 0 10px; font-size:13.5px; color:#B9AFDB; line-height:1.6; }
+    .nf-card .price { font-weight:700; color:#22D3EE; font-size:14px; }
+
+    .nf-panel { max-width:640px; margin:0 auto; text-align:center; background:rgba(255,255,255,.05); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+      border:1px solid rgba(255,255,255,.12); border-radius:24px; padding:44px 36px; }
+    .nf-panel p { font-size:16px; color:#C9BFEA; line-height:1.8; margin:0; }
+    .nf-panel .line { font-size:14.5px; color:#C9BFEA; margin-bottom:8px; }
+
+    .nf-footer { border-top:1px solid rgba(255,255,255,.1); padding:26px 0; text-align:center; font-size:12px; color:#8A80AD; }
+
+    .nf-cursor-dot { position:fixed; top:0; left:0; width:10px; height:10px; border-radius:50%; background:#fff; pointer-events:none; z-index:9999; mix-blend-mode:difference; }
+    .nf-cursor-ring { position:fixed; top:0; left:0; width:34px; height:34px; border-radius:50%; border:1.5px solid rgba(255,255,255,.55); pointer-events:none; z-index:9998; }
+    body.nf-cursor-active, body.nf-cursor-active a, body.nf-cursor-active button { cursor:none; }
+    .nf-particle { position:fixed; top:0; left:0; width:5px; height:5px; border-radius:50%; pointer-events:none; z-index:9997; }
+  `;
+  const header = `
+    <header class="nf-nav"><div class="container row">
+      <div class="biz">${escapeHtmlS(dd.businessName)}</div>
+      ${navLinksHtml ? `<nav>${navLinksHtml}</nav>` : ""}
+    </div></header>`;
+  const footer = `<div class="nf-footer">© ${new Date().getFullYear()} ${escapeHtmlS(dd.businessName)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
+  const meshDiv = `<div class="nf-mesh"><div class="nf-blob nf-blob-1"></div><div class="nf-blob nf-blob-2"></div><div class="nf-blob nf-blob-3"></div></div>`;
+  const cursorScript = `<script>
+    (function () {
+      if (!window.matchMedia || window.matchMedia("(pointer: coarse)").matches) return;
+      document.body.classList.add("nf-cursor-active");
+      var dot = document.createElement("div"); dot.className = "nf-cursor-dot"; document.body.appendChild(dot);
+      var ring = document.createElement("div"); ring.className = "nf-cursor-ring"; document.body.appendChild(ring);
+      var mx = -50, my = -50, rx = -50, ry = -50;
+      document.addEventListener("mousemove", function (e) {
+        mx = e.clientX; my = e.clientY;
+        dot.style.transform = "translate(" + (mx - 5) + "px," + (my - 5) + "px)";
+      });
+      function tick() {
+        rx += (mx - rx) * .15; ry += (my - ry) * .15;
+        ring.style.transform = "translate(" + (rx - 17) + "px," + (ry - 17) + "px)";
+        requestAnimationFrame(tick);
+      }
+      tick();
+      function burst(x, y) {
+        var colors = ["#7C3AED", "#EC4899", "#22D3EE"];
+        for (var i = 0; i < 10; i++) {
+          var p = document.createElement("div");
+          p.className = "nf-particle";
+          p.style.background = colors[i % colors.length];
+          p.style.left = x + "px"; p.style.top = y + "px";
+          document.body.appendChild(p);
+          var angle = Math.random() * Math.PI * 2;
+          var dist = 40 + Math.random() * 50;
+          var dx = Math.cos(angle) * dist, dy = Math.sin(angle) * dist;
+          try {
+            p.animate([
+              { transform: "translate(0,0)", opacity: 1 },
+              { transform: "translate(" + dx + "px," + dy + "px)", opacity: 0 }
+            ], { duration: 600 + Math.random() * 300, easing: "cubic-bezier(.2,.8,.2,1)" });
+          } catch (err) {}
+          setTimeout((function (el) { return function () { el.remove(); }; })(p), 1000);
+        }
+      }
+      document.addEventListener("click", function (e) { burst(e.clientX, e.clientY); });
+    })();
+  </script>`;
+  const splitScript = `<script>
+    (function () {
+      function escWord(s) { return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+      var heads = document.querySelectorAll(".nf-split");
+      if (!heads.length) return;
+      heads.forEach(function (h) {
+        var words = h.textContent.split(" ");
+        h.innerHTML = words.map(function (w, i) {
+          return '<span class="nf-word" style="transition-delay:' + (i * .06) + 's">' + escWord(w) + '</span>';
+        }).join(" ");
+      });
+      if ("IntersectionObserver" in window) {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) { entry.target.classList.add("nf-split-in"); io.unobserve(entry.target); }
+          });
+        }, { threshold: .4 });
+        heads.forEach(function (h) { io.observe(h); });
+      } else {
+        heads.forEach(function (h) { h.classList.add("nf-split-in"); });
+      }
+    })();
+  </script>`;
+
+  let main;
+  if (page === "about") {
+    main = `
+      <section class="nf-section site-reveal" style="padding-top:56px; text-align:center;"><div class="container">
+        <span class="nf-kicker">מי אנחנו</span><h2 class="nf-split" style="font-size:32px; font-weight:800; color:#fff; margin:10px 0 26px;">${escapeHtmlS(dd.businessName)}</h2>
+        <div class="nf-panel"><p>${nl2brS(dd.about)}</p></div>
+      </div></section>`;
+  } else if (page === "contact") {
+    main = `
+      <section class="nf-section site-reveal" style="padding-top:56px; text-align:center;"><div class="container">
+        <span class="nf-kicker">נשמח לשמוע מכם</span><h2 class="nf-split" style="font-size:32px; font-weight:800; color:#fff; margin:10px 0 26px;">יצירת קשר</h2>
+        <div class="nf-panel">
+          ${dd._hasContact ? `
+            ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
+            ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
+            ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
+          ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת.</div>`}
+          ${wa ? `<a class="nf-cta" style="margin-top:18px;" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}
+        </div>
+      </div></section>`;
+  } else {
+    const showSearch = dd._services.length >= 3;
+    main = `
+      <section class="nf-hero"><div class="container">
+        <span class="nf-kicker">${dd.tagline ? "ברוכים הבאים" : "סוכנות דיגיטל מהעתיד"}</span>
+        <h1 class="nf-split">${escapeHtmlS(dd.businessName)}</h1>
+        <p>${escapeHtmlS(dd.tagline)}</p>
+        ${ctaHtml(cta, "nf-cta")}
+      </div></section>
+      <section class="nf-section site-reveal"><div class="container">
+        <div class="nf-section-head"><span class="nf-kicker">מה אנחנו מציעים</span><h2 class="nf-split">השירותים שלנו</h2>
+        ${showSearch ? searchBoxHtml("#nf-grid", "חיפוש שירות...") : ""}</div>
+        <div class="nf-grid" id="nf-grid">${dd._services.map((s) => `
+          <div class="nf-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
+        ${showSearch ? searchScriptHtml() : ""}
+      </div></section>
+      ${embedSrc ? `<section class="nf-section site-reveal" style="padding-top:0;"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : ""}
+      ${(!d.pages || !d.pages.about) ? `<section class="nf-section site-reveal" style="text-align:center;"><div class="container"><span class="nf-kicker">מי אנחנו</span><h2 class="nf-split" style="font-size:28px; font-weight:800; color:#fff; margin:10px 0 26px;">קצת עלינו</h2><div class="nf-panel"><p>${nl2brS(dd.about)}</p></div></div></section>` : ""}
+      ${(!d.pages || !d.pages.contact) ? `<section class="nf-section site-reveal" style="text-align:center;"><div class="container"><span class="nf-kicker">נשמח לשמוע מכם</span><h2 class="nf-split" style="font-size:28px; font-weight:800; color:#fff; margin:10px 0 26px;">יצירת קשר</h2><div class="nf-panel">
+        ${dd._hasContact ? `
+          ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
+          ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
+          ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
+        ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת.</div>`}
+      </div></div></section>` : ""}
+    `;
+  }
+  const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
+  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${meshDiv}${header}${main}${footer}${cursorScript}${splitScript}`).replace("<body>", '<body class="nf-body">');
+}
+
+/* ---------- Template 16: organized chaos (fashion / artist portfolio) ---------- */
+function renderChaosSite(d, page) {
+  page = page || "index";
+  const pal = derivePalette(d.primaryColor || "#CCFF00");
+  const dd = withFallback(d);
+  const wa = waLink(d.whatsapp || d.phone);
+  const navLinksHtml = siteNavLinks(d, page);
+  const cta = primaryCtaHref(d, page);
+  const embedSrc = videoEmbedSrc(d.videoUrl);
+  const tickerText = [dd.businessName, dd.tagline].filter(Boolean).join(" × ") || dd.businessName;
+  const css = `
+    body.oc-body { background:#F5F2E8; color:#0A0A0A; overflow-x:hidden; }
+    .oc-nav { padding:20px 0; border-bottom:4px solid #0A0A0A; background:#F5F2E8; position:relative; z-index:5; }
+    .oc-nav .row { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; }
+    .oc-nav .biz { font-weight:900; font-size:20px; letter-spacing:-.02em; }
+    .oc-nav nav { display:flex; gap:18px; flex-wrap:wrap; }
+    .oc-nav nav a { font-size:13px; font-weight:800; color:#0A0A0A; }
+    .oc-nav nav a.active { text-decoration:underline; text-decoration-thickness:3px; text-underline-offset:4px; }
+
+    .oc-hero { padding:90px 24px 70px; text-align:center; background:linear-gradient(135deg, #${pal.primary} 0%, #F5F2E8 58%); position:relative; overflow:hidden; }
+    .oc-hero h1 { font-size:64px; font-weight:900; letter-spacing:-.03em; line-height:.98; margin:0 0 20px; text-transform:uppercase; }
+    .oc-hero p { font-size:17px; font-weight:600; max-width:480px; margin:0 auto 32px; }
+    .oc-cta { display:inline-block; background:#0A0A0A; color:#${pal.primary}; font-weight:900; padding:17px 38px; border-radius:100px; font-size:15px; transition:transform .25s cubic-bezier(.2,.8,.2,1); }
+    @media (max-width:640px) { .oc-hero h1 { font-size:36px; } }
+
+    .oc-marquee { background:#0A0A0A; color:#${pal.primary}; overflow:hidden; padding:14px 0; direction:ltr; border-top:4px solid #0A0A0A; border-bottom:4px solid #0A0A0A; }
+    .oc-marquee-track { display:flex; width:max-content; animation:oc-marquee 20s linear infinite; }
+    .oc-marquee-item { font-size:20px; font-weight:900; text-transform:uppercase; white-space:nowrap; padding:0 26px; direction:rtl; }
+    @keyframes oc-marquee { from{transform:translateX(0);} to{transform:translateX(-50%);} }
+    @media (prefers-reduced-motion:reduce) { .oc-marquee-track { animation:none; } }
+
+    .oc-hscroll-wrap { height:220vh; position:relative; }
+    .oc-hscroll-sticky { position:sticky; top:0; height:100vh; overflow:hidden; display:flex; align-items:center; }
+    .oc-hscroll-track { display:flex; direction:ltr; gap:28px; padding:0 6vw; will-change:transform; }
+    .oc-hcard { direction:rtl; flex:0 0 320px; background:#fff; border:4px solid #0A0A0A; border-radius:18px; padding:30px; transition:transform .35s cubic-bezier(.2,.8,.2,1), filter .35s ease; }
+    .oc-hcard:hover { transform:scale(1.04) rotate(-1deg); filter:saturate(1.3); }
+    .oc-hcard h3 { font-size:20px; font-weight:900; margin:0 0 10px; }
+    .oc-hcard p { font-size:14px; color:#333; margin:0 0 12px; font-weight:600; }
+    .oc-hcard .price { display:inline-block; background:#${pal.primary}; border:2px solid #0A0A0A; font-weight:900; padding:5px 12px; font-size:13px; }
+    @media (max-width:760px) {
+      .oc-hscroll-wrap { height:auto; }
+      .oc-hscroll-sticky { position:static; height:auto; overflow-x:auto; padding:20px 0; }
+      .oc-hscroll-track { transform:none !important; }
+    }
+
+    .oc-section { padding:80px 0; }
+    .oc-section-head { text-align:center; margin-bottom:40px; }
+    .oc-section-head h2 { font-size:36px; font-weight:900; text-transform:uppercase; margin:8px 0 0; }
+    .oc-tag { display:inline-block; background:#0A0A0A; color:#${pal.primary}; font-size:11.5px; font-weight:900; letter-spacing:.05em; padding:6px 16px; border-radius:100px; text-transform:uppercase; }
+
+    .oc-about { background:#0A0A0A; color:#F5F2E8; text-align:center; }
+    .oc-about p { font-size:20px; font-weight:700; max-width:700px; margin:0 auto; line-height:1.6; }
+
+    .oc-contact { text-align:center; }
+    .oc-contact .line { display:inline-block; background:#fff; border:3px solid #0A0A0A; border-radius:100px; padding:10px 20px; margin:5px; font-weight:800; font-size:13.5px; }
+
+    .oc-footer { border-top:4px solid #0A0A0A; padding:24px 0; text-align:center; font-size:12.5px; font-weight:800; }
+
+    .oc-distort { overflow:hidden; border-radius:16px; }
+    .oc-distort img, .oc-distort .site-hero-slideshow { transition:transform .5s cubic-bezier(.2,.8,.2,1), filter .5s ease; }
+    .oc-distort:hover img, .oc-distort:hover .site-hero-slideshow { transform:scale(1.08) skewY(-2deg); filter:saturate(1.4) contrast(1.05); }
+  `;
+  const header = `
+    <header class="oc-nav"><div class="container row">
+      <div class="biz">${escapeHtmlS(dd.businessName)}</div>
+      ${navLinksHtml ? `<nav>${navLinksHtml}</nav>` : ""}
+    </div></header>`;
+  const footer = `<div class="oc-footer">© ${new Date().getFullYear()} ${escapeHtmlS(dd.businessName)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
+  const interactionScript = `<script>
+    (function () {
+      if (window.matchMedia && !window.matchMedia("(pointer: coarse)").matches) {
+        document.querySelectorAll(".oc-cta").forEach(function (btn) {
+          btn.addEventListener("mousemove", function (e) {
+            var r = btn.getBoundingClientRect();
+            var x = e.clientX - r.left - r.width / 2;
+            var y = e.clientY - r.top - r.height / 2;
+            btn.style.transform = "translate(" + (x * .3) + "px," + (y * .3) + "px)";
+          });
+          btn.addEventListener("mouseleave", function () { btn.style.transform = "translate(0,0)"; });
+        });
+      }
+      var wrap = document.getElementById("oc-hscroll");
+      var track = document.getElementById("oc-hscroll-track");
+      if (wrap && track && window.innerWidth > 760) {
+        // The wrapper's own height sets how much "extra" scroll distance
+        // drives the horizontal shift — a fixed vh regardless of card count
+        // meant 3 cards and 10 cards scrolled equally (very slow, or barely
+        // moving at all). Sizing it from the track's actual measured width
+        // instead means the scroll pacing always matches how far the cards
+        // actually need to travel, whether there are 3 of them or 10.
+        var maxShift = 0;
+        function recalc() {
+          maxShift = Math.max(0, track.scrollWidth - window.innerWidth + 96);
+          var extraVh = Math.min(160, Math.max(60, (maxShift / window.innerHeight) * 100 * 1.3));
+          wrap.style.height = (100 + extraVh) + "vh";
+        }
+        function onScroll() {
+          var rect = wrap.getBoundingClientRect();
+          var total = rect.height - window.innerHeight;
+          if (total <= 0) return;
+          var progress = Math.min(1, Math.max(0, -rect.top / total));
+          track.style.transform = "translateX(" + (-progress * maxShift) + "px)";
+        }
+        recalc();
+        onScroll();
+        window.addEventListener("resize", function () { recalc(); onScroll(); });
+        document.addEventListener("scroll", onScroll, { passive: true });
+      }
+    })();
+  </script>`;
+
+  let main;
+  if (page === "about") {
+    main = `<section class="oc-section oc-about site-reveal"><div class="container"><p>${nl2brS(dd.about)}</p></div></section>`;
+  } else if (page === "contact") {
+    main = `
+      <section class="oc-section site-reveal"><div class="container">
+        <div class="oc-section-head"><span class="oc-tag">נשמח לשמוע מכם</span><h2>יצירת קשר</h2></div>
+        <div class="oc-contact">
+          ${dd._hasContact ? `
+            ${d.phone ? `<span class="line">טלפון: ${escapeHtmlS(d.phone)}</span>` : ""}
+            ${d.email ? `<span class="line">מייל: ${escapeHtmlS(d.email)}</span>` : ""}
+            ${d.address ? `<span class="line">כתובת: ${escapeHtmlS(d.address)}</span>` : ""}
+          ` : `<p style="font-weight:700;">פרטו כאן טלפון, מייל וכתובת ליצירת קשר.</p>`}
+          <div style="margin-top:20px;">${wa ? `<a class="oc-cta" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}</div>
+        </div>
+      </div></section>`;
+  } else {
+    main = `
+      <section class="oc-hero"><div class="container">
+        <span class="eyebrow" style="background:#0A0A0A; color:#${pal.primary}; border-radius:0;">${dd.tagline ? "ברוכים הבאים" : "מותג שלא מתנצל"}</span>
+        <h1>${escapeHtmlS(dd.businessName)}</h1>
+        <p>${escapeHtmlS(dd.tagline)}</p>
+        ${ctaHtml(cta, "oc-cta")}
+        ${heroHasImage(d) ? `<div class="oc-distort" style="max-width:420px; margin:34px auto 0;">${heroMediaHtml(d, "")}</div>` : ""}
+      </div></section>
+      <div class="oc-marquee"><div class="oc-marquee-track">${Array(6).fill(`<span class="oc-marquee-item">${escapeHtmlS(tickerText)}</span>`).join("")}</div></div>
+      <div class="oc-hscroll-wrap" id="oc-hscroll"><div class="oc-hscroll-sticky"><div class="oc-hscroll-track" id="oc-hscroll-track">
+        ${dd._services.map((s) => `<div class="oc-hcard"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}
+      </div></div></div>
+      ${embedSrc ? `<section class="oc-section site-reveal"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : ""}
+      ${(!d.pages || !d.pages.about) ? `<section class="oc-section oc-about site-reveal"><div class="container"><p>${nl2brS(dd.about)}</p></div></section>` : ""}
+      ${(!d.pages || !d.pages.contact) ? `<section class="oc-section site-reveal"><div class="container">
+        <div class="oc-section-head"><span class="oc-tag">נשמח לשמוע מכם</span><h2>יצירת קשר</h2></div>
+        <div class="oc-contact">
+          ${dd._hasContact ? `
+            ${d.phone ? `<span class="line">טלפון: ${escapeHtmlS(d.phone)}</span>` : ""}
+            ${d.email ? `<span class="line">מייל: ${escapeHtmlS(d.email)}</span>` : ""}
+            ${d.address ? `<span class="line">כתובת: ${escapeHtmlS(d.address)}</span>` : ""}
+          ` : `<p style="font-weight:700;">פרטו כאן טלפון, מייל וכתובת.</p>`}
+        </div>
+      </div></section>` : ""}
+      ${interactionScript}
+    `;
+  }
+  const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
+  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${header}${main}${footer}`).replace("<body>", '<body class="oc-body">');
+}
+
+/* ---------- Template 17: 3D minimalist luxury (architects / real estate) ---------- */
+function renderLuxurySite(d, page) {
+  page = page || "index";
+  const pal = derivePalette(d.primaryColor || "#B08D57");
+  const dd = withFallback(d);
+  const wa = waLink(d.whatsapp || d.phone);
+  const navLinksHtml = siteNavLinks(d, page);
+  const cta = primaryCtaHref(d, page);
+  const embedSrc = videoEmbedSrc(d.videoUrl);
+  const hasPhoto = heroHasImage(d);
+  const aboutExcerptRaw = dd.about.length > 90 ? dd.about.slice(0, 90) + "…" : dd.about;
+  const css = `
+    body.lx-body { background:#FAF8F4; color:#2A2620; }
+    .lx-iris { position:fixed; inset:0; z-index:9999; background:#FAF8F4; pointer-events:none;
+      clip-path:circle(150% at 50% 50%); animation:lx-iris-reveal 1.3s .15s cubic-bezier(.4,0,.2,1) both; }
+    @keyframes lx-iris-reveal { from { clip-path:circle(150% at 50% 50%); } to { clip-path:circle(0% at 50% 50%); } }
+    @media (prefers-reduced-motion:reduce) { .lx-iris { animation:none; clip-path:circle(0% at 50% 50%); } }
+
+    .lx-nav { padding:30px 0; position:relative; z-index:2; }
+    .lx-nav .row { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; }
+    .lx-nav .biz { font-family:'Frank Ruhl Libre',serif; font-weight:500; font-size:19px; letter-spacing:.02em; color:#2A2620; }
+    .lx-nav nav { display:flex; gap:24px; flex-wrap:wrap; }
+    .lx-nav nav a { font-size:12.5px; letter-spacing:.06em; text-transform:uppercase; color:#8A8272; }
+    .lx-nav nav a.active, .lx-nav nav a:hover { color:#2A2620; }
+
+    .lx-hero { position:relative; min-height:82vh; display:flex; align-items:center; justify-content:center; text-align:center; overflow:hidden; padding:40px 24px; }
+    .lx-hero-bg { position:absolute; inset:-10%; z-index:0;
+      background: radial-gradient(circle at 30% 30%, rgba(212,187,150,.35), transparent 55%),
+                  radial-gradient(circle at 75% 70%, rgba(180,180,175,.3), transparent 55%); }
+    .lx-hero-inner { position:relative; z-index:1; }
+    .lx-kicker { font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:#8A8272; margin-bottom:22px; display:block; }
+    .lx-hero h1 { font-family:'Frank Ruhl Libre',serif; font-weight:500; font-size:56px; line-height:1.15; margin:0 0 20px; color:#2A2620; }
+    .lx-hero p { font-size:16px; color:#6B6458; max-width:480px; margin:0 auto 34px; }
+    .lx-cta { display:inline-block; border:1px solid #2A2620; color:#2A2620; font-weight:600; font-size:13px; letter-spacing:.06em; padding:15px 38px; transition:background .3s ease, color .3s ease; }
+    .lx-cta:hover { background:#2A2620; color:#FAF8F4; }
+    @media (max-width:640px) { .lx-hero h1 { font-size:34px; } }
+
+    .lx-parallax { position:relative; height:70vh; overflow:hidden; }
+    .lx-parallax-layer { position:absolute; inset:0; will-change:transform; }
+    .lx-parallax-bg { background:linear-gradient(160deg, #E8E0D0, #D4BB96 60%, #B8AFA0); overflow:hidden; }
+    .lx-parallax-img, .lx-parallax-bg .site-hero-slideshow { position:absolute; inset:-12%; width:124%; height:124%; object-fit:cover; }
+    .lx-parallax-mid { display:flex; align-items:center; justify-content:center; padding:0 24px; }
+    .lx-parallax-mid h2 { font-family:'Frank Ruhl Libre',serif; font-weight:500; font-size:42px; color:#2A2620; text-align:center; max-width:620px; text-shadow:0 2px 24px rgba(250,248,244,.6); }
+    @media (max-width:640px) { .lx-parallax { height:48vh; } .lx-parallax-mid h2 { font-size:24px; } }
+
+    .lx-section { padding:90px 0; }
+    .lx-section-head { text-align:center; margin-bottom:44px; }
+    .lx-kicker2 { font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:#8A8272; }
+    .lx-section-head h2 { font-family:'Frank Ruhl Libre',serif; font-weight:500; font-size:34px; margin:12px 0 0; color:#2A2620; }
+    .lx-section .site-search-input { border:1px solid #DCD3C0; background:#fff; }
+
+    .lx-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:2px; background:#DCD3C0; }
+    .lx-card { background:#FAF8F4; padding:36px 30px; }
+    .lx-card h3 { font-family:'Frank Ruhl Libre',serif; font-weight:500; font-size:19px; margin:0 0 10px; color:#2A2620; }
+    .lx-card p { font-size:13.5px; color:#6B6458; line-height:1.7; margin:0 0 10px; }
+    .lx-card .price { font-size:13px; letter-spacing:.04em; color:#${pal.primaryDark}; }
+
+    .lx-about, .lx-contact { text-align:center; }
+    .lx-panel { max-width:620px; margin:0 auto; }
+    .lx-panel p { font-size:17px; line-height:1.9; color:#4A453A; }
+    .lx-panel .line { font-size:14.5px; color:#4A453A; margin-bottom:8px; }
+
+    .lx-footer { border-top:1px solid #E4DCC8; padding:28px 0; text-align:center; font-size:11.5px; letter-spacing:.04em; color:#8A8272; }
+  `;
+  const header = `
+    <header class="lx-nav"><div class="container row">
+      <div class="biz">${escapeHtmlS(dd.businessName)}</div>
+      ${navLinksHtml ? `<nav>${navLinksHtml}</nav>` : ""}
+    </div></header>`;
+  const footer = `<div class="lx-footer">© ${new Date().getFullYear()} ${escapeHtmlS(dd.businessName)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
+  const iris = `<div class="lx-iris" aria-hidden="true"></div>`;
+  const parallaxScript = `<script>
+    (function () {
+      var section = document.getElementById("lx-parallax");
+      if (!section) return;
+      if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      var bg = section.querySelector(".lx-parallax-bg");
+      var mid = section.querySelector(".lx-parallax-mid");
+      function onScroll() {
+        var rect = section.getBoundingClientRect();
+        var vh = window.innerHeight;
+        if (rect.bottom < 0 || rect.top > vh) return;
+        var progress = (vh - rect.top) / (vh + rect.height);
+        if (bg) bg.style.transform = "translateY(" + (progress * 60 - 30) + "px) scale(1.15)";
+        if (mid) mid.style.transform = "translateY(" + (progress * -30 + 15) + "px)";
+      }
+      document.addEventListener("scroll", onScroll, { passive: true });
+      onScroll();
+    })();
+  </script>`;
+
+  let main;
+  if (page === "about") {
+    main = `
+      <section class="lx-section site-reveal" style="padding-top:64px; text-align:center;"><div class="container">
+        <span class="lx-kicker2">מי אנחנו</span><h2 style="font-family:'Frank Ruhl Libre',serif; font-weight:500; font-size:32px; margin:12px 0 26px; color:#2A2620;">${escapeHtmlS(dd.businessName)}</h2>
+        <div class="lx-panel"><p>${nl2brS(dd.about)}</p></div>
+      </div></section>`;
+  } else if (page === "contact") {
+    main = `
+      <section class="lx-section site-reveal" style="padding-top:64px; text-align:center;"><div class="container">
+        <span class="lx-kicker2">נשמח לשמוע מכם</span><h2 style="font-family:'Frank Ruhl Libre',serif; font-weight:500; font-size:32px; margin:12px 0 26px; color:#2A2620;">יצירת קשר</h2>
+        <div class="lx-panel">
+          ${dd._hasContact ? `
+            ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
+            ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
+            ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
+          ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת.</div>`}
+          ${wa ? `<a class="lx-cta" style="margin-top:18px; display:inline-block;" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}
+        </div>
+      </div></section>`;
+  } else {
+    const showSearch = dd._services.length >= 3;
+    main = `
+      <section class="lx-hero"><div class="lx-hero-bg"></div><div class="container lx-hero-inner">
+        <span class="lx-kicker">${dd.tagline ? "ברוכים הבאים" : "עיצוב ללא פשרות"}</span>
+        <h1>${escapeHtmlS(dd.businessName)}</h1>
+        <p>${escapeHtmlS(dd.tagline)}</p>
+        ${ctaHtml(cta, "lx-cta")}
+      </div></section>
+      <div class="lx-parallax" id="lx-parallax">
+        <div class="lx-parallax-layer lx-parallax-bg">${hasPhoto ? heroMediaHtml(d, "lx-parallax-img") : ""}</div>
+        <div class="lx-parallax-layer lx-parallax-mid"><h2>${escapeHtmlS(aboutExcerptRaw)}</h2></div>
+      </div>
+      <section class="lx-section site-reveal"><div class="container">
+        <div class="lx-section-head"><span class="lx-kicker2">מה אנחנו מציעים</span><h2>השירותים שלנו</h2>
+        ${showSearch ? searchBoxHtml("#lx-grid", "חיפוש שירות...") : ""}</div>
+        <div class="lx-grid" id="lx-grid">${dd._services.map((s) => `
+          <div class="lx-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
+        ${showSearch ? searchScriptHtml() : ""}
+      </div></section>
+      ${embedSrc ? `<section class="lx-section site-reveal" style="padding-top:0;"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : ""}
+      ${(!d.pages || !d.pages.about) ? `<section class="lx-section lx-about site-reveal"><div class="container"><span class="lx-kicker2">מי אנחנו</span><h2 style="font-family:'Frank Ruhl Libre',serif; font-weight:500; font-size:30px; margin:12px 0 26px; color:#2A2620;">קצת עלינו</h2><div class="lx-panel"><p>${nl2brS(dd.about)}</p></div></div></section>` : ""}
+      ${(!d.pages || !d.pages.contact) ? `<section class="lx-section lx-contact site-reveal"><div class="container"><span class="lx-kicker2">נשמח לשמוע מכם</span><h2 style="font-family:'Frank Ruhl Libre',serif; font-weight:500; font-size:30px; margin:12px 0 26px; color:#2A2620;">יצירת קשר</h2><div class="lx-panel">
+        ${dd._hasContact ? `
+          ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
+          ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
+          ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
+        ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת.</div>`}
+      </div></div></section>` : ""}
+      ${parallaxScript}
+    `;
+  }
+  const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
+  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${iris}${header}${main}${footer}`).replace("<body>", '<body class="lx-body">');
+}
+
 const SITE_CATEGORIES = [
   { slug: "all", label: "הכל" },
   { slug: "service", label: "עסקי שירות" },
@@ -1931,4 +2426,10 @@ const SITE_TEMPLATES = {
     features: ["רקע כהה עם אפקט זכוכית מטושטשת (Glassmorphism)", "הילה זוהרת שעוקבת אחרי תנועת העכבר", "טיפוגרפיה ענקית שמרגישה כמו אפליקציית פרימיום", "מתאים לעורכי דין, יועצים ומותגים יוקרתיים"] },
   "brutal": { label: "נאו-ברוטליזם נועז", category: "קטלוג ומכירות", categorySlug: "shop", desc: "רקעי צבע עזים, מסגרות שחורות עבות, וכפתורי לחיצה בסגנון ארקייד", thumb: "images/previews/site-brutal.webp", render: renderBrutalSite,
     features: ["רקעים צבעוניים נועזים עם מסגרות שחורות עבות", "כפתורים שנלחצים פיזית בלחיצה, כמו במכונת ארקייד", "כותרת נעה בלולאה (Marquee) בסגנון בורסה", "מתאים לחנויות, מאמנים ומותגים צעירים ותוססים"] },
+  "neon": { label: "העתיד הניאוני", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "רקע מש-גרדיאנט ניאוני זז, זכוכית מטושטשת, וכותרות שנפתחות דרמטית בגלילה", thumb: "images/previews/site-neon.webp", render: renderNeonSite,
+    features: ["רקע גרדיאנט ניאוני (סגול/ורוד/תכלת) שזז לאט וברציפות", "סמן עכבר מותאם אישית עם התפוצצות חלקיקים בלחיצה", "כותרות שנפתחות מילה-אחר-מילה בגלילה", "מתאים לסוכנויות דיגיטל ומותגי קריאייטיב מובילים"] },
+  "chaos": { label: "הכאוס המאורגן", category: "קטלוג ומכירות", categorySlug: "shop", desc: "טיפוגרפיה ענקית, גרדיאנטים חומציים, גלילה אופקית וכפתורים מגנטיים", thumb: "images/previews/site-chaos.webp", render: renderChaosSite,
+    features: ["גלילה אופקית ייחודית לתצוגת שירותים/מוצרים", "כפתורים מגנטיים שנמשכים אחרי העכבר", "תמונות עם אפקט עיוות (distortion) בריחוף", "מתאים למותגי אופנה, אמנים ופורטפוליו נועז"] },
+  "luxury3d": { label: "יוקרה מינימליסטית תלת-ממדית", category: "אירועים ובוטיק", categorySlug: "events", desc: "פרלקס תלת-ממדי עמוק, גווני פנינה וזהב חיוור, ומעבר כניסה בסגנון עדשת מצלמה", thumb: "images/previews/site-luxury3d.webp", render: renderLuxurySite,
+    features: ["אפקט פרלקס תלת-ממדי עם שכבות תמונה וטקסט נעות", "מעבר כניסה אלגנטי בסגנון פתיחת עדשת מצלמה", "טיפוגרפיה עדינה וגווני פנינה וזהב חיוור", "מתאים לאדריכלים, נדל\"ן יוקרתי ומוצרי פרימיום"] },
 };
