@@ -2676,11 +2676,29 @@ function renderPlaygroundSite(d, page) {
         wireDrag();
       }
 
+      // Confirmed live (a wide/tall preview window, or any big desktop
+      // monitor): IntersectionObserver fires its FIRST callback the
+      // instant observe() runs, reporting whatever is already true right
+      // then — so on a tall enough viewport, where this section already
+      // sits inside the initial fold, it reported "intersecting" before
+      // the visitor had scrolled at all, activating immediately and
+      // reproducing the exact bug this was meant to fix. Gating on a
+      // genuine scroll (scrollTop > 0) as well means it only ever
+      // activates as a reaction to the visitor actually moving down the
+      // page, never just because of how tall their screen happens to be.
       if ("IntersectionObserver" in window) {
         var io = new IntersectionObserver(function (entries) {
-          entries.forEach(function (entry) { if (entry.isIntersecting) { activate(); io.disconnect(); } });
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting && document.documentElement.scrollTop > 0) { activate(); io.disconnect(); }
+          });
         }, { threshold: 0.15 });
         io.observe(wrap);
+        document.addEventListener("scroll", function onScroll() {
+          if (started) { document.removeEventListener("scroll", onScroll); return; }
+          var r = wrap.getBoundingClientRect();
+          var vh = window.innerHeight || document.documentElement.clientHeight;
+          if (r.top < vh && r.bottom > 0) { activate(); io.disconnect(); document.removeEventListener("scroll", onScroll); }
+        }, { passive: true });
       } else {
         activate();
       }
