@@ -383,6 +383,86 @@ ${scrollRevealScript()}
 }
 
 /* ---------- Template 1: local service business ---------- */
+
+/* Section-renderer decomposition (Builder v2 pilot) — each function
+   below returns exactly the HTML chunk renderLocalServiceSite's index
+   page used to inline directly, unchanged. Splitting them out is what
+   lets the new block-based Builder show/hide/reorder "Hero"/"שירותים/
+   מוצרים"/"אודות"/"צור קשר" as real, independent rows, while every
+   other template keeps working exactly as before through the
+   still-unchanged monolithic function below, which just calls these in
+   the same original order. Each section carries its own <script> (where
+   it has one) immediately after its own markup, not bundled at the end
+   like the original did — behaviorally identical (scripts still run
+   after their target elements exist either way), but required once a
+   block can be reordered: its script must travel with it. */
+function lsHeroSection(d, pal, dd, cta) {
+  return `
+      <section class="ls-hero">${heroVideoBgHtml(d)}<div class="container">
+        <span class="eyebrow">שירות מקצועי ואמין</span>
+        <h1>${heading(d, "heroTitle", dd.businessName)}</h1>
+        <p>${taglineText(d, dd)}</p>
+        ${ctaHtml(cta, "ls-cta")}
+        ${d.phone ? `<a class="ls-phone-pill" href="tel:${escapeHtmlS(d.phone)}">${escapeHtmlS(d.phone)}</a>` : ""}
+        ${heroMediaHtml(d, "site-hero-photo")}
+      </div></section>`;
+}
+function lsServicesSection(d, pal, dd) {
+  const hscrollScript = `<script>
+    (function () {
+      var wrap = document.getElementById("ls-hscroll");
+      var track = document.getElementById("ls-hscroll-track");
+      if (!wrap || !track) return;
+      if (window.matchMedia && (window.matchMedia("(prefers-reduced-motion: reduce)").matches || window.matchMedia("(max-width: 760px)").matches)) return;
+      var maxShift = 0;
+      function recalc() {
+        maxShift = Math.max(0, track.scrollWidth - window.innerWidth + 80);
+        var extraVh = Math.min(160, Math.max(50, (maxShift / window.innerHeight) * 100 * 1.25));
+        wrap.style.height = (100 + extraVh) + "vh";
+      }
+      function onScroll() {
+        var rect = wrap.getBoundingClientRect();
+        var total = rect.height - window.innerHeight;
+        if (total <= 0) return;
+        var progress = Math.min(1, Math.max(0, -rect.top / total));
+        track.style.transform = "translateX(" + (progress * maxShift) + "px)";
+      }
+      recalc();
+      onScroll();
+      window.addEventListener("resize", function () { recalc(); onScroll(); });
+      document.addEventListener("scroll", onScroll, { passive: true });
+    })();
+  </script>`;
+  return `
+      <div class="ls-hscroll-wrap" id="ls-hscroll">
+        <div class="ls-hscroll-sticky" id="ls-services">
+          <div class="container head"><span class="eyebrow">מה אנחנו מציעים</span><h2>${heading(d, "services", "השירותים שלנו")}</h2></div>
+          <div class="ls-hscroll-track" id="ls-hscroll-track">${dd._services.map((s, i) => `
+            <div class="ls-card" data-svc-idx="${i}"><div class="num">${String(i + 1).padStart(2, "0")}</div><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price-tag">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
+        </div>
+      </div>
+      ${hscrollScript}`;
+}
+function lsVideoSection(embedSrc) {
+  return embedSrc ? `<section class="ls-section site-reveal" style="padding-top:0;"><div class="container">
+        <div class="head"><span class="eyebrow">סרטון</span><h2>הכירו אותנו</h2></div>
+        ${videoEmbedHtml(embedSrc)}
+      </div></section>` : "";
+}
+function lsAboutSection(d, pal, dd) {
+  return (!d.pages || !d.pages.about) ? `<section class="ls-about site-reveal" id="ls-about"><div class="container"><span class="eyebrow" style="background:#fff; color:#${pal.primaryDark};">מי אנחנו</span><h2>${heading(d, "about", "קצת עלינו")}</h2><p>${aboutText(d, dd)}</p></div></section>` : "";
+}
+function lsContactSection(d, pal, dd, wa) {
+  return (!d.pages || !d.pages.contact) ? `<section class="ls-contact site-reveal" id="ls-contact"><div class="container">
+        <h2>${heading(d, "contact", "יצירת קשר")}</h2>
+        ${dd._hasContact ? `
+          ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
+          ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
+          ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
+        ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת.</div>`}
+      </div></section>` : "";
+}
+
 function renderLocalServiceSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#2563EB");
@@ -466,31 +546,6 @@ function renderLocalServiceSite(d, page) {
   // (#ls-services / #ls-about / #ls-contact) safe inside the preview
   // iframe, same reasoning as the studio template's rail.
   const footer = `<div class="ls-footer">© ${new Date().getFullYear()} ${bizName(d, dd)}</div>${waFabHtml(d)}${(navLinksHtml || inPageRail) ? previewNavScript() : ""}`;
-  const hscrollScript = `<script>
-    (function () {
-      var wrap = document.getElementById("ls-hscroll");
-      var track = document.getElementById("ls-hscroll-track");
-      if (!wrap || !track) return;
-      if (window.matchMedia && (window.matchMedia("(prefers-reduced-motion: reduce)").matches || window.matchMedia("(max-width: 760px)").matches)) return;
-      var maxShift = 0;
-      function recalc() {
-        maxShift = Math.max(0, track.scrollWidth - window.innerWidth + 80);
-        var extraVh = Math.min(160, Math.max(50, (maxShift / window.innerHeight) * 100 * 1.25));
-        wrap.style.height = (100 + extraVh) + "vh";
-      }
-      function onScroll() {
-        var rect = wrap.getBoundingClientRect();
-        var total = rect.height - window.innerHeight;
-        if (total <= 0) return;
-        var progress = Math.min(1, Math.max(0, -rect.top / total));
-        track.style.transform = "translateX(" + (progress * maxShift) + "px)";
-      }
-      recalc();
-      onScroll();
-      window.addEventListener("resize", function () { recalc(); onScroll(); });
-      document.addEventListener("scroll", onScroll, { passive: true });
-    })();
-  </script>`;
 
   let main;
   if (page === "about") {
@@ -512,37 +567,19 @@ function renderLocalServiceSite(d, page) {
         ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת ליצירת קשר.</div>`}
         ${wa ? `<a class="ls-cta" style="margin-top:10px;" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}
       </div></section>`;
+  } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("local-service")) {
+    // Builder v2 (see js/site-blocks.js): the hero/services/about/contact
+    // order below is the DEFAULT only — once a customer reorders/hides a
+    // block via the hierarchy panel, that saved order renders instead.
+    main = renderBlocksHtml(d, "local-service", "index", {
+      pal, dd, cta, wa, videoSection: lsVideoSection(embedSrc),
+    });
   } else {
-    main = `
-      <section class="ls-hero">${heroVideoBgHtml(d)}<div class="container">
-        <span class="eyebrow">שירות מקצועי ואמין</span>
-        <h1>${heading(d, "heroTitle", dd.businessName)}</h1>
-        <p>${taglineText(d, dd)}</p>
-        ${ctaHtml(cta, "ls-cta")}
-        ${d.phone ? `<a class="ls-phone-pill" href="tel:${escapeHtmlS(d.phone)}">${escapeHtmlS(d.phone)}</a>` : ""}
-        ${heroMediaHtml(d, "site-hero-photo")}
-      </div></section>
-      <div class="ls-hscroll-wrap" id="ls-hscroll">
-        <div class="ls-hscroll-sticky" id="ls-services">
-          <div class="container head"><span class="eyebrow">מה אנחנו מציעים</span><h2>${heading(d, "services", "השירותים שלנו")}</h2></div>
-          <div class="ls-hscroll-track" id="ls-hscroll-track">${dd._services.map((s, i) => `
-            <div class="ls-card"><div class="num">${String(i + 1).padStart(2, "0")}</div><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price-tag">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
-        </div>
-      </div>
-      ${embedSrc ? `<section class="ls-section site-reveal" style="padding-top:0;"><div class="container">
-        <div class="head"><span class="eyebrow">סרטון</span><h2>הכירו אותנו</h2></div>
-        ${videoEmbedHtml(embedSrc)}
-      </div></section>` : ""}
-      ${(!d.pages || !d.pages.about) ? `<section class="ls-about site-reveal" id="ls-about"><div class="container"><span class="eyebrow" style="background:#fff; color:#${pal.primaryDark};">מי אנחנו</span><h2>${heading(d, "about", "קצת עלינו")}</h2><p>${aboutText(d, dd)}</p></div></section>` : ""}
-      ${(!d.pages || !d.pages.contact) ? `<section class="ls-contact site-reveal" id="ls-contact"><div class="container">
-        <h2>${heading(d, "contact", "יצירת קשר")}</h2>
-        ${dd._hasContact ? `
-          ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
-          ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
-          ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
-        ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת.</div>`}
-      </div></section>` : ""}
-      ${hscrollScript}
+    main = `${lsHeroSection(d, pal, dd, cta)}
+      ${lsServicesSection(d, pal, dd)}
+      ${lsVideoSection(embedSrc)}
+      ${lsAboutSection(d, pal, dd)}
+      ${lsContactSection(d, pal, dd, wa)}
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
@@ -2538,83 +2575,18 @@ function renderLuxurySite(d, page) {
    the "fallback" IS the default CSS layout, physics only ever upgrades it,
    never something the page depends on to not look broken. */
 const PG_ACCENTS = ["#FF5C7A", "#22D3EE", "#FFD23F", "#7C5CFF", "#3DDC84"];
-function renderPlaygroundSite(d, page) {
-  page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#7C5CFF");
-  const dd = withFallback(d);
-  const wa = waLink(d.whatsapp || d.phone);
-  const navLinksHtml = siteNavLinks(d, page);
-  const cta = primaryCtaHref(d, page);
-  const embedSrc = videoEmbedSrc(d.videoUrl);
-  const css = `
-    body.pg-body { background:#0F1020; color:#F2F1FA; }
-    .pg-nav { padding:22px 0; }
-    .pg-nav .row { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; }
-    .pg-nav .biz { font-weight:900; font-size:18px; letter-spacing:-.01em; color:#fff; }
-    .pg-nav nav { display:flex; gap:18px; }
-    .pg-nav nav a { font-size:13px; font-weight:700; color:#B8B6D6; }
-    .pg-nav nav a.active, .pg-nav nav a:hover { color:#fff; }
-
-    .pg-hero { text-align:center; padding:70px 24px 30px; }
-    .pg-kicker { display:inline-block; font-size:12px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:#${pal.headerAccentText}; margin-bottom:18px; }
-    .pg-hero h1 {
-      font-size:min(15vw, 74px); font-weight:900; letter-spacing:-.02em; line-height:1.03; margin:0 0 18px;
-      background:linear-gradient(90deg, #${pal.primary}, ${PG_ACCENTS.join(", ")}, #${pal.primary});
-      background-size:300% 100%; -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent;
-      animation:pg-gradient-move 7s ease-in-out infinite;
-    }
-    @media (prefers-reduced-motion: reduce) { .pg-hero h1 { animation:none; background-position:0% 0%; } }
-    @keyframes pg-gradient-move { 0%,100% { background-position:0% 50%; } 50% { background-position:100% 50%; } }
-    .pg-hero p { font-size:16.5px; color:#C7C5E0; max-width:480px; margin:0 auto 30px; }
-
-    .pg-cta-wrap { display:inline-block; }
-    .pg-cta { display:inline-flex; align-items:center; gap:8px; background:#${pal.primary}; color:#fff; font-weight:900; padding:16px 36px; border-radius:40px; font-size:15px; }
-
-    .pg-physics-wrap { padding:36px 0 16px; }
-    .pg-physics-head { text-align:center; margin-bottom:8px; }
-    .pg-physics-head h2 { font-size:28px; font-weight:900; color:#fff; margin:8px 0 4px; }
-    .pg-physics-hint { text-align:center; font-size:12.5px; color:#8B89AC; margin:0 0 16px; }
-    .pg-physics { position:relative; min-height:280px; max-width:920px; margin:0 auto; padding:20px; overflow:hidden;
-      display:flex; flex-wrap:wrap; align-content:flex-start; justify-content:center; gap:16px; }
-    .pg-physics.pg-active { display:block; height:42vh; min-height:300px; max-height:460px; cursor:grab; touch-action:none; }
-    .pg-physics.pg-active:active { cursor:grabbing; }
-    .pg-bubble {
-      display:inline-flex; align-items:center; justify-content:center; text-align:center; padding:0 22px;
-      height:76px; min-width:120px; border-radius:38px; font-weight:800; font-size:15px; color:#0F1020;
-      box-shadow:0 10px 26px rgba(0,0,0,.28); user-select:none;
-    }
-    /* Deliberately physical "left", not the logical inset-inline-start —
-       confirmed live: in this RTL site, inset-inline-start:0 anchors the
-       bubble's untransformed position to the container's RIGHT edge, but
-       the physics script's translate(x,y) math is always physical
-       left-to-right (CSS transforms ignore dir). The two disagreeing sent
-       every bubble rendering hundreds of pixels off to the right, often
-       entirely outside the viewport — which is exactly why none of them
-       were visible or draggable. */
-    .pg-physics.pg-active .pg-bubble { position:absolute; top:0; left:0; will-change:transform; }
-    .pg-bubble .price { display:block; font-size:11.5px; font-weight:700; opacity:.75; margin-top:2px; }
-
-    .pg-section { padding:64px 0; }
-    .pg-section-head { text-align:center; margin-bottom:30px; }
-    .pg-kicker2 { font-size:12px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:#${pal.headerAccentText}; }
-    .pg-section-head h2 { font-size:29px; font-weight:900; color:#fff; margin:10px 0 0; }
-    .pg-panel { max-width:640px; margin:0 auto; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); border-radius:22px; padding:36px; text-align:center; }
-    .pg-panel p { font-size:16px; color:#D6D4EC; line-height:1.8; margin:0; }
-    .pg-panel .line { font-size:14.5px; color:#D6D4EC; margin-bottom:8px; }
-
-    .pg-footer { border-top:1px solid rgba(255,255,255,.08); padding:24px 0; text-align:center; font-size:12px; color:#7A78A0; }
-  `;
-  const header = `
-    <header class="pg-nav"><div class="container row">
-      <div class="biz">${bizName(d, dd)}</div>
-      ${navLinksHtml ? `<nav>${navLinksHtml}</nav>` : ""}
-    </div></header>`;
-  const footer = `<div class="pg-footer">© ${new Date().getFullYear()} ${bizName(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
-
-  // Liquid/gooey SVG filter on the primary CTA: feTurbulence + feDisplacementMap
-  // distorts the button like viscous metal, driven by an SMIL <animate> that
-  // starts on hover and eases back out on leave — no continuous JS/rAF cost
-  // when nobody's pointer is anywhere near it.
+/* Section-renderer decomposition (Builder v2 pilot) — same reasoning as
+   the local-service functions above: each returns exactly the HTML
+   chunk renderPlaygroundSite's index page inlined directly, letting the
+   new block-based Builder treat "Hero"/"שירותים/מוצרים"/"אודות"/"צור
+   קשר" as independent, reorderable rows while the original monolithic
+   function (still used by every not-yet-migrated template) is
+   unaffected. The physics <script> now travels with its own section
+   instead of being appended at the very end — required so it keeps
+   working if that section is ever reordered; behaviorally identical
+   either way, since it only looks up its elements by id once they
+   already exist above it. */
+function pgHeroSection(d, pal, dd, cta) {
   const gooSvg = `<svg width="0" height="0" style="position:absolute;">
     <filter id="pg-goo-filter">
       <feTurbulence type="fractalNoise" baseFrequency="0.012 0.04" numOctaves="2" seed="7" result="noise">
@@ -2626,15 +2598,21 @@ function renderPlaygroundSite(d, page) {
       </feDisplacementMap>
     </filter>
   </svg>`;
-
+  return `
+      <section class="pg-hero"><div class="container">
+        <span class="pg-kicker">${dd.tagline ? "ברוכים הבאים" : "עסק שמרים אנרגיה"}</span>
+        <h1>${heading(d, "heroTitle", dd.businessName)}</h1>
+        <p>${taglineText(d, dd)}</p>
+        ${cta ? `<span class="pg-cta-wrap" style="filter:url(#pg-goo-filter);"><a id="pg-goo-btn" class="pg-cta" href="${escapeHtmlS(cta.href)}"${cta.external ? ' target="_blank" rel="noopener"' : ""}${cta.page ? ` data-site-nav data-page="${cta.page}"` : ""}>${escapeHtmlS(cta.label)}</a></span>` : ""}
+      </div></section>
+      ${gooSvg}`;
+}
+function pgServicesSection(d, pal, dd) {
   // Small hand-rolled physics (gravity + wall/bubble collision + pointer
-  // drag) instead of loading a physics engine off a CDN — confirmed live,
-  // twice, that the CDN load kept failing for real visitors (network
-  // policy, ad-blocker, or just a slow connection racing the 4s timeout),
-  // which left the whole services section empty. This has zero external
-  // dependency, so there is nothing left that can fail to load; it also
-  // never touches wheel events at all, so page scroll was never at risk
-  // here the way Matter.js's own Mouse module silently broke it.
+  // drag) instead of loading a physics engine off a CDN — confirmed
+  // live, twice, that the CDN load kept failing for real visitors
+  // (network policy, ad-blocker, or just a slow connection racing the
+  // 4s timeout), which left the whole services section empty.
   const physicsScript = `<script>
     (function () {
       var wrap = document.getElementById("pg-physics");
@@ -2769,6 +2747,104 @@ function renderPlaygroundSite(d, page) {
       window.addEventListener("resize", function () { W = wrap.clientWidth; H = wrap.clientHeight; });
     })();
   </script>`;
+  return `
+      <div class="pg-physics-wrap"><div class="container">
+        <div class="pg-physics-head"><span class="pg-kicker2">מה אנחנו מציעים</span><h2>${heading(d, "services", "השירותים שלנו")}</h2></div>
+        <p class="pg-physics-hint">🖱️ תרגישו חופשי לגעת — גררו, זרקו ושחקו עם השירותים למטה</p>
+      </div>
+        <div class="pg-physics" id="pg-physics">${dd._services.map((s, i) => `
+          <div class="pg-bubble" data-svc-idx="${i}" style="background:${i === 0 ? "#" + pal.primary : PG_ACCENTS[(i - 1) % PG_ACCENTS.length]};"><span>${escapeHtmlS(s.name)}${s.price ? `<span class="price">${escapeHtmlS(s.price)}</span>` : ""}</span></div>`).join("")}</div>
+      </div>
+      ${physicsScript}`;
+}
+function pgVideoSection(embedSrc) {
+  return embedSrc ? `<section class="pg-section site-reveal"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : "";
+}
+function pgAboutSection(d, pal, dd) {
+  return (!d.pages || !d.pages.about) ? `<section class="pg-section site-reveal" style="text-align:center;"><div class="container"><span class="pg-kicker2">מי אנחנו</span><h2 style="font-size:26px; font-weight:900; color:#fff; margin:10px 0 26px;">${heading(d, "about", "קצת עלינו")}</h2><div class="pg-panel"><p>${aboutText(d, dd)}</p></div></div></section>` : "";
+}
+function pgContactSection(d, pal, dd, wa) {
+  return (!d.pages || !d.pages.contact) ? `<section class="pg-section site-reveal" style="text-align:center;"><div class="container"><span class="pg-kicker2">נשמח לשמוע מכם</span><h2 style="font-size:26px; font-weight:900; color:#fff; margin:10px 0 26px;">${heading(d, "contact", "בואו נדבר")}</h2><div class="pg-panel">
+        ${dd._hasContact ? `
+          ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
+          ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
+          ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
+        ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת.</div>`}
+      </div></div></section>` : "";
+}
+
+function renderPlaygroundSite(d, page) {
+  page = page || "index";
+  const pal = derivePalette(d.primaryColor || "#7C5CFF");
+  const dd = withFallback(d);
+  const wa = waLink(d.whatsapp || d.phone);
+  const navLinksHtml = siteNavLinks(d, page);
+  const cta = primaryCtaHref(d, page);
+  const embedSrc = videoEmbedSrc(d.videoUrl);
+  const css = `
+    body.pg-body { background:#0F1020; color:#F2F1FA; }
+    .pg-nav { padding:22px 0; }
+    .pg-nav .row { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; }
+    .pg-nav .biz { font-weight:900; font-size:18px; letter-spacing:-.01em; color:#fff; }
+    .pg-nav nav { display:flex; gap:18px; }
+    .pg-nav nav a { font-size:13px; font-weight:700; color:#B8B6D6; }
+    .pg-nav nav a.active, .pg-nav nav a:hover { color:#fff; }
+
+    .pg-hero { text-align:center; padding:70px 24px 30px; }
+    .pg-kicker { display:inline-block; font-size:12px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:#${pal.headerAccentText}; margin-bottom:18px; }
+    .pg-hero h1 {
+      font-size:min(15vw, 74px); font-weight:900; letter-spacing:-.02em; line-height:1.03; margin:0 0 18px;
+      background:linear-gradient(90deg, #${pal.primary}, ${PG_ACCENTS.join(", ")}, #${pal.primary});
+      background-size:300% 100%; -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent;
+      animation:pg-gradient-move 7s ease-in-out infinite;
+    }
+    @media (prefers-reduced-motion: reduce) { .pg-hero h1 { animation:none; background-position:0% 0%; } }
+    @keyframes pg-gradient-move { 0%,100% { background-position:0% 50%; } 50% { background-position:100% 50%; } }
+    .pg-hero p { font-size:16.5px; color:#C7C5E0; max-width:480px; margin:0 auto 30px; }
+
+    .pg-cta-wrap { display:inline-block; }
+    .pg-cta { display:inline-flex; align-items:center; gap:8px; background:#${pal.primary}; color:#fff; font-weight:900; padding:16px 36px; border-radius:40px; font-size:15px; }
+
+    .pg-physics-wrap { padding:36px 0 16px; }
+    .pg-physics-head { text-align:center; margin-bottom:8px; }
+    .pg-physics-head h2 { font-size:28px; font-weight:900; color:#fff; margin:8px 0 4px; }
+    .pg-physics-hint { text-align:center; font-size:12.5px; color:#8B89AC; margin:0 0 16px; }
+    .pg-physics { position:relative; min-height:280px; max-width:920px; margin:0 auto; padding:20px; overflow:hidden;
+      display:flex; flex-wrap:wrap; align-content:flex-start; justify-content:center; gap:16px; }
+    .pg-physics.pg-active { display:block; height:42vh; min-height:300px; max-height:460px; cursor:grab; touch-action:none; }
+    .pg-physics.pg-active:active { cursor:grabbing; }
+    .pg-bubble {
+      display:inline-flex; align-items:center; justify-content:center; text-align:center; padding:0 22px;
+      height:76px; min-width:120px; border-radius:38px; font-weight:800; font-size:15px; color:#0F1020;
+      box-shadow:0 10px 26px rgba(0,0,0,.28); user-select:none;
+    }
+    /* Deliberately physical "left", not the logical inset-inline-start —
+       confirmed live: in this RTL site, inset-inline-start:0 anchors the
+       bubble's untransformed position to the container's RIGHT edge, but
+       the physics script's translate(x,y) math is always physical
+       left-to-right (CSS transforms ignore dir). The two disagreeing sent
+       every bubble rendering hundreds of pixels off to the right, often
+       entirely outside the viewport — which is exactly why none of them
+       were visible or draggable. */
+    .pg-physics.pg-active .pg-bubble { position:absolute; top:0; left:0; will-change:transform; }
+    .pg-bubble .price { display:block; font-size:11.5px; font-weight:700; opacity:.75; margin-top:2px; }
+
+    .pg-section { padding:64px 0; }
+    .pg-section-head { text-align:center; margin-bottom:30px; }
+    .pg-kicker2 { font-size:12px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:#${pal.headerAccentText}; }
+    .pg-section-head h2 { font-size:29px; font-weight:900; color:#fff; margin:10px 0 0; }
+    .pg-panel { max-width:640px; margin:0 auto; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); border-radius:22px; padding:36px; text-align:center; }
+    .pg-panel p { font-size:16px; color:#D6D4EC; line-height:1.8; margin:0; }
+    .pg-panel .line { font-size:14.5px; color:#D6D4EC; margin-bottom:8px; }
+
+    .pg-footer { border-top:1px solid rgba(255,255,255,.08); padding:24px 0; text-align:center; font-size:12px; color:#7A78A0; }
+  `;
+  const header = `
+    <header class="pg-nav"><div class="container row">
+      <div class="biz">${bizName(d, dd)}</div>
+      ${navLinksHtml ? `<nav>${navLinksHtml}</nav>` : ""}
+    </div></header>`;
+  const footer = `<div class="pg-footer">© ${new Date().getFullYear()} ${bizName(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
 
   let main;
   if (page === "about") {
@@ -2790,31 +2866,16 @@ function renderPlaygroundSite(d, page) {
           ${wa ? `<a class="pg-cta" style="margin-top:18px;" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}
         </div>
       </div></section>`;
+  } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("playground")) {
+    main = renderBlocksHtml(d, "playground", "index", {
+      pal, dd, cta, wa, videoSection: pgVideoSection(embedSrc),
+    });
   } else {
-    main = `
-      <section class="pg-hero"><div class="container">
-        <span class="pg-kicker">${dd.tagline ? "ברוכים הבאים" : "עסק שמרים אנרגיה"}</span>
-        <h1>${heading(d, "heroTitle", dd.businessName)}</h1>
-        <p>${taglineText(d, dd)}</p>
-        ${cta ? `<span class="pg-cta-wrap" style="filter:url(#pg-goo-filter);"><a id="pg-goo-btn" class="pg-cta" href="${escapeHtmlS(cta.href)}"${cta.external ? ' target="_blank" rel="noopener"' : ""}${cta.page ? ` data-site-nav data-page="${cta.page}"` : ""}>${escapeHtmlS(cta.label)}</a></span>` : ""}
-      </div></section>
-      <div class="pg-physics-wrap"><div class="container">
-        <div class="pg-physics-head"><span class="pg-kicker2">מה אנחנו מציעים</span><h2>${heading(d, "services", "השירותים שלנו")}</h2></div>
-        <p class="pg-physics-hint">🖱️ תרגישו חופשי לגעת — גררו, זרקו ושחקו עם השירותים למטה</p>
-      </div>
-        <div class="pg-physics" id="pg-physics">${dd._services.map((s, i) => `
-          <div class="pg-bubble" style="background:${i === 0 ? "#" + pal.primary : PG_ACCENTS[(i - 1) % PG_ACCENTS.length]};"><span>${escapeHtmlS(s.name)}${s.price ? `<span class="price">${escapeHtmlS(s.price)}</span>` : ""}</span></div>`).join("")}</div>
-      </div>
-      ${embedSrc ? `<section class="pg-section site-reveal"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : ""}
-      ${(!d.pages || !d.pages.about) ? `<section class="pg-section site-reveal" style="text-align:center;"><div class="container"><span class="pg-kicker2">מי אנחנו</span><h2 style="font-size:26px; font-weight:900; color:#fff; margin:10px 0 26px;">${heading(d, "about", "קצת עלינו")}</h2><div class="pg-panel"><p>${aboutText(d, dd)}</p></div></div></section>` : ""}
-      ${(!d.pages || !d.pages.contact) ? `<section class="pg-section site-reveal" style="text-align:center;"><div class="container"><span class="pg-kicker2">נשמח לשמוע מכם</span><h2 style="font-size:26px; font-weight:900; color:#fff; margin:10px 0 26px;">${heading(d, "contact", "בואו נדבר")}</h2><div class="pg-panel">
-        ${dd._hasContact ? `
-          ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
-          ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
-          ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
-        ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת.</div>`}
-      </div></div></section>` : ""}
-      ${gooSvg}${physicsScript}
+    main = `${pgHeroSection(d, pal, dd, cta)}
+      ${pgServicesSection(d, pal, dd)}
+      ${pgVideoSection(embedSrc)}
+      ${pgAboutSection(d, pal, dd)}
+      ${pgContactSection(d, pal, dd, wa)}
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };

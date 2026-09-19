@@ -29,7 +29,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=58">
-<link rel="stylesheet" href="css/builder.css?v=4">
+<link rel="stylesheet" href="css/builder.css?v=5">
 <style>
   .services-item { border: 1px solid #EDEFEE; border-radius: 8px; padding: 12px; margin-bottom: 12px; display: grid; gap: 8px; }
   .services-item-head { display: flex; justify-content: space-between; align-items: center; }
@@ -67,10 +67,14 @@
   body.preview-focus .my-sites-rail,
   body.preview-focus .my-panel-reopen,
   body.preview-focus .builder-top,
+  body.preview-focus .builder-topbar-v2,
   body.preview-focus .builder-form,
+  body.preview-focus .builder-hierarchy,
+  body.preview-focus .builder-settings-backdrop,
   body.preview-focus .export-panel,
   body.preview-focus footer.site,
   body.preview-focus .preview-tabs,
+  body.preview-focus #finalized-note,
   body.preview-focus #full-preview-btn,
   body.preview-focus .fab-chat,
   body.preview-focus .chat-panel,
@@ -85,7 +89,7 @@
   /* .container's own max-width otherwise still caps this at 1120px —
      "full preview" should mean the customer's real, edge-to-edge width,
      not DeskKit's own editor layout width. */
-  body.preview-focus .builder-wrap { grid-template-columns: 1fr; max-width: none; padding: 0; }
+  body.preview-focus .builder-wrap-v2 { grid-template-columns: 1fr; max-width: none; padding: 0; }
   body.preview-focus .preview-sticky { position: static; }
   /* A fixed corner badge would sit right on top of the customer's own
      site header — nearly every template places its own nav menu in
@@ -196,13 +200,20 @@
 </section>
 
 <div id="wizard-section" style="display:none;">
-<div class="container builder-wrap">
-  <aside class="builder-form no-print">
-    <div class="field">
-      <label>עיצוב נבחר</label>
-      <div id="current-tpl-info" style="font-size:14px; font-weight:700; color:var(--teal-dark); margin-bottom:6px;"></div>
-      <a href="sites.html?browse=1" class="btn-mini" id="change-template-link">שינוי תבנית / קטלוג</a>
-      <p id="finalized-note" style="display:none; font-size:12px; color:var(--grey); margin:8px 0 0;">האתר הזה נרכש והתבנית שלו נעולה — עריכה והורדה חוזרת שלו נשארות חינמיות. לבניית אתר נוסף עם תבנית אחרת, יש להיכנס מ"אתרים" בתפריט העליון ולרכוש בנפרד.</p>
+<div class="container builder-topbar-v2 no-print">
+  <div class="builder-topbar-v2-info">
+    <span id="current-tpl-info" class="builder-topbar-v2-tpl"></span>
+    <a href="sites.html?browse=1" class="btn-mini" id="change-template-link">שינוי תבנית / קטלוג</a>
+  </div>
+  <button type="button" class="btn-mini builder-settings-btn" id="open-settings-btn">⚙ הגדרות</button>
+</div>
+<p id="finalized-note" class="container no-print" style="display:none; font-size:12px; color:var(--grey); margin:0 0 12px;">האתר הזה נרכש והתבנית שלו נעולה — עריכה והורדה חוזרת שלו נשארות חינמיות. לבניית אתר נוסף עם תבנית אחרת, יש להיכנס מ"אתרים" בתפריט העליון ולרכוש בנפרד.</p>
+<div class="container builder-wrap-v2">
+  <div class="builder-settings-backdrop no-print" id="settings-backdrop"></div>
+  <aside class="builder-form builder-settings-drawer no-print" id="settings-drawer">
+    <div class="builder-settings-drawer-head">
+      <strong>הגדרות</strong>
+      <button type="button" class="builder-settings-close" id="close-settings-btn" aria-label="סגירה">✕</button>
     </div>
 
     <details class="builder-section" open>
@@ -317,7 +328,6 @@
 
   <main class="builder-preview">
     <div class="preview-sticky">
-      <div class="preview-tabs no-print" id="preview-tabs" style="display:none;"></div>
       <iframe id="site-preview-frame" title="תצוגה מקדימה של האתר"></iframe>
       <button type="button" class="btn-mini no-print" id="full-preview-btn" style="margin-top:10px;">תצוגה מלאה במסך חדש ⤢</button>
 
@@ -350,6 +360,15 @@
       </div>
     </div>
   </main>
+
+  <aside class="builder-hierarchy no-print" id="builder-hierarchy">
+    <div class="hier-head">היררכיית הדף</div>
+    <div class="preview-tabs" id="preview-tabs" style="display:none;"></div>
+    <div class="hier-tree" id="hier-tree"></div>
+    <div class="hier-add-block-row" id="hier-add-block-row" style="display:none;">
+      <button type="button" class="btn-mini hier-add-block-btn" id="hier-add-block-btn">+ הוספת בלוק</button>
+    </div>
+  </aside>
 </div>
 </div>
 
@@ -393,8 +412,9 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="js/color-utils.js"></script>
-<script src="js/site-templates.js?v=19"></script>
-<script src="js/site-builder.js?v=32"></script>
+<script src="js/site-templates.js?v=20"></script>
+<script src="js/site-blocks.js?v=1"></script>
+<script src="js/site-builder.js?v=34"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>

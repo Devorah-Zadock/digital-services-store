@@ -368,8 +368,189 @@ function renderPreviewTabs() {
       previewPage = btn.dataset.page;
       renderPreviewTabs();
       document.getElementById("site-preview-frame").srcdoc = injectEditModeScript(currentSiteHtml(previewPage));
+      if (typeof renderHierarchyPanel === "function") renderHierarchyPanel();
     });
   });
+}
+
+/* ---------- Hierarchy panel (Builder v2) ----------
+   Shows the page's structure as a real tree — bold section rows, the
+   services block expandable to its individual items — matching what the
+   customer sees on the canvas instead of a flat field list. For the two
+   migrated templates (js/site-blocks.js) it's a live, reorderable/
+   addable/removable block list; for every other template it's a plain
+   navigation list (click a row to scroll the canvas there) derived from
+   the same d.pages.about/contact toggles the section itself already
+   respects — no DOM inspection needed, so there's no dependency on the
+   iframe having finished loading yet. */
+let hierExpanded = { services: true };
+
+function scrollCanvasTo(selector) {
+  const frame = document.getElementById("site-preview-frame");
+  const doc = frame && frame.contentDocument;
+  const el = doc && doc.querySelector(selector);
+  if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
+}
+
+function hierRowHtml({ label, key, hasToggle, expanded, actions, childClass }) {
+  return `
+    <div class="hier-row${childClass ? ` ${childClass}` : ""}" data-hier-key="${key}">
+      ${hasToggle ? `<span class="hier-icon hier-group-toggle${expanded ? " open" : ""}" data-hier-toggle="${key}">▸</span>` : `<span class="hier-icon">${childClass ? "–" : "•"}</span>`}
+      <span class="hier-label">${escapeHtmlS(label)}</span>
+      <span class="hier-actions">${actions || ""}</span>
+    </div>`;
+}
+
+function renderHierarchyPanel() {
+  const tree = document.getElementById("hier-tree");
+  if (!tree) return;
+  const template = siteState.template;
+  const d = ensurePagesShape(siteState.data);
+  const migrated = typeof isTemplateMigrated === "function" && isTemplateMigrated(template) && previewPage === "index";
+  const addBlockRow = document.getElementById("hier-add-block-row");
+  if (migrated) {
+    renderMigratedHierarchy(tree, addBlockRow, template, d);
+  } else {
+    if (addBlockRow) addBlockRow.style.display = "none";
+    renderReadOnlyHierarchy(tree, template, d);
+  }
+}
+
+function renderMigratedHierarchy(tree, addBlockRow, template, d) {
+  const defs = SITE_BLOCK_DEFS[template];
+  const active = activeBlocksForPage(d, template, "index");
+  const scrollTargets = {
+    hero: template === "local-service" ? ".ls-hero" : ".pg-hero",
+    services: template === "local-service" ? "#ls-hscroll" : "#pg-physics",
+    about: '[data-textkey="heading-about"]',
+    contact: '[data-textkey="heading-contact"]',
+  };
+  tree.innerHTML = active.map((type, i) => {
+    const def = defs[type];
+    const isServices = !!def.hasItems;
+    const removable = type !== "hero";
+    const actions = `
+      <button type="button" class="hier-btn" data-hier-up="${type}" ${i === 0 ? "disabled" : ""} title="הזזה למעלה">▲</button>
+      <button type="button" class="hier-btn" data-hier-down="${type}" ${i === active.length - 1 ? "disabled" : ""} title="הזזה למטה">▼</button>
+      ${removable ? `<button type="button" class="hier-btn" data-hier-remove="${type}" title="הסרה">✕</button>` : ""}
+    `;
+    let html = hierRowHtml({ label: def.label, key: type, hasToggle: isServices, expanded: hierExpanded.services, actions });
+    if (isServices) {
+      const services = d.services || [];
+      const childRows = services.map((s, idx) => `
+        <div class="hier-row hier-child" data-hier-svc="${idx}">
+          <span class="hier-icon">–</span>
+          <span class="hier-label">${escapeHtmlS(s.name && s.name.trim() ? s.name : `שירות ${idx + 1}`)}</span>
+          <span class="hier-actions">${services.length > 1 ? `<button type="button" class="hier-btn" data-hier-svc-remove="${idx}" title="הסרה">✕</button>` : ""}</span>
+        </div>`).join("");
+      html += `<div class="hier-children${hierExpanded.services ? "" : " collapsed"}" data-hier-children="services">
+        ${childRows}
+        <div class="hier-add-item-row"><button type="button" class="hier-add-item-btn" id="hier-add-service-btn">+ הוספת שירות</button></div>
+      </div>`;
+    }
+    return html;
+  }).join("");
+
+  tree.querySelectorAll(".hier-row[data-hier-key]").forEach((row) => {
+    row.addEventListener("click", (e) => {
+      if (e.target.closest(".hier-btn") || e.target.closest(".hier-group-toggle")) return;
+      const type = row.dataset.hierKey;
+      if (scrollTargets[type]) scrollCanvasTo(scrollTargets[type]);
+    });
+  });
+  tree.querySelectorAll("[data-hier-toggle]").forEach((el) => {
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      hierExpanded[el.dataset.hierToggle] = !hierExpanded[el.dataset.hierToggle];
+      renderHierarchyPanel();
+    });
+  });
+  tree.querySelectorAll("[data-hier-up]").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      moveBlockUp(d, template, "index", btn.dataset.hierUp);
+      renderSitePreview();
+    });
+  });
+  tree.querySelectorAll("[data-hier-down]").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      moveBlockDown(d, template, "index", btn.dataset.hierDown);
+      renderSitePreview();
+    });
+  });
+  tree.querySelectorAll("[data-hier-remove]").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const order = ensureBlockOrder(d, template, "index");
+      const idx = order.indexOf(btn.dataset.hierRemove);
+      if (idx !== -1) order.splice(idx, 1);
+      renderSitePreview();
+    });
+  });
+  tree.querySelectorAll("[data-hier-svc]").forEach((row) => {
+    row.addEventListener("click", (e) => {
+      if (e.target.closest(".hier-btn")) return;
+      scrollCanvasTo(`[data-svc-idx="${row.dataset.hierSvc}"]`);
+    });
+  });
+  tree.querySelectorAll("[data-hier-svc-remove]").forEach((btn) => {
+    btn.addEventListener("click", (e) => { e.stopPropagation(); removeServiceItem(Number(btn.dataset.hierSvcRemove)); });
+  });
+  const addServiceBtn = document.getElementById("hier-add-service-btn");
+  if (addServiceBtn) addServiceBtn.addEventListener("click", (e) => { e.stopPropagation(); addServiceItem(); });
+
+  // Only offers block types this template defines that aren't already
+  // showing — "hero" is never offered back (every migrated template
+  // always has one; there's nothing to re-add).
+  const missing = Object.keys(defs).filter((t) => active.indexOf(t) === -1 && t !== "hero");
+  if (addBlockRow) {
+    if (missing.length) {
+      addBlockRow.style.display = "";
+      const btn = addBlockRow.querySelector("#hier-add-block-btn");
+      btn.textContent = `+ הוספת "${defs[missing[0]].label}"`;
+      btn.onclick = () => {
+        ensureBlockOrder(d, template, "index").push(missing[0]);
+        renderSitePreview();
+      };
+    } else {
+      addBlockRow.style.display = "none";
+    }
+  }
+}
+
+function renderReadOnlyHierarchy(tree, template, d) {
+  const role = TEMPLATE_SECTION_ROLE[template] || "services";
+  const roleLabel = { services: "שירותים / מוצרים", products: "מוצרים", work: "עבודות" }[role] || "שירותים / מוצרים";
+  const nodes = [
+    { key: "heroTitle", label: "Hero", selector: '[data-textkey="heading-heroTitle"]' },
+    { key: "services", label: roleLabel, selector: '[data-textkey="heading-services"]' },
+  ];
+  if (!d.pages || !d.pages.about) nodes.push({ key: "about", label: "אודות", selector: '[data-textkey="heading-about"]' });
+  if (!d.pages || !d.pages.contact) nodes.push({ key: "contact", label: "צור קשר", selector: '[data-textkey="heading-contact"]' });
+  tree.innerHTML = nodes.map((n) => hierRowHtml({ label: n.label, key: n.key })).join("");
+  tree.querySelectorAll(".hier-row[data-hier-key]").forEach((row) => {
+    const node = nodes.find((n) => n.key === row.dataset.hierKey);
+    if (node) row.addEventListener("click", () => scrollCanvasTo(node.selector));
+  });
+}
+
+/* Field editing (business info, contact, color/font, media, extra
+   pages) moved into this slide-over drawer so it never competes with
+   the canvas for space by default — opened deliberately, not always-on
+   like the old permanent sidebar. */
+function wireSettingsDrawer() {
+  const drawer = document.getElementById("settings-drawer");
+  const backdrop = document.getElementById("settings-backdrop");
+  const openBtn = document.getElementById("open-settings-btn");
+  const closeBtn = document.getElementById("close-settings-btn");
+  if (!drawer || !openBtn) return;
+  function open() { drawer.classList.add("open"); backdrop.classList.add("open"); }
+  function close() { drawer.classList.remove("open"); backdrop.classList.remove("open"); }
+  openBtn.addEventListener("click", open);
+  closeBtn.addEventListener("click", close);
+  backdrop.addEventListener("click", close);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
 }
 
 function saveSiteState() {
@@ -591,6 +772,7 @@ function renderSitePreview() {
   renderPreviewTabs();
   document.getElementById("site-preview-frame").srcdoc = injectEditModeScript(currentSiteHtml(previewPage));
   saveSiteState();
+  if (typeof renderHierarchyPanel === "function") renderHierarchyPanel();
 }
 
 /* Every keystroke in a text field used to call renderSitePreview()
@@ -736,11 +918,7 @@ function wireForm() {
     renderSitePreview();
   });
 
-  document.getElementById("add-service").addEventListener("click", () => {
-    siteState.data.services.push({ name: "", desc: "", price: "" });
-    renderServicesList();
-    renderSitePreview();
-  });
+  document.getElementById("add-service").addEventListener("click", addServiceItem);
   document.getElementById("services-list").addEventListener("input", (e) => {
     const idx = e.target.dataset.service;
     const key = e.target.dataset.key;
@@ -751,11 +929,26 @@ function wireForm() {
   document.getElementById("services-list").addEventListener("click", (e) => {
     const idx = e.target.dataset.serviceRemove;
     if (idx === undefined) return;
-    if (siteState.data.services.length <= 1) return;
-    siteState.data.services.splice(Number(idx), 1);
-    renderServicesList();
-    renderSitePreview();
+    removeServiceItem(Number(idx));
   });
+}
+
+/* Shared by the sidebar's "+ הוספת שירות"/"הסרה" controls and the new
+   hierarchy panel's own add/remove buttons on the services block's
+   children — one place that actually mutates siteState.data.services,
+   so both surfaces always agree with each other and with the preview. */
+function addServiceItem() {
+  siteState.data.services.push({ name: "", desc: "", price: "" });
+  renderServicesList();
+  renderSitePreview();
+  if (typeof renderHierarchyPanel === "function") renderHierarchyPanel();
+}
+function removeServiceItem(idx) {
+  if (siteState.data.services.length <= 1) return;
+  siteState.data.services.splice(idx, 1);
+  renderServicesList();
+  renderSitePreview();
+  if (typeof renderHierarchyPanel === "function") renderHierarchyPanel();
 }
 
 function publishGuideText(pages) {
@@ -1052,6 +1245,7 @@ document.addEventListener("DOMContentLoaded", () => {
   wireBuyLinkOnce(buyLink);
   wireForm();
   refreshUnlockUI();
+  wireSettingsDrawer();
 
   // Same discovery flow as the CV catalog: browse a real catalog of
   // templates first, land straight in the wizard only when arriving via
@@ -1161,5 +1355,6 @@ document.addEventListener("DOMContentLoaded", () => {
     previewPage = page;
     renderPreviewTabs();
     frame.srcdoc = injectEditModeScript(currentSiteHtml(previewPage));
+    if (typeof renderHierarchyPanel === "function") renderHierarchyPanel();
   });
 });
