@@ -52,6 +52,7 @@ const SITE_DEFAULT = {
   tagline: "",
   about: "",
   primaryColor: "#1F5C4E",
+  fontFamily: "",
   phone: "",
   whatsapp: "",
   email: "",
@@ -216,9 +217,17 @@ function showWizard() {
 function renderFormValues() {
   const d = ensurePagesShape(siteState.data);
   document.getElementById("s-name").value = d.businessName;
+  document.getElementById("h-heroTitle").value = (d.headings && d.headings.heroTitle) || "";
   document.getElementById("s-tagline").value = d.tagline;
   document.getElementById("s-about").value = d.about;
   document.getElementById("s-color").value = d.primaryColor;
+  const fontSelect = document.getElementById("s-font");
+  if (fontSelect && !fontSelect.options.length) {
+    fontSelect.innerHTML = Object.keys(SITE_FONTS)
+      .map((key) => `<option value="${key}">${SITE_FONTS[key].name}</option>`)
+      .join("");
+  }
+  if (fontSelect) fontSelect.value = d.fontFamily || "heebo";
   document.getElementById("s-phone").value = d.phone;
   document.getElementById("s-whatsapp").value = d.whatsapp;
   document.getElementById("s-email").value = d.email;
@@ -363,6 +372,16 @@ function wireForm() {
   });
   document.getElementById("s-color").addEventListener("input", (e) => {
     siteState.data.primaryColor = e.target.value;
+    scheduleSitePreviewRender();
+  });
+
+  document.getElementById("s-font").addEventListener("change", (e) => {
+    siteState.data.fontFamily = e.target.value;
+    renderSitePreview();
+  });
+
+  document.getElementById("h-heroTitle").addEventListener("input", (e) => {
+    siteState.data.headings.heroTitle = e.target.value;
     scheduleSitePreviewRender();
   });
 

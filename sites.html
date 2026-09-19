@@ -196,6 +196,11 @@
     <hr class="sep">
 
     <div class="field"><label for="s-name">שם העסק</label><input id="s-name" type="text"></div>
+    <div class="field">
+      <label for="h-heroTitle">כותרת ראשית (H1)</label>
+      <p class="field-hint">הכותרת הגדולה שמופיעה בראש האתר. השאירו ריק כדי שתהיה זהה לשם העסק.</p>
+      <input id="h-heroTitle" type="text" placeholder="לדוגמה: מעצבים את המרחב שלכם מחדש">
+    </div>
     <div class="field"><label for="s-tagline">שורת תיאור קצרה</label><input id="s-tagline" type="text"></div>
     <div class="field"><label for="s-about">קצת עלינו</label><textarea id="s-about" rows="3"></textarea></div>
 
@@ -223,6 +228,11 @@
     <div class="field">
       <label for="s-color">צבע ראשי</label>
       <div class="color-row"><input type="color" id="s-color" value="#1F5C4E"></div>
+    </div>
+
+    <div class="field">
+      <label for="s-font">גופן הטקסט באתר</label>
+      <select id="s-font"></select>
     </div>
 
     <div class="field">
@@ -354,8 +364,8 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="js/color-utils.js"></script>
-<script src="js/site-templates.js?v=15"></script>
-<script src="js/site-builder.js?v=29"></script>
+<script src="js/site-templates.js?v=16"></script>
+<script src="js/site-builder.js?v=30"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>

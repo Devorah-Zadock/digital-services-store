@@ -57,13 +57,35 @@ function heroSlideshowScript() {
     });
   </script>`;
 }
-function siteFontImport() {
-  return `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap" rel="stylesheet">`;
+/* The body-copy font a customer can pick in the wizard — applies to every
+   template's default text (nav, paragraphs, cards). Deliberately separate
+   from each template's own display/heading font (many hardcode 'Frank
+   Ruhl Libre' or similar for their signature look) — overriding those too
+   would flatten templates that specifically use a serif headline as part
+   of their identity, which isn't what "change the font" is asking for. */
+const SITE_FONTS = {
+  heebo: { name: "Heebo", stack: "'Heebo',Arial,sans-serif", googleParam: "Heebo:wght@400;500;600;700;800;900" },
+  rubik: { name: "Rubik", stack: "'Rubik',Arial,sans-serif", googleParam: "Rubik:wght@400;500;600;700;800;900" },
+  assistant: { name: "Assistant", stack: "'Assistant',Arial,sans-serif", googleParam: "Assistant:wght@400;500;600;700;800" },
+  frankRuhl: { name: "Frank Ruhl Libre (סריפי)", stack: "'Frank Ruhl Libre',serif", googleParam: "Frank+Ruhl+Libre:wght@400;500;700;900" },
+  davidLibre: { name: "David Libre (סריפי)", stack: "'David Libre',serif", googleParam: "David+Libre:wght@400;500;700" },
+  secularOne: { name: "Secular One", stack: "'Secular One',Arial,sans-serif", googleParam: "Secular+One" },
+  suezOne: { name: "Suez One (סריפי)", stack: "'Suez One',serif", googleParam: "Suez+One" },
+  varelaRound: { name: "Varela Round (עגול)", stack: "'Varela Round',Arial,sans-serif", googleParam: "Varela+Round" },
+};
+function siteFontImport(fontKey) {
+  const font = SITE_FONTS[fontKey] || SITE_FONTS.heebo;
+  // Heebo + Frank Ruhl Libre stay loaded unconditionally — plenty of
+  // templates reference them directly in their own CSS for headline
+  // styling regardless of which body font the customer picked.
+  const extra = (fontKey && fontKey !== "heebo" && fontKey !== "frankRuhl") ? `&family=${font.googleParam}` : "";
+  return `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&family=Frank+Ruhl+Libre:wght@500;700;900${extra}&display=swap" rel="stylesheet">`;
 }
-function siteBaseCss() {
+function siteBaseCss(fontKey) {
+  const font = SITE_FONTS[fontKey] || SITE_FONTS.heebo;
   return `
     * { box-sizing: border-box; }
-    body { margin:0; font-family:'Heebo',Arial,sans-serif; color:#1E1E1E; line-height:1.6; }
+    body { margin:0; font-family:${font.stack}; color:#1E1E1E; line-height:1.6; }
     img { max-width:100%; display:block; }
     a { text-decoration:none; color:inherit; }
     .container { max-width:1000px; margin:0 auto; padding:0 24px; }
@@ -316,8 +338,8 @@ function siteDoc(head, body) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${escapeHtmlS(head.title)}</title>
 ${head.description ? `<meta name="description" content="${escapeHtmlS(head.description)}">` : ""}
-${siteFontImport()}
-<style>${siteBaseCss()}${head.css}</style>
+${siteFontImport(head.fontFamily)}
+<style>${siteBaseCss(head.fontFamily)}${head.css}</style>
 </head>
 <body>
 ${body}
@@ -461,7 +483,7 @@ function renderLocalServiceSite(d, page) {
     main = `
       <section class="ls-hero">${heroVideoBgHtml(d)}<div class="container">
         <span class="eyebrow">שירות מקצועי ואמין</span>
-        <h1>${escapeHtmlS(dd.businessName)}</h1>
+        <h1>${escapeHtmlS(heading(d, "heroTitle", dd.businessName))}</h1>
         <p>${escapeHtmlS(dd.tagline)}</p>
         ${ctaHtml(cta, "ls-cta")}
         ${d.phone ? `<a class="ls-phone-pill" href="tel:${escapeHtmlS(d.phone)}">${escapeHtmlS(d.phone)}</a>` : ""}
@@ -491,7 +513,7 @@ function renderLocalServiceSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${rail}${topbar}${main}${footer}`).replace("<body>", '<body class="ls-body">');
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${rail}${topbar}${main}${footer}`).replace("<body>", '<body class="ls-body">');
 }
 
 /* ---------- Template 2: freelancer / consultant ---------- */
@@ -557,7 +579,7 @@ function renderFreelancerSite(d, page) {
       <section class="fr-hero">
         ${heroMediaHtml(d, "site-hero-photo round")}
         <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "פרילנסר / יועץ"}</span>
-        <div class="fr-name">${escapeHtmlS(dd.businessName)}</div>
+        <div class="fr-name">${escapeHtmlS(heading(d, "heroTitle", dd.businessName))}</div>
         <div class="fr-role">${escapeHtmlS(dd.tagline)}</div>
       </section>
       <div class="fr-body">
@@ -574,7 +596,7 @@ function renderFreelancerSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${navBar}${main}${footer}`);
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${navBar}${main}${footer}`);
 }
 
 /* ---------- Template 3: small catalog / shop ---------- */
@@ -651,7 +673,7 @@ function renderCatalogSite(d, page) {
     main = `
       <section class="cat-title"><div class="container">
         <span class="eyebrow">${escapeHtmlS(heading(d, "services", "קטלוג המוצרים שלנו"))}</span>
-        <h1>${escapeHtmlS(dd.businessName)}</h1>
+        <h1>${escapeHtmlS(heading(d, "heroTitle", dd.businessName))}</h1>
         <p>${escapeHtmlS(dd.tagline)}</p>
         <div class="stats">${services.length} מוצרים/שירותים זמינים</div>
         ${heroMediaHtml(d, "site-hero-photo")}
@@ -671,7 +693,7 @@ function renderCatalogSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${nav}${main}${footer}`);
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${nav}${main}${footer}`);
 }
 
 /* ---------- Template 4: modern gallery / editorial ---------- */
@@ -693,7 +715,7 @@ function renderGallerySite(d, page) {
     .gl-nav nav a.active { color:#${pal.primaryDark}; text-decoration:underline; text-underline-offset:5px; }
 
     .gl-hero { position:relative; min-height:56vh; display:flex; align-items:flex-end; overflow:hidden; }
-    .gl-hero.has-photo { background-size:cover; background-position:center; }
+    .gl-hero-media { position:absolute; inset:0; z-index:0; width:100%; height:100%; object-fit:cover; }
     .gl-hero.no-photo { background:linear-gradient(160deg, #${pal.ice}, #fff); min-height:auto; padding:90px 0 70px; }
     .gl-hero.has-photo::after { content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0) 25%, rgba(0,0,0,.74)); }
     .gl-hero-inner { position:relative; z-index:1; padding:54px 0; width:100%; }
@@ -755,11 +777,10 @@ function renderGallerySite(d, page) {
       </div></section>`;
   } else {
     const showSearch = dd._services.length >= 3;
-    const heroStyle = hasPhoto ? ` style="background-image:url('${d.heroImage}');"` : "";
     main = `
-      <section class="gl-hero ${hasPhoto ? "has-photo" : "no-photo"}"${heroStyle}><div class="container gl-hero-inner">
+      <section class="gl-hero ${hasPhoto ? "has-photo" : "no-photo"}">${hasPhoto ? heroMediaHtml(d, "gl-hero-media") : ""}<div class="container gl-hero-inner">
         <span class="gl-eyebrow">${dd.tagline ? "ברוכים הבאים" : "עסק מקצועי"}</span>
-        <h1 class="gl-title">${escapeHtmlS(dd.businessName)}</h1>
+        <h1 class="gl-title">${escapeHtmlS(heading(d, "heroTitle", dd.businessName))}</h1>
         <p class="gl-tagline">${escapeHtmlS(dd.tagline)}</p>
         ${ctaHtml(cta, "gl-cta")}
       </div></section>
@@ -783,7 +804,7 @@ function renderGallerySite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${header}${main}${footer}`);
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${header}${main}${footer}`);
 }
 
 /* ---------- Template 5: bold / neo-brutalist ---------- */
@@ -859,7 +880,7 @@ function renderBoldSite(d, page) {
     main = `
       <section class="nb-hero"><div class="container">
         <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "עסק מקצועי"}</span>
-        <h1>${escapeHtmlS(dd.businessName)}</h1>
+        <h1>${escapeHtmlS(heading(d, "heroTitle", dd.businessName))}</h1>
         <p>${escapeHtmlS(dd.tagline)}</p>
         ${ctaHtml(cta, "nb-cta")}
         ${heroMediaHtml(d, "nb-hero-photo")}
@@ -883,7 +904,7 @@ function renderBoldSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${header}${main}${footer}`);
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${header}${main}${footer}`);
 }
 
 /* ---------- Template 6: elegant split-hero (events / boutique) ---------- */
@@ -967,7 +988,7 @@ function renderElegantSite(d, page) {
         ${hasPhoto ? `
           <div class="eg-hero-text">
             <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "עסק בוטיק"}</span>
-            <h1>${escapeHtmlS(dd.businessName)}</h1>
+            <h1>${escapeHtmlS(heading(d, "heroTitle", dd.businessName))}</h1>
             <p>${escapeHtmlS(dd.tagline)}</p>
             ${ctaHtml(cta, "eg-cta")}
           </div>
@@ -975,7 +996,7 @@ function renderElegantSite(d, page) {
         ` : `
           <div class="eg-hero-text">
             <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "עסק בוטיק"}</span>
-            <h1>${escapeHtmlS(dd.businessName)}</h1>
+            <h1>${escapeHtmlS(heading(d, "heroTitle", dd.businessName))}</h1>
             <p>${escapeHtmlS(dd.tagline)}</p>
             ${ctaHtml(cta, "eg-cta")}
           </div>
@@ -1005,7 +1026,7 @@ function renderElegantSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${header}${main}${footer}`);
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${header}${main}${footer}`);
 }
 
 /* ---------- Template 7: process / how-we-work ---------- */
@@ -1086,7 +1107,7 @@ function renderProcessSite(d, page) {
     main = `
       <section class="pr-hero"><div class="container">
         <span class="eyebrow">איך אנחנו עובדים</span>
-        <h1>${escapeHtmlS(dd.businessName)}</h1>
+        <h1>${escapeHtmlS(heading(d, "heroTitle", dd.businessName))}</h1>
         <p>${escapeHtmlS(dd.tagline)}</p>
         ${ctaHtml(cta, "pr-cta")}
         ${heroMediaHtml(d, "site-hero-photo")}
@@ -1116,7 +1137,7 @@ function renderProcessSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${header}${main}${footer}`);
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${header}${main}${footer}`);
 }
 
 /* ---------- Template 8: creative portfolio (personal) ---------- */
@@ -1189,7 +1210,7 @@ function renderPortfolioSite(d, page) {
       <section class="po-hero"><div class="container" style="display:grid; grid-template-columns:${heroHasImage(d) ? "1fr auto" : "1fr"}; align-items:center; gap:36px;">
         <div>
           <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "תיק עבודות"}</span>
-          <h1>${escapeHtmlS(dd.businessName)}</h1>
+          <h1>${escapeHtmlS(heading(d, "heroTitle", dd.businessName))}</h1>
           <p>${escapeHtmlS(dd.tagline)}</p>
           ${ctaHtml(cta, "po-work-idx")}
         </div>
@@ -1215,7 +1236,7 @@ function renderPortfolioSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${header}${main}${footer}`);
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${header}${main}${footer}`);
 }
 
 /* ---------- Template 9: boutique shop with a featured item (shop) ---------- */
@@ -1297,7 +1318,7 @@ function renderBoutiqueSite(d, page) {
         ${heroMediaHtml(d, "")}
         <div class="bq-banner-inner">
           <span class="eyebrow">חנות בוטיק</span>
-          <h1>${escapeHtmlS(dd.businessName)}</h1>
+          <h1>${escapeHtmlS(heading(d, "heroTitle", dd.businessName))}</h1>
           <p>${escapeHtmlS(dd.tagline)}</p>
         </div>
       </section>
@@ -1327,7 +1348,7 @@ function renderBoutiqueSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${nav}${main}${footer}`);
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${nav}${main}${footer}`);
 }
 
 /* ---------- Template 10: dark luxury (events / boutique) ---------- */
@@ -1401,7 +1422,7 @@ function renderNoirSite(d, page) {
         ${d.heroVideoBg && videoBgEmbedSrc(d.videoUrl) ? heroVideoBgHtml(d) : heroMediaHtml(d, "")}
         <div class="nr-hero-inner">
           <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "אירוע ובוטיק"}</span>
-          <h1>${escapeHtmlS(dd.businessName)}</h1>
+          <h1>${escapeHtmlS(heading(d, "heroTitle", dd.businessName))}</h1>
           <p>${escapeHtmlS(dd.tagline)}</p>
           ${ctaHtml(cta, "nr-cta")}
         </div>
@@ -1426,7 +1447,7 @@ function renderNoirSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${header}${main}${footer}`).replace("<body>", '<body class="nr-body">');
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${header}${main}${footer}`).replace("<body>", '<body class="nr-body">');
 }
 
 /* Reveal-on-scroll — originally built for the studio template only
@@ -1481,7 +1502,7 @@ function renderStudioSite(d, page) {
 
     .ag-hero { min-height:88vh; display:grid; grid-template-columns:1fr 1fr; align-items:stretch; }
     .ag-hero-art { position:relative; overflow:hidden; background:#111; min-height:340px; }
-    .ag-hero-art img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+    .ag-hero-art .ag-hero-media { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
     .ag-hero-art .ag-blob {
       position:absolute; inset:-20%; opacity:.9;
       background: radial-gradient(circle at 30% 30%, #${pal.primary}, transparent 55%),
@@ -1493,7 +1514,7 @@ function renderStudioSite(d, page) {
     @keyframes ag-spin { from { transform:rotate(0deg) scale(1.15); } to { transform:rotate(360deg) scale(1.15); } }
     .ag-hero-text { display:flex; flex-direction:column; justify-content:center; padding:60px 56px 60px 24px; }
     .ag-avatar { width:52px; height:52px; border-radius:50%; overflow:hidden; border:2px solid #${pal.primary}; margin-bottom:26px; }
-    .ag-avatar img { width:100%; height:100%; object-fit:cover; }
+    .ag-avatar img, .ag-avatar .site-hero-slideshow { width:100%; height:100%; object-fit:cover; }
     .ag-hero-text .kicker { font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:#${pal.ice}; margin-bottom:14px; }
     .ag-hero-text h1 { font-size:58px; font-weight:800; letter-spacing:-.02em; line-height:1.02; margin:0 0 14px; }
     .ag-hero-text p { font-size:15.5px; color:#B7B6B0; max-width:380px; margin:0 0 30px; }
@@ -1555,12 +1576,12 @@ function renderStudioSite(d, page) {
     main = `
       <section class="ag-hero">
         <div class="ag-hero-art">
-          ${d.heroImage ? `<img src="${d.heroImage}" alt="">` : `<div class="ag-blob"></div>`}
+          ${heroHasImage(d) ? heroMediaHtml(d, "ag-hero-media") : `<div class="ag-blob"></div>`}
         </div>
         <div class="ag-hero-text">
-          ${d.heroImage ? `<div class="ag-avatar"><img src="${d.heroImage}" alt=""></div>` : ""}
+          ${heroHasImage(d) ? `<div class="ag-avatar">${heroMediaHtml(d, "")}</div>` : ""}
           <span class="kicker">${dd.tagline ? "ברוכים הבאים" : "סטודיו יצירתי"}</span>
-          <h1>${escapeHtmlS(dd.businessName)}</h1>
+          <h1>${escapeHtmlS(heading(d, "heroTitle", dd.businessName))}</h1>
           <p>${escapeHtmlS(dd.tagline)}</p>
           <a class="ag-cta" href="${escapeHtmlS(heroCta ? heroCta.href : (inPageRail ? "#ag-contact" : "#"))}"${heroCta && heroCta.external ? ' target="_blank" rel="noopener"' : ""}${heroCta && heroCta.page ? ' data-site-nav data-page="contact"' : ""}>רוצה להכיר יותר? ‹</a>
         </div>
@@ -1582,7 +1603,7 @@ function renderStudioSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${rail}${main}${footer}`).replace("<body>", '<body class="ag-body">');
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${rail}${main}${footer}`).replace("<body>", '<body class="ag-body">');
 }
 
 /* ---------- Template 12: bento grid (modular, apple-widget style) ---------- */
@@ -1723,7 +1744,7 @@ function renderBentoSite(d, page) {
     main = `
       <section class="bt-hero"><div class="container">
         <span class="eyebrow">עסק מודולרי, מותאם אישית</span>
-        <h1>${escapeHtmlS(dd.businessName)}</h1>
+        <h1>${escapeHtmlS(heading(d, "heroTitle", dd.businessName))}</h1>
         ${ctaHtml(cta, "bt-cta")}
       </div></section>
       <section class="bt-section site-reveal"><div class="container">
@@ -1733,7 +1754,7 @@ function renderBentoSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${header}${main}${footer}`);
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${header}${main}${footer}`);
 }
 
 /* ---------- Template 13: cinematic dark (glassmorphism, mouse-glow) ---------- */
@@ -1835,7 +1856,7 @@ function renderCinematicSite(d, page) {
     main = `
       <section class="cd-hero"><div class="container">
         <span class="cd-kicker">${dd.tagline ? "ברוכים הבאים" : "חוויה פרימיום"}</span>
-        <h1>${escapeHtmlS(dd.businessName)}</h1>
+        <h1>${escapeHtmlS(heading(d, "heroTitle", dd.businessName))}</h1>
         <p>${escapeHtmlS(dd.tagline)}</p>
         ${ctaHtml(cta, "cd-cta")}
         ${heroHasImage(d) ? `<div class="cd-photo">${heroMediaHtml(d, "")}</div>` : ""}
@@ -1860,7 +1881,7 @@ function renderCinematicSite(d, page) {
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
   const glowDiv = `<div class="cd-glow" id="cd-glow"></div>`;
-  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${glowDiv}${header}${main}${footer}${glowScript}`).replace("<body>", '<body class="cd-body">');
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${glowDiv}${header}${main}${footer}${glowScript}`).replace("<body>", '<body class="cd-body">');
 }
 
 /* ---------- Template 14: neo-brutalism (bold color blocks, arcade press) ---------- */
@@ -1945,7 +1966,7 @@ function renderBrutalSite(d, page) {
     main = `
       <section class="br-hero"><div class="container">
         <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "עסק שמעז לבלוט"}</span>
-        <h1>${escapeHtmlS(dd.businessName)}</h1>
+        <h1>${escapeHtmlS(heading(d, "heroTitle", dd.businessName))}</h1>
         <p>${escapeHtmlS(dd.tagline)}</p>
         ${ctaHtml(cta, "br-btn")}
         ${heroMediaHtml(d, "br-hero-photo")}
@@ -1970,13 +1991,15 @@ function renderBrutalSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${header}${main}${footer}`).replace("<body>", '<body class="br-body">');
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${header}${main}${footer}`).replace("<body>", '<body class="br-body">');
 }
 
 /* ---------- Template 15: neon future (cyberpunk agency) ---------- */
 function renderNeonSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#A855F7");
+  const rgb = hexToRgb(pal.primary);
+  const glowRgba = `${rgb.r},${rgb.g},${rgb.b}`;
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
@@ -1986,7 +2009,7 @@ function renderNeonSite(d, page) {
     body.nf-body { background:#0A0518; color:#F0EAFF; }
     .nf-mesh { position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
     .nf-blob { position:absolute; border-radius:50%; filter:blur(80px); opacity:.5; }
-    .nf-blob-1 { width:520px; height:520px; background:#7C3AED; top:-12%; left:-10%; animation:nf-float1 22s ease-in-out infinite; }
+    .nf-blob-1 { width:520px; height:520px; background:#${pal.primary}; top:-12%; left:-10%; animation:nf-float1 22s ease-in-out infinite; }
     .nf-blob-2 { width:480px; height:480px; background:#EC4899; top:28%; right:-16%; animation:nf-float2 26s ease-in-out infinite; }
     .nf-blob-3 { width:420px; height:420px; background:#22D3EE; bottom:-18%; left:22%; animation:nf-float3 30s ease-in-out infinite; }
     @keyframes nf-float1 { 0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(60px,80px) scale(1.15);} }
@@ -2003,16 +2026,17 @@ function renderNeonSite(d, page) {
     .nf-nav nav a.active, .nf-nav nav a:hover { color:#fff; }
 
     .nf-hero { text-align:center; padding:100px 24px 80px; }
-    .nf-kicker { display:inline-block; font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#22D3EE; margin-bottom:22px; }
+    .nf-kicker { display:inline-block; font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#${pal.ice}; margin-bottom:22px; }
     .nf-hero h1 { font-size:60px; font-weight:800; letter-spacing:-.02em; line-height:1.1; margin:0 0 20px; color:#fff; }
     .nf-word { display:inline-block; opacity:0; transform:translateY(40px); transition:opacity .7s cubic-bezier(.2,.8,.2,1), transform .7s cubic-bezier(.2,.8,.2,1); }
     .nf-split-in .nf-word { opacity:1; transform:translateY(0); }
     .nf-hero p { font-size:16px; color:#C9BFEA; max-width:520px; margin:0 auto 34px; }
+    .nf-hero-photo { width:132px; height:132px; border-radius:50%; object-fit:cover; margin:0 auto 26px; border:2px solid rgba(${glowRgba},.6); box-shadow:0 0 40px rgba(${glowRgba},.4); }
     .nf-cta { display:inline-flex; align-items:center; gap:8px; padding:16px 36px; border-radius:40px;
       background:rgba(255,255,255,.08); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
       border:1px solid rgba(255,255,255,.25); color:#fff; font-weight:700; font-size:14.5px;
       transition:box-shadow .3s ease, background .3s ease, transform .2s ease; }
-    .nf-cta:hover { background:#${pal.primary}; box-shadow:0 0 44px rgba(168,85,247,.55); transform:translateY(-2px); }
+    .nf-cta:hover { background:#${pal.primary}; box-shadow:0 0 44px rgba(${glowRgba},.55); transform:translateY(-2px); }
     @media (max-width:640px) { .nf-hero h1 { font-size:36px; } }
 
     .nf-section { padding:80px 0; }
@@ -2023,10 +2047,10 @@ function renderNeonSite(d, page) {
     .nf-card { background:rgba(255,255,255,.05); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
       border:1px solid rgba(255,255,255,.12); border-radius:20px; padding:28px;
       transition:transform .3s ease, border-color .3s ease, box-shadow .3s ease; }
-    .nf-card:hover { transform:translateY(-6px); border-color:rgba(168,85,247,.55); box-shadow:0 20px 50px rgba(124,58,237,.25); }
+    .nf-card:hover { transform:translateY(-6px); border-color:rgba(${glowRgba},.55); box-shadow:0 20px 50px rgba(${glowRgba},.25); }
     .nf-card h3 { margin:0 0 8px; font-size:17px; font-weight:700; color:#fff; }
     .nf-card p { margin:0 0 10px; font-size:13.5px; color:#B9AFDB; line-height:1.6; }
-    .nf-card .price { font-weight:700; color:#22D3EE; font-size:14px; }
+    .nf-card .price { font-weight:700; color:#${pal.ice}; font-size:14px; }
 
     .nf-panel { max-width:640px; margin:0 auto; text-align:center; background:rgba(255,255,255,.05); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
       border:1px solid rgba(255,255,255,.12); border-radius:24px; padding:44px 36px; }
@@ -2065,7 +2089,7 @@ function renderNeonSite(d, page) {
       }
       tick();
       function burst(x, y) {
-        var colors = ["#7C3AED", "#EC4899", "#22D3EE"];
+        var colors = ["#${pal.primary}", "#EC4899", "#22D3EE"];
         for (var i = 0; i < 10; i++) {
           var p = document.createElement("div");
           p.className = "nf-particle";
@@ -2135,8 +2159,9 @@ function renderNeonSite(d, page) {
     const showSearch = dd._services.length >= 3;
     main = `
       <section class="nf-hero"><div class="container">
+        ${heroMediaHtml(d, "nf-hero-photo")}
         <span class="nf-kicker">${dd.tagline ? "ברוכים הבאים" : "סוכנות דיגיטל מהעתיד"}</span>
-        <h1 class="nf-split">${escapeHtmlS(dd.businessName)}</h1>
+        <h1 class="nf-split">${escapeHtmlS(heading(d, "heroTitle", dd.businessName))}</h1>
         <p>${escapeHtmlS(dd.tagline)}</p>
         ${ctaHtml(cta, "nf-cta")}
       </div></section>
@@ -2159,7 +2184,7 @@ function renderNeonSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${meshDiv}${header}${main}${footer}${cursorScript}${splitScript}`).replace("<body>", '<body class="nf-body">');
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${meshDiv}${header}${main}${footer}${cursorScript}${splitScript}`).replace("<body>", '<body class="nf-body">');
 }
 
 /* ---------- Template 16: organized chaos (fashion / artist portfolio) ---------- */
@@ -2293,7 +2318,7 @@ function renderChaosSite(d, page) {
     main = `
       <section class="oc-hero"><div class="container">
         <span class="eyebrow" style="background:#0A0A0A; color:#${pal.primary}; border-radius:0;">${dd.tagline ? "ברוכים הבאים" : "מותג שלא מתנצל"}</span>
-        <h1>${escapeHtmlS(dd.businessName)}</h1>
+        <h1>${escapeHtmlS(heading(d, "heroTitle", dd.businessName))}</h1>
         <p>${escapeHtmlS(dd.tagline)}</p>
         ${ctaHtml(cta, "oc-cta")}
         ${heroHasImage(d) ? `<div class="oc-distort" style="max-width:420px; margin:34px auto 0;">${heroMediaHtml(d, "")}</div>` : ""}
@@ -2318,13 +2343,15 @@ function renderChaosSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${header}${main}${footer}`).replace("<body>", '<body class="oc-body">');
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${header}${main}${footer}`).replace("<body>", '<body class="oc-body">');
 }
 
 /* ---------- Template 17: 3D minimalist luxury (architects / real estate) ---------- */
 function renderLuxurySite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#B08D57");
+  const rgb = hexToRgb(pal.primary);
+  const tintRgba = `${rgb.r},${rgb.g},${rgb.b}`;
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
@@ -2348,14 +2375,14 @@ function renderLuxurySite(d, page) {
 
     .lx-hero { position:relative; min-height:82vh; display:flex; align-items:center; justify-content:center; text-align:center; overflow:hidden; padding:40px 24px; }
     .lx-hero-bg { position:absolute; inset:-10%; z-index:0;
-      background: radial-gradient(circle at 30% 30%, rgba(212,187,150,.35), transparent 55%),
+      background: radial-gradient(circle at 30% 30%, rgba(${tintRgba},.3), transparent 55%),
                   radial-gradient(circle at 75% 70%, rgba(180,180,175,.3), transparent 55%); }
     .lx-hero-inner { position:relative; z-index:1; }
     .lx-kicker { font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:#8A8272; margin-bottom:22px; display:block; }
     .lx-hero h1 { font-family:'Frank Ruhl Libre',serif; font-weight:500; font-size:56px; line-height:1.15; margin:0 0 20px; color:#2A2620; }
     .lx-hero p { font-size:16px; color:#6B6458; max-width:480px; margin:0 auto 34px; }
-    .lx-cta { display:inline-block; border:1px solid #2A2620; color:#2A2620; font-weight:600; font-size:13px; letter-spacing:.06em; padding:15px 38px; transition:background .3s ease, color .3s ease; }
-    .lx-cta:hover { background:#2A2620; color:#FAF8F4; }
+    .lx-cta { display:inline-block; border:1px solid #${pal.primaryDark}; color:#${pal.primaryDark}; font-weight:600; font-size:13px; letter-spacing:.06em; padding:15px 38px; transition:background .3s ease, color .3s ease; }
+    .lx-cta:hover { background:#${pal.primaryDark}; color:#FAF8F4; }
     @media (max-width:640px) { .lx-hero h1 { font-size:34px; } }
 
     .lx-parallax { position:relative; height:70vh; overflow:hidden; }
@@ -2437,7 +2464,7 @@ function renderLuxurySite(d, page) {
     main = `
       <section class="lx-hero"><div class="lx-hero-bg"></div><div class="container lx-hero-inner">
         <span class="lx-kicker">${dd.tagline ? "ברוכים הבאים" : "עיצוב ללא פשרות"}</span>
-        <h1>${escapeHtmlS(dd.businessName)}</h1>
+        <h1>${escapeHtmlS(heading(d, "heroTitle", dd.businessName))}</h1>
         <p>${escapeHtmlS(dd.tagline)}</p>
         ${ctaHtml(cta, "lx-cta")}
       </div></section>
@@ -2465,7 +2492,7 @@ function renderLuxurySite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${iris}${header}${main}${footer}`).replace("<body>", '<body class="lx-body">');
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${iris}${header}${main}${footer}`).replace("<body>", '<body class="lx-body">');
 }
 
 /* ---------- Template 18: playground (physics-based, playful) ----------
@@ -2510,13 +2537,13 @@ function renderPlaygroundSite(d, page) {
     .pg-cta-wrap { display:inline-block; }
     .pg-cta { display:inline-flex; align-items:center; gap:8px; background:#${pal.primary}; color:#fff; font-weight:900; padding:16px 36px; border-radius:40px; font-size:15px; }
 
-    .pg-physics-wrap { padding:50px 0 20px; }
+    .pg-physics-wrap { padding:36px 0 16px; }
     .pg-physics-head { text-align:center; margin-bottom:8px; }
     .pg-physics-head h2 { font-size:28px; font-weight:900; color:#fff; margin:8px 0 4px; }
-    .pg-physics-hint { text-align:center; font-size:12.5px; color:#8B89AC; margin:0 0 28px; }
-    .pg-physics { position:relative; min-height:340px; max-width:920px; margin:0 auto; padding:20px; overflow:hidden;
+    .pg-physics-hint { text-align:center; font-size:12.5px; color:#8B89AC; margin:0 0 16px; }
+    .pg-physics { position:relative; min-height:280px; max-width:920px; margin:0 auto; padding:20px; overflow:hidden;
       display:flex; flex-wrap:wrap; align-content:flex-start; justify-content:center; gap:16px; }
-    .pg-physics.pg-active { display:block; height:60vh; min-height:380px; max-height:640px; cursor:grab; touch-action:none; }
+    .pg-physics.pg-active { display:block; height:42vh; min-height:300px; max-height:460px; cursor:grab; touch-action:none; }
     .pg-physics.pg-active:active { cursor:grabbing; }
     .pg-bubble {
       display:inline-flex; align-items:center; justify-content:center; text-align:center; padding:0 22px;
@@ -2583,22 +2610,47 @@ function renderPlaygroundSite(d, page) {
       if (!els.length) return;
       if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-      wrap.classList.add("pg-active");
-      var W = wrap.clientWidth, H = wrap.clientHeight;
+      var W, H;
       var GRAVITY = 0.6, DAMPING = 0.985, BOUNCE = 0.42;
+      var bodies;
+      var started = false;
 
-      var bodies = els.map(function (el, i) {
-        var w = el.offsetWidth, h = el.offsetHeight;
-        el.style.width = w + "px";
-        return {
-          el: el, w: w, h: h, r: Math.max(w, h) / 2,
-          x: w / 2 + Math.random() * Math.max(1, W - w),
-          y: -40 - i * 100,
-          vx: (Math.random() - 0.5) * 2, vy: 0,
-          angle: (Math.random() - 0.5) * 0.3, va: (Math.random() - 0.5) * 0.02,
-          dragging: false,
-        };
-      });
+      // Confirmed live: starting the fall the instant the script runs meant
+      // the bubbles had already dropped and settled at the bottom of a tall
+      // box before the visitor ever scrolled down to see this section —
+      // reading as a big empty gap under the heading. Waiting for the box
+      // to actually scroll into view, and starting bubbles just above it
+      // (not far off-screen), keeps the fall short and visible instead.
+      function activate() {
+        if (started) return;
+        started = true;
+        wrap.classList.add("pg-active");
+        W = wrap.clientWidth; H = wrap.clientHeight;
+
+        bodies = els.map(function (el, i) {
+          var w = el.offsetWidth, h = el.offsetHeight;
+          el.style.width = w + "px";
+          return {
+            el: el, w: w, h: h, r: Math.max(w, h) / 2,
+            x: w / 2 + Math.random() * Math.max(1, W - w),
+            y: -10 - i * 45,
+            vx: (Math.random() - 0.5) * 2, vy: 0,
+            angle: (Math.random() - 0.5) * 0.3, va: (Math.random() - 0.5) * 0.02,
+            dragging: false,
+          };
+        });
+        step();
+        wireDrag();
+      }
+
+      if ("IntersectionObserver" in window) {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) { if (entry.isIntersecting) { activate(); io.disconnect(); } });
+        }, { threshold: 0.15 });
+        io.observe(wrap);
+      } else {
+        activate();
+      }
 
       function step() {
         bodies.forEach(function (b) {
@@ -2635,32 +2687,33 @@ function renderPlaygroundSite(d, page) {
         });
         requestAnimationFrame(step);
       }
-      step();
 
-      var active = null, offX = 0, offY = 0, lastX = 0, lastY = 0;
-      bodies.forEach(function (b) {
-        b.el.style.touchAction = "none";
-        b.el.addEventListener("pointerdown", function (e) {
-          active = b; b.dragging = true; b.vx = 0; b.vy = 0;
-          try { b.el.setPointerCapture(e.pointerId); } catch (err) {}
+      function wireDrag() {
+        var active = null, offX = 0, offY = 0, lastX = 0, lastY = 0;
+        bodies.forEach(function (b) {
+          b.el.style.touchAction = "none";
+          b.el.addEventListener("pointerdown", function (e) {
+            active = b; b.dragging = true; b.vx = 0; b.vy = 0;
+            try { b.el.setPointerCapture(e.pointerId); } catch (err) {}
+            var rect = wrap.getBoundingClientRect();
+            offX = (e.clientX - rect.left) - b.x;
+            offY = (e.clientY - rect.top) - b.y;
+            lastX = e.clientX; lastY = e.clientY;
+          });
+        });
+        wrap.addEventListener("pointermove", function (e) {
+          if (!active) return;
           var rect = wrap.getBoundingClientRect();
-          offX = (e.clientX - rect.left) - b.x;
-          offY = (e.clientY - rect.top) - b.y;
+          active.x = (e.clientX - rect.left) - offX;
+          active.y = (e.clientY - rect.top) - offY;
+          active.vx = e.clientX - lastX; active.vy = e.clientY - lastY;
           lastX = e.clientX; lastY = e.clientY;
         });
-      });
-      wrap.addEventListener("pointermove", function (e) {
-        if (!active) return;
-        var rect = wrap.getBoundingClientRect();
-        active.x = (e.clientX - rect.left) - offX;
-        active.y = (e.clientY - rect.top) - offY;
-        active.vx = e.clientX - lastX; active.vy = e.clientY - lastY;
-        lastX = e.clientX; lastY = e.clientY;
-      });
-      window.addEventListener("pointerup", function () {
-        if (active) active.dragging = false;
-        active = null;
-      });
+        window.addEventListener("pointerup", function () {
+          if (active) active.dragging = false;
+          active = null;
+        });
+      }
 
       window.addEventListener("resize", function () { W = wrap.clientWidth; H = wrap.clientHeight; });
     })();
@@ -2690,7 +2743,7 @@ function renderPlaygroundSite(d, page) {
     main = `
       <section class="pg-hero"><div class="container">
         <span class="pg-kicker">${dd.tagline ? "ברוכים הבאים" : "עסק שמרים אנרגיה"}</span>
-        <h1>${escapeHtmlS(dd.businessName)}</h1>
+        <h1>${escapeHtmlS(heading(d, "heroTitle", dd.businessName))}</h1>
         <p>${escapeHtmlS(dd.tagline)}</p>
         ${cta ? `<span class="pg-cta-wrap" style="filter:url(#pg-goo-filter);"><a id="pg-goo-btn" class="pg-cta" href="${escapeHtmlS(cta.href)}"${cta.external ? ' target="_blank" rel="noopener"' : ""}${cta.page ? ` data-site-nav data-page="${cta.page}"` : ""}>${escapeHtmlS(cta.label)}</a></span>` : ""}
       </div></section>
@@ -2714,7 +2767,7 @@ function renderPlaygroundSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css }, `${header}${main}${footer}`).replace("<body>", '<body class="pg-body">');
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${header}${main}${footer}`).replace("<body>", '<body class="pg-body">');
 }
 
 const SITE_CATEGORIES = [
