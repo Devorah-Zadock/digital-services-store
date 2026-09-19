@@ -29,7 +29,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=58">
-<link rel="stylesheet" href="css/builder.css?v=3">
+<link rel="stylesheet" href="css/builder.css?v=4">
 <style>
   .services-item { border: 1px solid #EDEFEE; border-radius: 8px; padding: 12px; margin-bottom: 12px; display: grid; gap: 8px; }
   .services-item-head { display: flex; justify-content: space-between; align-items: center; }
@@ -205,97 +205,114 @@
       <p id="finalized-note" style="display:none; font-size:12px; color:var(--grey); margin:8px 0 0;">האתר הזה נרכש והתבנית שלו נעולה — עריכה והורדה חוזרת שלו נשארות חינמיות. לבניית אתר נוסף עם תבנית אחרת, יש להיכנס מ"אתרים" בתפריט העליון ולרכוש בנפרד.</p>
     </div>
 
-    <hr class="sep">
+    <details class="builder-section" open>
+      <summary class="builder-section-head">פרטי העסק</summary>
+      <div class="builder-section-body">
+        <div class="field"><label for="s-name">שם העסק</label><input id="s-name" type="text"></div>
+        <div class="field">
+          <label for="h-heroTitle">כותרת ראשית (H1)</label>
+          <p class="field-hint">הכותרת הגדולה שמופיעה בראש האתר. השאירו ריק כדי שתהיה זהה לשם העסק.</p>
+          <input id="h-heroTitle" type="text" placeholder="לדוגמה: מעצבים את המרחב שלכם מחדש">
+        </div>
+        <div class="field"><label for="s-tagline">שורת תיאור קצרה</label><input id="s-tagline" type="text"></div>
+        <div class="field"><label for="s-about">קצת עלינו</label><textarea id="s-about" rows="3"></textarea></div>
+      </div>
+    </details>
 
-    <div class="field"><label for="s-name">שם העסק</label><input id="s-name" type="text"></div>
-    <div class="field">
-      <label for="h-heroTitle">כותרת ראשית (H1)</label>
-      <p class="field-hint">הכותרת הגדולה שמופיעה בראש האתר. השאירו ריק כדי שתהיה זהה לשם העסק.</p>
-      <input id="h-heroTitle" type="text" placeholder="לדוגמה: מעצבים את המרחב שלכם מחדש">
-    </div>
-    <div class="field"><label for="s-tagline">שורת תיאור קצרה</label><input id="s-tagline" type="text"></div>
-    <div class="field"><label for="s-about">קצת עלינו</label><textarea id="s-about" rows="3"></textarea></div>
-
-    <hr class="sep">
-    <div class="field">
-      <label>✏️ כותרות מותאמות אישית (אופציונלי)</label>
-      <p class="field-hint">לכל תבנית יש כותרות ברירת מחדל לחלקים הראשיים באתר. אפשר לבחור ניסוח חלופי מהרשימה, או להקליד כותרת משלכם.</p>
-    </div>
-    <div class="field heading-field">
-      <label for="h-services-pick">כותרת חלק השירותים/מוצרים</label>
-      <select id="h-services-pick"></select>
-      <input type="text" id="h-services" placeholder="השאירו ריק לברירת המחדל של התבנית">
-    </div>
-    <div class="field heading-field">
-      <label for="h-about-pick">כותרת חלק "אודות"</label>
-      <select id="h-about-pick"></select>
-      <input type="text" id="h-about" placeholder="השאירו ריק לברירת המחדל של התבנית">
-    </div>
-    <div class="field heading-field">
-      <label for="h-contact-pick">כותרת חלק יצירת הקשר</label>
-      <select id="h-contact-pick"></select>
-      <input type="text" id="h-contact" placeholder="השאירו ריק לברירת המחדל של התבנית">
-    </div>
-
-    <div class="field">
-      <label for="s-color">צבע ראשי</label>
-      <div class="color-row"><input type="color" id="s-color" value="#1F5C4E"></div>
-    </div>
-
-    <div class="field">
-      <label for="s-font">גופן הטקסט באתר</label>
-      <select id="s-font"></select>
-    </div>
-
-    <div class="field">
-      <label>תמונה ראשית (אופציונלי)</label>
-      <div class="photo-row">
-        <div class="photo-preview" id="s-photo-preview"></div>
-        <div class="photo-actions">
-          <label class="btn-mini photo-upload-btn" for="s-photo">העלאת תמונה</label>
-          <input type="file" id="s-photo" accept="image/*" style="display:none;">
-          <button type="button" class="photo-remove" id="s-photo-remove">הסרת תמונה</button>
+    <details class="builder-section">
+      <summary class="builder-section-head">✏️ כותרות מותאמות אישית <span class="builder-section-optional">(אופציונלי)</span></summary>
+      <div class="builder-section-body">
+        <p class="builder-section-hint">לכל תבנית יש כותרות ברירת מחדל לחלקים הראשיים באתר. אפשר לבחור ניסוח חלופי מהרשימה, או להקליד כותרת משלכם.</p>
+        <div class="field heading-field">
+          <label for="h-services-pick">כותרת חלק השירותים/מוצרים</label>
+          <select id="h-services-pick"></select>
+          <input type="text" id="h-services" placeholder="השאירו ריק לברירת המחדל של התבנית">
+        </div>
+        <div class="field heading-field">
+          <label for="h-about-pick">כותרת חלק "אודות"</label>
+          <select id="h-about-pick"></select>
+          <input type="text" id="h-about" placeholder="השאירו ריק לברירת המחדל של התבנית">
+        </div>
+        <div class="field heading-field">
+          <label for="h-contact-pick">כותרת חלק יצירת הקשר</label>
+          <select id="h-contact-pick"></select>
+          <input type="text" id="h-contact" placeholder="השאירו ריק לברירת המחדל של התבנית">
         </div>
       </div>
-    </div>
+    </details>
 
-    <div class="field">
-      <label>גלריית תמונות מתחלפות (אופציונלי)</label>
-      <p class="field-hint">מעלים כמה תמונות — התמונה הראשית באתר תתחלף ביניהן אוטומטית. אם יש כאן תמונות, הן מחליפות את "התמונה הראשית" שלמעלה. עד 5 תמונות.</p>
-      <div id="s-gallery-preview" class="site-gallery-preview"></div>
-      <label class="btn-mini photo-upload-btn" for="s-gallery">הוספת תמונה לגלריה</label>
-      <input type="file" id="s-gallery" accept="image/*" multiple style="display:none;">
-    </div>
+    <details class="builder-section" open>
+      <summary class="builder-section-head">עיצוב האתר</summary>
+      <div class="builder-section-body">
+        <div class="field">
+          <label for="s-color">צבע ראשי</label>
+          <div class="color-row"><input type="color" id="s-color" value="#1F5C4E"></div>
+        </div>
+        <div class="field">
+          <label for="s-font">גופן הטקסט באתר</label>
+          <select id="s-font"></select>
+        </div>
+      </div>
+    </details>
 
-    <div class="field">
-      <label for="s-video">קישור לסרטון (יוטיוב, אופציונלי)</label>
-      <input id="s-video" type="text" dir="ltr" placeholder="https://youtube.com/watch?v=...">
-      <label class="page-toggle" style="margin-top:8px;"><input type="checkbox" id="s-video-bg"> הצגת הסרטון כרקע לכותרת הראשית (ללא קול, מתנגן אוטומטית בלולאה) — נתמך כרגע בחלק מהעיצובים</label>
-    </div>
+    <details class="builder-section">
+      <summary class="builder-section-head">תמונות ומדיה <span class="builder-section-optional">(אופציונלי)</span></summary>
+      <div class="builder-section-body">
+        <div class="field">
+          <label>תמונה ראשית</label>
+          <div class="photo-row">
+            <div class="photo-preview" id="s-photo-preview"></div>
+            <div class="photo-actions">
+              <label class="btn-mini photo-upload-btn" for="s-photo">העלאת תמונה</label>
+              <input type="file" id="s-photo" accept="image/*" style="display:none;">
+              <button type="button" class="photo-remove" id="s-photo-remove">הסרת תמונה</button>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label>גלריית תמונות מתחלפות</label>
+          <p class="field-hint">מעלים כמה תמונות — התמונה הראשית באתר תתחלף ביניהן אוטומטית. אם יש כאן תמונות, הן מחליפות את "התמונה הראשית" שלמעלה. עד 5 תמונות.</p>
+          <div id="s-gallery-preview" class="site-gallery-preview"></div>
+          <label class="btn-mini photo-upload-btn" for="s-gallery">הוספת תמונה לגלריה</label>
+          <input type="file" id="s-gallery" accept="image/*" multiple style="display:none;">
+        </div>
+        <div class="field">
+          <label for="s-video">קישור לסרטון (יוטיוב)</label>
+          <input id="s-video" type="text" dir="ltr" placeholder="https://youtube.com/watch?v=...">
+          <label class="page-toggle" style="margin-top:8px;"><input type="checkbox" id="s-video-bg"> הצגת הסרטון כרקע לכותרת הראשית (ללא קול, מתנגן אוטומטית בלולאה) — נתמך כרגע בחלק מהעיצובים</label>
+        </div>
+      </div>
+    </details>
 
-    <hr class="sep">
+    <details class="builder-section" open>
+      <summary class="builder-section-head">שירותים / מוצרים</summary>
+      <div class="builder-section-body">
+        <div class="jobs-head">
+          <label>רשימת השירותים/המוצרים</label>
+          <button type="button" class="btn-mini" id="add-service">+ הוספת שירות</button>
+        </div>
+        <div id="services-list"></div>
+      </div>
+    </details>
 
-    <div class="jobs-head">
-      <label>שירותים / מוצרים</label>
-      <button type="button" class="btn-mini" id="add-service">+ הוספת שירות</button>
-    </div>
-    <div id="services-list"></div>
+    <details class="builder-section" open>
+      <summary class="builder-section-head">פרטי יצירת קשר</summary>
+      <div class="builder-section-body">
+        <div class="field"><label for="s-phone">טלפון</label><input id="s-phone" type="text" dir="ltr"></div>
+        <div class="field"><label for="s-whatsapp">מספר וואטסאפ (אם שונה מהטלפון)</label><input id="s-whatsapp" type="text" dir="ltr"></div>
+        <div class="field"><label for="s-email">מייל</label><input id="s-email" type="text" dir="ltr"></div>
+        <div class="field"><label for="s-address">כתובת</label><input id="s-address" type="text"></div>
+      </div>
+    </details>
 
-    <hr class="sep">
-
-    <div class="field"><label for="s-phone">טלפון</label><input id="s-phone" type="text" dir="ltr"></div>
-    <div class="field"><label for="s-whatsapp">מספר וואטסאפ (אם שונה מהטלפון)</label><input id="s-whatsapp" type="text" dir="ltr"></div>
-    <div class="field"><label for="s-email">מייל</label><input id="s-email" type="text" dir="ltr"></div>
-    <div class="field"><label for="s-address">כתובת</label><input id="s-address" type="text"></div>
-
-    <hr class="sep">
-
-    <div class="field">
-      <label>דפים נוספים (לא חובה)</label>
-      <p style="font-size:12px; color:var(--grey); margin:0 0 10px;">כשמפעילים דף נפרד, הוא נוצר כקובץ משלו באתר, ובראש (ובתחתית) כל הדפים יופיע ניווט לכל הדפים הקיימים — בדיוק כמו באתר הזה.</p>
-      <label class="page-toggle"><input type="checkbox" id="s-page-about"> דף "אודות" נפרד</label>
-      <label class="page-toggle"><input type="checkbox" id="s-page-contact"> דף "צור קשר" נפרד</label>
-    </div>
+    <details class="builder-section">
+      <summary class="builder-section-head">דפים נוספים <span class="builder-section-optional">(לא חובה)</span></summary>
+      <div class="builder-section-body">
+        <p class="builder-section-hint">כשמפעילים דף נפרד, הוא נוצר כקובץ משלו באתר, ובראש (ובתחתית) כל הדפים יופיע ניווט לכל הדפים הקיימים — בדיוק כמו באתר הזה.</p>
+        <label class="page-toggle"><input type="checkbox" id="s-page-about"> דף "אודות" נפרד</label>
+        <label class="page-toggle"><input type="checkbox" id="s-page-contact"> דף "צור קשר" נפרד</label>
+      </div>
+    </details>
   </aside>
 
   <main class="builder-preview">
