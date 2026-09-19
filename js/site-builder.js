@@ -94,6 +94,14 @@ function freshSiteData(template) {
 let siteState = { template: "local-service", data: freshSiteData("local-service") };
 let lastVerifiedPurchase = null;
 let previewPage = "index";
+// The "תצוגה מלאה במסך חדש" tab is meant to show visitors exactly what a
+// real visitor would see — never the click-to-edit affordances, which only
+// belong on the actual editing screen. Set once, before this tab's first
+// render, from the ?fullpreview=1 URL param.
+let isSitePreviewOnly = false;
+function siteFrameHtml(html) {
+  return isSitePreviewOnly ? html : injectEditModeScript(html);
+}
 
 /* Older saved/loaded data (from before the multi-page feature existed)
    won't have a `pages` object — patch it in rather than special-casing
@@ -258,14 +266,16 @@ function renderCurrentTplInfo() {
 function showCatalog() {
   document.getElementById("tpl-catalog-section").style.display = "";
   document.getElementById("wizard-section").style.display = "none";
-  document.getElementById("site-save-ctrl").style.display = "none";
+  document.getElementById("builder-top-banner").style.display = "";
   renderTplCatalog();
 }
 
 function showWizard() {
   document.getElementById("tpl-catalog-section").style.display = "none";
   document.getElementById("wizard-section").style.display = "";
-  document.getElementById("site-save-ctrl").style.display = "";
+  // The intro banner ("בניית אתר תדמית") only makes sense while browsing —
+  // once actually editing, it just eats vertical space above the canvas.
+  document.getElementById("builder-top-banner").style.display = "none";
   renderCurrentTplInfo();
   renderFormValues();
   renderSitePreview();
@@ -367,7 +377,7 @@ function renderPreviewTabs() {
     btn.addEventListener("click", () => {
       previewPage = btn.dataset.page;
       renderPreviewTabs();
-      document.getElementById("site-preview-frame").srcdoc = injectEditModeScript(currentSiteHtml(previewPage));
+      document.getElementById("site-preview-frame").srcdoc = siteFrameHtml(currentSiteHtml(previewPage));
       if (typeof renderHierarchyPanel === "function") renderHierarchyPanel();
     });
   });
@@ -533,24 +543,6 @@ function renderReadOnlyHierarchy(tree, template, d) {
     const node = nodes.find((n) => n.key === row.dataset.hierKey);
     if (node) row.addEventListener("click", () => scrollCanvasTo(node.selector));
   });
-}
-
-/* Field editing (business info, contact, color/font, media, extra
-   pages) moved into this slide-over drawer so it never competes with
-   the canvas for space by default — opened deliberately, not always-on
-   like the old permanent sidebar. */
-function wireSettingsDrawer() {
-  const drawer = document.getElementById("settings-drawer");
-  const backdrop = document.getElementById("settings-backdrop");
-  const openBtn = document.getElementById("open-settings-btn");
-  const closeBtn = document.getElementById("close-settings-btn");
-  if (!drawer || !openBtn) return;
-  function open() { drawer.classList.add("open"); backdrop.classList.add("open"); }
-  function close() { drawer.classList.remove("open"); backdrop.classList.remove("open"); }
-  openBtn.addEventListener("click", open);
-  closeBtn.addEventListener("click", close);
-  backdrop.addEventListener("click", close);
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
 }
 
 function saveSiteState() {
@@ -770,7 +762,7 @@ window.addEventListener("message", (e) => {
 
 function renderSitePreview() {
   renderPreviewTabs();
-  document.getElementById("site-preview-frame").srcdoc = injectEditModeScript(currentSiteHtml(previewPage));
+  document.getElementById("site-preview-frame").srcdoc = siteFrameHtml(currentSiteHtml(previewPage));
   saveSiteState();
   if (typeof renderHierarchyPanel === "function") renderHierarchyPanel();
 }
@@ -1227,6 +1219,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const urlTemplate = params.get("template");
   const forceBrowse = params.get("browse") === "1";
   const isFullPreview = params.get("fullpreview") === "1";
+  isSitePreviewOnly = isFullPreview;
 
   const saved = loadSiteState(urlTemplate || null);
   if (saved) {
@@ -1245,7 +1238,6 @@ document.addEventListener("DOMContentLoaded", () => {
   wireBuyLinkOnce(buyLink);
   wireForm();
   refreshUnlockUI();
-  wireSettingsDrawer();
 
   // Same discovery flow as the CV catalog: browse a real catalog of
   // templates first, land straight in the wizard only when arriving via
@@ -1354,7 +1346,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!page || !enabledSitePages().includes(page)) return;
     previewPage = page;
     renderPreviewTabs();
-    frame.srcdoc = injectEditModeScript(currentSiteHtml(previewPage));
+    frame.srcdoc = siteFrameHtml(currentSiteHtml(previewPage));
     if (typeof renderHierarchyPanel === "function") renderHierarchyPanel();
   });
 });

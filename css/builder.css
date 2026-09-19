@@ -18,48 +18,34 @@
   align-items: start;
 }
 
-/* ---------- Builder v2 (sites.html): big canvas + hierarchy panel ---------- */
-/* The canvas is the dominant element (most of the width) with a slim
-   hierarchy panel beside it — field editing moved into a slide-over
-   settings drawer instead of a permanent sidebar, so nothing competes
-   with the canvas for space by default. */
-.builder-topbar-v2 { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 24px; flex-wrap: wrap; }
-.builder-topbar-v2-info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; min-width: 0; }
+/* ---------- Builder v2 (sites.html): big canvas + persistent sidebar ---------- */
+/* One always-visible panel — page structure on top, full settings below —
+   instead of a button-triggered drawer, so editing is never hidden behind
+   an extra click. It's the FIRST grid column, which in this RTL page means
+   the physical right edge (grid tracks follow direction, so column 1 sits
+   on the right) — right next to the global "האתרים שלי" rail (its own
+   fixed strip further right still, see .my-sites-rail in style.css). The
+   canvas stays the dominant element in the remaining (second, wider)
+   column. */
+.builder-wrap-v2 { display: grid; grid-template-columns: minmax(300px, 360px) minmax(0, 1fr); gap: 24px; padding: 24px 24px 60px; align-items: start; }
+@media (max-width: 980px) {
+  .builder-wrap-v2 { grid-template-columns: 1fr; }
+  /* Stacked on mobile: the canvas first (what the site actually looks
+     like), the sidebar's structure + full settings form below it —
+     reordered visually only, DOM order stays as-is for the grid above. */
+  .builder-preview { order: 1; }
+  .builder-sidebar { order: 2; }
+}
+
+.builder-sidebar-head { display: grid; gap: 10px; padding-bottom: 14px; margin-bottom: 10px; border-bottom: 1px solid #EAEDEC; }
+.builder-sidebar-head-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .builder-topbar-v2-tpl { font-size: 14px; font-weight: 700; color: var(--teal-dark); }
-.builder-wrap-v2 { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; padding: 0 24px 60px; align-items: start; }
-@media (max-width: 980px) { .builder-wrap-v2 { grid-template-columns: 1fr; } }
+.builder-sidebar .builder-save-ctrl { justify-content: flex-start; }
 
-.builder-settings-backdrop {
-  position: fixed; inset: 0; background: rgba(10, 20, 16, .45); z-index: 299;
-  opacity: 0; pointer-events: none; transition: opacity .2s ease;
-}
-.builder-settings-backdrop.open { opacity: 1; pointer-events: auto; }
-/* .builder-form.builder-settings-drawer (compound selector, not just
-   .builder-settings-drawer): needs higher specificity than the plain
-   .builder-form rule below it — same-specificity, later-in-file rules
-   like that one's `position: sticky` would otherwise win over this
-   one's `position: fixed`, since this block comes first in the file. */
-.builder-form.builder-settings-drawer {
-  position: fixed; top: 0; inset-inline-end: 0; height: 100vh; width: min(420px, 92vw);
-  border-radius: 0; max-height: none; z-index: 300;
-  transform: translateX(-100%); transition: transform .25s ease;
-  box-shadow: -12px 0 40px rgba(0, 0, 0, .18);
-}
-.builder-form.builder-settings-drawer.open { transform: translateX(0); }
-.builder-settings-drawer-head {
-  display: flex; align-items: center; justify-content: space-between;
-  padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid #EAEDEC;
-}
-.builder-settings-drawer-head strong { font-size: 16px; color: var(--teal-dark); }
-.builder-settings-close { background: var(--grey-light); border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 14px; color: var(--dark); }
-
-/* ---------- Hierarchy panel ---------- */
-.builder-hierarchy {
-  background: var(--white); border: 1px solid #EAEDEC; border-radius: var(--radius);
-  padding: 16px; position: sticky; top: 20px; max-height: calc(100vh - 40px); overflow-y: auto; min-width: 0;
-}
-.hier-head { font-size: 13px; font-weight: 800; color: var(--teal-dark); margin-bottom: 12px; }
-.builder-hierarchy .preview-tabs { margin-bottom: 14px; }
+/* ---------- Hierarchy block — folded into the sidebar's own top section,
+   not a separate floating panel, so there's only ever one card here. ---------- */
+.builder-hier-block { padding-bottom: 14px; margin-bottom: 10px; border-bottom: 1px solid #EAEDEC; }
+.builder-hier-block .preview-tabs { margin-bottom: 10px; }
 .hier-tree { display: flex; flex-direction: column; gap: 4px; }
 .hier-row {
   display: flex; align-items: center; gap: 8px; padding: 9px 10px; border-radius: 8px;
@@ -86,7 +72,6 @@
 .hier-add-item-btn:hover { border-color: var(--teal); background: var(--ice); }
 .hier-add-block-row { margin-top: 10px; padding-top: 10px; border-top: 1px solid #EEF1EF; }
 .hier-add-block-btn { width: 100%; text-align: center; }
-@media (max-width: 980px) { .builder-hierarchy { position: static; max-height: none; } }
 
 .builder-form {
   background: var(--white);
@@ -126,7 +111,15 @@
 }
 .builder-section[open] > .builder-section-head::after { transform: rotate(-135deg); }
 .builder-section-optional { font-size: 12px; font-weight: 600; color: var(--grey); }
-.builder-section-body { padding: 16px; display: grid; gap: 0; }
+/* Scoped to [open] > : Chromium hides a closed <details>'s body through an
+   internal slot mechanism an author `display` can't defeat, which is why
+   this never reproduced in Chromium testing — but Safari/Firefox collapse
+   it via a plain UA `display:none` rule instead, which an unconditional
+   `display` here DOES override (author styles always beat a normal-priority
+   UA rule, regardless of specificity). That's what put a sliver of every
+   closed section's content on screen, overlapping the section below it, in
+   the user's own (non-Chromium) browser. */
+.builder-section[open] > .builder-section-body { padding: 16px; display: grid; gap: 0; }
 .builder-section-body .field:last-child { margin-bottom: 0; }
 .builder-section-hint { font-size: 12px; color: var(--grey); margin: 0 0 10px; line-height: 1.6; }
 .field-label-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
