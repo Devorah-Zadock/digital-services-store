@@ -689,6 +689,24 @@ body.home-neo .hn-flagship-price-note { font-size: 13px; color: var(--hn-dark-te
 body.home-neo .hn-flagship-price-box .hn-btn { width: 100%; box-sizing: border-box; }
 @media (max-width: 800px) { body.home-neo .hn-flagship-split { grid-template-columns: 1fr; } }
 
+/* A soft pulsing halo draws the eye to the one button on the page that
+   actually starts the purchase — paused (not removed) on hover so the
+   hover state below still reads clearly, and skipped entirely under
+   prefers-reduced-motion. */
+@keyframes hn-cta-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(14,140,140,.5); }
+  50% { box-shadow: 0 0 0 12px rgba(14,140,140,0); }
+}
+body.home-neo .hn-flagship-price-box .hn-btn-gold {
+  animation: hn-cta-pulse 2.4s ease-in-out infinite;
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease, color .18s ease;
+}
+body.home-neo .hn-flagship-price-box .hn-btn-gold:hover {
+  animation-play-state: paused; opacity: 1; transform: scale(1.05);
+  background: var(--hn-accent); color: #fff; box-shadow: 0 10px 26px rgba(14,140,140,.45);
+}
+@media (prefers-reduced-motion: reduce) { body.home-neo .hn-flagship-price-box .hn-btn-gold { animation: none; } }
+
 /* ---------- Footer ---------- */
 /* The shared footer is still teal/gold on every other page (not yet
    redesigned), so this override is scoped to the homepage only — matching
@@ -713,7 +731,11 @@ body.home-neo .fab-a11y:hover { border-color: var(--hn-accent); }
 /* Dark section on purpose — it sits right after the (light) tools grid and
    right before the (light) advantages grid, and those two were reading as
    one long, repetitive white stretch. */
-body.home-neo .hn-steps { background: var(--hn-dark); }
+/* A flat identical --hn-dark here (same as the flagship banner right
+   above it) read as one giant black block with no visible seam — a
+   subtle teal-tinted gradient keeps this section dark and moody but
+   visibly distinct from its neighbor. */
+body.home-neo .hn-steps { background: linear-gradient(165deg, #0A2222 0%, var(--hn-dark) 65%); }
 body.home-neo .hn-steps .hn-section-h { color: var(--hn-dark-text); }
 body.home-neo .hn-steps-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
 body.home-neo .hn-step { position: relative; padding-top: 8px; transition: transform .3s ease; }
@@ -855,6 +877,12 @@ section { padding: 88px 0; }
 #tools { scroll-margin-top: 66px; padding-top: 26px; padding-bottom: 48px; }
 .bg-ice { background: linear-gradient(180deg, var(--ice), #F7FBF9); }
 
+/* The generic `section { padding: 88px 0; }` rule is sized for a big
+   marketing hero, not this compact toolbar-then-grid catalog page — left
+   as-is it put a huge empty gap between the teal intro banner above and
+   the search bar below. */
+#tpl-catalog-section { padding-top: 24px; }
+
 /* ---------- Category tabs ---------- */
 .tabs { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 40px; }
 .tab {
@@ -870,7 +898,7 @@ section { padding: 88px 0; }
 .tabs-sub .tab.active { background: var(--ice); color: var(--teal-dark); border-color: var(--teal-light); }
 
 /* ---------- Catalog search (products/sites/quote-app template pickers) ---------- */
-.tpl-search-row { display: flex; justify-content: center; margin-bottom: 24px; }
+.tpl-search-row { display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
 .tpl-search-wrap { position: relative; width: 100%; max-width: 380px; }
 .tpl-search-wrap svg {
   position: absolute; top: 50%; inset-inline-start: 16px; transform: translateY(-50%);
@@ -884,6 +912,40 @@ section { padding: 88px 0; }
 .tpl-search:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(13,13,20,.1); }
 .tpl-search::placeholder { color: var(--grey); }
 .tpl-search-empty { grid-column: 1/-1; text-align: center; color: var(--grey); font-size: 14px; padding: 30px 0; }
+
+/* "Smart search": a checklist of cross-cutting attributes (e.g. "has
+   horizontal scroll") that the category tabs and free-text search can't
+   express — only used on the site-template catalog (sites.html) today,
+   but scoped generically so another catalog page can reuse it later. */
+.tpl-smart-btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 10.5px 18px; border-radius: 30px;
+  border: 1.5px solid #DDE4E1; background: var(--white); color: var(--teal-dark); font-family: inherit;
+  font-size: 13.5px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  transition: border-color .15s ease, background .15s ease, color .15s ease;
+}
+.tpl-smart-btn svg { width: 16px; height: 16px; }
+.tpl-smart-btn:hover { border-color: var(--teal); }
+.tpl-smart-btn.active { background: linear-gradient(135deg, var(--teal), var(--teal-light)); border-color: var(--teal); color: var(--white); }
+.tpl-smart-count {
+  background: var(--white); color: var(--teal-dark); font-size: 11px; font-weight: 800; border-radius: 50%;
+  width: 19px; height: 19px; display: inline-flex; align-items: center; justify-content: center;
+}
+.tpl-smart-panel {
+  max-width: 800px; margin: 0 auto 28px; background: var(--ice); border: 1px solid #DCE9E4;
+  border-radius: var(--radius); padding: 20px 22px;
+}
+.tpl-smart-checks { display: flex; flex-wrap: wrap; gap: 10px 14px; }
+.tpl-smart-check {
+  display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--dark); cursor: pointer;
+  background: var(--white); border: 1.5px solid #DCE9E4; border-radius: 20px; padding: 8px 15px;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.tpl-smart-check input { accent-color: var(--teal); width: 15px; height: 15px; cursor: pointer; }
+.tpl-smart-check.checked { border-color: var(--teal); box-shadow: 0 0 0 1px var(--teal) inset; }
+.tpl-smart-actions { display: flex; justify-content: flex-end; align-items: center; gap: 16px; margin-top: 16px; }
+.tpl-smart-clear { background: none; border: none; padding: 0; color: var(--grey); font-size: 13px; font-family: inherit; cursor: pointer; text-decoration: underline; }
+.tpl-smart-clear:hover { color: var(--dark); }
+@media (max-width: 640px) { .tpl-search-row { flex-direction: column; } .tpl-search-wrap { max-width: 100%; } .tpl-smart-btn { width: 100%; justify-content: center; } }
 
 /* ---------- Product grid / cards ---------- */
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
@@ -957,7 +1019,12 @@ section { padding: 88px 0; }
    for free via the existing descendant selectors) but its own hover-lift
    and top accent bar are disabled here — the whole flip-card handles its
    own hover treatment instead, so they don't fight the 3D rotation. */
-.flip-card { position: relative; perspective: 1600px; height: 390px; transition: transform .2s ease; }
+.flip-card { position: relative; perspective: 1600px; height: 330px; transition: transform .2s ease; }
+/* Shorter than the shared .card thumb (170px) — every flip-card is a
+   fixed height, so a smaller thumb is what actually lets the whole card
+   shrink without the description clipping mid-word. */
+.flip-card .thumb { height: 130px; }
+.flip-card .body p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .flip-card:hover, .flip-card.is-flipped { transform: translateY(-6px); }
 .flip-card-inner {
   position: relative; width: 100%; height: 100%;
@@ -986,9 +1053,17 @@ section { padding: 88px 0; }
 }
 .flip-card-back h4 { margin: 0 0 2px; font-size: 15px; line-height: 1.35; }
 .flip-card-back ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; flex: 1; }
-.flip-card-back li { font-size: 12.5px; line-height: 1.4; display: flex; align-items: flex-start; gap: 8px; color: #E7F2EE; }
+.flip-card-back li { font-size: 13.5px; line-height: 1.4; display: flex; align-items: flex-start; gap: 8px; color: #E7F2EE; }
 .flip-card-back li::before { content: "\2713"; color: var(--gold-light); font-weight: 700; flex-shrink: 0; }
-.flip-card-back .card-cta { margin-top: auto; text-align: center; padding: 9px 20px; font-size: 13.5px; background: var(--white); color: var(--teal-dark); border-radius: 10px; font-weight: 700; text-decoration: none; }
+.flip-card-back .card-cta {
+  margin-top: auto; text-align: center; padding: 9px 20px; font-size: 13.5px; background: var(--white); color: var(--teal-dark);
+  border: 1.5px solid transparent; border-radius: 10px; font-weight: 700; text-decoration: none;
+  transition: background .15s ease, color .15s ease, border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+.flip-card-back .card-cta:hover {
+  background: var(--teal-dark); color: var(--white); border-color: var(--white);
+  transform: scale(1.05); box-shadow: 0 8px 18px rgba(0,0,0,.3);
+}
 
 /* ---------- Feature list (icon rows) ---------- */
 .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }

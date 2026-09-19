@@ -154,7 +154,6 @@ function siteTplCardHtml(key, t) {
             </div>
             <h3>${escapeHtmlS(t.label)}</h3>
             <p style="font-size:13px; color:var(--grey); margin:0; flex:1;">${escapeHtmlS(t.desc)}</p>
-            <a href="sites.html?template=${key}" class="btn btn-teal card-cta">בחירה ועריכה</a>
           </div>
         </div>
         <div class="flip-card-back">
@@ -170,22 +169,74 @@ function renderTplCatalog() {
   const tabsEl = document.getElementById("site-tpl-tabs");
   const gridEl = document.getElementById("site-tpl-grid");
   const searchEl = document.getElementById("site-tpl-search");
+  const smartBtn = document.getElementById("site-smart-filter-btn");
+  const smartPanel = document.getElementById("site-smart-panel");
+  const smartChecksEl = document.getElementById("site-smart-checks");
+  const smartCountEl = document.getElementById("site-smart-count");
   tabsEl.innerHTML = SITE_CATEGORIES.map((c) => `<button class="tab" data-cat="${c.slug}">${escapeHtmlS(c.label)}</button>`).join("");
   let active = "all";
   let term = "";
+  // Selected but not-yet-applied while the panel is open — kept separate
+  // from `appliedTags` so opening the panel to look around, then closing
+  // it without hitting "החלה", doesn't silently change the grid.
+  let appliedTags = new Set();
   function apply() {
     tabsEl.querySelectorAll(".tab").forEach((btn) => btn.classList.toggle("active", btn.dataset.cat === active));
     const q = term.trim().toLowerCase();
     const entries = Object.entries(SITE_TEMPLATES).filter(([, t]) =>
-      (active === "all" || t.categorySlug === active) && (!q || t.label.toLowerCase().includes(q)));
+      (active === "all" || t.categorySlug === active) &&
+      (!q || t.label.toLowerCase().includes(q)) &&
+      [...appliedTags].every((tag) => (t.tags || []).includes(tag)));
     gridEl.innerHTML = entries.length
       ? entries.map(([key, t]) => siteTplCardHtml(key, t)).join("")
-      : `<p class="tpl-search-empty">אין עיצובים שמתאימים לחיפוש "${escapeHtmlS(term.trim())}".</p>`;
+      : `<p class="tpl-search-empty">אין עיצובים שמתאימים לחיפוש${term.trim() ? ` "${escapeHtmlS(term.trim())}"` : ""}.</p>`;
   }
   tabsEl.querySelectorAll(".tab").forEach((btn) => {
     btn.addEventListener("click", () => { active = btn.dataset.cat; apply(); });
   });
   if (searchEl) searchEl.addEventListener("input", () => { term = searchEl.value; apply(); });
+
+  if (smartBtn && smartPanel && smartChecksEl) {
+    smartChecksEl.innerHTML = Object.entries(SITE_FILTER_TAGS).map(([tagKey, label]) =>
+      `<label class="tpl-smart-check" data-tag="${tagKey}"><input type="checkbox" value="${tagKey}"> ${escapeHtmlS(label)}</label>`
+    ).join("");
+    function syncSmartUi() {
+      smartChecksEl.querySelectorAll(".tpl-smart-check").forEach((lbl) => {
+        const checked = appliedTags.has(lbl.dataset.tag);
+        lbl.classList.toggle("checked", checked);
+        lbl.querySelector("input").checked = checked;
+      });
+      smartBtn.classList.toggle("active", appliedTags.size > 0);
+      if (appliedTags.size) { smartCountEl.textContent = appliedTags.size; smartCountEl.style.display = ""; }
+      else smartCountEl.style.display = "none";
+    }
+    smartBtn.addEventListener("click", () => {
+      const open = smartPanel.style.display === "none";
+      smartPanel.style.display = open ? "" : "none";
+      smartBtn.setAttribute("aria-expanded", String(open));
+    });
+    smartChecksEl.addEventListener("change", (e) => {
+      const lbl = e.target.closest(".tpl-smart-check");
+      if (!lbl) return;
+      lbl.classList.toggle("checked", e.target.checked);
+    });
+    document.getElementById("site-smart-clear").addEventListener("click", () => {
+      appliedTags = new Set();
+      syncSmartUi();
+      apply();
+    });
+    document.getElementById("site-smart-apply").addEventListener("click", () => {
+      appliedTags = new Set(
+        [...smartChecksEl.querySelectorAll('input[type="checkbox"]:checked')].map((i) => i.value)
+      );
+      syncSmartUi();
+      apply();
+      smartPanel.style.display = "none";
+      smartBtn.setAttribute("aria-expanded", "false");
+    });
+    syncSmartUi();
+  }
+
   apply();
 
   // Devices with no real hover (touch) get a tap-to-flip toggle instead —
