@@ -2696,7 +2696,7 @@ function renderPlaygroundSite(d, page) {
       </div></section>
       <div class="pg-physics-wrap"><div class="container">
         <div class="pg-physics-head"><span class="pg-kicker2">מה אנחנו מציעים</span><h2>${escapeHtmlS(heading(d, "services", "השירותים שלנו"))}</h2></div>
-        <p class="pg-physics-hint">🖱️ אפשר לגרור את הבועות</p>
+        <p class="pg-physics-hint">🖱️ תרגישו חופשי לגעת — גררו, זרקו ושחקו עם השירותים למטה</p>
       </div>
         <div class="pg-physics" id="pg-physics">${dd._services.map((s, i) => `
           <div class="pg-bubble" style="background:${i === 0 ? "#" + pal.primary : PG_ACCENTS[(i - 1) % PG_ACCENTS.length]};"><span>${escapeHtmlS(s.name)}${s.price ? `<span class="price">${escapeHtmlS(s.price)}</span>` : ""}</span></div>`).join("")}</div>
