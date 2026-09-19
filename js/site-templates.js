@@ -932,7 +932,7 @@ function renderElegantSite(d, page) {
     .eg-hero-text p { font-size:16px; color:#555; max-width:420px; margin:0 0 30px; }
     .eg-cta { display:inline-block; border:1.5px solid #${pal.primaryDark}; color:#${pal.primaryDark}; font-weight:700; font-size:13.5px; letter-spacing:.04em; padding:14px 32px; }
     .eg-hero-photo-wrap { position:relative; }
-    .eg-hero-photo-wrap img { width:100%; aspect-ratio:4/5; object-fit:cover; }
+    .eg-hero-photo-wrap img, .eg-hero-photo-wrap .site-hero-slideshow { width:100%; aspect-ratio:4/5; object-fit:cover; }
     .eg-hero-photo-wrap::after { content:""; position:absolute; inset:16px auto auto 16px; width:100%; height:100%; border:1.5px solid #${pal.primary}; z-index:-1; }
     .eg-hero-noPhoto { text-align:center; padding:30px 0 10px; }
     .eg-hero-noPhoto .eg-hero-text { margin:0 auto; }
@@ -1255,7 +1255,7 @@ function renderBoutiqueSite(d, page) {
     .bq-pagenav { display:flex; gap:16px; } .bq-pagenav a { font-size:13.5px; font-weight:600; color:#555; } .bq-pagenav a.active { color:#${pal.primaryDark}; }
 
     .bq-banner { position:relative; height:280px; display:flex; align-items:center; justify-content:center; text-align:center; color:#fff; overflow:hidden; }
-    .bq-banner img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:brightness(.55); }
+    .bq-banner img, .bq-banner .site-hero-slideshow { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:brightness(.55); }
     .bq-banner-noimg { background:linear-gradient(155deg, #${pal.primaryDark}, #${pal.primary} 75%); }
     .bq-banner-inner { position:relative; z-index:1; }
     .bq-banner .eyebrow { background:rgba(255,255,255,.18); color:#fff; margin-bottom:14px; }
@@ -1368,13 +1368,13 @@ function renderNoirSite(d, page) {
     .nr-nav nav { display:flex; gap:22px; } .nr-nav nav a { font-size:12px; letter-spacing:.05em; color:#999; } .nr-nav nav a.active { color:#${pal.ice}; }
 
     .nr-hero { position:relative; text-align:center; padding:110px 24px 100px; overflow:hidden; }
-    .nr-hero img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:brightness(.38); z-index:0; }
+    .nr-hero img, .nr-hero .site-hero-slideshow { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:brightness(.38); z-index:0; }
     .nr-hero::before { content:""; position:absolute; inset:0; background:radial-gradient(circle at 50% 20%, rgba(255,255,255,.06), transparent 60%); z-index:0; }
     .nr-hero-inner { position:relative; z-index:1; }
     .nr-hero .eyebrow { background:none; border:1px solid #${pal.ice}; color:#${pal.ice}; }
     .nr-hero h1 { font-family:'Frank Ruhl Libre',serif; font-style:italic; font-size:48px; margin:20px 0 12px; color:#fff; }
     .nr-hero p { font-size:15.5px; color:#C9C4B8; max-width:460px; margin:0 auto 30px; }
-    .nr-cta { display:inline-block; border:1px solid #${pal.ice}; color:#${pal.ice}; font-weight:600; font-size:13px; letter-spacing:.05em; padding:14px 32px; }
+    .nr-cta { display:inline-block; background:#${pal.primary}; border:1px solid #${pal.primary}; color:#0E0E0E; font-weight:700; font-size:13px; letter-spacing:.05em; padding:14px 32px; }
 
     .nr-menu { padding:74px 0; }
     .nr-menu-head { text-align:center; margin-bottom:44px; }
