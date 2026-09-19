@@ -64,6 +64,11 @@ const SITE_DEFAULT = {
   heroImages: [],
   videoUrl: "",
   heroVideoBg: false,
+  // Per-element font/color/size/alignment overrides set via click-to-edit
+  // in the live preview (see injectEditModeScript below) — keyed by the
+  // same stable names site-templates.js's t()/heading() use, e.g.
+  // { businessName: { color: "E11D48" }, "heading-services": { size: 40 } }.
+  textStyles: {},
 };
 
 /* Matches the per-category default accent colors in site-templates.js
@@ -106,6 +111,7 @@ function ensurePagesShape(data) {
   // existed — an absent object here just means "use every template
   // default", never a crash reading data.headings.services below.
   if (!data.headings || typeof data.headings !== "object") data.headings = { services: "", about: "", contact: "" };
+  if (!data.textStyles || typeof data.textStyles !== "object") data.textStyles = {};
   return data;
 }
 
@@ -310,7 +316,7 @@ function renderPreviewTabs() {
     btn.addEventListener("click", () => {
       previewPage = btn.dataset.page;
       renderPreviewTabs();
-      document.getElementById("site-preview-frame").srcdoc = currentSiteHtml(previewPage);
+      document.getElementById("site-preview-frame").srcdoc = injectEditModeScript(currentSiteHtml(previewPage));
     });
   });
 }
@@ -337,9 +343,202 @@ function loadSiteState(template) {
   return null;
 }
 
+/* Click-to-edit: lets the customer click any business-name/heading/
+   tagline/about text directly in the live preview and restyle just that
+   element (font/color/size/alignment) via a small floating toolbar,
+   instead of hunting for a matching field in the sidebar. Only ever
+   spliced into the PREVIEW iframe's srcdoc (see the two call sites
+   below) — never into currentSiteHtml() output used by the ZIP download
+   or the published site, so a real visitor never sees editable outlines
+   or the toolbar. Every element this can target is already marked up by
+   site-templates.js's t()/heading() as <span class="site-editable"
+   data-textkey="...">; this script only adds the interactivity. */
+function editModeScript() {
+  const fontsJson = JSON.stringify(
+    Object.keys(SITE_FONTS).map((k) => ({ key: k, name: SITE_FONTS[k].name, stack: SITE_FONTS[k].stack }))
+  );
+  return `
+<style>
+  .site-editable { cursor: pointer; outline-offset: 2px; transition: outline .15s ease; }
+  .site-editable:hover { outline: 2px dashed rgba(37,99,235,.55); }
+  .site-editable.dk-editing { outline: 2px solid #2563EB; }
+  #dk-edit-toolbar {
+    position: fixed; z-index: 999999; background: #1E1E2E; color: #fff; border-radius: 12px;
+    padding: 12px; box-shadow: 0 14px 34px rgba(0,0,0,.35); font-family: Arial, sans-serif; font-size: 12.5px;
+    display: none; width: 236px; direction: rtl; text-align: right;
+  }
+  #dk-edit-toolbar.dk-open { display: block; }
+  #dk-edit-toolbar label { display:block; margin: 8px 0 3px; font-weight: 700; color: #B8B6D6; }
+  #dk-edit-toolbar select, #dk-edit-toolbar input[type=number] {
+    width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid #3A3A55; background: #2A2A40; color: #fff; font-size: 12.5px; box-sizing: border-box;
+  }
+  #dk-edit-toolbar input[type=color] { width: 100%; height: 30px; border: none; border-radius: 6px; background: none; padding: 0; }
+  #dk-edit-toolbar .dk-row { display: flex; gap: 6px; }
+  #dk-edit-toolbar .dk-align-btns { display: flex; gap: 4px; margin-top: 4px; }
+  #dk-edit-toolbar .dk-align-btns button {
+    flex: 1; padding: 6px 0; border-radius: 6px; border: 1px solid #3A3A55; background: #2A2A40; color: #fff; cursor: pointer; font-size: 12px;
+  }
+  #dk-edit-toolbar .dk-align-btns button.dk-active { background: #2563EB; border-color: #2563EB; }
+  #dk-edit-toolbar .dk-actions { display: flex; gap: 8px; margin-top: 12px; }
+  #dk-edit-toolbar .dk-actions button {
+    flex: 1; padding: 8px 0; border-radius: 8px; border: none; cursor: pointer; font-weight: 700; font-size: 12.5px;
+  }
+  #dk-edit-toolbar .dk-btn-reset { background: #3A3A55; color: #fff; }
+  #dk-edit-toolbar .dk-btn-close { background: #2563EB; color: #fff; }
+</style>
+<div id="dk-edit-toolbar">
+  <label>גופן</label>
+  <select id="dk-font"></select>
+  <div class="dk-row">
+    <div style="flex:1;"><label>צבע</label><input type="color" id="dk-color"></div>
+    <div style="flex:1;"><label>גודל (px)</label><input type="number" id="dk-size" min="8" max="140"></div>
+  </div>
+  <label>יישור</label>
+  <div class="dk-align-btns">
+    <button type="button" data-align="right">ימין</button>
+    <button type="button" data-align="center">מרכז</button>
+    <button type="button" data-align="left">שמאל</button>
+  </div>
+  <div class="dk-actions">
+    <button type="button" class="dk-btn-reset" id="dk-reset">איפוס</button>
+    <button type="button" class="dk-btn-close" id="dk-close">סגירה</button>
+  </div>
+</div>
+<script>
+(function () {
+  if (window.self === window.top) return;
+  var FONTS = ${fontsJson};
+  var toolbar = document.getElementById("dk-edit-toolbar");
+  var fontSel = document.getElementById("dk-font");
+  var colorInp = document.getElementById("dk-color");
+  var sizeInp = document.getElementById("dk-size");
+  var alignBtns = toolbar.querySelectorAll("[data-align]");
+  fontSel.innerHTML = '<option value="">(ברירת מחדל)</option>' + FONTS.map(function (f) {
+    return '<option value="' + f.key + '">' + f.name + '</option>';
+  }).join("");
+
+  var current = null;
+
+  function styleOf(el) {
+    return {
+      font: el.getAttribute("data-style-font") || "",
+      color: el.getAttribute("data-style-color") || "",
+      size: el.getAttribute("data-style-size") || "",
+      align: el.getAttribute("data-style-align") || "",
+    };
+  }
+  function applyToEl(el, s) {
+    var parts = [];
+    if (s.font) { var f = FONTS.filter(function (x) { return x.key === s.font; })[0]; if (f) parts.push("font-family:" + f.stack); }
+    if (s.color) parts.push("color:#" + s.color.replace("#", ""));
+    if (s.size) parts.push("font-size:" + s.size + "px");
+    if (s.align) parts.push("text-align:" + s.align);
+    el.setAttribute("style", parts.join(";"));
+    el.setAttribute("data-style-font", s.font || "");
+    el.setAttribute("data-style-color", s.color || "");
+    el.setAttribute("data-style-size", s.size || "");
+    el.setAttribute("data-style-align", s.align || "");
+  }
+  function notifyParent(key, s) {
+    try { window.parent.postMessage({ source: "deskkit-site-editor", type: "textStyleChange", key: key, style: s }, "*"); } catch (e) {}
+  }
+  function positionToolbar(el) {
+    var r = el.getBoundingClientRect();
+    var top = r.bottom + 8;
+    var left = Math.min(Math.max(8, r.left), window.innerWidth - 252);
+    if (top + 280 > window.innerHeight) top = Math.max(8, r.top - 288);
+    toolbar.style.top = top + "px";
+    toolbar.style.left = left + "px";
+  }
+  function openFor(el) {
+    if (current) current.classList.remove("dk-editing");
+    current = el;
+    el.classList.add("dk-editing");
+    var s = styleOf(el);
+    fontSel.value = s.font || "";
+    colorInp.value = s.color ? ("#" + s.color.replace("#", "")) : "#000000";
+    sizeInp.value = s.size || "";
+    Array.prototype.forEach.call(alignBtns, function (b) {
+      b.classList.toggle("dk-active", b.getAttribute("data-align") === s.align);
+    });
+    positionToolbar(el);
+    toolbar.classList.add("dk-open");
+  }
+  function closeToolbar() {
+    if (current) current.classList.remove("dk-editing");
+    current = null;
+    toolbar.classList.remove("dk-open");
+  }
+  function commit() {
+    if (!current) return;
+    var activeAlignBtn = toolbar.querySelector(".dk-align-btns .dk-active");
+    var s = {
+      font: fontSel.value || "",
+      color: colorInp.value ? colorInp.value.replace("#", "") : "",
+      size: sizeInp.value || "",
+      align: activeAlignBtn ? activeAlignBtn.getAttribute("data-align") : "",
+    };
+    applyToEl(current, s);
+    notifyParent(current.getAttribute("data-textkey"), s);
+  }
+
+  document.addEventListener("click", function (e) {
+    var el = e.target.closest && e.target.closest(".site-editable");
+    if (el) {
+      e.preventDefault();
+      e.stopPropagation();
+      openFor(el);
+      return;
+    }
+    if (!e.target.closest("#dk-edit-toolbar")) closeToolbar();
+  }, true);
+
+  fontSel.addEventListener("change", commit);
+  colorInp.addEventListener("input", commit);
+  sizeInp.addEventListener("input", commit);
+  Array.prototype.forEach.call(alignBtns, function (b) {
+    b.addEventListener("click", function () {
+      var wasActive = b.classList.contains("dk-active");
+      Array.prototype.forEach.call(alignBtns, function (x) { x.classList.remove("dk-active"); });
+      if (!wasActive) b.classList.add("dk-active");
+      commit();
+    });
+  });
+  document.getElementById("dk-reset").addEventListener("click", function () {
+    if (!current) return;
+    applyToEl(current, {});
+    fontSel.value = ""; colorInp.value = "#000000"; sizeInp.value = "";
+    Array.prototype.forEach.call(alignBtns, function (b) { b.classList.remove("dk-active"); });
+    notifyParent(current.getAttribute("data-textkey"), null);
+  });
+  document.getElementById("dk-close").addEventListener("click", closeToolbar);
+})();
+</script>`;
+}
+
+function injectEditModeScript(html) {
+  const marker = "</body>";
+  const idx = html.lastIndexOf(marker);
+  if (idx === -1) return html + editModeScript();
+  return html.slice(0, idx) + editModeScript() + html.slice(idx);
+}
+
+/* Persists a click-to-edit style change (see editModeScript above) back
+   into the saved project data. Applied live in the iframe itself for
+   instant feedback, so this only needs to update the data + autosave —
+   no immediate re-render, which would tear down the iframe document
+   (and, for the playground template, its physics) mid-interaction. */
+window.addEventListener("message", (e) => {
+  if (!e.data || e.data.source !== "deskkit-site-editor" || e.data.type !== "textStyleChange") return;
+  siteState.data.textStyles = siteState.data.textStyles || {};
+  if (e.data.style === null) delete siteState.data.textStyles[e.data.key];
+  else siteState.data.textStyles[e.data.key] = e.data.style;
+  saveSiteState();
+});
+
 function renderSitePreview() {
   renderPreviewTabs();
-  document.getElementById("site-preview-frame").srcdoc = currentSiteHtml(previewPage);
+  document.getElementById("site-preview-frame").srcdoc = injectEditModeScript(currentSiteHtml(previewPage));
   saveSiteState();
 }
 
@@ -910,6 +1109,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!page || !enabledSitePages().includes(page)) return;
     previewPage = page;
     renderPreviewTabs();
-    frame.srcdoc = currentSiteHtml(previewPage);
+    frame.srcdoc = injectEditModeScript(currentSiteHtml(previewPage));
   });
 });
