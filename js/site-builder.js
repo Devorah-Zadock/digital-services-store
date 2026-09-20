@@ -64,9 +64,10 @@ const SITE_DEFAULT = {
   heroImages: [],
   videoUrl: "",
   heroVideoBg: false,
-  // Per-element font/color/size/alignment overrides set via click-to-edit
-  // in the live preview (see injectEditModeScript below) — keyed by the
-  // same stable names site-templates.js's t()/heading() use, e.g.
+  // Per-element font/color/size/alignment overrides, set via the small
+  // style controls next to each relevant field in the sidebar itself
+  // (see renderTextStyleControls/wireTextStyleControls below) — keyed by
+  // the same stable names site-templates.js's t()/heading() use, e.g.
   // { businessName: { color: "E11D48" }, "heading-services": { size: 40 } }.
   textStyles: {},
 };
@@ -77,10 +78,10 @@ const SITE_DEFAULT = {
    template it was, so the catalog thumbnails looked varied while the
    actual builder/preview never did. */
 const SITE_TEMPLATE_DEFAULT_COLOR = {
-  "local-service": "#2563EB", "process": "#2563EB",
-  "freelancer": "#7C3AED", "portfolio": "#7C3AED",
+  "local-service": "#15803D", "process": "#15803D",
+  "freelancer": "#DC2626", "portfolio": "#DC2626",
   "catalog": "#C2410C", "boutique": "#C2410C",
-  "gallery": "#B5175A", "bold": "#B5175A", "studio": "#B5175A",
+  "gallery": "#BE185D", "bold": "#BE185D", "studio": "#BE185D",
   "elegant": "#B8860B", "noir": "#B8860B",
   "bento": "#0E8C8C", "cinematic": "#4338CA", "brutal": "#FFC800",
   "neon": "#A855F7", "chaos": "#CCFF00", "luxury3d": "#B08D57", "playground": "#7C5CFF",
@@ -94,14 +95,6 @@ function freshSiteData(template) {
 let siteState = { template: "local-service", data: freshSiteData("local-service") };
 let lastVerifiedPurchase = null;
 let previewPage = "index";
-// The "תצוגה מלאה במסך חדש" tab is meant to show visitors exactly what a
-// real visitor would see — never the click-to-edit affordances, which only
-// belong on the actual editing screen. Set once, before this tab's first
-// render, from the ?fullpreview=1 URL param.
-let isSitePreviewOnly = false;
-function siteFrameHtml(html) {
-  return isSitePreviewOnly ? html : injectEditModeScript(html);
-}
 
 /* Older saved/loaded data (from before the multi-page feature existed)
    won't have a `pages` object — patch it in rather than special-casing
@@ -308,6 +301,7 @@ function renderFormValues() {
   renderGalleryPreview();
   renderServicesList();
   renderHeadingsFields();
+  syncTextStyleControls();
 }
 
 /* Populates the 3 suggestion dropdowns (services/about/contact) and the
@@ -332,6 +326,140 @@ function renderHeadingsFields() {
       `<option value="__custom__">✏️ אחר — הקלידו למטה</option>`;
     select.value = "";
     input.value = d.headings[spec.key] || "";
+  });
+}
+
+/* Per-text style controls (font/color/size/align) — mounted right next to
+   the same field that already edits that text's CONTENT, instead of a
+   separate click-to-edit popup on the canvas. Having content live in the
+   sidebar and style live only on the canvas was the actual point of
+   confusion (and the canvas popup's alignment buttons never even reflected
+   an already-saved alignment on open, so they looked broken) — one field,
+   one place, both content and style. Keyed by the same stable names
+   site-templates.js's t()/heading() already use for d.textStyles. */
+const TEXT_STYLE_FIELDS = [
+  { key: "businessName", afterId: "s-name" },
+  { key: "heading-heroTitle", afterId: "h-heroTitle" },
+  { key: "tagline", afterId: "s-tagline" },
+  { key: "aboutText", afterId: "s-about" },
+  { key: "heading-services", afterId: "h-services" },
+  { key: "heading-about", afterId: "h-about" },
+  { key: "heading-contact", afterId: "h-contact" },
+];
+
+function textStyleControlHtml(key) {
+  return `
+    <button type="button" class="ts-toggle" data-style-toggle="${key}" title="עיצוב טקסט מותאם (גופן, צבע, גודל, יישור)">Aa</button>
+    <div class="ts-row" data-style-row="${key}" hidden>
+      <div class="ts-row-grid">
+        <select data-style-font="${key}"></select>
+        <input type="color" data-style-color="${key}" value="#000000">
+        <input type="number" data-style-size="${key}" placeholder="גודל (px)" min="8" max="140">
+      </div>
+      <div class="ts-align" data-style-align-group="${key}">
+        <button type="button" data-style-align="${key}" data-align-val="right">ימין</button>
+        <button type="button" data-style-align="${key}" data-align-val="center">מרכז</button>
+        <button type="button" data-style-align="${key}" data-align-val="left">שמאל</button>
+      </div>
+      <button type="button" class="ts-clear" data-style-clear="${key}">איפוס עיצוב מותאם</button>
+    </div>`;
+}
+
+/* Idempotent — safe to call again (e.g. every showWizard()) without
+   duplicating the controls it already mounted the first time. Toggle
+   button goes right after the label (both inline by default, so they sit
+   on the same line); the row itself goes right after the field's actual
+   input/textarea, so opening it never pushes the input away from its
+   own label. */
+function mountTextStyleControls() {
+  TEXT_STYLE_FIELDS.forEach(({ key, afterId }) => {
+    const input = document.getElementById(afterId);
+    if (!input) return;
+    const field = input.closest(".field");
+    if (!field || field.querySelector(`[data-style-toggle="${key}"]`)) return;
+    const label = field.querySelector("label");
+    const tmp = document.createElement("div");
+    tmp.innerHTML = textStyleControlHtml(key);
+    const toggleBtn = tmp.querySelector("[data-style-toggle]");
+    const row = tmp.querySelector("[data-style-row]");
+    if (label) label.insertAdjacentElement("afterend", toggleBtn);
+    else field.insertBefore(toggleBtn, input);
+    input.insertAdjacentElement("afterend", row);
+    const fontSel = row.querySelector(`[data-style-font="${key}"]`);
+    fontSel.innerHTML = `<option value="">(גופן ברירת המחדל)</option>` +
+      Object.keys(SITE_FONTS).map((k) => `<option value="${k}">${SITE_FONTS[k].name}</option>`).join("");
+  });
+}
+
+function syncTextStyleControls() {
+  const styles = (siteState.data.textStyles) || {};
+  TEXT_STYLE_FIELDS.forEach(({ key }) => {
+    const s = styles[key] || {};
+    const fontSel = document.querySelector(`[data-style-font="${key}"]`);
+    const colorInp = document.querySelector(`[data-style-color="${key}"]`);
+    const sizeInp = document.querySelector(`[data-style-size="${key}"]`);
+    if (fontSel) fontSel.value = s.font || "";
+    if (colorInp) colorInp.value = s.color ? `#${String(s.color).replace("#", "")}` : "#000000";
+    if (sizeInp) sizeInp.value = s.size || "";
+    document.querySelectorAll(`[data-style-align="${key}"]`).forEach((btn) => {
+      btn.classList.toggle("ts-active", btn.dataset.alignVal === s.align);
+    });
+  });
+}
+
+function commitTextStyle(key) {
+  const fontSel = document.querySelector(`[data-style-font="${key}"]`);
+  const colorInp = document.querySelector(`[data-style-color="${key}"]`);
+  const sizeInp = document.querySelector(`[data-style-size="${key}"]`);
+  const activeAlignBtn = document.querySelector(`[data-style-align="${key}"].ts-active`);
+  const s = {
+    font: (fontSel && fontSel.value) || "",
+    color: (colorInp && colorInp.value) ? colorInp.value.replace("#", "") : "",
+    size: (sizeInp && sizeInp.value) || "",
+    align: activeAlignBtn ? activeAlignBtn.dataset.alignVal : "",
+  };
+  siteState.data.textStyles = siteState.data.textStyles || {};
+  const hasAny = s.font || s.color || s.size || s.align;
+  if (hasAny) siteState.data.textStyles[key] = s;
+  else delete siteState.data.textStyles[key];
+  scheduleSitePreviewRender();
+}
+
+function wireTextStyleControls() {
+  const root = document.getElementById("builder-sidebar");
+  if (!root || root.dataset.tsWired) return;
+  root.dataset.tsWired = "1";
+  root.addEventListener("click", (e) => {
+    const toggleBtn = e.target.closest("[data-style-toggle]");
+    if (toggleBtn) {
+      const key = toggleBtn.dataset.styleToggle;
+      const row = root.querySelector(`[data-style-row="${key}"]`);
+      if (row) row.hidden = !row.hidden;
+      return;
+    }
+    const alignBtn = e.target.closest("[data-style-align]");
+    if (alignBtn) {
+      const key = alignBtn.dataset.styleAlign;
+      const wasActive = alignBtn.classList.contains("ts-active");
+      root.querySelectorAll(`[data-style-align="${key}"]`).forEach((b) => b.classList.remove("ts-active"));
+      if (!wasActive) alignBtn.classList.add("ts-active");
+      commitTextStyle(key);
+      return;
+    }
+    const clearBtn = e.target.closest("[data-style-clear]");
+    if (clearBtn) {
+      const key = clearBtn.dataset.styleClear;
+      delete (siteState.data.textStyles || {})[key];
+      syncTextStyleControls();
+      scheduleSitePreviewRender();
+    }
+  });
+  root.addEventListener("change", (e) => {
+    if (e.target.matches("[data-style-font]")) commitTextStyle(e.target.dataset.styleFont);
+  });
+  root.addEventListener("input", (e) => {
+    if (e.target.matches("[data-style-color]")) commitTextStyle(e.target.dataset.styleColor);
+    if (e.target.matches("[data-style-size]")) commitTextStyle(e.target.dataset.styleSize);
   });
 }
 
@@ -377,7 +505,7 @@ function renderPreviewTabs() {
     btn.addEventListener("click", () => {
       previewPage = btn.dataset.page;
       renderPreviewTabs();
-      document.getElementById("site-preview-frame").srcdoc = siteFrameHtml(currentSiteHtml(previewPage));
+      document.getElementById("site-preview-frame").srcdoc = currentSiteHtml(previewPage);
       if (typeof renderHierarchyPanel === "function") renderHierarchyPanel();
     });
   });
@@ -567,202 +695,10 @@ function loadSiteState(template) {
   return null;
 }
 
-/* Click-to-edit: lets the customer click any business-name/heading/
-   tagline/about text directly in the live preview and restyle just that
-   element (font/color/size/alignment) via a small floating toolbar,
-   instead of hunting for a matching field in the sidebar. Only ever
-   spliced into the PREVIEW iframe's srcdoc (see the two call sites
-   below) — never into currentSiteHtml() output used by the ZIP download
-   or the published site, so a real visitor never sees editable outlines
-   or the toolbar. Every element this can target is already marked up by
-   site-templates.js's t()/heading() as <span class="site-editable"
-   data-textkey="...">; this script only adds the interactivity. */
-function editModeScript() {
-  const fontsJson = JSON.stringify(
-    Object.keys(SITE_FONTS).map((k) => ({ key: k, name: SITE_FONTS[k].name, stack: SITE_FONTS[k].stack }))
-  );
-  return `
-<style>
-  .site-editable { cursor: pointer; outline-offset: 2px; transition: outline .15s ease; }
-  .site-editable:hover { outline: 2px dashed rgba(37,99,235,.55); }
-  .site-editable.dk-editing { outline: 2px solid #2563EB; }
-  #dk-edit-toolbar {
-    position: fixed; z-index: 999999; background: #1E1E2E; color: #fff; border-radius: 12px;
-    padding: 12px; box-shadow: 0 14px 34px rgba(0,0,0,.35); font-family: Arial, sans-serif; font-size: 12.5px;
-    display: none; width: 236px; direction: rtl; text-align: right;
-  }
-  #dk-edit-toolbar.dk-open { display: block; }
-  #dk-edit-toolbar label { display:block; margin: 8px 0 3px; font-weight: 700; color: #B8B6D6; }
-  #dk-edit-toolbar select, #dk-edit-toolbar input[type=number] {
-    width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid #3A3A55; background: #2A2A40; color: #fff; font-size: 12.5px; box-sizing: border-box;
-  }
-  #dk-edit-toolbar input[type=color] { width: 100%; height: 30px; border: none; border-radius: 6px; background: none; padding: 0; }
-  #dk-edit-toolbar .dk-row { display: flex; gap: 6px; }
-  #dk-edit-toolbar .dk-align-btns { display: flex; gap: 4px; margin-top: 4px; }
-  #dk-edit-toolbar .dk-align-btns button {
-    flex: 1; padding: 6px 0; border-radius: 6px; border: 1px solid #3A3A55; background: #2A2A40; color: #fff; cursor: pointer; font-size: 12px;
-  }
-  #dk-edit-toolbar .dk-align-btns button.dk-active { background: #2563EB; border-color: #2563EB; }
-  #dk-edit-toolbar .dk-actions { display: flex; gap: 8px; margin-top: 12px; }
-  #dk-edit-toolbar .dk-actions button {
-    flex: 1; padding: 8px 0; border-radius: 8px; border: none; cursor: pointer; font-weight: 700; font-size: 12.5px;
-  }
-  #dk-edit-toolbar .dk-btn-reset { background: #3A3A55; color: #fff; }
-  #dk-edit-toolbar .dk-btn-close { background: #2563EB; color: #fff; }
-</style>
-<div id="dk-edit-toolbar">
-  <label>גופן</label>
-  <select id="dk-font"></select>
-  <div class="dk-row">
-    <div style="flex:1;"><label>צבע</label><input type="color" id="dk-color"></div>
-    <div style="flex:1;"><label>גודל (px)</label><input type="number" id="dk-size" min="8" max="140"></div>
-  </div>
-  <label>יישור</label>
-  <div class="dk-align-btns">
-    <button type="button" data-align="right">ימין</button>
-    <button type="button" data-align="center">מרכז</button>
-    <button type="button" data-align="left">שמאל</button>
-  </div>
-  <div class="dk-actions">
-    <button type="button" class="dk-btn-reset" id="dk-reset">איפוס</button>
-    <button type="button" class="dk-btn-close" id="dk-close">סגירה</button>
-  </div>
-</div>
-<script>
-(function () {
-  if (window.self === window.top) return;
-  var FONTS = ${fontsJson};
-  var toolbar = document.getElementById("dk-edit-toolbar");
-  var fontSel = document.getElementById("dk-font");
-  var colorInp = document.getElementById("dk-color");
-  var sizeInp = document.getElementById("dk-size");
-  var alignBtns = toolbar.querySelectorAll("[data-align]");
-  fontSel.innerHTML = '<option value="">(ברירת מחדל)</option>' + FONTS.map(function (f) {
-    return '<option value="' + f.key + '">' + f.name + '</option>';
-  }).join("");
-
-  var current = null;
-
-  function styleOf(el) {
-    return {
-      font: el.getAttribute("data-style-font") || "",
-      color: el.getAttribute("data-style-color") || "",
-      size: el.getAttribute("data-style-size") || "",
-      align: el.getAttribute("data-style-align") || "",
-    };
-  }
-  function applyToEl(el, s) {
-    var parts = [];
-    if (s.font) { var f = FONTS.filter(function (x) { return x.key === s.font; })[0]; if (f) parts.push("font-family:" + f.stack); }
-    if (s.color) parts.push("color:#" + s.color.replace("#", ""));
-    if (s.size) parts.push("font-size:" + s.size + "px");
-    if (s.align) parts.push("text-align:" + s.align);
-    el.setAttribute("style", parts.join(";"));
-    el.setAttribute("data-style-font", s.font || "");
-    el.setAttribute("data-style-color", s.color || "");
-    el.setAttribute("data-style-size", s.size || "");
-    el.setAttribute("data-style-align", s.align || "");
-  }
-  function notifyParent(key, s) {
-    try { window.parent.postMessage({ source: "deskkit-site-editor", type: "textStyleChange", key: key, style: s }, "*"); } catch (e) {}
-  }
-  function positionToolbar(el) {
-    var r = el.getBoundingClientRect();
-    var top = r.bottom + 8;
-    var left = Math.min(Math.max(8, r.left), window.innerWidth - 252);
-    if (top + 280 > window.innerHeight) top = Math.max(8, r.top - 288);
-    toolbar.style.top = top + "px";
-    toolbar.style.left = left + "px";
-  }
-  function openFor(el) {
-    if (current) current.classList.remove("dk-editing");
-    current = el;
-    el.classList.add("dk-editing");
-    var s = styleOf(el);
-    fontSel.value = s.font || "";
-    colorInp.value = s.color ? ("#" + s.color.replace("#", "")) : "#000000";
-    sizeInp.value = s.size || "";
-    Array.prototype.forEach.call(alignBtns, function (b) {
-      b.classList.toggle("dk-active", b.getAttribute("data-align") === s.align);
-    });
-    positionToolbar(el);
-    toolbar.classList.add("dk-open");
-  }
-  function closeToolbar() {
-    if (current) current.classList.remove("dk-editing");
-    current = null;
-    toolbar.classList.remove("dk-open");
-  }
-  function commit() {
-    if (!current) return;
-    var activeAlignBtn = toolbar.querySelector(".dk-align-btns .dk-active");
-    var s = {
-      font: fontSel.value || "",
-      color: colorInp.value ? colorInp.value.replace("#", "") : "",
-      size: sizeInp.value || "",
-      align: activeAlignBtn ? activeAlignBtn.getAttribute("data-align") : "",
-    };
-    applyToEl(current, s);
-    notifyParent(current.getAttribute("data-textkey"), s);
-  }
-
-  document.addEventListener("click", function (e) {
-    var el = e.target.closest && e.target.closest(".site-editable");
-    if (el) {
-      e.preventDefault();
-      e.stopPropagation();
-      openFor(el);
-      return;
-    }
-    if (!e.target.closest("#dk-edit-toolbar")) closeToolbar();
-  }, true);
-
-  fontSel.addEventListener("change", commit);
-  colorInp.addEventListener("input", commit);
-  sizeInp.addEventListener("input", commit);
-  Array.prototype.forEach.call(alignBtns, function (b) {
-    b.addEventListener("click", function () {
-      var wasActive = b.classList.contains("dk-active");
-      Array.prototype.forEach.call(alignBtns, function (x) { x.classList.remove("dk-active"); });
-      if (!wasActive) b.classList.add("dk-active");
-      commit();
-    });
-  });
-  document.getElementById("dk-reset").addEventListener("click", function () {
-    if (!current) return;
-    applyToEl(current, {});
-    fontSel.value = ""; colorInp.value = "#000000"; sizeInp.value = "";
-    Array.prototype.forEach.call(alignBtns, function (b) { b.classList.remove("dk-active"); });
-    notifyParent(current.getAttribute("data-textkey"), null);
-  });
-  document.getElementById("dk-close").addEventListener("click", closeToolbar);
-})();
-</script>`;
-}
-
-function injectEditModeScript(html) {
-  const marker = "</body>";
-  const idx = html.lastIndexOf(marker);
-  if (idx === -1) return html + editModeScript();
-  return html.slice(0, idx) + editModeScript() + html.slice(idx);
-}
-
-/* Persists a click-to-edit style change (see editModeScript above) back
-   into the saved project data. Applied live in the iframe itself for
-   instant feedback, so this only needs to update the data + autosave —
-   no immediate re-render, which would tear down the iframe document
-   (and, for the playground template, its physics) mid-interaction. */
-window.addEventListener("message", (e) => {
-  if (!e.data || e.data.source !== "deskkit-site-editor" || e.data.type !== "textStyleChange") return;
-  siteState.data.textStyles = siteState.data.textStyles || {};
-  if (e.data.style === null) delete siteState.data.textStyles[e.data.key];
-  else siteState.data.textStyles[e.data.key] = e.data.style;
-  saveSiteState();
-});
 
 function renderSitePreview() {
   renderPreviewTabs();
-  document.getElementById("site-preview-frame").srcdoc = siteFrameHtml(currentSiteHtml(previewPage));
+  document.getElementById("site-preview-frame").srcdoc = currentSiteHtml(previewPage);
   saveSiteState();
   if (typeof renderHierarchyPanel === "function") renderHierarchyPanel();
 }
@@ -1219,7 +1155,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const urlTemplate = params.get("template");
   const forceBrowse = params.get("browse") === "1";
   const isFullPreview = params.get("fullpreview") === "1";
-  isSitePreviewOnly = isFullPreview;
 
   const saved = loadSiteState(urlTemplate || null);
   if (saved) {
@@ -1237,6 +1172,8 @@ document.addEventListener("DOMContentLoaded", () => {
   buyLink.href = SITE_GUMROAD_CONFIG.checkoutUrl;
   wireBuyLinkOnce(buyLink);
   wireForm();
+  mountTextStyleControls();
+  wireTextStyleControls();
   refreshUnlockUI();
 
   // Same discovery flow as the CV catalog: browse a real catalog of
@@ -1346,7 +1283,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!page || !enabledSitePages().includes(page)) return;
     previewPage = page;
     renderPreviewTabs();
-    frame.srcdoc = siteFrameHtml(currentSiteHtml(previewPage));
+    frame.srcdoc = currentSiteHtml(previewPage);
     if (typeof renderHierarchyPanel === "function") renderHierarchyPanel();
   });
 });

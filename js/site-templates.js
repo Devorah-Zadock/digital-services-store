@@ -465,7 +465,7 @@ function lsContactSection(d, pal, dd, wa) {
 
 function renderLocalServiceSite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#2563EB");
+  const pal = derivePalette(d.primaryColor || "#15803D");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
@@ -481,15 +481,15 @@ function renderLocalServiceSite(d, page) {
       ? `<a href="#ls-services" class="active">שירותים</a><a href="#ls-about">אודות</a>${dd._hasContact || wa ? `<a href="#ls-contact">יצירת קשר</a>` : ""}`
       : "";
   const css = `
-    .ls-rail { position:fixed; top:0; bottom:0; inset-inline-end:0; width:60px; z-index:40; display:flex; align-items:center; justify-content:center;
-      background:rgba(255,255,255,.92); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border-inline-start:1px solid #EEE; }
+    .ls-rail { position:fixed; top:0; bottom:0; inset-inline-start:0; width:60px; z-index:40; display:flex; align-items:center; justify-content:center;
+      background:rgba(255,255,255,.92); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border-inline-end:1px solid #EEE; }
     .ls-rail-inner { display:flex; flex-direction:column; gap:28px; align-items:center; }
     .ls-rail a { writing-mode:vertical-rl; text-orientation:mixed; font-size:12px; font-weight:700; letter-spacing:.08em; color:#888; }
     .ls-rail a.active, .ls-rail a:hover { color:#${pal.primaryDark}; }
     .ls-rail-biz { writing-mode:vertical-rl; font-family:'Frank Ruhl Libre',serif; font-weight:700; font-size:14px; color:#${pal.primaryDark}; margin-bottom:8px; }
     @media (max-width:760px) { .ls-rail { display:none; } }
-    body.ls-body { padding-inline-end:60px; }
-    @media (max-width:760px) { body.ls-body { padding-inline-end:0; } }
+    body.ls-body { padding-inline-start:60px; }
+    @media (max-width:760px) { body.ls-body { padding-inline-start:0; } }
     .ls-topbar { display:none; background:#fff; border-bottom:1px solid #EEE; padding:14px 0; }
     @media (max-width:760px) { .ls-topbar { display:block; } }
     .ls-topbar .row { display:flex; align-items:center; justify-content:space-between; gap:14px; }
@@ -589,7 +589,7 @@ function renderLocalServiceSite(d, page) {
 /* ---------- Template 2: freelancer / consultant ---------- */
 function renderFreelancerSite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#7C3AED");
+  const pal = derivePalette(d.primaryColor || "#DC2626");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
@@ -769,7 +769,7 @@ function renderCatalogSite(d, page) {
 /* ---------- Template 4: modern gallery / editorial ---------- */
 function renderGallerySite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#B5175A");
+  const pal = derivePalette(d.primaryColor || "#BE185D");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
@@ -786,17 +786,24 @@ function renderGallerySite(d, page) {
 
     .gl-hero { position:relative; min-height:56vh; display:flex; align-items:flex-end; overflow:hidden; }
     .gl-hero-media { position:absolute; inset:0; z-index:0; width:100%; height:100%; object-fit:cover; }
-    .gl-hero.no-photo { background:linear-gradient(160deg, #${pal.ice}, #fff); min-height:auto; padding:90px 0 70px; }
+    /* Before a photo is added (a brand-new project, or the catalog's own
+       preview card), the hero needs to stand on its own — a huge, mostly-
+       white gradient just faded away here (confirmed live: reads as
+       "light pink" regardless of how rich the underlying color actually
+       is), where every other bold-color template shows its real color at
+       full strength from the very first look. */
+    .gl-hero.no-photo { background:linear-gradient(160deg, #${pal.primary}, #${pal.primaryDark}); min-height:auto; padding:90px 0 70px; }
     .gl-hero.has-photo::after { content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0) 25%, rgba(0,0,0,.74)); }
     .gl-hero-inner { position:relative; z-index:1; padding:54px 0; width:100%; }
-    .gl-hero.has-photo .gl-hero-inner { color:#fff; }
-    .gl-hero.no-photo .gl-hero-inner { color:#1E1E1E; text-align:center; }
+    .gl-hero.has-photo .gl-hero-inner, .gl-hero.no-photo .gl-hero-inner { color:#fff; }
+    .gl-hero.no-photo .gl-hero-inner { text-align:center; }
     .gl-eyebrow { display:inline-block; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding-top:8px; border-top:2px solid currentColor; margin-bottom:16px; }
     .gl-title { font-family:'Frank Ruhl Libre',serif; font-weight:900; font-size:52px; line-height:1.08; margin:0 0 16px; max-width:700px; }
     .gl-hero.no-photo .gl-title { margin-inline:auto; }
     .gl-tagline { font-size:16.5px; max-width:460px; opacity:.92; margin:0 0 26px; }
     .gl-hero.no-photo .gl-tagline { margin-inline:auto; }
     .gl-cta { display:inline-block; background:#${pal.primary}; color:#fff; font-weight:700; padding:14px 32px; border-radius:4px; font-size:14.5px; }
+    .gl-hero.no-photo .gl-cta { background:#fff; color:#${pal.primaryDark}; }
 
     .gl-section { padding:76px 0; }
     .gl-section-head { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:34px; flex-wrap:wrap; gap:16px; }
@@ -880,7 +887,7 @@ function renderGallerySite(d, page) {
 /* ---------- Template 5: bold / neo-brutalist ---------- */
 function renderBoldSite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#B5175A");
+  const pal = derivePalette(d.primaryColor || "#BE185D");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
@@ -1102,7 +1109,7 @@ function renderElegantSite(d, page) {
 /* ---------- Template 7: process / how-we-work ---------- */
 function renderProcessSite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#2563EB");
+  const pal = derivePalette(d.primaryColor || "#15803D");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
@@ -1213,7 +1220,7 @@ function renderProcessSite(d, page) {
 /* ---------- Template 8: creative portfolio (personal) ---------- */
 function renderPortfolioSite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#7C3AED");
+  const pal = derivePalette(d.primaryColor || "#DC2626");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
@@ -1545,7 +1552,7 @@ function scrollRevealScript() {
 /* ---------- Template 11: creative studio (asymmetric split hero, dark) ---------- */
 function renderStudioSite(d, page) {
   page = page || "index";
-  const pal = derivePalette(d.primaryColor || "#B5175A");
+  const pal = derivePalette(d.primaryColor || "#BE185D");
   const dd = withFallback(d);
   const wa = waLink(d.whatsapp || d.phone);
   const navLinksHtml = siteNavLinks(d, page);
@@ -2897,25 +2904,25 @@ const SITE_CATEGORIES = [
    made the whole catalog read as bland at a glance even though the more
    distinctive templates were there too, just scrolled past. */
 const SITE_TEMPLATES = {
-  "studio": { label: "סטודיו קריאייטיב", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "הירו א-סימטרי כהה, ניווט צדי אנכי, וטקסטים שנכנסים באנימציה בגלילה", thumb: "images/previews/site-studio.webp", render: renderStudioSite,
+  "studio": { label: "סטודיו קריאייטיב", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "הירו א-סימטרי כהה, ניווט צדי אנכי, וטקסטים שנכנסים באנימציה בגלילה", thumb: "images/previews/site-studio.webp?v=2", render: renderStudioSite,
     features: ["הירו א-סימטרי כהה עם ניווט צדי אנכי", "טקסטים שנכנסים באנימציה תוך כדי גלילה", "עיצוב נועז שממש לא נראה כמו \"תבנית\"", "מתאים לסטודיו עיצוב או מותג יצירתי"], tags: ["dark", "rail"] },
   "noir": { label: "יוקרתי כהה", category: "אירועים ובוטיק", categorySlug: "events", desc: "רקע כהה, טיפוגרפיה איטלקית עדינה, ורשימת שירותים בסגנון תפריט", thumb: "images/previews/site-noir.webp", render: renderNoirSite,
     features: ["רקע כהה ויוקרתי עם וידאו רקע אפשרי", "טיפוגרפיה איטלקית עדינה", "רשימת שירותים בסגנון תפריט מסעדה", "מתאים לאירועים ומותגים יוקרתיים"], tags: ["dark", "video"] },
-  "bold": { label: "נועז ומודרני", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "מסגרות עבות, צללים חדים, טיפוגרפיה גדולה", thumb: "images/previews/site-bold.webp", render: renderBoldSite,
+  "bold": { label: "נועז ומודרני", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "מסגרות עבות, צללים חדים, טיפוגרפיה גדולה", thumb: "images/previews/site-bold.webp?v=2", render: renderBoldSite,
     features: ["טיפוגרפיה גדולה ותוססת שקופצת לעין", "מסגרות עבות וצללים חדים", "גלריית תמונות מתחלפות בכותרת", "מתאים למותגים שרוצים לבלוט"], tags: [] },
   "elegant": { label: "אלגנטי ומעוצב", category: "אירועים ובוטיק", categorySlug: "events", desc: "טיפוגרפיה עדינה, תמונה מפוצלת, מתאים לאירועים ועסקי בוטיק", thumb: "images/previews/site-elegant.webp", render: renderElegantSite,
     features: ["פריסה מפוצלת: תמונה בצד, טקסט בצד", "גלריית תמונות מתחלפות", "טיפוגרפיה עדינה שמתאימה לאירועים", "מושלם לעסקי בוטיק ואירועים"], tags: [] },
-  "gallery": { label: "גלריה מודרנית", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "תמונה מלאה ברקע, עיצוב עיתונאי ואלגנטי", thumb: "images/previews/site-gallery.webp", render: renderGallerySite,
+  "gallery": { label: "גלריה מודרנית", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "תמונה מלאה ברקע, עיצוב עיתונאי ואלגנטי", thumb: "images/previews/site-gallery.webp?v=2", render: renderGallerySite,
     features: ["תמונת רקע מלאה בכותרת, בסגנון עיתונאי", "פריסת \"בֶּנְטוֹ\" מודרנית למוצרים או עבודות", "טיפוגרפיה עדינה ואלגנטית", "צבע ראשי לבחירה שצובע את כל האתר"], tags: [] },
-  "portfolio": { label: "תיק עבודות יצירתי", category: "תדמית אישית", categorySlug: "personal", desc: "כותרת אישית גדולה ורשימת עבודות ממוספרת, בסגנון פורטפוליו", thumb: "images/previews/site-portfolio.webp", render: renderPortfolioSite,
+  "portfolio": { label: "תיק עבודות יצירתי", category: "תדמית אישית", categorySlug: "personal", desc: "כותרת אישית גדולה ורשימת עבודות ממוספרת, בסגנון פורטפוליו", thumb: "images/previews/site-portfolio.webp?v=2", render: renderPortfolioSite,
     features: ["כותרת אישית גדולה עם שם ותפקיד", "רשימת עבודות ממוספרת בסגנון פורטפוליו", "גלריית תמונות מתחלפות", "מתאים למעצבים, יוצרים ואנשי מקצוע יצירתיים"], tags: [] },
   "boutique": { label: "חנות בוטיק", category: "קטלוג ומכירות", categorySlug: "shop", desc: "מוצר מומלץ בכרטיס גדול, ואחריו רשת המוצרים הנוספים", thumb: "images/previews/site-boutique.webp", render: renderBoutiqueSite,
     features: ["מוצר מומלץ בכרטיס גדול ובולט", "רשת מוצרים נוספים מתחתיו", "גלריית תמונות מתחלפות בכותרת", "מתאים לחנות בוטיק עם מוצר דגל"], tags: [] },
-  "process": { label: "תהליך עבודה", category: "עסקי שירות", categorySlug: "service", desc: "ציר זמן ממוספר שמראה איך אתם עובדים, שלב אחר שלב", thumb: "images/previews/site-process.webp", render: renderProcessSite,
+  "process": { label: "תהליך עבודה", category: "עסקי שירות", categorySlug: "service", desc: "ציר זמן ממוספר שמראה איך אתם עובדים, שלב אחר שלב", thumb: "images/previews/site-process.webp?v=2", render: renderProcessSite,
     features: ["ציר זמן ממוספר שמראה איך אתם עובדים", "בונה אמון עוד לפני שיחת המכירה הראשונה", "גלריית תמונות מתחלפות בכותרת", "מתאים לעסקי שירות עם תהליך עבודה ברור"], tags: [] },
-  "local-service": { label: "עסק שירות מקומי", category: "עסקי שירות", categorySlug: "service", desc: "Hero גדול, כרטיסי שירותים, וואטסאפ צף", thumb: "images/previews/site-local-service.webp", render: renderLocalServiceSite,
+  "local-service": { label: "עסק שירות מקומי", category: "עסקי שירות", categorySlug: "service", desc: "Hero גדול, כרטיסי שירותים, וואטסאפ צף", thumb: "images/previews/site-local-service.webp?v=2", render: renderLocalServiceSite,
     features: ["תמונת רקע גדולה בכותרת — אפשר גם וידאו רקע נגן אוטומטית", "גלריית תמונות מתחלפות בכותרת", "כפתור וואטסאפ צף בכל העמודים", "כרטיסי שירותים עם תיאור ומחיר"], tags: ["hscroll", "video", "rail"] },
-  "freelancer": { label: "פרילנסר / יועץ", category: "תדמית אישית", categorySlug: "personal", desc: "מינימלי וממורכז, מתאים למותג אישי", thumb: "images/previews/site-freelancer.webp", render: renderFreelancerSite,
+  "freelancer": { label: "פרילנסר / יועץ", category: "תדמית אישית", categorySlug: "personal", desc: "מינימלי וממורכז, מתאים למותג אישי", thumb: "images/previews/site-freelancer.webp?v=2", render: renderFreelancerSite,
     features: ["עיצוב ממורכז ונקי, בלי רעשי רקע", "תמונה אישית או גלריית תמונות מתחלפות", "מתאים למותג אישי או ייעוץ פרטני", "צבע ראשי לבחירה שצובע את כל האתר"], tags: [] },
   "catalog": { label: "קטלוג קטן", category: "קטלוג ומכירות", categorySlug: "shop", desc: "רשת מוצרים עם תגי מחיר וניווט עליון", thumb: "images/previews/site-catalog.webp", render: renderCatalogSite,
     features: ["רשת מוצרים עם תגי מחיר ברורים", "ניווט עליון קבוע בין העמודים", "גלריית תמונות מתחלפות בכותרת", "מתאים לחנות קטנה או תפריט שירותים"], tags: [] },
