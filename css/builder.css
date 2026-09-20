@@ -27,7 +27,12 @@
    fixed strip further right still, see .my-sites-rail in style.css). The
    canvas stays the dominant element in the remaining (second, wider)
    column. */
-.builder-wrap-v2 { display: grid; grid-template-columns: minmax(300px, 360px) minmax(0, 1fr); gap: 24px; padding: 24px 24px 60px; align-items: start; }
+/* .container's own 1120px max-width (meant for reading-width text pages)
+   left large, unused margins on both sides of the canvas on any wider
+   screen — confirmed live at 1920px, where over 400px of blank space sat
+   on each side. The canvas is the whole point of this screen, so let it
+   actually use the width it has; the sidebar itself stays capped either way. */
+.builder-wrap-v2 { display: grid; grid-template-columns: minmax(300px, 360px) minmax(0, 1fr); gap: 24px; padding: 24px 24px 60px; align-items: start; max-width: 1800px; }
 @media (max-width: 980px) {
   .builder-wrap-v2 { grid-template-columns: 1fr; }
   /* Stacked on mobile: the canvas first (what the site actually looks
@@ -37,7 +42,17 @@
   .builder-sidebar { order: 2; }
 }
 
-.builder-sidebar-head { display: grid; gap: 10px; padding-bottom: 14px; margin-bottom: 10px; border-bottom: 1px solid #EAEDEC; }
+/* Sticky WITHIN the sidebar's own internal scroll (.builder-form has
+   overflow-y:auto), not just relative to the page — confirmed live: with
+   only page-level stickiness, scrolling the sidebar's own long settings
+   form carried the Save button straight out of view along with it. The
+   negative side-margins + matching padding bleed it to the card's full
+   width so scrolled content can't show through at the edges either. */
+.builder-sidebar-head {
+  display: grid; gap: 10px; padding: 22px 22px 14px; margin: -22px -22px 10px;
+  border-bottom: 1px solid #EAEDEC; background: var(--white);
+  position: sticky; top: -22px; z-index: 2;
+}
 .builder-sidebar-head-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .builder-topbar-v2-tpl { font-size: 14px; font-weight: 700; color: var(--teal-dark); }
 .builder-sidebar .builder-save-ctrl { justify-content: flex-start; }
