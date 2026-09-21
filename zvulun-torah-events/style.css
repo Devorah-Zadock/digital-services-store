@@ -155,7 +155,8 @@ a { color: inherit; }
 .hero-photo { opacity: 0; }
 body.ready .hero-photo { animation: heroRise .7s ease .3s both; }
 @media (prefers-reduced-motion: reduce) { .hero-photo { opacity: 1; animation: none; } }
-.besd { color: var(--white); font-size: 13px; text-align: right; opacity: .85; margin: 0 0 6px; }
+.besd-wrap { position: absolute; top: 28px; inset-inline: 0; z-index: 2; pointer-events: none; }
+.besd { color: var(--white); font-size: 13px; text-align: right; opacity: .85; margin: 0; }
 .eyelash { color: var(--gold-light); font-weight: 700; letter-spacing: .5px; margin-bottom: 14px; font-size: 20px; }
 .hero h1 {
   font-size: clamp(34px, 6vw, 62px); margin: 0 0 16px; font-weight: 800; line-height: 1.15;
@@ -167,7 +168,7 @@ body.ready .hero-photo { animation: heroRise .7s ease .3s both; }
 }
 .hero-phone {
   display: inline-block; color: var(--muted); text-decoration: underline;
-  text-underline-offset: 3px; font-size: 15px; margin-bottom: 22px;
+  text-underline-offset: 4px; font-size: 27px; font-weight: 700; margin-bottom: 22px;
   transition: color .15s ease;
 }
 .hero-phone:hover { color: var(--gold-light); }
@@ -179,16 +180,17 @@ body.ready .hero-photo { animation: heroRise .7s ease .3s both; }
 
 .hero-content > * { opacity: 0; }
 body.ready .hero-content > * { animation: heroRise .7s ease both; }
-body.ready .hero-content > .besd { animation-delay: 0s; }
 body.ready .hero-content > .eyelash { animation-delay: .35s; }
 body.ready .hero-content > .lead { animation-delay: .5s; }
 body.ready .hero-content > .hero-phone { animation-delay: .6s; }
 body.ready .hero-content > .trust-line { animation-delay: .7s; }
 body.ready .hero-content > h1 { animation: heroRise .7s ease .15s both, titleGlow 1.8s ease-out .95s 1; }
+.besd { opacity: 0; }
+body.ready .besd { animation: heroRise .7s ease both; }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-content > * { opacity: 1; }
-  body.ready .hero-content > *, body.ready .hero-content > h1 { animation: none; }
+  .hero-content > *, .besd { opacity: 1; }
+  body.ready .hero-content > *, body.ready .hero-content > h1, body.ready .besd { animation: none; }
 }
 
 /* Stats */
