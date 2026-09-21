@@ -38,32 +38,3 @@ if (navToggle && mainNav) {
     });
   });
 }
-
-document.querySelectorAll('.copy-btn').forEach((btn) => {
-  const text = btn.dataset.copyText;
-  const original = btn.textContent;
-  btn.addEventListener('click', async () => {
-    try {
-      if (navigator.clipboard) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        const temp = document.createElement('textarea');
-        temp.value = text;
-        temp.style.position = 'fixed';
-        temp.style.opacity = '0';
-        document.body.appendChild(temp);
-        temp.select();
-        document.execCommand('copy');
-        document.body.removeChild(temp);
-      }
-      btn.textContent = 'הועתק!';
-      btn.classList.add('copied');
-      setTimeout(() => {
-        btn.textContent = original;
-        btn.classList.remove('copied');
-      }, 1800);
-    } catch (err) {
-      btn.textContent = text;
-    }
-  });
-});
