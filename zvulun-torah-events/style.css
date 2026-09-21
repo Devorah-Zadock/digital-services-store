@@ -239,7 +239,7 @@ body.ready .hero-content > h1 { animation: heroRise .7s ease .2s both, titleGlow
 }
 
 /* Gallery */
-.gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; max-width: 760px; margin: 0 auto; }
+.gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .gallery-item {
   aspect-ratio: 4 / 3; border-radius: var(--radius);
   background-color: var(--navy-light); background-size: cover; background-position: center;
@@ -267,6 +267,20 @@ body.ready .hero-content > h1 { animation: heroRise .7s ease .2s both, titleGlow
 }
 .contact-line .icon { color: var(--gold); width: 22px; height: 22px; }
 .contact-line:hover { transform: translateY(-2px); border-color: rgba(212,175,55,.5); }
+
+.contact-line-email { justify-content: space-between; padding-inline-end: 10px; user-select: text; }
+.contact-line-link {
+  display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--white);
+  user-select: text;
+}
+.copy-btn {
+  flex-shrink: 0; background: rgba(212,175,55,.15); border: 1px solid rgba(212,175,55,.4);
+  color: var(--gold-light); font-size: 13px; font-weight: 700; font-family: inherit;
+  padding: 7px 14px; border-radius: 8px; cursor: pointer; white-space: nowrap;
+  transition: background .15s ease, border-color .15s ease;
+}
+.copy-btn:hover { background: rgba(212,175,55,.28); border-color: rgba(212,175,55,.6); }
+.copy-btn.copied { background: rgba(37,211,102,.2); border-color: rgba(37,211,102,.5); color: #6fe3a0; }
 
 /* Footer */
 .site-footer { background: var(--navy-deep); border-top: 1px solid rgba(255,255,255,.08); padding: 28px 0 90px; }
