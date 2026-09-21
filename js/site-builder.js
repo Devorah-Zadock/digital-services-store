@@ -407,6 +407,36 @@ function syncTextStyleControls() {
   });
 }
 
+function textStyleCss(s) {
+  if (!s) return "";
+  const parts = [];
+  if (s.font) { const f = SITE_FONTS[s.font]; if (f) parts.push(`font-family:${f.stack}`); }
+  if (s.color) parts.push(`color:#${String(s.color).replace("#", "")}`);
+  if (s.size) parts.push(`font-size:${s.size}px`);
+  if (s.align) parts.push(`text-align:${s.align}`);
+  return parts.join(";");
+}
+
+/* Patches the already-loaded canvas directly instead of reloading it
+   (srcdoc = ...) — confirmed live: a full reload on every single color
+   drag/size nudge is jarring on its own, and specifically breaks the
+   playground template (a reload tears down and re-inits its physics
+   engine mid-interaction). Every element this can target already carries
+   data-textkey (site-templates.js's t()/heading()), so this only ever
+   needs to touch the handful of elements sharing that one key — safe
+   even though the same key can render in more than one place (e.g. a
+   business name in both the nav and a footer). */
+function applyTextStyleLive(key) {
+  const frame = document.getElementById("site-preview-frame");
+  const doc = frame && frame.contentDocument;
+  if (!doc) return;
+  const css = textStyleCss((siteState.data.textStyles || {})[key]);
+  doc.querySelectorAll(`[data-textkey="${key}"]`).forEach((el) => {
+    if (css) el.setAttribute("style", css);
+    else el.removeAttribute("style");
+  });
+}
+
 function commitTextStyle(key) {
   const fontSel = document.querySelector(`[data-style-font="${key}"]`);
   const colorInp = document.querySelector(`[data-style-color="${key}"]`);
@@ -422,7 +452,8 @@ function commitTextStyle(key) {
   const hasAny = s.font || s.color || s.size || s.align;
   if (hasAny) siteState.data.textStyles[key] = s;
   else delete siteState.data.textStyles[key];
-  scheduleSitePreviewRender();
+  applyTextStyleLive(key);
+  saveSiteState();
 }
 
 function wireTextStyleControls() {
@@ -451,7 +482,8 @@ function wireTextStyleControls() {
       const key = clearBtn.dataset.styleClear;
       delete (siteState.data.textStyles || {})[key];
       syncTextStyleControls();
-      scheduleSitePreviewRender();
+      applyTextStyleLive(key);
+      saveSiteState();
     }
   });
   root.addEventListener("change", (e) => {
@@ -657,15 +689,50 @@ function renderMigratedHierarchy(tree, addBlockRow, template, d) {
   }
 }
 
+/* Not every template gives its services/about/contact block a distinct
+   heading element (some are headingless paragraphs, tag lists, or a
+   single mixed-content grid) — relying only on
+   [data-textkey="heading-X"] left several templates' hierarchy buttons
+   scrolling nowhere (confirmed live). Per-template overrides here point
+   at a real, stable container instead; "false" means the section
+   genuinely doesn't exist inline for that template (its row is omitted
+   rather than left dead). Audited against every template's actual
+   rendered output, not guessed. */
+const READONLY_HIER_OVERRIDES = {
+  freelancer: { services: ".fr-tags" },
+  boutique: { services: "#bq-grid", contact: false },
+  bento: { services: ".bt-grid", about: ".bt-grid", contact: ".bt-grid" },
+  chaos: { services: "#oc-hscroll" },
+  catalog: { contact: false },
+  bold: { services: "#nb-grid", contact: ".nb-contact" },
+};
+
 function renderReadOnlyHierarchy(tree, template, d) {
   const role = TEMPLATE_SECTION_ROLE[template] || "services";
   const roleLabel = { services: "שירותים / מוצרים", products: "מוצרים", work: "עבודות" }[role] || "שירותים / מוצרים";
+  const overrides = READONLY_HIER_OVERRIDES[template] || {};
+  const defaultSelectors = {
+    services: '[data-textkey="heading-services"]',
+    about: '[data-textkey="heading-about"], [data-textkey="aboutText"]',
+    contact: '[data-textkey="heading-contact"]',
+  };
+  function selectorFor(key) {
+    const o = overrides[key];
+    if (o === false) return false;
+    return o || defaultSelectors[key];
+  }
   const nodes = [
     { key: "heroTitle", label: "Hero", selector: '[data-textkey="heading-heroTitle"]' },
-    { key: "services", label: roleLabel, selector: '[data-textkey="heading-services"]' },
+    { key: "services", label: roleLabel, selector: selectorFor("services") },
   ];
-  if (!d.pages || !d.pages.about) nodes.push({ key: "about", label: "אודות", selector: '[data-textkey="heading-about"]' });
-  if (!d.pages || !d.pages.contact) nodes.push({ key: "contact", label: "צור קשר", selector: '[data-textkey="heading-contact"]' });
+  if (!d.pages || !d.pages.about) {
+    const sel = selectorFor("about");
+    if (sel) nodes.push({ key: "about", label: "אודות", selector: sel });
+  }
+  if (!d.pages || !d.pages.contact) {
+    const sel = selectorFor("contact");
+    if (sel) nodes.push({ key: "contact", label: "צור קשר", selector: sel });
+  }
   tree.innerHTML = nodes.map((n) => hierRowHtml({ label: n.label, key: n.key })).join("");
   tree.querySelectorAll(".hier-row[data-hier-key]").forEach((row) => {
     const node = nodes.find((n) => n.key === row.dataset.hierKey);

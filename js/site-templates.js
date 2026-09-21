@@ -551,7 +551,7 @@ function renderLocalServiceSite(d, page) {
   if (page === "about") {
     main = `
       <section class="ls-hero" style="padding:70px 0 54px;"><div class="container">
-        <span class="eyebrow">מי אנחנו</span><h1 style="font-size:36px;">${bizName(d, dd)}</h1>
+        <span class="eyebrow">מי אנחנו</span><h1 style="font-size:36px;">${heading(d, "about", dd.businessName)}</h1>
       </div></section>
       <section class="ls-about site-reveal" style="padding:64px 0;"><div class="container"><p>${aboutText(d, dd)}</p></div></section>`;
   } else if (page === "contact") {
@@ -627,7 +627,7 @@ function renderFreelancerSite(d, page) {
     main = `
       <section class="fr-hero" style="padding:70px 24px 54px;">
         <span class="eyebrow">מי אני</span>
-        <div class="fr-name" style="font-size:34px;">${bizName(d, dd)}</div>
+        <div class="fr-name" style="font-size:34px;">${heading(d, "about", dd.businessName)}</div>
       </section>
       <div class="fr-body"><p class="fr-about">${aboutText(d, dd)}</p></div>`;
   } else if (page === "contact") {
@@ -721,7 +721,7 @@ function renderCatalogSite(d, page) {
   if (page === "about") {
     main = `
       <section class="cat-title" style="padding:56px 0 48px;"><div class="container">
-        <span class="eyebrow">מי אנחנו</span><h1>${bizName(d, dd)}</h1>
+        <span class="eyebrow">מי אנחנו</span><h1>${heading(d, "about", dd.businessName)}</h1>
       </div></section>
       <div class="container"><div class="cat-about" style="padding:48px 0;">${aboutText(d, dd)}</div></div>`;
   } else if (page === "contact") {
@@ -839,7 +839,7 @@ function renderGallerySite(d, page) {
     main = `
       <section class="gl-about site-reveal"><div class="container">
         <blockquote>${aboutText(d, dd)}</blockquote>
-        <cite>${bizName(d, dd)}</cite>
+        <cite>${heading(d, "about", dd.businessName)}</cite>
       </div></section>`;
   } else if (page === "contact") {
     main = `
@@ -1163,7 +1163,7 @@ function renderProcessSite(d, page) {
   if (page === "about") {
     main = `
       <section class="pr-hero" style="padding:70px 0 54px;"><div class="container">
-        <span class="eyebrow">מי אנחנו</span><h1 style="font-size:36px;">${bizName(d, dd)}</h1>
+        <span class="eyebrow">מי אנחנו</span><h1 style="font-size:36px;">${heading(d, "about", dd.businessName)}</h1>
       </div></section>
       <section class="pr-about site-reveal"><div class="container"><p>${aboutText(d, dd)}</p></div></section>`;
   } else if (page === "contact") {
@@ -1269,7 +1269,7 @@ function renderPortfolioSite(d, page) {
   if (page === "about") {
     main = `
       <section class="po-work site-reveal" style="padding-top:44px;"><div class="container" style="max-width:680px;">
-        <div class="po-work-head"><span class="kicker">מי אני</span><h2>${bizName(d, dd)}</h2></div>
+        <div class="po-work-head"><span class="kicker">מי אני</span><h2>${heading(d, "about", dd.businessName)}</h2></div>
         <p style="font-size:16px; line-height:1.85; color:#333;">${aboutText(d, dd)}</p>
       </div></section>`;
   } else if (page === "contact") {
@@ -1372,7 +1372,7 @@ function renderBoutiqueSite(d, page) {
   let main;
   if (page === "about") {
     main = `
-      <section class="bq-banner bq-banner-noimg"><div class="bq-banner-inner"><span class="eyebrow">מי אנחנו</span><h1>${bizName(d, dd)}</h1></div></section>
+      <section class="bq-banner bq-banner-noimg"><div class="bq-banner-inner"><span class="eyebrow">מי אנחנו</span><h1>${heading(d, "about", dd.businessName)}</h1></div></section>
       <div class="container"><div class="bq-about" style="padding-top:48px;">${aboutText(d, dd)}</div></div>`;
   } else if (page === "contact") {
     main = `
@@ -1643,7 +1643,7 @@ function renderStudioSite(d, page) {
     main = `
       <section class="ag-section" style="border-top:none; padding-top:64px;"><div class="container site-reveal">
         <span class="ag-kicker">נעים להכיר</span>
-        <h2>${bizName(d, dd)}</h2>
+        <h2>${heading(d, "about", dd.businessName)}</h2>
         <p class="ag-about-body">${aboutText(d, dd)}</p>
       </div></section>`;
   } else if (page === "contact") {
@@ -1673,7 +1673,7 @@ function renderStudioSite(d, page) {
       ${(!d.pages || !d.pages.about) ? `
       <section class="ag-section" id="ag-about"><div class="container site-reveal">
         <span class="ag-kicker">נעים להכיר</span>
-        <h2>${bizName(d, dd)}</h2>
+        <h2>${heading(d, "about", dd.businessName)}</h2>
         <p class="ag-about-body">${aboutText(d, dd)}</p>
       </div></section>` : ""}
       ${(!d.pages || !d.pages.contact) ? contactBlock(heading(d, "contact", "יצירת קשר")) : ""}
@@ -1777,7 +1777,7 @@ function renderBentoSite(d, page) {
   if (page === "about") {
     main = `
       <section class="bt-hero" style="padding:56px 0 20px;"><div class="container">
-        <span class="eyebrow">מי אנחנו</span><h1 style="font-size:34px;">${bizName(d, dd)}</h1>
+        <span class="eyebrow">מי אנחנו</span><h1 style="font-size:34px;">${heading(d, "about", dd.businessName)}</h1>
       </div></section>
       <section class="bt-section site-reveal"><div class="container">
         <div class="bt-cell" style="max-width:640px; margin:0 auto; min-height:0;">
@@ -1807,7 +1807,7 @@ function renderBentoSite(d, page) {
     cellsList.push(`<div class="bt-cell"><div class="bt-cell-label">השעה עכשיו</div><div class="bt-clock" id="bt-clock">--:--</div><div class="bt-clock-date" id="bt-date"></div></div>`);
     if (hasPhoto) cellsList.push(`<div class="bt-cell bt-cell-photo bt-span-1x2">${heroMediaHtml(d, "")}</div>`);
     if (!d.pages || !d.pages.about) {
-      cellsList.push(`<div class="bt-cell bt-span-2x1"><div class="bt-cell-label">מי אנחנו</div><p>${escapeHtmlS(dd.about)}</p></div>`);
+      cellsList.push(`<div class="bt-cell bt-span-2x1"><div class="bt-cell-label">מי אנחנו</div><p>${aboutText(d, dd)}</p></div>`);
     }
     if (embedSrc) {
       cellsList.push(`<div class="bt-cell bt-cell-video bt-span-2x1"><iframe src="${embedSrc}" title="סרטון" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`);
@@ -1912,7 +1912,7 @@ function renderCinematicSite(d, page) {
   if (page === "about") {
     main = `
       <section class="cd-section site-reveal" style="padding-top:56px;"><div class="container" style="text-align:center;">
-        <span class="cd-kicker">מי אנחנו</span><h2 style="font-size:32px; font-weight:800; color:#fff; margin:10px 0 26px;">${bizName(d, dd)}</h2>
+        <span class="cd-kicker">מי אנחנו</span><h2 style="font-size:32px; font-weight:800; color:#fff; margin:10px 0 26px;">${heading(d, "about", dd.businessName)}</h2>
         <div class="cd-panel"><p>${aboutText(d, dd)}</p></div>
       </div></section>`;
   } else if (page === "contact") {
@@ -2194,8 +2194,14 @@ function renderNeonSite(d, page) {
       var heads = document.querySelectorAll(".nf-split");
       if (!heads.length) return;
       heads.forEach(function (h) {
-        var words = h.textContent.split(" ");
-        h.innerHTML = words.map(function (w, i) {
+        // Split inside the data-textkey span (when there is one), not the
+        // heading itself — confirmed live: replacing h.innerHTML wholesale
+        // destroyed that span (and its data-textkey attribute) entirely,
+        // permanently breaking both the hierarchy panel's scroll-to-section
+        // and live style edits for every split heading in this template.
+        var target = h.querySelector("[data-textkey]") || h;
+        var words = target.textContent.split(" ");
+        target.innerHTML = words.map(function (w, i) {
           return '<span class="nf-word" style="transition-delay:' + (i * .06) + 's">' + escWord(w) + '</span>';
         }).join(" ");
       });
@@ -2216,7 +2222,7 @@ function renderNeonSite(d, page) {
   if (page === "about") {
     main = `
       <section class="nf-section site-reveal" style="padding-top:56px; text-align:center;"><div class="container">
-        <span class="nf-kicker">מי אנחנו</span><h2 class="nf-split" style="font-size:32px; font-weight:800; color:#fff; margin:10px 0 26px;">${bizName(d, dd)}</h2>
+        <span class="nf-kicker">מי אנחנו</span><h2 class="nf-split" style="font-size:32px; font-weight:800; color:#fff; margin:10px 0 26px;">${heading(d, "about", dd.businessName)}</h2>
         <div class="nf-panel"><p>${aboutText(d, dd)}</p></div>
       </div></section>`;
   } else if (page === "contact") {
@@ -2520,7 +2526,7 @@ function renderLuxurySite(d, page) {
   if (page === "about") {
     main = `
       <section class="lx-section site-reveal" style="padding-top:64px; text-align:center;"><div class="container">
-        <span class="lx-kicker2">מי אנחנו</span><h2 style="font-family:'Frank Ruhl Libre',serif; font-weight:500; font-size:32px; margin:12px 0 26px; color:#2A2620;">${bizName(d, dd)}</h2>
+        <span class="lx-kicker2">מי אנחנו</span><h2 style="font-family:'Frank Ruhl Libre',serif; font-weight:500; font-size:32px; margin:12px 0 26px; color:#2A2620;">${heading(d, "about", dd.businessName)}</h2>
         <div class="lx-panel"><p>${aboutText(d, dd)}</p></div>
       </div></section>`;
   } else if (page === "contact") {
@@ -2857,7 +2863,7 @@ function renderPlaygroundSite(d, page) {
   if (page === "about") {
     main = `
       <section class="pg-section site-reveal" style="padding-top:60px; text-align:center;"><div class="container">
-        <span class="pg-kicker2">מי אנחנו</span><h2 style="font-size:30px; font-weight:900; color:#fff; margin:10px 0 26px;">${bizName(d, dd)}</h2>
+        <span class="pg-kicker2">מי אנחנו</span><h2 style="font-size:30px; font-weight:900; color:#fff; margin:10px 0 26px;">${heading(d, "about", dd.businessName)}</h2>
         <div class="pg-panel"><p>${aboutText(d, dd)}</p></div>
       </div></section>`;
   } else if (page === "contact") {
