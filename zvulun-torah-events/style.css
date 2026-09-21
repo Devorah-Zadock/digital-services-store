@@ -167,7 +167,7 @@ body.ready .hero-photo { animation: heroRise .7s ease .3s both; }
   max-width: 640px; margin: 0 auto 24px; font-size: 20px; color: var(--muted);
 }
 .hero-phone {
-  display: inline-block; color: var(--muted); text-decoration: underline;
+  display: inline-block; color: var(--white); text-decoration: underline;
   text-underline-offset: 4px; font-size: 27px; font-weight: 700; margin-bottom: 22px;
   transition: color .15s ease;
 }
