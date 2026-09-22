@@ -124,9 +124,9 @@ function serviceItemHtml(s, i, total) {
       <strong style="font-size:12.5px;">שירות ${i + 1}</strong>
       ${canRemove ? `<button type="button" class="job-remove" data-service-remove="${i}">הסרה</button>` : ""}
     </div>
-    <input type="text" placeholder="שם השירות/מוצר" data-service="${i}" data-key="name" value="${escapeHtmlS(s.name)}">
-    <input type="text" placeholder="תיאור קצר (לא חובה)" data-service="${i}" data-key="desc" value="${escapeHtmlS(s.desc)}">
-    <input type="text" placeholder="מחיר (לא חובה)" data-service="${i}" data-key="price" value="${escapeHtmlS(s.price)}">
+    <input type="text" placeholder="שם השירות/מוצר" data-service="${i}" data-key="name" value="${escapeHtmlS(s.name)}" maxlength="40">
+    <input type="text" placeholder="תיאור קצר (לא חובה)" data-service="${i}" data-key="desc" value="${escapeHtmlS(s.desc)}" maxlength="90">
+    <input type="text" placeholder="מחיר (לא חובה)" data-service="${i}" data-key="price" value="${escapeHtmlS(s.price)}" maxlength="20">
   </div>`;
 }
 
@@ -308,6 +308,13 @@ function renderFormValues() {
    free-text inputs next to them — role-aware for "services", since a
    boutique's grid reads as products and a portfolio's reads as work even
    though they're all still the same d.services array under the hood. */
+/* Remembers what someone typed under "אחר" per heading key, purely in
+   memory for this editing session — so picking a preset and then
+   switching back to "אחר" restores their own text instead of showing
+   it empty (confirmed live as a real point of frustration: it read as
+   if their custom wording had been silently thrown away). */
+let customHeadingDrafts = {};
+
 function renderHeadingsFields() {
   const d = ensurePagesShape(siteState.data);
   const role = TEMPLATE_SECTION_ROLE[siteState.template] || "services";
@@ -321,11 +328,14 @@ function renderHeadingsFields() {
     const input = document.getElementById(`h-${spec.key}`);
     if (!select || !input) return;
     const options = HEADING_SUGGESTIONS[spec.bank] || [];
+    const current = d.headings[spec.key] || "";
+    const isCustom = current && !options.includes(current);
     select.innerHTML = `<option value="">בחירת ניסוח מוכן…</option>` +
-      options.map((o) => `<option value="${escapeHtmlS(o)}">${escapeHtmlS(o)}</option>`).join("") +
-      `<option value="__custom__">✏️ אחר — הקלידו למטה</option>`;
-    select.value = "";
-    input.value = d.headings[spec.key] || "";
+      options.map((o) => `<option value="${escapeHtmlS(o)}"${o === current ? " selected" : ""}>${escapeHtmlS(o)}</option>`).join("") +
+      `<option value="__custom__"${isCustom ? " selected" : ""}>✏️ אחר — הקלידו למטה</option>`;
+    input.value = current;
+    input.hidden = !isCustom;
+    if (isCustom) customHeadingDrafts[spec.key] = current;
   });
 }
 
@@ -413,7 +423,9 @@ function textStyleCss(s) {
   if (s.font) { const f = SITE_FONTS[s.font]; if (f) parts.push(`font-family:${f.stack}`); }
   if (s.color) parts.push(`color:#${String(s.color).replace("#", "")}`);
   if (s.size) parts.push(`font-size:${s.size}px`);
-  if (s.align) parts.push(`text-align:${s.align}`);
+  // Same reasoning as textStyleAttr in site-templates.js: an inline span
+  // needs display:block or text-align on it is a visual no-op.
+  if (s.align) parts.push(`text-align:${s.align}`, "display:block");
   return parts.join(";");
 }
 
@@ -454,6 +466,33 @@ function applyTextContentLive(key, rawValue, multiline) {
   if (!found.length) return false;
   const html = multiline ? nl2brS(rawValue) : escapeHtmlS(rawValue);
   found.forEach((el) => { el.innerHTML = html; });
+  return true;
+}
+
+/* Primary color and font family are global — every #${pal.primary}/
+   #${pal.primaryDark}/#${pal.ice} in the template's CSS, and the body
+   font, potentially change at once. That's still just CSS (siteDoc()
+   puts the whole template's styling in one <style> tag), so swapping
+   that tag's content — and, for a font change, the Google Fonts <link>
+   tags that load it — updates every color/font on screen instantly
+   without navigating the iframe away at all: no reload flash, no lost
+   scroll position, and no risk of re-triggering a template's own
+   load-time script (confirmed live: playground's physics init, which a
+   real reload used to re-run mid-interaction). */
+function applyGlobalStylesLive() {
+  const frame = document.getElementById("site-preview-frame");
+  const doc = frame && frame.contentDocument;
+  const styleEl = doc && doc.querySelector("style");
+  if (!styleEl) return false;
+  const html = currentSiteHtml(previewPage);
+  const styleMatch = html.match(/<style>([\s\S]*?)<\/style>/);
+  if (!styleMatch) return false;
+  styleEl.textContent = styleMatch[1];
+  const linkMatches = html.match(/<link rel="preconnect"[^>]*>|<link href="https:\/\/fonts\.googleapis\.com[^>]*>/g);
+  if (linkMatches) {
+    doc.querySelectorAll('head link[rel="preconnect"], head link[href*="fonts.googleapis.com"]').forEach((el) => el.remove());
+    doc.head.insertAdjacentHTML("afterbegin", linkMatches.join(""));
+  }
   return true;
 }
 
@@ -579,7 +618,29 @@ function scrollCanvasTo(selector) {
   const frame = document.getElementById("site-preview-frame");
   const doc = frame && frame.contentDocument;
   const el = doc && doc.querySelector(selector);
-  if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
+  if (!el) return;
+  el.scrollIntoView({ block: "center", behavior: "smooth" });
+  flashHighlight(el);
+}
+
+/* A silent scroll alone wasn't enough — confirmed live as "אני לא מבינה
+   איפה בדיוק רואים" (landing near the right spot didn't read as "this,
+   right here, is it"). A brief outline flash removes the ambiguity. Pure
+   inline style (outline never affects layout), self-cleans, and restores
+   whatever style the element had before. */
+function flashHighlight(el) {
+  const prev = { outline: el.style.outline, offset: el.style.outlineOffset, transition: el.style.transition };
+  el.style.transition = "outline-color .3s ease";
+  el.style.outline = "3px solid #FF6B4A";
+  el.style.outlineOffset = "3px";
+  setTimeout(() => {
+    el.style.outline = "3px solid transparent";
+    setTimeout(() => {
+      el.style.outline = prev.outline;
+      el.style.outlineOffset = prev.offset;
+      el.style.transition = prev.transition;
+    }, 350);
+  }, 1000);
 }
 
 const HIER_ICON_BY_KEY = { hero: "⌂", heroTitle: "⌂", services: "▦", about: "ℹ", contact: "✉" };
@@ -600,6 +661,12 @@ function renderHierarchyPanel() {
   const d = ensurePagesShape(siteState.data);
   const migrated = typeof isTemplateMigrated === "function" && isTemplateMigrated(template) && previewPage === "index";
   const addBlockRow = document.getElementById("hier-add-block-row");
+  // Pure-navigation rows (no reorder/add/remove controls, just "jump to
+  // this section") don't need full-width cards — a wrapping row of small
+  // pills says the same thing in a fraction of the height. The migrated,
+  // reorderable tree keeps real cards since its rows carry actual
+  // controls (▲▼✕, nested items) that need the extra room and precision.
+  tree.classList.toggle("hier-pills", !migrated);
   if (migrated) {
     renderMigratedHierarchy(tree, addBlockRow, template, d);
   } else {
@@ -808,6 +875,27 @@ function scheduleSitePreviewRender() {
   sitePreviewRenderTimer = setTimeout(renderSitePreview, 500);
 }
 
+/* "Where does this field even show up?" was a real, repeated point of
+   confusion (most acutely for aboutText, which often sits well below
+   the fold) — focusing a field now scrolls the canvas straight to the
+   element it edits, the same target the hierarchy panel's own rows
+   already use. */
+const FIELD_SCROLL_TARGETS = {
+  "s-name": '[data-textkey="businessName"]',
+  "s-tagline": '[data-textkey="tagline"]',
+  "s-about": '[data-textkey="aboutText"]',
+  "h-heroTitle": '[data-textkey="heading-heroTitle"]',
+  "h-services": '[data-textkey="heading-services"]',
+  "h-about": '[data-textkey="heading-about"]',
+  "h-contact": '[data-textkey="heading-contact"]',
+};
+function wireFieldFocusScroll() {
+  Object.entries(FIELD_SCROLL_TARGETS).forEach(([id, selector]) => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("focus", () => scrollCanvasTo(selector));
+  });
+}
+
 function wireForm() {
   const map = {
     "s-name": "businessName", "s-tagline": "tagline", "s-about": "about",
@@ -829,12 +917,14 @@ function wireForm() {
   });
   document.getElementById("s-color").addEventListener("input", (e) => {
     siteState.data.primaryColor = e.target.value;
-    scheduleSitePreviewRender();
+    if (applyGlobalStylesLive()) saveSiteState();
+    else scheduleSitePreviewRender();
   });
 
   document.getElementById("s-font").addEventListener("change", (e) => {
     siteState.data.fontFamily = e.target.value;
-    renderSitePreview();
+    if (applyGlobalStylesLive()) saveSiteState();
+    else renderSitePreview();
   });
 
   document.getElementById("h-heroTitle").addEventListener("input", (e) => {
@@ -847,14 +937,27 @@ function wireForm() {
     const select = document.getElementById(`h-${key}-pick`);
     const input = document.getElementById(`h-${key}`);
     if (!select || !input) return;
+    // The free-text box only ever shows for the "אחר" choice — a preset
+    // pick (or clearing back to "בחירת ניסוח מוכן…") hides it again,
+    // matching what's actually in effect instead of leaving it sitting
+    // there unused. See customHeadingDrafts for why re-selecting "אחר"
+    // brings back whatever was typed rather than an empty box.
     select.addEventListener("change", () => {
-      if (!select.value || select.value === "__custom__") { input.focus(); return; }
-      input.value = select.value;
-      siteState.data.headings[key] = select.value;
-      renderSitePreview();
+      if (select.value === "__custom__") {
+        input.hidden = false;
+        input.value = customHeadingDrafts[key] || "";
+        input.focus();
+      } else {
+        input.hidden = true;
+        input.value = select.value;
+      }
+      siteState.data.headings[key] = select.value === "__custom__" ? input.value : select.value;
+      if (!applyTextContentLive(`heading-${key}`, siteState.data.headings[key], false)) renderSitePreview();
+      else saveSiteState();
     });
     input.addEventListener("input", () => {
       siteState.data.headings[key] = input.value;
+      customHeadingDrafts[key] = input.value;
       if (applyTextContentLive(`heading-${key}`, input.value, false)) saveSiteState();
       else scheduleSitePreviewRender();
     });
@@ -1271,6 +1374,7 @@ document.addEventListener("DOMContentLoaded", () => {
   buyLink.href = SITE_GUMROAD_CONFIG.checkoutUrl;
   wireBuyLinkOnce(buyLink);
   wireForm();
+  wireFieldFocusScroll();
   mountTextStyleControls();
   wireTextStyleControls();
   refreshUnlockUI();

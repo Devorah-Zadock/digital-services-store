@@ -34,7 +34,11 @@ function textStyleAttr(d, key) {
   if (s.font) { const f = SITE_FONTS[s.font]; if (f) parts.push(`font-family:${f.stack}`); }
   if (s.color) parts.push(`color:#${String(s.color).replace("#", "")}`);
   if (s.size) parts.push(`font-size:${s.size}px`);
-  if (s.align) parts.push(`text-align:${s.align}`);
+  // text-align on a plain inline <span> (the default here) has no visual
+  // effect at all — an inline box shrink-wraps its own text, leaving no
+  // extra room to shift it into. Forcing the span to block (confirmed
+  // live) gives it the width to actually align within.
+  if (s.align) parts.push(`text-align:${s.align}`, "display:block");
   return parts.length ? ` style="${parts.join(";")}"` : "";
 }
 function t(d, key, html) {
@@ -117,7 +121,15 @@ function siteBaseCss(fontKey) {
   const font = SITE_FONTS[fontKey] || SITE_FONTS.heebo;
   return `
     * { box-sizing: border-box; }
+    html { overflow-x:hidden; }
     body { margin:0; font-family:${font.stack}; color:#1E1E1E; line-height:1.6; }
+    /* Belt-and-suspenders against a long, unbroken heading/text pushing the
+       page wider than the viewport (confirmed live: forced horizontal
+       scroll). overflow-wrap makes long text wrap onto multiple lines
+       instead of stretching its box; the html-level overflow-x:hidden above
+       is the actual guarantee — it clips any edge case that still manages
+       to overflow, so no amount of typed text can ever force side-scroll. */
+    .site-editable { overflow-wrap:break-word; word-break:break-word; }
     img { max-width:100%; display:block; }
     a { text-decoration:none; color:inherit; }
     .container { max-width:1000px; margin:0 auto; padding:0 24px; }
