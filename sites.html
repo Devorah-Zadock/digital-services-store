@@ -29,7 +29,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=59">
-<link rel="stylesheet" href="css/builder.css?v=8">
+<link rel="stylesheet" href="css/builder.css?v=9">
 <style>
   .services-item { border: 1px solid #EDEFEE; border-radius: 8px; padding: 12px; margin-bottom: 12px; display: grid; gap: 8px; }
   .services-item-head { display: flex; justify-content: space-between; align-items: center; }
@@ -218,7 +218,11 @@
     <details class="builder-section" open>
       <summary class="builder-section-head">פרטי העסק</summary>
       <div class="builder-section-body">
-        <div class="field"><label for="s-name">שם העסק</label><input id="s-name" type="text"></div>
+        <div class="field">
+          <label for="s-name">שם העסק</label>
+          <p class="field-hint">מוצג בתפריט הניווט ובתחתית העמוד. לעיצוב <b>הכותרת הגדולה</b> שבראש עמוד הבית — ערכו למטה את "כותרת ראשית (H1)".</p>
+          <input id="s-name" type="text">
+        </div>
         <div class="field">
           <label for="h-heroTitle">כותרת ראשית (H1)</label>
           <p class="field-hint">הכותרת הגדולה שמופיעה בראש האתר. השאירו ריק כדי שתהיה זהה לשם העסק.</p>
@@ -404,7 +408,7 @@
 <script src="js/color-utils.js"></script>
 <script src="js/site-templates.js?v=22"></script>
 <script src="js/site-blocks.js?v=1"></script>
-<script src="js/site-builder.js?v=37"></script>
+<script src="js/site-builder.js?v=38"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>

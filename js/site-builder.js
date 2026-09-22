@@ -437,6 +437,26 @@ function applyTextStyleLive(key) {
   });
 }
 
+/* Same idea as applyTextStyleLive, for the text itself: patches every
+   element sharing this data-textkey directly instead of reloading the
+   whole canvas on every keystroke. Only handles the case where the field
+   actually has content — a cleared field falls back to a template-
+   specific placeholder (heading()'s own fallback strings differ per
+   template) that isn't worth replicating here, so the caller does one
+   real render for that (rare) case instead. Returns whether it applied. */
+function applyTextContentLive(key, rawValue, multiline) {
+  const trimmed = String(rawValue || "").trim();
+  if (!trimmed) return false;
+  const frame = document.getElementById("site-preview-frame");
+  const doc = frame && frame.contentDocument;
+  if (!doc) return false;
+  const found = doc.querySelectorAll(`[data-textkey="${key}"]`);
+  if (!found.length) return false;
+  const html = multiline ? nl2brS(rawValue) : escapeHtmlS(rawValue);
+  found.forEach((el) => { el.innerHTML = html; });
+  return true;
+}
+
 function commitTextStyle(key) {
   const fontSel = document.querySelector(`[data-style-font="${key}"]`);
   const colorInp = document.querySelector(`[data-style-color="${key}"]`);
@@ -562,10 +582,12 @@ function scrollCanvasTo(selector) {
   if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
 }
 
+const HIER_ICON_BY_KEY = { hero: "⌂", heroTitle: "⌂", services: "▦", about: "ℹ", contact: "✉" };
 function hierRowHtml({ label, key, hasToggle, expanded, actions, childClass }) {
+  const icon = childClass ? "–" : (HIER_ICON_BY_KEY[key] || "•");
   return `
     <div class="hier-row${childClass ? ` ${childClass}` : ""}" data-hier-key="${key}">
-      ${hasToggle ? `<span class="hier-icon hier-group-toggle${expanded ? " open" : ""}" data-hier-toggle="${key}">▸</span>` : `<span class="hier-icon">${childClass ? "–" : "•"}</span>`}
+      ${hasToggle ? `<span class="hier-icon hier-group-toggle${expanded ? " open" : ""}" data-hier-toggle="${key}">▸</span>` : `<span class="hier-icon">${icon}</span>`}
       <span class="hier-label">${escapeHtmlS(label)}</span>
       <span class="hier-actions">${actions || ""}</span>
     </div>`;
@@ -791,10 +813,18 @@ function wireForm() {
     "s-name": "businessName", "s-tagline": "tagline", "s-about": "about",
     "s-phone": "phone", "s-whatsapp": "whatsapp", "s-email": "email", "s-address": "address",
   };
+  // The 3 content fields that also have a data-textkey (see
+  // applyTextContentLive) skip the reload pipeline entirely while typing.
+  const liveContentKeys = { "s-name": "businessName", "s-tagline": "tagline", "s-about": "aboutText" };
   Object.entries(map).forEach(([id, key]) => {
     document.getElementById(id).addEventListener("input", (e) => {
       siteState.data[key] = e.target.value;
-      scheduleSitePreviewRender();
+      const textkey = liveContentKeys[id];
+      if (textkey && applyTextContentLive(textkey, e.target.value, id === "s-about")) {
+        saveSiteState();
+      } else {
+        scheduleSitePreviewRender();
+      }
     });
   });
   document.getElementById("s-color").addEventListener("input", (e) => {
@@ -809,7 +839,8 @@ function wireForm() {
 
   document.getElementById("h-heroTitle").addEventListener("input", (e) => {
     siteState.data.headings.heroTitle = e.target.value;
-    scheduleSitePreviewRender();
+    if (applyTextContentLive("heading-heroTitle", e.target.value, false)) saveSiteState();
+    else scheduleSitePreviewRender();
   });
 
   ["services", "about", "contact"].forEach((key) => {
@@ -824,7 +855,8 @@ function wireForm() {
     });
     input.addEventListener("input", () => {
       siteState.data.headings[key] = input.value;
-      scheduleSitePreviewRender();
+      if (applyTextContentLive(`heading-${key}`, input.value, false)) saveSiteState();
+      else scheduleSitePreviewRender();
     });
   });
 

@@ -61,13 +61,21 @@
    not a separate floating panel, so there's only ever one card here. ---------- */
 .builder-hier-block { padding-bottom: 14px; margin-bottom: 10px; border-bottom: 1px solid #EAEDEC; }
 .builder-hier-block .preview-tabs { margin-bottom: 10px; }
-.hier-tree { display: flex; flex-direction: column; gap: 4px; }
+/* Real cards, not a bare bullet list — each row reads as its own block
+   you can click, matching the "block list" clarity SITE123 gets from
+   bordered rows with their own icon chip, adapted to DeskKit's own
+   rounded/teal language instead of copying its visual style. */
+.hier-tree { display: flex; flex-direction: column; gap: 6px; }
 .hier-row {
-  display: flex; align-items: center; gap: 8px; padding: 9px 10px; border-radius: 8px;
-  font-size: 13.5px; color: var(--dark); cursor: pointer; transition: background .12s ease;
+  display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 9px;
+  font-size: 13.5px; font-weight: 600; color: var(--dark); cursor: pointer;
+  background: var(--white); border: 1px solid #EAEDEC; transition: border-color .12s ease, box-shadow .12s ease;
 }
-.hier-row:hover { background: var(--grey-light); }
-.hier-row .hier-icon { flex-shrink: 0; width: 16px; text-align: center; color: var(--grey); font-size: 12px; }
+.hier-row:hover { border-color: var(--teal-light, #B7DED6); box-shadow: 0 2px 8px rgba(13, 92, 78, .08); }
+.hier-row .hier-icon {
+  flex-shrink: 0; width: 22px; height: 22px; border-radius: 7px; background: var(--ice); color: var(--teal-dark);
+  display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;
+}
 .hier-row .hier-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hier-row .hier-actions { display: flex; align-items: center; gap: 2px; opacity: 0; transition: opacity .12s ease; flex-shrink: 0; }
 .hier-row:hover .hier-actions { opacity: 1; }
@@ -78,11 +86,17 @@
 .hier-row .hier-btn:hover { background: var(--ice); color: var(--teal-dark); }
 .hier-row .hier-btn:disabled { opacity: .3; cursor: default; }
 .hier-row .hier-btn:disabled:hover { background: none; color: var(--grey); }
-.hier-children { display: flex; flex-direction: column; gap: 2px; padding-inline-start: 22px; margin: 2px 0 6px; }
+.hier-children {
+  display: flex; flex-direction: column; gap: 5px; margin: 2px 0 2px;
+  padding: 6px 6px 6px 0; padding-inline-start: 20px; border-inline-start: 2px solid #EEF1EF;
+}
 .hier-children.collapsed { display: none; }
+.hier-children .hier-row { padding: 7px 9px; font-size: 12.5px; font-weight: 500; background: var(--grey-light); border-color: transparent; }
+.hier-children .hier-row:hover { border-color: var(--teal-light, #B7DED6); background: var(--white); }
+.hier-children .hier-row .hier-icon { width: 18px; height: 18px; background: var(--white); }
 .hier-group-toggle { transition: transform .15s ease; display: inline-block; }
 .hier-group-toggle.open { transform: rotate(90deg); }
-.hier-add-item-row { padding: 6px 10px; }
+.hier-add-item-row { padding: 2px 0 0; }
 .hier-add-item-btn { background: none; border: 1px dashed #DADFDD; border-radius: 8px; color: var(--teal-dark); font-size: 12.5px; font-weight: 700; padding: 6px 10px; cursor: pointer; width: 100%; font-family: inherit; }
 .hier-add-item-btn:hover { border-color: var(--teal); background: var(--ice); }
 .hier-add-block-row { margin-top: 10px; padding-top: 10px; border-top: 1px solid #EEF1EF; }
@@ -158,25 +172,33 @@
    next to the field that already edits that text's content ---------- */
 .ts-toggle {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 22px; height: 20px; margin-inline-start: 6px; vertical-align: middle;
+  width: 20px; height: 18px; margin-inline-start: 6px; vertical-align: middle;
   background: var(--ice); color: var(--teal-dark); border: none; border-radius: 5px;
-  font-size: 11px; font-weight: 800; font-style: italic; cursor: pointer; font-family: Georgia, serif;
+  font-size: 10px; font-weight: 800; font-style: italic; cursor: pointer; font-family: Georgia, serif;
+  opacity: .8;
 }
-.ts-toggle:hover { background: #CFEAE3; }
+.ts-toggle:hover { background: #CFEAE3; opacity: 1; }
+/* Deliberately quiet relative to the field label above it — smaller
+   text, a muted background, and a side accent bar (not a full box) so
+   it reads as "attached settings for that field" rather than a peer
+   block competing with the next field's own label. The extra bottom
+   margin is what actually fixed the cramped feel: 12px wasn't enough
+   room between this row's own content and the next bold label. */
 .ts-row {
-  display: grid; gap: 8px; background: var(--grey-light); border-radius: 8px;
-  padding: 10px; margin: 6px 0 12px;
+  display: grid; gap: 7px; background: var(--grey-light); border-inline-start: 2px solid #DADFDD;
+  border-radius: 0 8px 8px 0; padding: 9px 10px; margin: 4px 0 18px;
 }
-.ts-row-grid { display: grid; grid-template-columns: minmax(0, 1fr) 40px 68px; gap: 6px; }
-.ts-row-grid select, .ts-row-grid input[type="number"] { font-size: 12px !important; padding: 6px 8px !important; }
-.ts-row-grid input[type="color"] { width: 100%; height: 32px; border: none; border-radius: 6px; padding: 0; cursor: pointer; background: none; }
+.ts-row-grid { display: grid; grid-template-columns: minmax(0, 1fr) 34px 60px; gap: 6px; }
+.ts-row-grid select, .ts-row-grid input[type="number"] { font-size: 11.5px !important; padding: 5px 7px !important; color: var(--grey); }
+.ts-row-grid input[type="color"] { width: 100%; height: 28px; border: none; border-radius: 6px; padding: 0; cursor: pointer; background: none; }
 .ts-align { display: flex; gap: 4px; }
 .ts-align button {
-  flex: 1; padding: 5px 0; border-radius: 6px; border: 1px solid #DADFDD; background: var(--white);
-  color: var(--dark); font-size: 11.5px; font-family: inherit; cursor: pointer;
+  flex: 1; padding: 4px 0; border-radius: 6px; border: 1px solid #DADFDD; background: var(--white);
+  color: var(--grey); font-size: 11px; font-family: inherit; cursor: pointer;
 }
 .ts-align button.ts-active { background: var(--teal-dark); border-color: var(--teal-dark); color: var(--white); }
-.ts-clear { background: none; border: none; color: #B23; font-size: 11.5px; cursor: pointer; font-family: inherit; padding: 0; text-align: right; justify-self: start; }
+.ts-clear { background: none; border: none; color: #B23; font-size: 11px; cursor: pointer; font-family: inherit; padding: 0; text-align: right; justify-self: start; opacity: .85; }
+.ts-clear:hover { opacity: 1; text-decoration: underline; }
 
 .photo-row { display: flex; align-items: center; gap: 14px; }
 .photo-preview {
