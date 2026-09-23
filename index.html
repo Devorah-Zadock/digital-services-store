@@ -59,13 +59,21 @@
      — dropped rather than loaded for nothing. The stylesheet itself is also
      the page's biggest render-blocking request (confirmed via PageSpeed
      Insights): loaded non-blocking via the media="print" swap trick below,
-     with a <noscript> fallback for when JS is off. display=swap already
-     in the URL means text still shows immediately in a fallback font
-     rather than staying invisible while the real one loads. -->
-<link rel="preload" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700;800&family=Secular+One&family=Space+Grotesk:wght@500;600;700&display=swap" as="style">
-<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700;800&family=Secular+One&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700;800&family=Secular+One&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"></noscript>
-<link rel="stylesheet" href="css/style.css?v=61">
+     with a <noscript> fallback for when JS is off.
+     display=optional, not swap: this page leans on "Secular One" for its
+     38px section headings — a distinctive display face that looks nothing
+     like its fallback. swap paints the fallback immediately and then
+     visibly re-renders into Secular One a moment later (confirmed live,
+     misread as "the words are changing" — no relation to the language
+     toggle, it happens purely from font loading). optional instead shows
+     the fallback and, unless the font is already cached and ready almost
+     immediately, simply keeps it for this page view rather than swapping
+     later — no visible flash either way, at the cost of occasionally
+     staying on the fallback face on a cold cache. -->
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700;800&family=Secular+One&family=Space+Grotesk:wght@500;600;700&display=optional" as="style">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700;800&family=Secular+One&family=Space+Grotesk:wght@500;600;700&display=optional" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700;800&family=Secular+One&family=Space+Grotesk:wght@500;600;700&display=optional" rel="stylesheet"></noscript>
+<link rel="stylesheet" href="css/style.css?v=62">
 </head>
 <body class="home-neo">
 <script>
