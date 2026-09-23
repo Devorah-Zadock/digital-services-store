@@ -1,6 +1,7 @@
 /* Block registry + ordering for the new Builder (Stage 1 pilot:
-   local-service, playground — see the plan for why only these two are
-   migrated first). Depends on the ls*Section()/pg*Section() functions
+   local-service, playground, catalog — see the plan for why these were
+   migrated first). Depends on the ls*Section()/pg*Section()/cat*Section()
+   functions
    in js/site-templates.js (loaded before this file), which already
    render each section's real HTML/CSS/behavior unchanged — this file
    only describes which of them exist per template, in what order, and
@@ -28,6 +29,14 @@ const SITE_BLOCK_DEFS = {
     services: { label: "שירותים / מוצרים", hasItems: true, render: (d, pal, dd) => pgServicesSection(d, pal, dd) },
     about: { label: "אודות", render: (d, pal, dd) => pgAboutSection(d, pal, dd), active: (d) => !d.pages || !d.pages.about },
     contact: { label: "צור קשר", render: (d, pal, dd, ctx) => pgContactSection(d, pal, dd, ctx.wa), active: (d) => !d.pages || !d.pages.contact },
+  },
+  // No "contact" entry — catalog genuinely has no inline contact section
+  // on its index page (contact details only ever lived on the separate
+  // contact.html page), so there's nothing there to make reorderable.
+  "catalog": {
+    hero: { label: "Hero", render: (d, pal, dd) => catHeroSection(d, pal, dd) },
+    services: { label: "מוצרים", hasItems: true, render: (d, pal, dd) => catServicesSection(d, pal, dd) },
+    about: { label: "אודות", render: (d, pal, dd) => catAboutSection(d, pal, dd), active: (d) => !d.pages || !d.pages.about },
   },
 };
 

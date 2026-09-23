@@ -682,6 +682,50 @@ function renderFreelancerSite(d, page) {
 }
 
 /* ---------- Template 3: small catalog / shop ---------- */
+
+/* Section-renderer decomposition, same idea and same guarantee as
+   local-service's (see that comment above lsHeroSection): each function
+   below returns exactly the HTML chunk renderCatalogSite's index page
+   already inlined, unchanged, so migrating this template can never
+   alter what an existing, already-saved catalog project looks like —
+   only unlocks reordering it going forward. No contact section here on
+   purpose — this template genuinely has none inline on its index page
+   (see READONLY_HIER_OVERRIDES' catalog: { contact: false } from before
+   this migration), so SITE_BLOCK_DEFS's catalog entry below only lists
+   hero/services/about. */
+function catHeroSection(d, pal, dd) {
+  const services = dd._services;
+  return `
+      <section class="cat-title"><div class="container">
+        <span class="eyebrow">${heading(d, "services", "קטלוג המוצרים שלנו")}</span>
+        <h1>${heading(d, "heroTitle", dd.businessName)}</h1>
+        <p>${taglineText(d, dd)}</p>
+        <div class="stats">${services.length} מוצרים/שירותים זמינים</div>
+        ${heroMediaHtml(d, "site-hero-photo")}
+      </div></section>`;
+}
+function catServicesSection(d, pal, dd) {
+  const services = dd._services;
+  const showSearch = services.length >= 3;
+  return `
+      <div class="container">
+        ${showSearch ? searchBoxHtml("#cat-grid", "חיפוש מוצר או שירות...") : ""}
+        <div class="cat-grid" id="cat-grid">${services.map((s) => `
+          <div class="cat-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><div class="swatch-bar"></div><div class="body">
+            <h3>${escapeHtmlS(s.name)}</h3>
+            ${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}
+            ${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}
+          </div></div>`).join("")}</div>
+        ${showSearch ? searchScriptHtml() : ""}
+      </div>`;
+}
+function catVideoSection(embedSrc) {
+  return embedSrc ? `<div class="container"><div style="padding:36px 0;">${videoEmbedHtml(embedSrc)}</div></div>` : "";
+}
+function catAboutSection(d, pal, dd) {
+  return (!d.pages || !d.pages.about) ? `<div class="cat-about">${aboutText(d, dd)}</div>` : "";
+}
+
 function renderCatalogSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#C2410C");
@@ -749,29 +793,16 @@ function renderCatalogSite(d, page) {
         ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת ליצירת קשר.</div>`}
         ${wa ? `<a class="wa-link" style="display:inline-block; margin-top:10px;" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}
       </div></section>`;
+  } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("catalog")) {
+    // Builder v2 (see js/site-blocks.js): hero/services/about order below
+    // is the DEFAULT only — once a customer reorders/hides a block via
+    // the hierarchy panel, that saved order renders instead.
+    main = renderBlocksHtml(d, "catalog", "index", { pal, dd, videoSection: catVideoSection(embedSrc) });
   } else {
-    const services = dd._services;
-    const showSearch = services.length >= 3;
-    main = `
-      <section class="cat-title"><div class="container">
-        <span class="eyebrow">${heading(d, "services", "קטלוג המוצרים שלנו")}</span>
-        <h1>${heading(d, "heroTitle", dd.businessName)}</h1>
-        <p>${taglineText(d, dd)}</p>
-        <div class="stats">${services.length} מוצרים/שירותים זמינים</div>
-        ${heroMediaHtml(d, "site-hero-photo")}
-      </div></section>
-      <div class="container">
-        ${showSearch ? searchBoxHtml("#cat-grid", "חיפוש מוצר או שירות...") : ""}
-        <div class="cat-grid" id="cat-grid">${services.map((s) => `
-          <div class="cat-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><div class="swatch-bar"></div><div class="body">
-            <h3>${escapeHtmlS(s.name)}</h3>
-            ${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}
-            ${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}
-          </div></div>`).join("")}</div>
-        ${showSearch ? searchScriptHtml() : ""}
-      </div>
-      ${embedSrc ? `<div class="container"><div style="padding:36px 0;">${videoEmbedHtml(embedSrc)}</div></div>` : ""}
-      ${(!d.pages || !d.pages.about) ? `<div class="cat-about">${aboutText(d, dd)}</div>` : ""}
+    main = `${catHeroSection(d, pal, dd)}
+      ${catServicesSection(d, pal, dd)}
+      ${catVideoSection(embedSrc)}
+      ${catAboutSection(d, pal, dd)}
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
