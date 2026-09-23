@@ -169,7 +169,7 @@ body.has-sites-rail header.site {
 .brand-text { direction: ltr; }
 .brand-badge { display: none; }
 .brand-desk { font-weight: 500; }
-.brand-kit { font-weight: 700; color: #14B8B8; }
+.brand-kit { font-weight: 700; color: #0E8C8C; }
 .nav-end-group {
   position: absolute; top: 50%; inset-inline-end: 24px; transform: translateY(-50%);
   display: flex; align-items: center; gap: 14px;
@@ -185,9 +185,13 @@ body.has-sites-rail header.site {
    shorter than the header on every other page. Made the default so the
    header is the same height and style everywhere; --dark already equals
    home-neo's own --hn-ink (#1A1A1A), so the color carries over exactly. */
-.nav-links a { color: var(--dark); opacity: .85; transition: opacity .15s ease; }
+/* display:inline-block + vertical padding grows the actual clickable/
+   tappable box past its text's own ~16-17px line height — confirmed via
+   real measurement that every nav link's hit area was under the 24px
+   minimum touch-target size. */
+.nav-links a { color: var(--dark); opacity: .85; transition: opacity .15s ease; display: inline-block; padding-block: 6px; padding-inline: 3px; }
 .nav-links a:hover, .nav-links a.active { opacity: 1; }
-.nav-login { color: var(--grey); font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: flex-end; gap: 5px; min-width: 92px; transition: color .15s ease; }
+.nav-login { color: var(--grey); font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: flex-end; gap: 5px; min-width: 92px; padding-block: 6px; transition: color .15s ease; }
 .nav-login.nav-login-pending { visibility: hidden; }
 .nav-login:hover { color: var(--teal-dark); }
 .nav-login-email { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: ltr; text-align: right; }
@@ -487,13 +491,23 @@ body.home-neo .lang-toggle { background: var(--hn-bg); border-color: var(--hn-bo
 body.home-neo .lang-toggle:hover { background: var(--hn-border); border-color: var(--hn-border); }
 body.home-neo .cookie-notice { background: var(--hn-bg); border-top-color: var(--hn-border); }
 body.home-neo .cookie-notice p { color: var(--hn-grey); }
-body.home-neo .cookie-notice .btn-teal { background: var(--hn-action); border-radius: var(--hn-radius); }
+/* Not var(--hn-action) directly — that teal only reaches 4.08:1 against
+   white, enough for the large bold hero CTAs that also use it but not
+   for this button's small 13px label (needs 4.5:1). A dedicated darker
+   shade here keeps those larger buttons' color untouched. */
+body.home-neo .cookie-notice .btn-teal { background: #0B7A7A; border-radius: var(--hn-radius); }
 
 /* ---------- Navbar + logo ---------- */
 body.home-neo .nav { max-width: 1400px; padding-inline: 32px; }
 body.home-neo .nav-links { gap: 40px; }
 body.home-neo .nav-links a {
-  color: var(--hn-grey); font-weight: 500; border-bottom: none; padding: 0;
+  /* opacity:.85 from the base .nav-links a rule still cascades through
+     otherwise — lightening this grey just enough to fail WCAG AA's
+     4.5:1 minimum (confirmed via axe: #6B6B6B measured as an effective
+     #818181 against white, 3.88:1). Full opacity here keeps the actual
+     --hn-grey value, which passes on its own. */
+  color: var(--hn-grey); opacity: 1; font-weight: 500; border-bottom: none;
+  padding-inline: 3px; padding-block: 6px;
   transition: color .15s ease;
 }
 body.home-neo .nav-links a.active, body.home-neo .nav-links a:hover { color: var(--hn-ink); border-bottom: none; }
@@ -720,7 +734,7 @@ body.home-neo .hn-flagship-price-box .hn-btn-gold:hover {
    sections read as one deliberate palette instead of a leftover old brand
    color breaking the black/white/accent scheme. */
 body.home-neo footer.site { background: var(--hn-dark); color: var(--hn-dark-text-dim); }
-body.home-neo .footer-grid h5 { color: var(--hn-dark-text); }
+body.home-neo .footer-grid h4 { color: var(--hn-dark-text); }
 body.home-neo .footer-grid ul a:hover { color: var(--hn-accent); }
 body.home-neo .footer-bottom { color: #7A7A82; }
 
@@ -758,7 +772,7 @@ body.home-neo .hn-step.in-view .hn-step-num { color: #14B8B8; text-shadow: 0 0 3
 body.home-neo .hn-steps-row .hn-step:nth-child(1) .hn-step-num { transition-delay: .15s; }
 body.home-neo .hn-steps-row .hn-step:nth-child(2) .hn-step-num { transition-delay: .4s; }
 body.home-neo .hn-steps-row .hn-step:nth-child(3) .hn-step-num { transition-delay: .65s; }
-body.home-neo .hn-step h4 { position: relative; font-size: 19px; font-weight: 700; margin: 0 0 10px; color: var(--hn-dark-text); }
+body.home-neo .hn-step h3 { position: relative; font-size: 19px; font-weight: 700; margin: 0 0 10px; color: var(--hn-dark-text); }
 body.home-neo .hn-step p { position: relative; font-size: 14.5px; color: var(--hn-dark-text-dim); line-height: 1.7; margin: 0; }
 @media (max-width: 800px) { body.home-neo .hn-steps-row { grid-template-columns: 1fr; gap: 56px; } }
 @media (prefers-reduced-motion: reduce) {
@@ -782,7 +796,7 @@ body.home-neo .hn-adv-icon {
   border-radius: 50%; background: var(--hn-bg); color: var(--hn-accent); flex: none;
 }
 body.home-neo .hn-adv-icon svg { width: 20px; height: 20px; }
-body.home-neo .hn-adv-row h4 { font-size: 17px; font-weight: 700; margin: 0 0 6px; }
+body.home-neo .hn-adv-row h3 { font-size: 17px; font-weight: 700; margin: 0 0 6px; }
 body.home-neo .hn-adv-row p { font-size: 14px; color: var(--hn-grey); line-height: 1.7; margin: 0; }
 @media (max-width: 800px) {
   body.home-neo .hn-advantages-split { grid-template-columns: 1fr; gap: 32px; }
@@ -1170,9 +1184,9 @@ form.contact-form { display: grid; gap: 16px; max-width: 560px; margin: 0 auto; 
 /* ---------- Footer ---------- */
 footer.site { background: linear-gradient(180deg, var(--teal-dark), #000000); color: #B8B8C0; padding: 50px 0 26px; margin-top: 60px; }
 .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 30px; }
-.footer-grid h5 { color: var(--white); font-size: 15px; margin: 0 0 14px; }
+.footer-grid h4 { color: var(--white); font-size: 15px; margin: 0 0 14px; }
 .footer-grid ul { list-style: none; padding: 0; display: grid; gap: 8px; font-size: 14px; }
-.footer-grid ul a { transition: color .15s ease; }
+.footer-grid ul a { transition: color .15s ease; display: inline-block; padding-block: 4px; }
 .footer-grid ul a:hover { color: var(--white); }
 .footer-bottom { border-top: 1px solid rgba(255,255,255,.12); padding-top: 20px; font-size: 13px; text-align: center; color: #7A7A82; }
 
@@ -1262,7 +1276,7 @@ footer.site { background: linear-gradient(180deg, var(--teal-dark), #000000); co
   padding: 12px 24px; box-shadow: 0 -6px 20px rgba(0,0,0,.1);
 }
 .cookie-notice p { margin: 0; font-size: 13px; max-width: 560px; color: var(--grey); }
-.cookie-notice p a { color: var(--teal); font-weight: 600; text-decoration: underline; }
+.cookie-notice p a { color: var(--teal); font-weight: 600; text-decoration: underline; display: inline-block; padding-block: 5px; }
 .cookie-notice button { padding: 8px 20px; font-size: 13px; flex: none; }
 body.cookie-notice-active .fab { display: none; }
 

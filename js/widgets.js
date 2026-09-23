@@ -206,6 +206,12 @@ function injectCookieNotice() {
   if (localStorage.getItem(COOKIE_NOTICE_KEY) === "1") return;
   const bar = document.createElement("div");
   bar.className = "cookie-notice no-print";
+  // A bare <div> appended straight to <body> sits outside every
+  // landmark (header/main/footer) — confirmed via axe-core as a real
+  // "content not contained by landmarks" violation. role="region" +
+  // aria-label makes it its own, properly announced landmark.
+  bar.setAttribute("role", "region");
+  bar.setAttribute("aria-label", "הודעת עוגיות ואחסון מקומי");
   bar.innerHTML = `
     <p>האתר משתמש בעוגיות ואחסון מקומי כדי לשמור את העבודה שלכם. פרטים ב<a href="terms.html#privacy">מדיניות הפרטיות</a>.</p>
     <button type="button" class="btn btn-teal" id="cookie-notice-ok">הבנתי</button>
