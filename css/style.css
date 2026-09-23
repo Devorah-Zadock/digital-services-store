@@ -693,8 +693,8 @@ body.home-neo .hn-card-xlsx::before { background-image: url("../images/previews/
    (generic line items, no real business/customer data) in the same
    visual language as the other cards, generated the same way the site
    catalog's own template thumbnails are. */
-body.home-neo .hn-card-quote::before { background-image: url("../images/previews/hero-quote-card.webp"); }
-body.home-neo .hn-card-invoice::before { background-image: url("../images/previews/hero-invoice-card.webp"); }
+body.home-neo .hn-card-quote::before { background-image: url("../images/previews/hero-quote-card.webp?v=2"); }
+body.home-neo .hn-card-invoice::before { background-image: url("../images/previews/hero-invoice-card.webp?v=2"); }
 @media (prefers-reduced-motion: reduce) {
   body.home-neo .hn-card { transition: box-shadow .3s ease; }
   body.home-neo .hn-card:hover { transform: none; }
