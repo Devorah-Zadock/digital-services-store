@@ -152,7 +152,7 @@ body.has-sites-rail header.site {
    either pinned group. */
 .nav {
   display: flex; align-items: center; justify-content: center;
-  padding: 16px 24px; padding-inline-start: 190px; padding-inline-end: 150px; max-width: var(--max); margin: 0 auto;
+  padding: 22px 24px; padding-inline-start: 190px; padding-inline-end: 150px; max-width: var(--max); margin: 0 auto;
   /* The home page sets its own page-wide font-family ('Assistant', for
      its own hero/body copy — body.home-neo below) — without pinning the
      header back to the site's base font here, that cascaded into the
@@ -165,19 +165,36 @@ body.has-sites-rail header.site {
 .brand {
   position: absolute; top: 50%; inset-inline-start: 24px; transform: translateY(-50%);
   font-family: 'Space Grotesk', Arial, sans-serif; font-size: 22px; color: #1A1A1A;
-  display: flex; align-items: center; letter-spacing: -.01em;
+  /* row-reverse, not direction:ltr — .brand's own inset-inline-start
+     positioning depends on ITS direction (see .brand-text below for
+     what went wrong last time this was tried with direction), but
+     flex order is independent of that: reversing it is what actually
+     puts the icon first (leftmost, before "DeskKit") in the page's
+     RTL context, where a plain row would otherwise place the icon
+     last, after the wordmark — confirmed live, that's what a first try
+     without this looked like. */
+  display: flex; flex-direction: row-reverse; align-items: center; gap: 9px; letter-spacing: -.01em;
 }
-/* Wordmark only, no icon/badge — "Desk" regular, "Kit" bold in the accent
-   turquoise. Same everywhere the brand or a link back to the homepage
-   appears, not just the homepage itself.
+/* Icon + wordmark, same everywhere the brand or a link back to the
+   homepage appears, not just the homepage itself. "Desk" bold in near-
+   black, "Kit" regular weight in the accent turquoise — the icon picks
+   up both: a document/page shape (the "Desk" — your own documents) in
+   the same near-black as "Desk", with a small sparkle accent (the "Kit"
+   — what DeskKit adds) in the same real teal as "Kit". The mark's own
+   <path> elements (.bm-doc/.bm-fold/.bm-spark) already existed in every
+   page's header markup but were never actually styled or shown.
    direction:ltr lives on .brand-text, NOT .brand itself — .brand's own
    inset-inline-start positioning depends on ITS direction, and forcing
    ltr there flipped it to the physical left (the wrong side of the RTL
    header) instead of just reordering the two words inside it. */
 .brand-text { direction: ltr; }
-.brand-badge { display: none; }
-.brand-desk { font-weight: 500; }
-.brand-kit { font-weight: 700; color: #0E8C8C; }
+.brand-badge { display: flex; align-items: center; }
+.brand-mark { width: 27px; height: 27px; }
+.bm-doc { fill: none; stroke: #1A1A1A; stroke-width: 1.6; stroke-linejoin: round; }
+.bm-fold { fill: #E4E4E4; stroke: #1A1A1A; stroke-width: 1.6; stroke-linejoin: round; }
+.bm-spark { fill: #0E8C8C; }
+.brand-desk { font-weight: 700; }
+.brand-kit { font-weight: 400; color: #0E8C8C; }
 .nav-end-group {
   position: absolute; top: 50%; inset-inline-end: 24px; transform: translateY(-50%);
   display: flex; align-items: center; gap: 14px;
