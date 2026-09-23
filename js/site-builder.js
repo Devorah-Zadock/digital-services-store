@@ -489,6 +489,118 @@ function patchTextKeyFromFullRender(key) {
   return true;
 }
 
+/* Same idea as patchTextKeyFromFullRender, widened from "one line of
+   text" to "a whole section" — for edits that add/remove/rearrange
+   markup (a service row, a gallery photo, the video embed) rather than
+   just changing a string inside markup that's already there.
+
+   Every template's services/about/contact/hero heading already carries
+   a data-textkey ("heading-services"/"heading-about"/"heading-contact"/
+   "heading-heroTitle") from the shared heading()/t() helpers in
+   site-templates.js — that's what lets this work the same way across
+   all ~18 templates' completely different class names and layouts,
+   instead of needing a hand-maintained per-template selector map. Climb
+   from that heading to its nearest ancestor that's a direct child of
+   <body> — every template's siteDoc() concatenates hero/services/about/
+   contact/etc. as flat siblings with no wrapping container, but not every
+   one of them is literally a <section> tag (local-service's services
+   block, for one, is a <div class="ls-hscroll-wrap">) — and swap that
+   whole top-level block's contents.
+
+   Returns false — same convention as every other *Live() helper here —
+   whenever the section isn't there to find, which callers fall back to
+   a real renderSitePreview() reload for: a template that (rarely)
+   doesn't tag that heading, or a structural change like flipping
+   about/contact to its own separate page, where the inline section is
+   supposed to disappear entirely and a real reload is the correct,
+   honest result anyway. */
+/* Same idea as the hierarchy panel's own READONLY_HIER_OVERRIDES — a
+   small, explicit list of the rare templates where the assumption above
+   doesn't hold, rather than weakening the general rule for everyone.
+   Four templates weave services straight into a hero/about mashup with
+   no heading of their own to anchor on at all (confirmed by reading
+   each render function): catalog reuses heading-services as its HERO
+   block's eyebrow label instead ("קטלוג המוצרים שלנו" in
+   catHeroSection — patching from it silently patched the hero, not the
+   products grid, and the product list never actually updated); bento,
+   boutique, chaos and freelancer never call heading(d,"services",...)
+   on their index page at all. Each maps to a stable id already on (or
+   added to) that template's own services wrapper instead — bento's and
+   freelancer's didn't have one, so one was added purely for this. */
+const SECTION_PATCH_ANCHOR_OVERRIDES = {
+  "catalog": { "heading-services": "#cat-grid" },
+  "bento": { "heading-services": "#bt-grid" },
+  "boutique": { "heading-services": "#bq-grid" },
+  "chaos": { "heading-services": "#oc-hscroll" },
+  "freelancer": { "heading-services": "#fr-services-wrap" },
+};
+function patchSectionFromFullRender(headingKey) {
+  const frame = document.getElementById("site-preview-frame");
+  const doc = frame && frame.contentDocument;
+  if (!doc) return false;
+  const anchorSelector = (SECTION_PATCH_ANCHOR_OVERRIDES[siteState.template] || {})[headingKey];
+  const findSection = (rootDoc) => {
+    const anchor = anchorSelector ? rootDoc.querySelector(anchorSelector) : rootDoc.querySelector(`[data-textkey="${headingKey}"]`);
+    return anchor && anchor.closest("body > *");
+  };
+  const liveSection = findSection(doc);
+  if (!liveSection) return false;
+  const parsed = new DOMParser().parseFromString(currentSiteHtml(previewPage), "text/html");
+  const newSection = findSection(parsed);
+  if (!newSection) return false;
+  liveSection.innerHTML = newSection.innerHTML;
+  // Already-visible content shouldn't fade in again — the reveal-on-
+  // scroll IntersectionObserver (scrollRevealScript(), in
+  // site-templates.js) only ever scans for .site-reveal elements once,
+  // at initial page load, so anything patched in here would otherwise
+  // sit stuck at opacity:0 forever, never observed. The user is looking
+  // right at this section while editing it, so skipping straight to
+  // "revealed" is also just the correct behavior, not merely a fix.
+  if (liveSection.classList.contains("site-reveal")) liveSection.classList.add("site-in");
+  liveSection.querySelectorAll(".site-reveal").forEach((el) => el.classList.add("site-in"));
+  // Some templates give their own section a trailing <script> right
+  // after its markup — the established convention for a reorderable
+  // block (see renderBlocksHtml's own comment: "its script must travel
+  // with it"), used for things that set themselves up once against
+  // whatever's in the DOM at that moment: local-service's horizontal-
+  // scroll services track, playground's drag physics. innerHTML doesn't
+  // execute <script> tags, so without this they'd silently go stale
+  // (still running, just against now-detached old elements) the first
+  // time their section gets patched instead of reloaded. Re-injecting a
+  // fresh copy as a real element (which DOES execute) re-attaches it to
+  // the current DOM.
+  const trailingScript = newSection.nextElementSibling;
+  if (trailingScript && trailingScript.tagName === "SCRIPT") {
+    const script = doc.createElement("script");
+    script.textContent = trailingScript.textContent;
+    liveSection.after(script);
+  }
+  // The hero photo gallery's crossfade timer is different: it's not a
+  // trailing sibling of any one section, but one script injected once,
+  // globally, at the very end of <body> (heroSlideshowScript(), via
+  // siteDoc()) — reusing the same trick, just targeting the whole doc.
+  if (headingKey === "heading-heroTitle" && liveSection.querySelector(".site-hero-slideshow")) {
+    const script = doc.createElement("script");
+    script.textContent = heroSlideshowScript().replace(/^<script>|<\/script>$/g, "");
+    doc.body.appendChild(script);
+  }
+  return true;
+}
+
+/* Shared by every call site above that mutates section-level markup
+   (not just a text string): try the live patch, and only fall back to
+   the full reload when the section genuinely can't be found. Keeps
+   saveSiteState()/renderHierarchyPanel() in sync with renderSitePreview
+   either way, since a live patch skips renderSitePreview() entirely. */
+function commitSectionPatch(headingKey) {
+  if (patchSectionFromFullRender(headingKey)) {
+    saveSiteState();
+    if (typeof renderHierarchyPanel === "function") renderHierarchyPanel();
+  } else {
+    renderSitePreview();
+  }
+}
+
 /* Primary color and font family are global — every #${pal.primary}/
    #${pal.primaryDark}/#${pal.ice} in the template's CSS, and the body
    font, potentially change at once. That's still just CSS (siteDoc()
@@ -896,6 +1008,14 @@ function scheduleSitePreviewRender() {
   clearTimeout(sitePreviewRenderTimer);
   sitePreviewRenderTimer = setTimeout(renderSitePreview, 500);
 }
+/* Same debounce, but for a typing field (the video URL) whose live
+   patch doesn't need a real navigation — commitSectionPatch() still
+   falls back to renderSitePreview() on its own if the section can't be
+   found, so this stays safe even mid-typing an unrecognized URL. */
+function scheduleSectionPatch(headingKey) {
+  clearTimeout(sitePreviewRenderTimer);
+  sitePreviewRenderTimer = setTimeout(() => commitSectionPatch(headingKey), 500);
+}
 
 /* "Where does this field even show up?" was a real, repeated point of
    confusion (most acutely for aboutText, which often sits well below
@@ -997,7 +1117,7 @@ function wireForm() {
     reader.onload = () => {
       siteState.data.heroImage = reader.result;
       renderPhotoPreview();
-      renderSitePreview();
+      commitSectionPatch("heading-heroTitle");
     };
     reader.readAsDataURL(file);
   });
@@ -1005,7 +1125,7 @@ function wireForm() {
     siteState.data.heroImage = "";
     document.getElementById("s-photo").value = "";
     renderPhotoPreview();
-    renderSitePreview();
+    commitSectionPatch("heading-heroTitle");
   });
 
   document.getElementById("s-gallery").addEventListener("change", (e) => {
@@ -1027,14 +1147,14 @@ function wireForm() {
       if (file.size > 6 * 1024 * 1024) {
         alert(`"${file.name}" גדולה מדי — בחרו קובץ עד 6MB.`);
         remaining -= 1;
-        if (remaining === 0) { renderGalleryPreview(); renderSitePreview(); }
+        if (remaining === 0) { renderGalleryPreview(); commitSectionPatch("heading-heroTitle"); }
         return;
       }
       const reader = new FileReader();
       reader.onload = () => {
         siteState.data.heroImages.push(reader.result);
         remaining -= 1;
-        if (remaining === 0) { renderGalleryPreview(); renderSitePreview(); }
+        if (remaining === 0) { renderGalleryPreview(); commitSectionPatch("heading-heroTitle"); }
       };
       reader.readAsDataURL(file);
     });
@@ -1046,28 +1166,28 @@ function wireForm() {
     const idx = parseInt(btn.closest("[data-idx]").dataset.idx, 10);
     siteState.data.heroImages.splice(idx, 1);
     renderGalleryPreview();
-    renderSitePreview();
+    commitSectionPatch("heading-heroTitle");
   });
 
   document.getElementById("s-video").addEventListener("input", (e) => {
     siteState.data.videoUrl = e.target.value;
-    scheduleSitePreviewRender();
+    scheduleSectionPatch("heading-heroTitle");
   });
   const videoBgCheckbox = document.getElementById("s-video-bg");
   if (videoBgCheckbox) {
     videoBgCheckbox.addEventListener("change", (e) => {
       siteState.data.heroVideoBg = e.target.checked;
-      renderSitePreview();
+      commitSectionPatch("heading-heroTitle");
     });
   }
 
   document.getElementById("s-page-about").addEventListener("change", (e) => {
     ensurePagesShape(siteState.data).pages.about = e.target.checked;
-    renderSitePreview();
+    commitSectionPatch("heading-about");
   });
   document.getElementById("s-page-contact").addEventListener("change", (e) => {
     ensurePagesShape(siteState.data).pages.contact = e.target.checked;
-    renderSitePreview();
+    commitSectionPatch("heading-contact");
   });
 
   document.getElementById("add-service").addEventListener("click", addServiceItem);
@@ -1076,7 +1196,7 @@ function wireForm() {
     const key = e.target.dataset.key;
     if (idx === undefined) return;
     siteState.data.services[idx][key] = e.target.value;
-    scheduleSitePreviewRender();
+    scheduleSectionPatch("heading-services");
   });
   document.getElementById("services-list").addEventListener("click", (e) => {
     const idx = e.target.dataset.serviceRemove;
@@ -1092,15 +1212,13 @@ function wireForm() {
 function addServiceItem() {
   siteState.data.services.push({ name: "", desc: "", price: "" });
   renderServicesList();
-  renderSitePreview();
-  if (typeof renderHierarchyPanel === "function") renderHierarchyPanel();
+  commitSectionPatch("heading-services");
 }
 function removeServiceItem(idx) {
   if (siteState.data.services.length <= 1) return;
   siteState.data.services.splice(idx, 1);
   renderServicesList();
-  renderSitePreview();
-  if (typeof renderHierarchyPanel === "function") renderHierarchyPanel();
+  commitSectionPatch("heading-services");
 }
 
 function publishGuideText(pages) {

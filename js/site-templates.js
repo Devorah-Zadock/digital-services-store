@@ -696,7 +696,7 @@ function renderFreelancerSite(d, page) {
         <div class="fr-name">${heading(d, "heroTitle", dd.businessName)}</div>
         <div class="fr-role">${taglineText(d, dd)}</div>
       </section>
-      <div class="fr-body">
+      <div class="fr-body" id="fr-services-wrap">
         <p class="fr-about">${aboutText(d, dd)}</p>
         <div class="fr-tags">${services.map((s) => `<span class="fr-tag">${escapeHtmlS(s.name)}</span>`).join("")}</div>
       </div>
@@ -1900,7 +1900,7 @@ function renderBentoSite(d, page) {
         ${ctaHtml(cta, "bt-cta")}
       </div></section>
       <section class="bt-section site-reveal"><div class="container">
-        <div class="bt-grid">${cellsList.join("")}</div>
+        <div class="bt-grid" id="bt-grid">${cellsList.join("")}</div>
       </div></section>
       ${clockScript}
     `;
