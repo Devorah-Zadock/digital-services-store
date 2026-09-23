@@ -722,9 +722,13 @@ function renderMigratedHierarchy(tree, addBlockRow, template, d) {
           <span class="hier-label">${escapeHtmlS(s.name && s.name.trim() ? s.name : `שירות ${idx + 1}`)}</span>
           <span class="hier-actions">${services.length > 1 ? `<button type="button" class="hier-btn" data-hier-svc-remove="${idx}" title="הסרה">✕</button>` : ""}</span>
         </div>`).join("");
+      // No "+ הוספת שירות" here on purpose — confirmed live as a
+      // confusing second entry point for the exact same action the
+      // services field section (below, on this same sidebar) already
+      // owns. This tree only ever needs to view/reorder/remove what's
+      // already there.
       html += `<div class="hier-children${hierExpanded.services ? "" : " collapsed"}" data-hier-children="services">
         ${childRows}
-        <div class="hier-add-item-row"><button type="button" class="hier-add-item-btn" id="hier-add-service-btn">+ הוספת שירות</button></div>
       </div>`;
     }
     return html;
@@ -776,8 +780,6 @@ function renderMigratedHierarchy(tree, addBlockRow, template, d) {
   tree.querySelectorAll("[data-hier-svc-remove]").forEach((btn) => {
     btn.addEventListener("click", (e) => { e.stopPropagation(); removeServiceItem(Number(btn.dataset.hierSvcRemove)); });
   });
-  const addServiceBtn = document.getElementById("hier-add-service-btn");
-  if (addServiceBtn) addServiceBtn.addEventListener("click", (e) => { e.stopPropagation(); addServiceItem(); });
 
   // Only offers block types this template defines that aren't already
   // showing — "hero" is never offered back (every migrated template

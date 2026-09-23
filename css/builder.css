@@ -1,6 +1,33 @@
 .builder-top { background: var(--ice); padding: 22px 0; border-bottom: 1px solid #DCE9E4; }
 .builder-top-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
 
+/* Sites catalog page only (.sites-hero-band, alongside the shared
+   .builder-top every other builder's top bar still uses unchanged) — the
+   plain grey banner read as generic next to how much is actually in this
+   catalog; this is meant to actually sell "try one, it's real and it's
+   free to try." */
+.sites-hero-band {
+  position: relative; overflow: hidden; padding: 56px 0 46px; border-bottom: none;
+  background: linear-gradient(135deg, #0B4A45 0%, #0E8C8C 55%, #12A5A0 100%);
+}
+.sites-hero-band .builder-top-row { position: relative; z-index: 1; }
+.sites-hero-blob {
+  position: absolute; inset-block-start: -30%; inset-inline-end: -10%; width: 420px; height: 420px;
+  background: radial-gradient(circle, rgba(255,255,255,.22), transparent 65%);
+  pointer-events: none;
+}
+.sites-hero-eyebrow {
+  display: inline-block; background: rgba(255,255,255,.16); color: #fff;
+  font-size: 12.5px; font-weight: 700; padding: 6px 14px; border-radius: 20px; margin-bottom: 14px;
+}
+.sites-hero-h1 { font-size: 38px; font-weight: 800; color: #fff; margin: 0 0 10px; letter-spacing: -.01em; line-height: 1.15; }
+.sites-hero-sub { font-size: 15px; color: rgba(255,255,255,.88); margin: 0; max-width: 620px; line-height: 1.7; }
+.sites-hero-sub a { color: #fff; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 760px) {
+  .sites-hero-band { padding: 40px 0 32px; }
+  .sites-hero-h1 { font-size: 27px; }
+}
+
 /* Same save control in the same spot (the builder-top row) across all
    three builders — CV, sites, quotes — so "שמירה" is never somewhere
    different depending on what you're editing. Separate from any
@@ -56,6 +83,7 @@
 .builder-sidebar-head-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .builder-topbar-v2-tpl { font-size: 14px; font-weight: 700; color: var(--teal-dark); }
 .builder-sidebar .builder-save-ctrl { justify-content: flex-start; }
+.builder-ai-review-btn { width: 100%; font-size: 13.5px; padding-block: 9px; }
 
 /* ---------- Hierarchy block — folded into the sidebar's own top section,
    not a separate floating panel, so there's only ever one card here. ---------- */
@@ -96,9 +124,6 @@
 .hier-children .hier-row .hier-icon { width: 18px; height: 18px; background: var(--white); }
 .hier-group-toggle { transition: transform .15s ease; display: inline-block; }
 .hier-group-toggle.open { transform: rotate(90deg); }
-.hier-add-item-row { padding: 2px 0 0; }
-.hier-add-item-btn { background: none; border: 1px dashed #DADFDD; border-radius: 8px; color: var(--teal-dark); font-size: 12.5px; font-weight: 700; padding: 6px 10px; cursor: pointer; width: 100%; font-family: inherit; }
-.hier-add-item-btn:hover { border-color: var(--teal); background: var(--ice); }
 .hier-add-block-row { margin-top: 10px; padding-top: 10px; border-top: 1px solid #EEF1EF; }
 .hier-add-block-btn { width: 100%; text-align: center; }
 

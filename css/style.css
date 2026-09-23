@@ -189,8 +189,18 @@ body.has-sites-rail header.site {
    tappable box past its text's own ~16-17px line height — confirmed via
    real measurement that every nav link's hit area was under the 24px
    minimum touch-target size. */
-.nav-links a { color: var(--dark); opacity: .85; transition: opacity .15s ease; display: inline-block; padding-block: 6px; padding-inline: 3px; }
+.nav-links a { position: relative; color: var(--dark); opacity: .85; transition: opacity .15s ease; display: inline-block; padding-block: 6px; padding-inline: 3px; }
 .nav-links a:hover, .nav-links a.active { opacity: 1; }
+/* The current page's own tab — a small turquoise underline under just
+   that link, so it's obvious at a glance which page you're on regardless
+   of how similar two neighboring link labels look. var(--teal) is NOT
+   actually teal-colored (#1A1A1A, a legacy name) so this uses the real
+   brand teal directly, the same #0E8C8C used for .brand-kit and the
+   quote/invoice card accents. */
+.nav-links a.active::after {
+  content: ""; position: absolute; inset-inline: 3px; bottom: 0;
+  height: 2px; border-radius: 2px; background: #0E8C8C;
+}
 .nav-login { color: var(--grey); font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: flex-end; gap: 5px; min-width: 92px; padding-block: 6px; transition: color .15s ease; }
 .nav-login.nav-login-pending { visibility: hidden; }
 .nav-login:hover { color: var(--teal-dark); }
@@ -498,19 +508,12 @@ body.home-neo .cookie-notice p { color: var(--hn-grey); }
 body.home-neo .cookie-notice .btn-teal { background: #0B7A7A; border-radius: var(--hn-radius); }
 
 /* ---------- Navbar + logo ---------- */
-body.home-neo .nav { max-width: 1400px; padding-inline: 32px; }
-body.home-neo .nav-links { gap: 40px; }
-body.home-neo .nav-links a {
-  /* opacity:.85 from the base .nav-links a rule still cascades through
-     otherwise — lightening this grey just enough to fail WCAG AA's
-     4.5:1 minimum (confirmed via axe: #6B6B6B measured as an effective
-     #818181 against white, 3.88:1). Full opacity here keeps the actual
-     --hn-grey value, which passes on its own. */
-  color: var(--hn-grey); opacity: 1; font-weight: 500; border-bottom: none;
-  padding-inline: 3px; padding-block: 6px;
-  transition: color .15s ease;
-}
-body.home-neo .nav-links a.active, body.home-neo .nav-links a:hover { color: var(--hn-ink); border-bottom: none; }
+/* The home page used to run its own wider .nav/.nav-links sizing and a
+   lighter grey/weight-500 link treatment here — confirmed live (screenshot
+   comparison) that this made the home and invoices headers visibly not
+   match the rest of the site's pages, which is exactly the inconsistency
+   an earlier round already fixed once for header/footer link ORDER. Every
+   page's header now shares one look, not just one order. */
 
 /* ---------- Shared section rhythm + primitives ---------- */
 body.home-neo .hn-hero, body.home-neo .hn-tools, body.home-neo .hn-flagship,
@@ -693,8 +696,8 @@ body.home-neo .hn-card-xlsx::before { background-image: url("../images/previews/
    (generic line items, no real business/customer data) in the same
    visual language as the other cards, generated the same way the site
    catalog's own template thumbnails are. */
-body.home-neo .hn-card-quote::before { background-image: url("../images/previews/hero-quote-card.webp?v=2"); }
-body.home-neo .hn-card-invoice::before { background-image: url("../images/previews/hero-invoice-card.webp?v=2"); }
+body.home-neo .hn-card-quote::before { background-image: url("../images/previews/hero-quote-card.webp?v=3"); }
+body.home-neo .hn-card-invoice::before { background-image: url("../images/previews/hero-invoice-card.webp?v=3"); }
 @media (prefers-reduced-motion: reduce) {
   body.home-neo .hn-card { transition: box-shadow .3s ease; }
   body.home-neo .hn-card:hover { transform: none; }

@@ -180,16 +180,27 @@ function videoEmbedHtml(embedSrc) {
 }
 
 /* Same YouTube/Vimeo URL d.videoUrl already uses for the embedded video
-   section, but with autoplay+mute+loop+no-controls params so it can play
+   section, but with autoplay+mute+no-controls params so it can play
    silently behind a hero instead of needing a click. Muted autoplay is
    what every major browser actually allows without the visitor's own
    interaction — a background video that needed sound would just never
-   start. */
+   start.
+
+   Deliberately NOT passing loop=1&playlist=<id> for YouTube — that's the
+   standard trick for looping a single video, but it also makes YouTube
+   treat the embed as a (one-video) playlist, which is exactly when its
+   player shows its own previous/pause/next transport controls floating
+   over the video even with controls=0 — confirmed live (screenshot) on a
+   hero background, where those controls have no business being visible at
+   all since the whole point of this layer is pointer-events:none. Vimeo's
+   own background=1 mode has no such quirk, so its loop stays on. YouTube
+   still loops correctly via heroVideoBgLoopScript() below, which restarts
+   it through postMessage instead of the playlist parameter. */
 function videoBgEmbedSrc(url) {
   if (!url) return null;
   const u = String(url).trim();
   let m = u.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{6,})/);
-  if (m) return `https://www.youtube.com/embed/${m[1]}?autoplay=1&mute=1&loop=1&playlist=${m[1]}&controls=0&showinfo=0&modestbranding=1&playsinline=1&rel=0&disablekb=1&iv_load_policy=3`;
+  if (m) return `https://www.youtube.com/embed/${m[1]}?autoplay=1&mute=1&controls=0&showinfo=0&modestbranding=1&playsinline=1&rel=0&disablekb=1&iv_load_policy=3&enablejsapi=1`;
   m = u.match(/vimeo\.com\/(\d+)/);
   if (m) return `https://player.vimeo.com/video/${m[1]}?autoplay=1&muted=1&loop=1&background=1&controls=0`;
   return null;
@@ -206,7 +217,28 @@ function heroVideoBgHtml(d) {
   if (!d.heroVideoBg) return "";
   const src = videoBgEmbedSrc(d.videoUrl);
   if (!src) return "";
-  return `<div class="site-hero-videobg"><iframe src="${src}" title="" tabindex="-1" aria-hidden="true" allow="autoplay; encrypted-media"></iframe></div>`;
+  // YouTube only (Vimeo's own background=1+loop=1 just works, no playlist
+  // quirk) — restarts the video on end via the postMessage API instead of
+  // the loop=1&playlist=<id> trick, which is what used to be responsible
+  // for the visible transport controls this whole function exists to
+  // avoid. enablejsapi=1 (set in videoBgEmbedSrc) is what lets this
+  // listen for onStateChange at all.
+  const loopScript = /youtube\.com\/embed\//.test(src) ? `<script>
+    (function () {
+      var f = document.getElementById("site-hero-videobg-frame");
+      if (!f) return;
+      window.addEventListener("message", function (e) {
+        if (e.source !== f.contentWindow) return;
+        var data;
+        try { data = JSON.parse(e.data); } catch (err) { return; }
+        if (data.event === "onStateChange" && data.info === 0) {
+          f.contentWindow.postMessage(JSON.stringify({ event: "command", func: "seekTo", args: [0, true] }), "*");
+          f.contentWindow.postMessage(JSON.stringify({ event: "command", func: "playVideo", args: [] }), "*");
+        }
+      });
+    })();
+  </script>` : "";
+  return `<div class="site-hero-videobg"><iframe id="site-hero-videobg-frame" src="${src}" title="" tabindex="-1" aria-hidden="true" allow="autoplay; encrypted-media"></iframe>${loopScript}</div>`;
 }
 function waFabHtml(d) {
   const href = waLink(d.whatsapp || d.phone);

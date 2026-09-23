@@ -28,8 +28,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=64">
-<link rel="stylesheet" href="css/builder.css?v=11">
+<link rel="stylesheet" href="css/style.css?v=65">
+<link rel="stylesheet" href="css/builder.css?v=14">
 <style>
   .services-item { border: 1px solid #EDEFEE; border-radius: 8px; padding: 12px; margin-bottom: 12px; display: grid; gap: 8px; }
   .services-item-head { display: flex; justify-content: space-between; align-items: center; }
@@ -159,11 +159,13 @@
   </nav>
 </header>
 
-<section class="builder-top no-print" id="builder-top-banner">
+<section class="builder-top no-print sites-hero-band" id="builder-top-banner">
+  <div class="sites-hero-blob" aria-hidden="true"></div>
   <div class="container builder-top-row">
     <div>
-      <h1 style="font-size:26px; margin:6px 0 4px;">בניית אתר תדמית</h1>
-      <p style="color:var(--grey); font-size:14px; margin:0;">בוחרים עיצוב, ממלאים את פרטי העסק, ורואים תצוגה חיה. ההורדה של קובצי האתר המוכנים היא בתשלום חד-פעמי — בלי מנוי חודשי. <a href="guide-business-website.html" style="color:var(--teal); font-weight:600;">מה חייב להיות באתר עסקי? מדריך קצר</a></p>
+      <span class="sites-hero-eyebrow">✨ יותר מ-20 עיצובים מוכנים, כל אחד אתר אמיתי</span>
+      <h1 class="sites-hero-h1">תלחצו, תנסו, תרגישו בבית</h1>
+      <p class="sites-hero-sub">בוחרים עיצוב, ממלאים את פרטי העסק, ורואים תוצאה חיה תוך שניות — בלי להתחייב לכלום. משלמים רק כשמוכנים להוריד, בתשלום חד-פעמי, בלי מנוי חודשי. <a href="guide-business-website.html">מה חייב להיות באתר עסקי? מדריך קצר ›</a></p>
     </div>
   </div>
 </section>
@@ -205,6 +207,7 @@
         <button type="button" class="btn btn-teal builder-save-btn" id="site-save-btn">שמירה</button>
         <span class="builder-save-status" id="site-save-status"></span>
       </div>
+      <button type="button" class="btn btn-outline-dark builder-ai-review-btn" id="site-ai-review-btn">✨ עזרה עם AI</button>
     </div>
     <p id="finalized-note" class="no-print" style="display:none; font-size:12px; color:var(--grey); margin:0 0 14px;">האתר הזה נרכש והתבנית שלו נעולה — עריכה והורדה חוזרת שלו נשארות חינמיות. לבניית אתר נוסף עם תבנית אחרת, יש להיכנס מ"אתרים" בתפריט העליון ולרכוש בנפרד.</p>
 
@@ -408,15 +411,16 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="js/color-utils.js"></script>
-<script src="js/site-templates.js?v=24"></script>
+<script src="js/site-templates.js?v=25"></script>
 <script src="js/site-blocks.js?v=2"></script>
-<script src="js/site-builder.js?v=40"></script>
+<script src="js/site-builder.js?v=41"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>
 <script src="js/my-panel.js?v=11"></script>
 <script src="js/domain-guide.js?v=1"></script>
 <script src="js/site-cloud-save.js?v=6"></script>
+<script src="js/site-ai-review.js?v=1"></script>
 <script src="js/main.js"></script>
 <script src="js/widgets.js?v=8"></script>
 </body>
