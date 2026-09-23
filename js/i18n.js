@@ -15,7 +15,7 @@ const I18N = {
   he: {
     nav_home: "בית", nav_sites: "אתרים", nav_quotes: "הצעות מחיר", nav_cv: "קורות חיים",
     nav_decks: "מצגות", nav_xlsx: "גליונות", nav_about: "אודות", nav_contact: "צור קשר",
-    nav_login: "כניסה",
+    nav_login: "כניסה", nav_invoices: "חשבוניות",
 
     hero_eyebrow: "עריכת קורות חיים · בניית אתרים · הצעות מחיר",
     hero_h1: "מסמכים עסקיים ואתרי תדמית. מעוצבים, מוכנים ובלחיצת כפתור.",
@@ -29,7 +29,7 @@ const I18N = {
     mq_siteminutes: "אתר עסקי תוך דקות", mq_cloudsave: "שמירה בענן", mq_hebrewsupport: "תמיכה מלאה בעברית",
 
     tools_h: "מה תרצו לעצב היום?", tag_free: "חינם", cta_create: "בואו נתחיל",
-    price_onetime: "חד-פעמי", quote_card_title: "הצעת מחיר לעסק שלך",
+    price_onetime: "חד-פעמי", quote_card_title: "הצעת מחיר לעסק שלך", invoice_card_title: "חשבוניות וקבלות",
 
     flagship_h2: "אתר תדמית שלם לעסק שלך. בלי קוד, בלי מנוי חודשי.",
     flagship_p: "עונים על מספר שאלות, מעצבים בלייב בבילדר שלנו, ומקבלים אתר תדמית מהיר ומקצועי באוויר. משלמים פעם אחת בלבד – והאתר שלכם לתמיד.",
@@ -55,7 +55,7 @@ const I18N = {
   en: {
     nav_home: "Home", nav_sites: "Sites", nav_quotes: "Quotes", nav_cv: "Resumes",
     nav_decks: "Decks", nav_xlsx: "Spreadsheets", nav_about: "About", nav_contact: "Contact",
-    nav_login: "Sign in",
+    nav_login: "Sign in", nav_invoices: "Invoices",
 
     hero_eyebrow: "CV Editing · Website Building · Price Quotes",
     hero_h1: "Business documents and websites. Designed, ready, one click away.",
@@ -69,7 +69,7 @@ const I18N = {
     mq_siteminutes: "Business site in minutes", mq_cloudsave: "Cloud save", mq_hebrewsupport: "Full Hebrew support",
 
     tools_h: "What would you like to design today?", tag_free: "Free", cta_create: "Let's get started",
-    price_onetime: "one-time", quote_card_title: "A price quote for your business",
+    price_onetime: "one-time", quote_card_title: "A price quote for your business", invoice_card_title: "Invoices & receipts",
 
     flagship_h2: "A complete business site. No code, no monthly subscription.",
     flagship_p: "Answer a few questions, design it live in our builder, and get a fast, professional business site online. Pay once — and the site is yours for good.",
@@ -107,9 +107,21 @@ function applyLang(lang) {
   const toggle = document.getElementById("lang-toggle");
   if (toggle) toggle.textContent = lang === "en" ? "עברית" : "EN";
   try { localStorage.setItem(I18N_LANG_KEY, lang); } catch (err) { /* storage unavailable */ }
+  // Reveals the body hidden by index.html's own early inline script (see
+  // its comment) — a no-op class removal when that script never hid it
+  // (the common, default-Hebrew case) in the first place.
+  document.documentElement.classList.remove("lang-pending");
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+// No DOMContentLoaded wrapper needed: this script's own <script> tag
+// sits near the end of <body>, after every data-i18n element in the
+// document — by the time a plain, non-deferred script tag like this one
+// actually executes, everything above it in the HTML is already
+// parsed and in the DOM. Waiting for the full document (including
+// everything BELOW this point too) to finish parsing only delayed
+// applying the real language further, widening the exact flash this
+// file exists to prevent.
+(() => {
   let stored = "he";
   try { stored = localStorage.getItem(I18N_LANG_KEY) || "he"; } catch (err) { /* storage unavailable */ }
   applyLang(stored);
@@ -121,4 +133,4 @@ document.addEventListener("DOMContentLoaded", () => {
       applyLang(current === "en" ? "he" : "en");
     });
   }
-});
+})();
