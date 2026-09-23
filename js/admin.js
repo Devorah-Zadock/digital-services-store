@@ -99,12 +99,17 @@ function renderKpiChart(canvasId, items) {
   });
 }
 
-const USAGE_KIND_LABELS = { cv: "קורות חיים", deck: "מצגת", xlsx: "גיליון", quote: "הצעת מחיר" };
+const USAGE_KIND_LABELS = { cv: "קורות חיים", deck: "מצגת", xlsx: "גיליון", quote: "הצעת מחיר", invoice: "חשבונית/קבלה" };
 const USAGE_ACTION_LABELS = { edit: "עריכה", download: "הורדה" };
+const INVOICE_DOC_TYPE_LABELS = { invoice_receipt: "חשבונית מס-קבלה", receipt: "קבלה", credit_note: "חשבונית זיכוי" };
 function usageLogLineHtml(entry) {
   const kindLabel = USAGE_KIND_LABELS[entry.kind] || entry.kind;
   const actionLabel = USAGE_ACTION_LABELS[entry.action] || entry.action;
-  const itemLabel = entry.slug ? (entry.kind === "quote" ? quoteTemplateLabel(entry.slug) : productLabel(entry.slug)) : "";
+  const itemLabel = entry.slug
+    ? (entry.kind === "quote" ? quoteTemplateLabel(entry.slug)
+       : entry.kind === "invoice" ? (INVOICE_DOC_TYPE_LABELS[entry.slug] || entry.slug)
+       : productLabel(entry.slug))
+    : "";
   const dateStr = entry.createdAt ? new Date(entry.createdAt).toLocaleString("he-IL", { dateStyle: "short", timeStyle: "short" }) : "";
   return `<li><span>${escapeHtml(kindLabel)}${itemLabel ? " · " + escapeHtml(itemLabel) : ""} — ${escapeHtml(actionLabel)}</span><span class="usage-log-date">${escapeHtml(dateStr)}</span></li>`;
 }

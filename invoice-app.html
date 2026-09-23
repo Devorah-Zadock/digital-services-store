@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>חשבוניות וקבלות לעסק שלכם — DeskKit</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="description" content="נרשמים פעם אחת וממלאים את פרטי העסק, ומכאן והלאה מפיקים חשבונית מס-קבלה או קבלה ממוספרת אוטומטית תוך דקה — כולל התאמה לעוסק פטור.">
+<link rel="canonical" href="https://deskkit.co.il/invoice-app.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&family=Rubik:wght@500;600;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=59">
+<link rel="stylesheet" href="css/builder.css?v=11">
+<style>
+  .ia-err { color: #B23; font-size: 13px; min-height: 18px; margin: 4px 0 8px; }
+  .ia-topbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+  .ia-topbar .ia-account { font-size: 13px; color: var(--grey); display: flex; align-items: center; gap: 10px; }
+  .ia-topbar .ia-account button, .ia-topbar .ia-account a { background: none; border: none; color: var(--teal); font-weight: 700; cursor: pointer; font-family: inherit; font-size: 13px; padding: 0; text-decoration: none; }
+  .ia-type-choice { display: flex; gap: 10px; margin-bottom: 4px; }
+  .ia-type-choice label { flex: 1; border: 1.5px solid #DADFDD; border-radius: 10px; padding: 10px 12px; cursor: pointer; font-size: 13px; display: flex; align-items: flex-start; gap: 8px; }
+  .ia-type-choice input { margin-top: 3px; }
+  .ia-type-choice .ia-type-desc { color: var(--grey); font-size: 11.5px; margin-top: 2px; }
+  .ia-item-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .ia-item-row input:first-child { flex: 1; min-width: 0; }
+  .ia-locked-note { background: #FBF2E0; color: #8A6212; border-radius: 8px; padding: 10px 12px; font-size: 12.5px; margin-bottom: 14px; display: none; }
+  .ia-finalize-row { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+</style>
+</head>
+<body>
+<script>
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf("sb-") === 0 && k.indexOf("-auth-token") !== -1 && localStorage.getItem(k)) {
+        document.body.classList.add("has-sites-rail");
+        break;
+      }
+    }
+    var rw = localStorage.getItem("deskkit_rail_w");
+    if (rw) document.documentElement.style.setProperty("--rail-w", rw + "px");
+    if (localStorage.getItem("deskkit_rail_collapsed") === "1") {
+      document.documentElement.style.setProperty("--rail-w", "0px");
+      document.body.classList.add("rail-collapsed");
+    }
+  } catch (e) {}
+</script>
+
+<header class="site no-print">
+  <nav class="nav">
+    <a href="index.html" class="brand"><span class="brand-badge"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path class="bm-doc" d="M7,4 H14 L18,8 V20 H7 Z"/><path class="bm-fold" d="M14,4 L14,8 L18,8 Z"/><path class="bm-spark" d="M15,14.3 C15.3,16 16,16.7 17.7,17 C16,17.3 15.3,18 15,19.7 C14.7,18 14,17.3 12.3,17 C14,16.7 14.7,16 15,14.3 Z"/></svg></span><span class="brand-text"><span class="brand-desk">Desk</span><span class="brand-kit">Kit</span></span></a>
+    <div class="nav-links">
+      <a href="index.html">בית</a>
+      <a href="sites.html?browse=1">אתרים</a>
+      <a href="quote-app.html">הצעות מחיר</a>
+      <a href="invoice-app.html" class="active">חשבוניות</a>
+      <a href="products.html?type=cv">קורות חיים</a>
+      <a href="about.html">אודות</a>
+      <a href="contact.html">צור קשר</a>
+    </div>
+    <div class="nav-end-group">
+      <a href="#" id="nav-login-link" class="nav-login nav-login-pending">כניסה</a>
+    </div>
+    <button class="burger" aria-label="תפריט">☰</button>
+  </nav>
+</header>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+<!-- Business profile setup (same `profiles` row quote-app.js writes to) -->
+<div id="ia-profile" style="display:none;">
+  <section class="builder-top no-print">
+    <div class="container ia-topbar">
+      <div>
+        <h1 style="font-size:26px; margin:6px 0 4px;">פרטי העסק שלכם</h1>
+        <p style="color:var(--grey); font-size:14px; margin:0;">ממלאים פעם אחת — אותם הפרטים משמשים גם את הצעות המחיר וגם את החשבוניות שלכם.</p>
+      </div>
+      <div class="ia-account">
+        <a href="index.html">← לעמוד הבית</a>
+      </div>
+    </div>
+  </section>
+  <div class="container" style="max-width:520px; padding-bottom:60px;">
+    <form id="ia-profile-form" class="builder-form">
+      <div class="field">
+        <label>סוג העסק</label>
+        <div class="ia-type-choice">
+          <label>
+            <input type="radio" name="ipf-businessType" value="licensed" checked>
+            <span>
+              עוסק מורשה / חברה
+              <div class="ia-type-desc">מפיק חשבונית מס-קבלה עם מע"מ</div>
+            </span>
+          </label>
+          <label>
+            <input type="radio" name="ipf-businessType" value="exempt">
+            <span>
+              עוסק פטור
+              <div class="ia-type-desc">מפיק קבלה בלבד, ללא מע"מ</div>
+            </span>
+          </label>
+        </div>
+      </div>
+      <div class="field"><label>שם העסק</label><input type="text" id="ipf-businessName" required></div>
+      <div class="field"><label>שורת תיאור (אופציונלי)</label><input type="text" id="ipf-tagline1"></div>
+      <div class="field"><label>אימייל להצגה במסמך</label><input type="text" id="ipf-email" dir="ltr"></div>
+      <div class="field"><label>מספר עוסק / ח.פ</label><input type="text" id="ipf-idNumber"></div>
+      <div class="field"><label>טלפון</label><input type="text" id="ipf-phone" dir="ltr"></div>
+      <div class="field" id="ipf-vatRate-field"><label>אחוז מע"מ (לחישוב אוטומטי)</label><input type="text" id="ipf-vatRate" dir="ltr" style="max-width:100px;"></div>
+
+      <div class="field">
+        <label>לוגו</label>
+        <div class="photo-row">
+          <div class="photo-preview" id="ipf-logo-preview"><span>🖼</span></div>
+          <div class="photo-actions">
+            <label for="ipf-logo-file" class="btn-mini photo-upload-btn">העלאת לוגו</label>
+            <input type="file" id="ipf-logo-file" accept="image/*" style="display:none;">
+            <button type="button" class="photo-remove" id="ipf-logo-remove" style="display:none;">הסרה</button>
+          </div>
+        </div>
+        <p style="font-size:12px; color:var(--grey); margin:6px 0 0;">קובץ עד 4MB. הלוגו יופיע בראש כל מסמך.</p>
+      </div>
+
+      <div class="ia-err" id="ia-profile-err"></div>
+      <button type="submit" class="btn btn-gold" id="ia-profile-submit" style="width:100%; margin-top:8px;">שמירה והמשך</button>
+    </form>
+  </div>
+</div>
+
+<!-- Document builder -->
+<div id="ia-app" style="display:none;">
+  <section class="builder-top no-print">
+    <div class="container ia-topbar">
+      <div>
+        <h1 style="font-size:26px; margin:6px 0 4px;">מסמך חדש</h1>
+        <p style="color:var(--grey); font-size:14px; margin:0;">פרטי העסק כבר מולאו — משלימים את פרטי הלקוח והפריטים ורואים תצוגה חיה.</p>
+      </div>
+      <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+        <div class="ia-account">
+          <a href="index.html">← לעמוד הבית</a>
+          <span>·</span>
+          <button type="button" id="ia-edit-profile">עריכת פרטי העסק</button>
+        </div>
+        <div class="builder-save-ctrl" id="invoice-save-ctrl">
+          <button type="button" class="btn btn-teal builder-save-btn" id="invoice-save-btn">שמירת טיוטה</button>
+          <span class="builder-save-status" id="invoice-save-status"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="container builder-wrap">
+    <aside class="builder-form no-print">
+      <div class="ia-locked-note" id="ia-locked-note">המסמך הזה כבר הופק ומספר — אי אפשר לערוך אותו יותר. לתיקון, הפיקו חשבונית זיכוי.</div>
+
+      <div class="field"><label>תאריך</label><input id="if-date" type="text"></div>
+      <div class="field"><label>לכבוד (שם הלקוח)</label><input id="if-recipientName" type="text"></div>
+      <div class="field"><label>ת.ז / ח.פ הלקוח (אופציונלי)</label><input id="if-recipientId" type="text"></div>
+      <div class="field"><label>כתובת הלקוח (אופציונלי)</label><input id="if-recipientAddress" type="text"></div>
+
+      <div class="jobs-head">
+        <label>פריטים</label>
+        <button type="button" class="btn-mini" id="add-item-btn">+ הוספת פריט</button>
+      </div>
+      <div id="ia-items-list"></div>
+
+      <div class="field">
+        <label>אופן תשלום</label>
+        <select id="if-paymentMethod">
+          <option value="">בחירה...</option>
+          <option value="cash">מזומן</option>
+          <option value="check">צ'ק</option>
+          <option value="transfer">העברה בנקאית</option>
+          <option value="credit">כרטיס אשראי</option>
+          <option value="bit">ביט / פייבוקס</option>
+        </select>
+      </div>
+      <div class="field"><label>הערה נוספת (אופציונלי)</label><textarea id="if-notes" rows="2"></textarea></div>
+
+      <div class="ia-finalize-row">
+        <button type="button" class="btn btn-gold" id="invoice-finalize-btn">הפקה סופית ומספור</button>
+        <button type="button" class="btn btn-teal" id="invoice-credit-btn" style="display:none;">יצירת חשבונית זיכוי</button>
+      </div>
+    </aside>
+
+    <main class="builder-preview">
+      <div class="preview-sticky">
+        <div id="invoice-preview"></div>
+        <div class="export-panel no-print">
+          <p style="margin:0 0 12px; font-size:14px; font-weight:600; color:var(--teal-dark);">הורדת PDF</p>
+          <button type="button" class="btn btn-gold" id="invoice-download-btn">הורדת PDF</button>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<footer class="site no-print">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <h5>DeskKit</h5>
+        <p style="font-size:14px; max-width:320px;">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות, אתרים ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
+      </div>
+      <div>
+        <h5>ניווט</h5>
+        <ul>
+          <li><a href="quote-app.html">הצעות מחיר</a></li>
+          <li><a href="invoice-app.html">חשבוניות</a></li>
+          <li><a href="products.html?type=cv">קורות חיים</a></li>
+          <li><a href="sites.html?browse=1">אתרים</a></li>
+          <li><a href="about.html">אודות</a></li>
+          <li><a href="contact.html">צור קשר</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>מידע</h5>
+        <ul>
+          <li><a href="guides.html">מדריכים</a></li>
+          <li><a href="terms.html">מדיניות</a></li>
+          <li><a href="accessibility.html">נגישות</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>צור קשר</h5>
+        <ul>
+          <li>digital.dz.studio@gmail.com</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">© 2026 DeskKit. כל הזכויות שמורות.</div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="js/invoice-render.js?v=1"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/nav-auth.js"></script>
+<script src="js/my-panel.js?v=10"></script>
+<script src="js/main.js"></script>
+<script src="js/usage-log.js?v=1"></script>
+<script src="js/invoice-cloud-save.js?v=1"></script>
+<script src="js/invoice-app.js?v=1"></script>
+</body>
+</html>
