@@ -332,7 +332,7 @@ function renderHeadingsFields() {
     const isCustom = current && !options.includes(current);
     select.innerHTML = `<option value="">בחירת ניסוח מוכן…</option>` +
       options.map((o) => `<option value="${escapeHtmlS(o)}"${o === current ? " selected" : ""}>${escapeHtmlS(o)}</option>`).join("") +
-      `<option value="__custom__"${isCustom ? " selected" : ""}>✏️ אחר — הקלידו למטה</option>`;
+      `<option value="__custom__"${isCustom ? " selected" : ""}>✏️ אחר</option>`;
     input.value = current;
     input.hidden = !isCustom;
     if (isCustom) customHeadingDrafts[spec.key] = current;
@@ -451,14 +451,15 @@ function applyTextStyleLive(key) {
 
 /* Same idea as applyTextStyleLive, for the text itself: patches every
    element sharing this data-textkey directly instead of reloading the
-   whole canvas on every keystroke. Only handles the case where the field
-   actually has content — a cleared field falls back to a template-
-   specific placeholder (heading()'s own fallback strings differ per
-   template) that isn't worth replicating here, so the caller does one
-   real render for that (rare) case instead. Returns whether it applied. */
+   whole canvas on every keystroke. A cleared field (or a heading reset
+   back to "use the template default") falls back to that template's own
+   fallback text, which differs per template/section — rather than
+   replicating those strings here, patchTextKeyFromFullRender() below
+   generates the real HTML in memory (cheap, no navigation) and lifts the
+   one element's markup out of it. Returns whether it applied. */
 function applyTextContentLive(key, rawValue, multiline) {
   const trimmed = String(rawValue || "").trim();
-  if (!trimmed) return false;
+  if (!trimmed) return patchTextKeyFromFullRender(key);
   const frame = document.getElementById("site-preview-frame");
   const doc = frame && frame.contentDocument;
   if (!doc) return false;
@@ -466,6 +467,25 @@ function applyTextContentLive(key, rawValue, multiline) {
   if (!found.length) return false;
   const html = multiline ? nl2brS(rawValue) : escapeHtmlS(rawValue);
   found.forEach((el) => { el.innerHTML = html; });
+  return true;
+}
+
+/* Generates the site's real HTML in memory (same string currentSiteHtml()
+   already produces for applyGlobalStylesLive) and copies just this one
+   data-textkey element's own markup onto the live, already-loaded iframe
+   — used when there's no literal value to inject directly (reverting a
+   heading to its template default), so that case never has to fall back
+   to a full navigation either. */
+function patchTextKeyFromFullRender(key) {
+  const frame = document.getElementById("site-preview-frame");
+  const doc = frame && frame.contentDocument;
+  if (!doc) return false;
+  const targets = doc.querySelectorAll(`[data-textkey="${key}"]`);
+  if (!targets.length) return false;
+  const parsed = new DOMParser().parseFromString(currentSiteHtml(previewPage), "text/html");
+  const source = parsed.querySelector(`[data-textkey="${key}"]`);
+  if (!source) return false;
+  targets.forEach((el) => { el.innerHTML = source.innerHTML; });
   return true;
 }
 

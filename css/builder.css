@@ -103,14 +103,16 @@
 .hier-add-block-btn { width: 100%; text-align: center; }
 
 /* Compact pill row for the plain-navigation hierarchy (no reorder/add/
-   remove controls) — same click-to-jump rows, wrapping onto one line
-   instead of stacking full-width, so the panel stops eating vertical
-   space above the canvas (a repeated complaint even after the card
-   redesign). */
-.hier-tree.hier-pills { flex-direction: row; flex-wrap: wrap; gap: 6px; }
-.hier-tree.hier-pills .hier-row { flex: 0 0 auto; width: auto; padding: 5px 12px 5px 9px; border-radius: 999px; font-size: 12.5px; }
+   remove controls) — same click-to-jump rows in far less height than the
+   full-width cards (a repeated complaint even after the card redesign).
+   A fixed 2-column grid instead of content-width flex-wrap: every pill is
+   the same width and lines up into a clean block regardless of label
+   length, rather than an organic, ragged wrap (confirmed live: the
+   flex-wrap version read as messy). */
+.hier-tree.hier-pills { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.hier-tree.hier-pills .hier-row { padding: 6px 12px 6px 9px; border-radius: 999px; font-size: 12.5px; justify-content: flex-start; }
 .hier-tree.hier-pills .hier-row .hier-icon { width: 18px; height: 18px; font-size: 10px; }
-.hier-tree.hier-pills .hier-row .hier-label { white-space: nowrap; }
+.hier-tree.hier-pills .hier-row .hier-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .builder-form {
   background: var(--white);
