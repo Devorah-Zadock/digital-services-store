@@ -153,6 +153,14 @@ body.has-sites-rail header.site {
 .nav {
   display: flex; align-items: center; justify-content: center;
   padding: 16px 24px; padding-inline-start: 190px; padding-inline-end: 150px; max-width: var(--max); margin: 0 auto;
+  /* The home page sets its own page-wide font-family ('Assistant', for
+     its own hero/body copy — body.home-neo below) — without pinning the
+     header back to the site's base font here, that cascaded into the
+     nav links too and was the last remaining reason the home header
+     still looked different from every other page's after the previous
+     round's fix (which only removed home's separate nav-link color/
+     weight/spacing, not this). */
+  font-family: 'Heebo', Arial, sans-serif;
 }
 .brand {
   position: absolute; top: 50%; inset-inline-start: 24px; transform: translateY(-50%);
@@ -1050,24 +1058,32 @@ section { padding: 88px 0; }
 
 /* ---------- Flip cards (site template catalog) ---------- */
 /* The front face reuses .card wholesale (thumb/body/tag/price all work
-   for free via the existing descendant selectors) but its own hover-lift
-   and top accent bar are disabled here — the whole flip-card handles its
-   own hover treatment instead, so they don't fight the 3D rotation. */
-.flip-card { position: relative; perspective: 1600px; height: 372px; transition: transform .2s ease; }
-/* Taller than the shared .card thumb, and — unlike it — no padding and
-   no object-fit:contain: these thumbs are real screenshots of what the
-   template actually produces, so letting one fill the whole width
-   edge-to-edge (cropped to its top, where the hero/logo/heading always
-   is) reads as "this is a real site" instead of a small icon floating
-   in a pastel box. Confirmed live: the padded-contain version was
-   flagged as looking plain next to the rest of the page. */
-.flip-card .thumb { height: 176px; padding: 0; }
-.flip-card .thumb img { width: 100%; height: 100%; object-fit: cover; object-position: top center; border-radius: 0; }
-.flip-card .card:hover .thumb img { transform: scale(1.07); }
+   for free via the existing descendant selectors). A same-day earlier
+   version of this made the thumb a full-bleed cropped screenshot with
+   no padding — confirmed live that this read as worse, not better: it
+   lost the pastel per-category background these thumbs sit in (the
+   at-a-glance "creative vs. shop vs. personal" color cue), and made
+   every card noticeably taller. Back to the shared .card thumb
+   treatment (padded, contain, category-tinted background); the "make
+   this grab people" ask is answered below instead — a bold, always-on
+   category-color top bar (not hover-only, so the color reads even
+   before anyone touches anything) plus a colored glow and a playful
+   tilt on hover, rather than by cropping the screenshots harder. */
+.flip-card { position: relative; perspective: 1600px; height: 314px; transition: transform .25s ease; }
+.flip-card .thumb { height: 128px; }
+.flip-card .card::before { display: block; height: 6px; opacity: 1; }
+.flip-card .card:hover { transform: none; box-shadow: 0 22px 40px -12px var(--cat-c, rgba(0,0,0,.3)); }
 .flip-card .body { gap: 6px; }
 .flip-card .body h3 { font-size: 16.5px; }
 .flip-card .body p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.flip-card:hover, .flip-card.is-flipped { transform: translateY(-6px); }
+.flip-card:hover, .flip-card.is-flipped { transform: translateY(-8px) rotate(-.6deg); }
+/* "creative" collides with the deck catalog's own use of the same slug
+   (line ~1030 above, --cat-deck-creative) — sites needed their own
+   --cat-site-creative, already defined, just never actually wired up.
+   Higher specificity here (two classes) wins within the site catalog
+   only; the shared .card[data-cat="creative"] rule everywhere else
+   (decks) is untouched. */
+.flip-card .card[data-cat="creative"] { --cat-c: var(--cat-site-creative); --cat-bg: var(--cat-site-creative-bg); }
 .flip-card-inner {
   position: relative; width: 100%; height: 100%;
   transition: transform .6s cubic-bezier(.4,.2,.2,1);
@@ -1083,8 +1099,6 @@ section { padding: 88px 0; }
   border-radius: var(--radius);
 }
 .flip-card-front.card { margin: 0; }
-.flip-card .card::before { display: none; }
-.flip-card .card:hover { transform: none; box-shadow: var(--shadow); }
 .flip-card-back {
   transform: rotateX(180deg);
   background: linear-gradient(135deg, var(--teal-dark), var(--teal) 85%);
