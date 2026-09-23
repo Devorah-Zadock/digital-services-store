@@ -73,8 +73,8 @@ function myPanelQuoteIcon() {
   return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v3h3"/><path d="M9 12h6M9 16h6"/><circle cx="17" cy="19" r="3.2" fill="currentColor" stroke="none" opacity=".18"/><path d="M15.8 19l.9.9 1.6-1.7"/></svg>';
 }
 
-function myPanelScheduleIcon() {
-  return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 3v3M16 3v3"/><path d="M7.5 13h3M7.5 17h3M13.5 13h3M13.5 17h3"/></svg>';
+function myPanelInvoiceIcon() {
+  return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="3" width="12" height="18" rx="1.5"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>';
 }
 
 /* Same dropdown as the header's own account menu (js/nav-auth.js) —
@@ -148,8 +148,8 @@ function myPanelRowHtml(opts) {
     ? `<button type="button" class="my-content-domain-btn" data-domain-guide title="חיבור דומיין משלכם" aria-label="חיבור דומיין משלכם">${myPanelDomainIcon()}</button>`
     : "";
   const activeClass = opts.active ? " active" : "";
-  const thumbClass = opts.kind === "cv" ? " my-panel-card-thumb-cv" : opts.kind === "quote" ? " my-panel-card-thumb-quote" : opts.kind === "schedule" ? " my-panel-card-thumb-schedule" : "";
-  const icon = opts.kind === "cv" ? myPanelCvIcon() : opts.kind === "quote" ? myPanelQuoteIcon() : opts.kind === "schedule" ? myPanelScheduleIcon() : myPanelSiteIcon();
+  const thumbClass = opts.kind === "cv" ? " my-panel-card-thumb-cv" : opts.kind === "quote" ? " my-panel-card-thumb-quote" : opts.kind === "invoice" ? " my-panel-card-thumb-invoice" : "";
+  const icon = opts.kind === "cv" ? myPanelCvIcon() : opts.kind === "quote" ? myPanelQuoteIcon() : opts.kind === "invoice" ? myPanelInvoiceIcon() : myPanelSiteIcon();
   return `<div class="my-content-row">
     <a href="${opts.href}" class="my-panel-card${activeClass}">
       <span class="my-panel-card-thumb${thumbClass}">${icon}</span>
@@ -175,9 +175,9 @@ function myPanelCurrentContext() {
     const q = new URLSearchParams(location.search).get("quote");
     return q ? { kind: "quote", id: q } : null;
   }
-  if (path === "schedule-builder.html") {
-    const s = new URLSearchParams(location.search).get("schedule");
-    return s ? { kind: "schedule", id: s } : null;
+  if (path === "invoice-app.html") {
+    const i = new URLSearchParams(location.search).get("invoice");
+    return i ? { kind: "invoice", id: i } : null;
   }
   return null;
 }
@@ -239,21 +239,29 @@ function myPanelRenderQuotes(quotes, ctx, el) {
     el.innerHTML = myPanelEmptyRowHtml({ href: "quote-app.html" });
   }
 }
-function myPanelRenderSchedules(schedules, ctx, el) {
+const MY_PANEL_INVOICE_DOC_LABELS = { invoice_receipt: "חשבונית מס-קבלה", receipt: "קבלה", credit_note: "חשבונית זיכוי" };
+function myPanelRenderInvoices(invoices, ctx, el) {
   if (!el) return;
-  if (schedules && schedules.length) {
-    el.innerHTML = schedules.map((s) => {
-      const d = s.data || {};
+  if (invoices && invoices.length) {
+    el.innerHTML = invoices.map((inv) => {
+      const d = inv.data || {};
+      const docLabel = MY_PANEL_INVOICE_DOC_LABELS[inv.doc_type] || "מסמך";
+      // Issued documents are permanently locked (see supabase/sql/invoices.sql
+      // — the table's own RLS policy refuses updates/deletes once status
+      // flips) — omitting deleteAttr here just keeps the UI honest about
+      // that instead of offering a delete button a real click would silently
+      // fail on.
       return myPanelRowHtml({
-        kind: "schedule",
-        href: "schedule-builder.html?schedule=" + encodeURIComponent(s.id),
-        name: (d.name && d.name.trim()) || "מערכת שעות (ללא שם)",
-        deleteAttr: "schedule:" + s.id,
-        active: !!(ctx && ctx.kind === "schedule" && ctx.id === s.id),
+        kind: "invoice",
+        href: "invoice-app.html?invoice=" + encodeURIComponent(inv.id),
+        name: (d.recipientName && d.recipientName.trim()) || "מסמך (ללא שם)",
+        sub: inv.status === "issued" ? `${docLabel} מס' ${inv.number}` : `${docLabel} — טיוטה`,
+        deleteAttr: inv.status === "draft" ? "invoice:" + inv.id : null,
+        active: !!(ctx && ctx.kind === "invoice" && ctx.id === inv.id),
       });
     }).join("");
   } else {
-    el.innerHTML = myPanelEmptyRowHtml({ href: "schedule-builder.html" });
+    el.innerHTML = myPanelEmptyRowHtml({ href: "invoice-app.html" });
   }
 }
 
@@ -262,7 +270,9 @@ function myPanelRenderSchedules(schedules, ctx, el) {
    it to the tab/session means a stale snapshot never outlives the browser
    session it was read in, and a different account in another tab can't
    read it either. */
-const MY_PANEL_CACHE_KEY = "deskkit_panel_cache_v1";
+// v2: schedules dropped, invoices + hasBusinessProfile added — bumped so
+// an old v1 snapshot (different shape) is never read back as if it matched.
+const MY_PANEL_CACHE_KEY = "deskkit_panel_cache_v2";
 function myPanelReadCache(userId) {
   try {
     const raw = sessionStorage.getItem(MY_PANEL_CACHE_KEY);
@@ -283,15 +293,18 @@ function myPanelWriteCache(userId, bundle) {
    that changed since the last snapshot; the difference caching makes is
    that the rail no longer has to sit empty *waiting* on this to finish. */
 async function myPanelFetchAndRender(user, ctx, els) {
-  const [sitesRes, cvRes, quotesRes, schedulesRes] = await Promise.all([
+  const [sitesRes, cvRes, quotesRes, invoicesRes, profileRes] = await Promise.all([
     supabaseClient.from("site_projects").select("id, template, data, published_url").eq("user_id", user.id).order("created_at", { ascending: false }),
     supabaseClient.from("cv_saves").select("data").eq("user_id", user.id).maybeSingle(),
     els.quotesList
       ? supabaseClient.from("quote_saves").select("id, data").eq("user_id", user.id).order("updated_at", { ascending: false })
       : Promise.resolve({ data: null }),
-    els.schedulesList
-      ? supabaseClient.from("schedule_projects").select("id, data").eq("user_id", user.id).order("updated_at", { ascending: false })
+    els.invoicesList
+      ? supabaseClient.from("invoice_saves").select("id, doc_type, status, number, data").eq("user_id", user.id).order("updated_at", { ascending: false })
       : Promise.resolve({ data: null }),
+    // Only fetched to answer "has this account ever touched the business
+    // letterhead form" — see myPanelToggleBusinessSections below for why.
+    supabaseClient.from("profiles").select("id").eq("id", user.id).maybeSingle(),
   ]);
 
   // One row per template is the data model's own guarantee (each save
@@ -306,14 +319,16 @@ async function myPanelFetchAndRender(user, ctx, els) {
   });
   const cv = cvRes.data || null;
   const quotes = quotesRes.data || [];
-  const schedules = schedulesRes.data || [];
+  const invoices = invoicesRes.data || [];
+  const hasBusinessProfile = !!profileRes.data;
 
   myPanelRenderSites(sites, ctx, els.sitesList);
   myPanelRenderCv(cv, ctx, els.cvList);
   myPanelRenderQuotes(quotes, ctx, els.quotesList);
-  myPanelRenderSchedules(schedules, ctx, els.schedulesList);
+  myPanelRenderInvoices(invoices, ctx, els.invoicesList);
+  myPanelToggleBusinessSections(hasBusinessProfile || quotes.length > 0 || invoices.length > 0);
 
-  myPanelWriteCache(user.id, { sites, cv, quotes, schedules });
+  myPanelWriteCache(user.id, { sites, cv, quotes, invoices, hasBusinessProfile });
 }
 
 /* Instant-from-cache, then quietly reconciled in the background: this is
@@ -327,13 +342,29 @@ async function myPanelFetchAndRender(user, ctx, els) {
    a "the user changed something" event, so it can't just be skipped —
    the content may well have changed from another tab or device), it
    just no longer has to be waited on to show *something* correct. */
+/* Quotes/invoices are real business tools most visitors never touch —
+   confirmed live as clutter ("שאר האנשים בעולם לא צריכים את זה מול
+   העיניים שלהם") for anyone who only uses CVs/sites/decks. Both
+   sections start `hidden` in the static markup (myPanelSectionsHtml)
+   so a brand-new user never sees them flash in before the first fetch
+   resolves; this is the only thing that ever reveals them, the moment
+   the account is shown to have either an actual saved quote/invoice or
+   a filled-in business letterhead (profiles row) — the same one shared
+   signal covers both sections since they share that one profile. */
+function myPanelToggleBusinessSections(show) {
+  const quotesSection = document.querySelector('.my-panel-section[data-section="quotes"]');
+  const invoicesSection = document.querySelector('.my-panel-section[data-section="invoices"]');
+  if (quotesSection) quotesSection.hidden = !show;
+  if (invoicesSection) invoicesSection.hidden = !show;
+}
+
 async function loadMyPanel(user, opts) {
   const forceRefresh = !!(opts && opts.forceRefresh);
   const els = {
     sitesList: document.getElementById("my-panel-sites"),
     cvList: document.getElementById("my-panel-cv"),
     quotesList: document.getElementById("my-panel-quotes"),
-    schedulesList: document.getElementById("my-panel-schedules"),
+    invoicesList: document.getElementById("my-panel-invoices"),
   };
   if (!els.sitesList || !els.cvList) return;
   const ctx = myPanelCurrentContext();
@@ -343,14 +374,15 @@ async function loadMyPanel(user, opts) {
     myPanelRenderSites(cached.sites, ctx, els.sitesList);
     myPanelRenderCv(cached.cv, ctx, els.cvList);
     myPanelRenderQuotes(cached.quotes, ctx, els.quotesList);
-    myPanelRenderSchedules(cached.schedules, ctx, els.schedulesList);
+    myPanelRenderInvoices(cached.invoices, ctx, els.invoicesList);
+    myPanelToggleBusinessSections(cached.hasBusinessProfile || (cached.quotes || []).length > 0 || (cached.invoices || []).length > 0);
   }
 
   await myPanelFetchAndRender(user, ctx, els);
 }
 
 async function deleteMyPanelItem(kind, id, button) {
-  const label = kind === "cv" ? "את קורות החיים שלכם" : kind === "quote" ? "את הצעת המחיר הזו" : kind === "schedule" ? "את מערכת השעות הזו" : "את האתר הזה";
+  const label = kind === "cv" ? "את קורות החיים שלכם" : kind === "quote" ? "את הצעת המחיר הזו" : kind === "invoice" ? "את הטיוטה הזו" : "את האתר הזה";
   if (!confirm(`למחוק לצמיתות ${label}? הפעולה בלתי הפיכה.`)) return;
   button.disabled = true;
   const { data } = await supabaseClient.auth.getSession();
@@ -362,8 +394,8 @@ async function deleteMyPanelItem(kind, id, button) {
     await supabaseClient.from("cv_saves").delete().eq("user_id", user.id);
   } else if (kind === "quote") {
     await supabaseClient.from("quote_saves").delete().eq("id", id).eq("user_id", user.id);
-  } else if (kind === "schedule") {
-    await supabaseClient.from("schedule_projects").delete().eq("id", id).eq("user_id", user.id);
+  } else if (kind === "invoice") {
+    await supabaseClient.from("invoice_saves").delete().eq("id", id).eq("user_id", user.id);
   }
   await loadMyPanel(user, { forceRefresh: true });
 }
@@ -371,14 +403,20 @@ async function deleteMyPanelItem(kind, id, button) {
 function myPanelSectionsHtml() {
   let collapsed = {};
   try { collapsed = JSON.parse(localStorage.getItem(MY_PANEL_COLLAPSE_KEY) || "{}"); } catch (err) { /* ignore */ }
-  const section = (key, label, listId) => `
-    <div class="my-panel-section${collapsed[key] ? " collapsed" : ""}" data-section="${key}">
+  const section = (key, label, listId, opts) => `
+    <div class="my-panel-section${collapsed[key] ? " collapsed" : ""}" data-section="${key}"${opts && opts.hidden ? " hidden" : ""}>
       <button type="button" class="my-panel-section-head">
         <span>${label}</span>${myPanelChevronIcon()}
       </button>
       <div class="my-panel-section-list" id="${listId}"></div>
     </div>`;
-  return section("sites", "אתרים", "my-panel-sites") + section("cv", "קורות חיים", "my-panel-cv") + section("quotes", "הצעות מחיר", "my-panel-quotes") + section("schedules", "מערכות שעות", "my-panel-schedules");
+  // quotes/invoices start hidden — myPanelToggleBusinessSections reveals
+  // them once the account is shown to actually use either (see its own
+  // comment above loadMyPanel for why).
+  return section("sites", "אתרים", "my-panel-sites")
+    + section("cv", "קורות חיים", "my-panel-cv")
+    + section("quotes", "הצעות מחיר", "my-panel-quotes", { hidden: true })
+    + section("invoices", "חשבוניות", "my-panel-invoices", { hidden: true });
 }
 
 /* Reads back the width/collapsed state the pre-paint inline script (first
