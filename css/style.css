@@ -689,12 +689,12 @@ body.home-neo .hn-card-xlsx::before { background-image: url("../images/previews/
    never a literal wall of text) — confirmed live as the reason the quote
    card's old hero-quote.webp read as "different words flashing in" on
    hover: it's a real, dense quote letter, nothing like the abstract
-   compositions the other cards use. A clean brand-teal gradient for both
-   quote and invoice also solves invoice's card having no hover image at
-   all until now, with one consistent look instead of hunting for or
-   commissioning two more custom illustrations. */
-body.home-neo .hn-card-quote::before,
-body.home-neo .hn-card-invoice::before { background-image: linear-gradient(135deg, #0B4A45, #0E8C8C); }
+   compositions the other cards use. These two are purpose-built mockups
+   (generic line items, no real business/customer data) in the same
+   visual language as the other cards, generated the same way the site
+   catalog's own template thumbnails are. */
+body.home-neo .hn-card-quote::before { background-image: url("../images/previews/hero-quote-card.webp"); }
+body.home-neo .hn-card-invoice::before { background-image: url("../images/previews/hero-invoice-card.webp"); }
 @media (prefers-reduced-motion: reduce) {
   body.home-neo .hn-card { transition: box-shadow .3s ease; }
   body.home-neo .hn-card:hover { transform: none; }
