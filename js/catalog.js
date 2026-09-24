@@ -14,7 +14,12 @@ const CATALOG_STR = {
         downloadNote: (linkHtml) => `קובץ מלא, מוכן לעריכה. אפשר לצפות בכל התוכן לפני שמורידים. ההורדה עצמה דורשת התחברות (חשבון פשוט וחינמי) כדי שתישאר לכם גישה קבועה. יש שאלה? ${linkHtml} ונשמח לעזור.`,
         contactUs: "כתבו לנו",
         editDownload: "עריכה והורדה — חינם",
-        editNote: "ממלאים את הפרטים שלכם ורואים תוצאה חיה, בעברית או באנגלית. עריכה חינמית לגמרי — רק צריך להתחבר כדי להיכנס לעורך." },
+        editNote: "ממלאים את הפרטים שלכם ורואים תוצאה חיה, בעברית או באנגלית. עריכה חינמית לגמרי — רק צריך להתחבר כדי להיכנס לעורך.",
+        factsDeliveryLabel: "מסירה", factsEditLabel: "עריכה", factsPaymentLabel: "תשלום",
+        factsTermsLink: "לתנאי השימוש המלאים",
+        factsDelivery: (pType) => pType === "cv" ? "עריכה חיה באתר, ואז הורדת קובץ PDF מיידית" : "קובץ להורדה מיידית, מוכן לשימוש",
+        factsEdit: (pType) => pType === "cv" ? "כן — משנים טקסט, צבעים ופרטים בבילדר החי, לפני ההורדה" : pType === "deck" ? "כן — הקובץ נערך בחופשיות ב-PowerPoint (או Google Slides) אחרי ההורדה" : "כן — הקובץ נערך בחופשיות ב-Excel (או Google Sheets) אחרי ההורדה",
+        factsPayment: (price) => price === 0 ? "חינם לגמרי — בלי מנוי ובלי חיוב חוזר" : `₪${price} — תשלום חד-פעמי, בלי מנוי` },
   en: { free: "Free", download: "Download", edit: "Edit", view: "View",
         emptyCategory: "No products in this category yet.",
         emptySearch: (term) => `No templates match the search "${term}".`,
@@ -24,7 +29,12 @@ const CATALOG_STR = {
         downloadNote: (linkHtml) => `A complete, ready-to-edit file. You can view all the content before downloading. The download itself requires signing in (a simple, free account) so you keep permanent access. Have a question? ${linkHtml} and we'll be happy to help.`,
         contactUs: "Write to us",
         editDownload: "Edit & download — free",
-        editNote: "Fill in your details and see a live result, in Hebrew or English. Editing is completely free — you just need to sign in to open the editor." },
+        editNote: "Fill in your details and see a live result, in Hebrew or English. Editing is completely free — you just need to sign in to open the editor.",
+        factsDeliveryLabel: "Delivery", factsEditLabel: "Editable", factsPaymentLabel: "Payment",
+        factsTermsLink: "Full terms of use",
+        factsDelivery: (pType) => pType === "cv" ? "Live editing on the site, then an instant PDF download" : "Instant file download, ready to use",
+        factsEdit: (pType) => pType === "cv" ? "Yes — edit text, colors and details in the live builder before downloading" : pType === "deck" ? "Yes — the file opens and edits freely in PowerPoint (or Google Slides) after downloading" : "Yes — the file opens and edits freely in Excel (or Google Sheets) after downloading",
+        factsPayment: (price) => price === 0 ? "Completely free — no subscription, no recurring charge" : `₪${price} — one-time payment, no subscription` },
 };
 function catalogLang() { return (typeof currentLang === "function" ? currentLang() : "he"); }
 function cs() { return CATALOG_STR[catalogLang()] || CATALOG_STR.he; }
@@ -246,6 +256,12 @@ function initProductPage() {
             <span class="price">${money(p.price)}</span>
           </div>
           <ul class="checklist">${p.checklist.map((c) => `<li>${c}</li>`).join("")}</ul>
+          <div class="product-facts">
+            <div class="pf-row"><span class="pf-label">${t.factsDeliveryLabel}</span><span>${t.factsDelivery(pType)}</span></div>
+            <div class="pf-row"><span class="pf-label">${t.factsEditLabel}</span><span>${t.factsEdit(pType)}</span></div>
+            <div class="pf-row"><span class="pf-label">${t.factsPaymentLabel}</span><span>${t.factsPayment(p.price)}</span></div>
+            <a href="terms.html" class="pf-terms-link">${t.factsTermsLink}</a>
+          </div>
           ${p.downloadUrl ? `
           <div style="display:flex; gap:10px; flex-wrap:wrap;">
             <a href="preview.html?slug=${p.slug}" class="btn btn-outline-dark">${t.viewFull}</a>
