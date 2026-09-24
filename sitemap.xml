@@ -8,12 +8,67 @@
   <url><loc>https://deskkit.co.il/crm-product.html</loc><priority>0.8</priority></url>
   <url><loc>https://deskkit.co.il/quote-app.html</loc><priority>0.8</priority></url>
   <url><loc>https://deskkit.co.il/invoice-app.html</loc><priority>0.8</priority></url>
+  <url><loc>https://deskkit.co.il/schedule-builder.html</loc><priority>0.8</priority></url>
+  <url><loc>https://deskkit.co.il/builder.html</loc><priority>0.7</priority></url>
   <url><loc>https://deskkit.co.il/tools.html</loc><priority>0.6</priority></url>
   <url><loc>https://deskkit.co.il/about.html</loc><priority>0.6</priority></url>
   <url><loc>https://deskkit.co.il/guides.html</loc><priority>0.6</priority></url>
   <url><loc>https://deskkit.co.il/guide-cv-tips.html</loc><priority>0.6</priority></url>
   <url><loc>https://deskkit.co.il/guide-business-website.html</loc><priority>0.6</priority></url>
+  <url><loc>https://deskkit.co.il/guide-school-schedule.html</loc><priority>0.6</priority></url>
+  <url><loc>https://deskkit.co.il/faq.html</loc><priority>0.6</priority></url>
   <url><loc>https://deskkit.co.il/contact.html</loc><priority>0.5</priority></url>
   <url><loc>https://deskkit.co.il/terms.html</loc><priority>0.3</priority></url>
   <url><loc>https://deskkit.co.il/accessibility.html</loc><priority>0.3</priority></url>
+  <url><loc>https://deskkit.co.il/security.html</loc><priority>0.3</priority></url>
+
+  <url><loc>https://deskkit.co.il/products.html?type=cv&amp;cat=general</loc><priority>0.6</priority></url>
+  <url><loc>https://deskkit.co.il/products.html?type=cv&amp;cat=dev</loc><priority>0.6</priority></url>
+  <url><loc>https://deskkit.co.il/products.html?type=cv&amp;cat=design</loc><priority>0.6</priority></url>
+  <url><loc>https://deskkit.co.il/products.html?type=cv&amp;cat=accounting</loc><priority>0.6</priority></url>
+  <url><loc>https://deskkit.co.il/products.html?type=deck&amp;cat=business</loc><priority>0.6</priority></url>
+  <url><loc>https://deskkit.co.il/products.html?type=deck&amp;cat=marketing</loc><priority>0.6</priority></url>
+  <url><loc>https://deskkit.co.il/products.html?type=deck&amp;cat=creative</loc><priority>0.6</priority></url>
+  <url><loc>https://deskkit.co.il/products.html?type=xlsx&amp;cat=finance</loc><priority>0.6</priority></url>
+  <url><loc>https://deskkit.co.il/products.html?type=xlsx&amp;cat=customers</loc><priority>0.6</priority></url>
+  <url><loc>https://deskkit.co.il/products.html?type=xlsx&amp;cat=operations</loc><priority>0.6</priority></url>
+  <url><loc>https://deskkit.co.il/products.html?type=xlsx&amp;cat=projects</loc><priority>0.6</priority></url>
+  <url><loc>https://deskkit.co.il/products.html?type=xlsx&amp;cat=sales</loc><priority>0.6</priority></url>
+  <url><loc>https://deskkit.co.il/products.html?type=xlsx&amp;cat=hr</loc><priority>0.6</priority></url>
+
+  <url><loc>https://deskkit.co.il/product.html?slug=cv-general-modern</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=cv-dev-dark</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=cv-dev-minimal</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=cv-dev-fullstack</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=cv-dev-junior</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=cv-design-creative</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=cv-design-portfolio</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=cv-design-uiux</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=cv-design-motion</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=cv-accounting-classic</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=cv-accounting-modern</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=cv-finance-analyst</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=cv-business-clean</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=cv-sales</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=cv-customer-service</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=biz-deck-profile</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=deck-product-launch</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=deck-content-webinar</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=deck-investor-pitch</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=deck-creative-portfolio</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=deck-cinematic-pitch</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=deck-editorial-brand</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=deck-neopop-business</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=xlsx-budget</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=xlsx-invoice</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=xlsx-expense</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=xlsx-clients</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=xlsx-cashflow</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=xlsx-inventory</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=xlsx-timeline</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=xlsx-pnl</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=xlsx-timesheet</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=xlsx-breakeven</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=xlsx-salestargets</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=xlsx-vendors</loc><priority>0.5</priority></url>
 </urlset>
