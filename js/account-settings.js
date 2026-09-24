@@ -4,36 +4,11 @@
    run client-side) — self-service, typing the account's own email
    confirms it, no manual request to us needed. */
 
-/* delete-account only ever clears the SERVER's copy of a user's data —
-   auth.signOut() clears Supabase's own session token, but nothing used
-   to clear THIS browser's local working copies (a CV draft, a half-built
-   site, saved CRM demo leads — all real content someone typed in, cached
-   in localStorage for offline-friendly editing, same as every builder in
-   this project). Left alone, that content would still sit in this
-   browser's localStorage after "deleting my account". Only removes keys
-   under DeskKit's own content prefixes — never the plain device/UI
-   preferences (language, sidebar width, cookie-notice dismissal), which
-   aren't account data and belong to whoever next uses this browser. */
-function clearLocalDeskkitContent() {
-  const contentPrefixes = [
-    "deskkit_cv_",              // CV drafts + "last slug" pointer
-    "deskkit_sites_data_v1_",   // site drafts (per template)
-    "deskkit_sites_last_template",
-    "deskkit_sites_unlocked_",  // site purchase-unlock flags
-    "deskkit_crm_",             // CRM demo leads + unlock flag
-    "deskkit_schedule_unlocked_", // schedule-builder unlock flag
-  ];
-  try {
-    const toRemove = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && contentPrefixes.some((p) => key === p || key.startsWith(p))) {
-        toRemove.push(key);
-      }
-    }
-    toRemove.forEach((key) => localStorage.removeItem(key));
-  } catch (err) { /* storage unavailable — nothing to clear */ }
-}
+// clearLocalDeskkitContent() (used on account deletion, below) now lives
+// in js/main.js — shared with the same-purpose guard in
+// builder-cloud-save.js/site-cloud-save.js that clears a PREVIOUS
+// account's local draft the moment a different one signs in on the same
+// browser, rather than only at account-deletion time.
 
 /* Every RLS-protected table is queried with an explicit .eq("user_id"/
    "id", userId) on top of RLS — belt and suspenders, and it means this

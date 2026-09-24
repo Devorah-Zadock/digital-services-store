@@ -70,11 +70,17 @@ async function finalizeSiteProject() {
   if (!siteProjectId) await saveSiteNow();
   if (!siteProjectId) { siteIsFinalized = false; return; }
   const licenseInput = document.getElementById("license-input");
+  // .eq("user_id", ...) here is a defense-in-depth backstop, not the real
+  // guard (RLS's own update policy is) — but every other write in this
+  // project pairs a client-side owner filter with RLS rather than relying
+  // on RLS alone, so a tampered siteProjectId (devtools, a direct API
+  // call) can't even attempt to "finalize" (unlock) someone else's site
+  // if RLS were ever misconfigured.
   await supabaseClient.from("site_projects").update({
     status: "finalized",
     finalized_at: new Date().toISOString(),
     gumroad_license_key: licenseInput ? licenseInput.value.trim() : null,
-  }).eq("id", siteProjectId);
+  }).eq("id", siteProjectId).eq("user_id", siteCurrentUserId);
   applyFinalizedLockUI();
   sendPurchaseReceipt();
 }
@@ -132,6 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const user = data.session && data.session.user;
     if (user) {
       siteCurrentUserId = user.id;
+      const clearedForeignDraft = typeof guardLocalDraftOwnership === "function" && guardLocalDraftOwnership(user.id);
 
       // Prefills the Gumroad checkout with the signed-in email — most
       // buyers want their receipt/license at the same address anyway, and
@@ -195,6 +202,20 @@ document.addEventListener("DOMContentLoaded", () => {
           // is refreshed to match.
           siteState.template = urlTemplate;
           siteState.data = freshSiteData(urlTemplate);
+          if (typeof showWizard === "function") showWizard();
+        } else if (clearedForeignDraft && siteState.template) {
+          // No specific template requested and this account has no saved
+          // project of its own at all — but guardLocalDraftOwnership just
+          // wiped a PREVIOUS account's local draft that the synchronous
+          // pre-auth loadSiteState() had already loaded into siteState.
+          // Reset to a blank version of whatever template that was,
+          // rather than leaving a stranger's real business name and
+          // contact details on screen, editable and savable under this
+          // account.
+          siteProjectId = null;
+          sitePublishCount = 0;
+          siteIsFinalized = false;
+          siteState.data = freshSiteData(siteState.template);
           if (typeof showWizard === "function") showWizard();
         }
       }

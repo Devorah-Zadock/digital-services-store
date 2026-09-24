@@ -1,3 +1,60 @@
+/* Shared across every page that caches DeskKit content in localStorage
+   (CV drafts, site drafts, CRM demo leads, unlock flags) — deliberately
+   defined once here rather than duplicated per-tool. */
+const DESKKIT_LOCAL_CONTENT_PREFIXES = [
+  "deskkit_cv_",              // CV drafts + "last slug" pointer
+  "deskkit_sites_data_v1_",   // site drafts (per template)
+  "deskkit_sites_last_template",
+  "deskkit_sites_unlocked_",  // site purchase-unlock flags
+  "deskkit_crm_",             // CRM demo leads + unlock flag
+  "deskkit_schedule_unlocked_", // schedule-builder unlock flag
+];
+
+function clearLocalDeskkitContent() {
+  try {
+    const toRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && DESKKIT_LOCAL_CONTENT_PREFIXES.some((p) => key === p || key.startsWith(p))) {
+        toRemove.push(key);
+      }
+    }
+    toRemove.forEach((key) => localStorage.removeItem(key));
+  } catch (err) { /* storage unavailable — nothing to clear */ }
+}
+
+const LOCAL_DRAFT_OWNER_KEY = "deskkit_local_draft_owner";
+/* CV/site local drafts are cached keyed only by template/slug, not by
+   account (see cvLocalKey()/siteDataKey() in their own files) — on
+   purpose, so the very first paint can show something instantly, before
+   any async sign-in check resolves. Confirmed live: on a shared/reused
+   browser, that meant a DIFFERENT signed-in account opening the same
+   builder could see, keep editing, and even save a previous person's
+   real CV/site content (name, phone, email, business details) into
+   their own account. Call this the moment a real, signed-in userId is
+   confirmed (builder-cloud-save.js / site-cloud-save.js), before doing
+   anything else with local or cloud state: if this browser's local
+   drafts were last associated with a DIFFERENT account, they're wiped
+   before anything can read, keep, or save them under the new one. Same
+   person returning (or a fresh browser) — nothing is touched. */
+// Returns true when a foreign draft was actually found and cleared — the
+// caller still needs to reset whatever it may have already rendered
+// in-memory from that draft (clearing localStorage alone doesn't touch a
+// form already filled from it), specifically when the newly-confirmed
+// account turns out to have no cloud save of its own to overwrite it with.
+function guardLocalDraftOwnership(userId) {
+  if (!userId) return false;
+  try {
+    const last = localStorage.getItem(LOCAL_DRAFT_OWNER_KEY);
+    localStorage.setItem(LOCAL_DRAFT_OWNER_KEY, userId);
+    if (last && last !== userId) {
+      clearLocalDeskkitContent();
+      return true;
+    }
+  } catch (err) { /* storage unavailable — nothing to guard */ }
+  return false;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const burger = document.querySelector(".burger");
   const links = document.querySelector(".nav-links");

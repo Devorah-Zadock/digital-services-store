@@ -159,6 +159,15 @@ Deno.serve(async (req: Request) => {
     if (!pageNames.length || !pages.index) {
       return jsonResponse({ error: "pages must include at least an index page" }, 400);
     }
+    // The real client (enabledSitePages() in js/site-builder.js) only ever
+    // sends a subset of these three — never client-supplied, never
+    // arbitrary. Enforced here too so a caller skipping the UI entirely
+    // can't hand this function attacker-chosen keys, which become literal
+    // file names/paths in the deployed zip below.
+    const ALLOWED_PAGE_NAMES = new Set(["index", "about", "contact"]);
+    if (pageNames.some((name) => !ALLOWED_PAGE_NAMES.has(name))) {
+      return jsonResponse({ error: "unexpected page name" }, 400);
+    }
 
     // Ownership check: userId here is the verified token's own subject
     // (see above), so this confirms the row actually belongs to the real,

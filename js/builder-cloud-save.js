@@ -79,6 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const user = data.session && data.session.user;
     if (user) {
       cvCurrentUserId = user.id;
+      const clearedForeignDraft = typeof guardLocalDraftOwnership === "function" && guardLocalDraftOwnership(user.id);
       const { data: row } = await supabaseClient.from("cv_saves").select("data").eq("user_id", user.id).maybeSingle();
       // Only resume the saved CV if nothing more specific was asked for —
       // a plain builder.html link (nav, "my content" rail) means "continue
@@ -92,6 +93,15 @@ document.addEventListener("DOMContentLoaded", () => {
       const urlTemplate = new URLSearchParams(location.search).get("template");
       if (row && row.data && row.data.content && (!urlTemplate || urlTemplate === row.data.slug)) {
         applyCvSnapshot(row.data);
+      } else if (clearedForeignDraft) {
+        // guardLocalDraftOwnership just wiped a PREVIOUS account's local
+        // draft from storage, but builder.js may already have painted it
+        // into the form/state before this async check even started — this
+        // account has no cloud save of its own to overwrite it with, so
+        // reset to a genuinely blank version of whatever template is
+        // showing, rather than silently leaving a stranger's real name,
+        // contact info and work history on screen and editable.
+        if (typeof loadTemplate === "function" && state.slug) loadTemplate(state.slug);
       }
       logUsageEvent("cv", state.slug, "edit");
     }

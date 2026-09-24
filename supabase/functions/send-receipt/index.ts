@@ -17,10 +17,27 @@
 //                        before treating any receipt as a real legal
 //                        document.
 //
+// Gated by real auth, same as every other Edge Function in this project:
+// the caller's own Supabase session token goes in Authorization, verified
+// server-side via admin.auth.getUser(token). Before this, the function had
+// NO auth check at all — a public, unauthenticated endpoint that anyone on
+// the internet could POST to directly with any buyerEmail/itemDescription/
+// amount they chose, sending a real "receipt" email (with DeskKit's name
+// on it) to an arbitrary address, at real cost against the RESEND_API_KEY
+// quota, and a real abuse/phishing-adjacent risk. Confirmed the legitimate
+// caller (sendPurchaseReceipt() in js/site-cloud-save.js) already only
+// ever calls this while signed in, via supabase-js's functions.invoke(),
+// which attaches the current session's token automatically — so this is
+// pure hardening, nothing for a real customer to notice.
+//
 // Deploy: paste this file's contents into Supabase Dashboard →
 // Edge Functions → New Function ("send-receipt") → Deploy, or via the
 // CLI: `supabase functions deploy send-receipt`.
 
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const PDFSHIFT_API_KEY = Deno.env.get("PDFSHIFT_API_KEY");
 // Deliberately NOT defaulting to a fake-looking number like "000000000" —
@@ -99,6 +116,17 @@ Deno.serve(async (req: Request) => {
   }
   if (!RESEND_API_KEY) {
     return new Response(JSON.stringify({ error: "RESEND_API_KEY not configured" }), { status: 500, headers: corsHeaders });
+  }
+
+  const authHeader = req.headers.get("Authorization") || "";
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (!token) {
+    return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: corsHeaders });
+  }
+  const authClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const { data: userData, error: userErr } = await authClient.auth.getUser(token);
+  if (userErr || !userData.user) {
+    return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: corsHeaders });
   }
 
   try {
