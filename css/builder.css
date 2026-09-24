@@ -277,6 +277,17 @@
 .export-panel .btn { width: 100%; text-align: center; box-sizing: border-box; }
 .export-panel .btn-outline-dark { background: var(--white); box-shadow: 0 2px 8px rgba(22,63,53,.1); }
 
+/* #publish-note carries real, sometimes important status messages after a
+   publish attempt (host outage, purchase-not-found, free-update limit
+   reached) — plain unstyled text made every one of these easy to miss
+   right under the gold publish button. :not(:empty) means this only
+   kicks in once JS actually puts a message in it (note.textContent = ""
+   between attempts keeps it invisible the rest of the time). */
+#publish-note:not(:empty) {
+  background: #FDF0DC; color: #8A5A1A; border-radius: 10px;
+  padding: 12px 14px; font-weight: 600; font-size: 13.5px; line-height: 1.6;
+}
+
 .lang-switch-big { display: flex; gap: 12px; flex: none; }
 .lang-big {
   display: flex; align-items: center; gap: 10px;
