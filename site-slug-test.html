@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>בדיקת בחירת שם אתר — DeskKit</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=77">
+<style>
+  .slug-test-wrap { max-width: 480px; margin: 60px auto; padding: 0 20px; }
+  .slug-test-note {
+    background: #FDF0DC; color: #8A5A1A; border-radius: 10px; padding: 12px 14px;
+    font-size: 13px; margin-bottom: 24px; font-weight: 600;
+  }
+  .slug-row { display: flex; align-items: center; gap: 8px; background: var(--white);
+    border: 2px solid #DDE4E1; border-radius: 12px; padding: 10px 14px; }
+  .slug-row input { border: none; outline: none; font-family: inherit; font-size: 15px;
+    flex: 1; background: transparent; direction: ltr; text-align: left; }
+  .slug-row .suffix { color: var(--grey); font-size: 14px; white-space: nowrap; }
+  .slug-status { margin-top: 10px; font-size: 13.5px; font-weight: 600; min-height: 20px; }
+  .slug-status.ok { color: #1E7A4C; }
+  .slug-status.bad { color: #B3401E; }
+  .slug-status.wait { color: var(--grey); font-weight: 500; }
+  .slug-suggestions { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .slug-suggestions button {
+    border: 1.5px solid #DDE4E1; background: var(--white); border-radius: 20px;
+    padding: 6px 14px; font-size: 13px; font-family: inherit; cursor: pointer; direction: ltr;
+  }
+</style>
+</head>
+<body>
+
+<div class="slug-test-wrap">
+  <div class="slug-test-note">
+    דף בדיקה פנימי — לא מקושר מהאתר, לא ציבורי. בודק את מנגנון בחירת שם האתר (Phase 2) לפני שהוא נכנס לזרימת הבנייה האמיתית.
+  </div>
+  <h1 style="font-size:20px; margin-bottom:6px;">איך יקרא האתר שלכם?</h1>
+  <p style="color:var(--grey); font-size:14px; margin-bottom:20px;">כותבים שם באותיות אנגליות — בודקים אם הוא פנוי בזמן אמת.</p>
+
+  <div class="slug-row">
+    <input type="text" id="slug-input" placeholder="my-business-name" dir="ltr" autocomplete="off">
+    <span class="suffix">.deskkit.co.il</span>
+  </div>
+  <div class="slug-status" id="slug-status"></div>
+  <div class="slug-suggestions" id="slug-suggestions"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/supabase-config.js"></script>
+<script>
+  const input = document.getElementById("slug-input");
+  const statusEl = document.getElementById("slug-status");
+  const suggestionsEl = document.getElementById("slug-suggestions");
+  let debounceTimer = null;
+  let requestSeq = 0;
+
+  async function ensureSignedIn() {
+    const { data } = await supabaseClient.auth.getSession();
+    if (data.session) return true;
+    statusEl.className = "slug-status bad";
+    statusEl.textContent = "צריך להיות מחוברים כדי לבדוק זמינות (זה דף בדיקה פנימי בלבד).";
+    input.disabled = true;
+    return false;
+  }
+
+  async function checkSlug(value) {
+    const mySeq = ++requestSeq;
+    statusEl.className = "slug-status wait";
+    statusEl.textContent = "בודקים...";
+    suggestionsEl.innerHTML = "";
+    const { data, error } = await supabaseClient.functions.invoke("check-site-slug", {
+      body: { desired: value },
+    });
+    if (mySeq !== requestSeq) return; // a newer keystroke already superseded this request
+    if (error || !data) {
+      statusEl.className = "slug-status bad";
+      statusEl.textContent = "שגיאה בבדיקה. נסו שוב.";
+      return;
+    }
+    if (data.available) {
+      statusEl.className = "slug-status ok";
+      statusEl.textContent = "✓ פנוי: " + data.slug + ".deskkit.co.il";
+      return;
+    }
+    const reasonText = {
+      invalid: "שם לא תקין — רק אותיות אנגליות, ספרות ומקפים.",
+      reserved: "השם הזה שמור למערכת.",
+      taken: "השם הזה כבר תפוס.",
+    }[data.reason] || "השם הזה לא זמין.";
+    statusEl.className = "slug-status bad";
+    statusEl.textContent = "✗ " + reasonText;
+    (data.suggestions || []).forEach((s) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = s;
+      btn.addEventListener("click", () => { input.value = s; checkSlug(s); });
+      suggestionsEl.appendChild(btn);
+    });
+  }
+
+  input.addEventListener("input", () => {
+    clearTimeout(debounceTimer);
+    const value = input.value.trim();
+    if (!value) { statusEl.textContent = ""; suggestionsEl.innerHTML = ""; return; }
+    debounceTimer = setTimeout(() => checkSlug(value), 400);
+  });
+
+  ensureSignedIn();
+</script>
+</body>
+</html>
