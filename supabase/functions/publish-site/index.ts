@@ -128,29 +128,72 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: "Netlify secrets are not fully configured" }, 500);
   }
 
+  // Gated by real auth, same as ats-check/delete-account: the caller's own
+  // Supabase session token goes in Authorization, verified server-side via
+  // admin.auth.getUser(token). The ownership check just below used to
+  // compare the site row's real owner against a plain userId field the
+  // CLIENT supplied in the request body — which only ever caught a
+  // mismatched/wrong id, not a forged one: a caller who somehow learned
+  // both a real siteProjectId and its real owner's userId (two UUIDs)
+  // could have passed that check without actually being that user, and
+  // published arbitrary attacker-supplied HTML to someone else's live
+  // site. Deriving userId ONLY from the verified token closes that.
+  // Confirmed the legitimate client (site-builder.js's publishSite) only
+  // ever calls this while signed in, and supabase-js's functions.invoke()
+  // attaches the current session's token automatically — pure hardening.
+  const authHeader = req.headers.get("Authorization") || "";
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (!token) return jsonResponse({ error: "unauthorized" }, 401);
+
+  const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+  const { data: authUserData, error: authUserErr } = await admin.auth.getUser(token);
+  if (authUserErr || !authUserData.user) return jsonResponse({ error: "unauthorized" }, 401);
+  const userId = authUserData.user.id;
+
   try {
-    const { siteProjectId, userId, pages } = await req.json();
-    if (!siteProjectId || !userId || !pages || typeof pages !== "object") {
-      return jsonResponse({ error: "missing siteProjectId, userId or pages" }, 400);
+    const { siteProjectId, pages } = await req.json();
+    if (!siteProjectId || !pages || typeof pages !== "object") {
+      return jsonResponse({ error: "missing siteProjectId or pages" }, 400);
     }
     const pageNames = Object.keys(pages);
     if (!pageNames.length || !pages.index) {
       return jsonResponse({ error: "pages must include at least an index page" }, 400);
     }
 
-    const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-
-    // Ownership check happens here, server-side, with the service-role
-    // client — never trust a client-supplied userId on its own; confirm
-    // the row is actually theirs before touching Netlify on their behalf.
+    // Ownership check: userId here is the verified token's own subject
+    // (see above), so this confirms the row actually belongs to the real,
+    // authenticated caller before touching Netlify on their behalf.
     const { data: project, error: fetchErr } = await admin
       .from("site_projects")
-      .select("id, user_id, netlify_site_id, publish_count")
+      .select("id, user_id, template, netlify_site_id, publish_count")
       .eq("id", siteProjectId)
       .maybeSingle();
     if (fetchErr) return jsonResponse({ error: fetchErr.message }, 500);
     if (!project || project.user_id !== userId) {
       return jsonResponse({ error: "site not found for this account" }, 404);
+    }
+
+    // Real purchase check: the wizard UI only ever shows "פרסום" after a
+    // real Gumroad license was redeemed for this (account, template) pair
+    // (see redeem-license, which is the only thing that ever writes a
+    // license_redemptions row) — but that was previously only a CLIENT-
+    // SIDE gate (a localStorage flag). Nothing stopped a signed-in caller
+    // from skipping the UI entirely and POSTing straight to this function
+    // with a site they'd never paid for, getting a real live Netlify
+    // deploy for free. This is the actual, server-side enforcement of
+    // "you must have paid for this template" — the one place that
+    // matters, since it's the one place that actually spends a Netlify
+    // deploy credit.
+    const { data: license, error: licenseErr } = await admin
+      .from("license_redemptions")
+      .select("license_key")
+      .eq("user_id", userId)
+      .eq("template", project.template)
+      .limit(1)
+      .maybeSingle();
+    if (licenseErr) return jsonResponse({ error: licenseErr.message }, 500);
+    if (!license) {
+      return jsonResponse({ success: false, reason: "not_purchased" }, 402);
     }
 
     // Each publish is a real Netlify deploy — real Netlify credits, shared

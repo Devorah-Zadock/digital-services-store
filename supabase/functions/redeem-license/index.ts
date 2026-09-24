@@ -14,6 +14,20 @@
 // re-verify (e.g. re-opening the page); claimed by anyone/anything else
 // is refused.
 //
+// Gated by real auth, same as ats-check/ai-rewrite: the caller's own
+// Supabase session token goes in Authorization, verified server-side via
+// admin.auth.getUser(token) — the redeeming account is taken ONLY from
+// that verified token, never from a client-supplied userId in the
+// request body. Before this, a caller with no session at all could POST
+// straight to this public endpoint with someone else's real (already-
+// purchased) license key plus an arbitrary userId and "claim" it first —
+// not an account takeover, but it would make the real purchaser's own
+// later redemption fail as "already redeemed elsewhere". Confirmed the
+// legitimate client (site-builder.js's verifySiteLicense) already only
+// ever calls this while signed in, and supabase-js's functions.invoke()
+// attaches the current session's token automatically — so this is a
+// pure hardening, nothing for a real customer to notice.
+//
 // Deploy: `supabase functions deploy redeem-license` (or paste into
 // Supabase Dashboard → Edge Functions → New Function).
 
@@ -41,10 +55,23 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: "method not allowed" }), { status: 405, headers: corsHeaders });
   }
 
+  const authHeader = req.headers.get("Authorization") || "";
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (!token) {
+    return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: corsHeaders });
+  }
+
+  const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+  const { data: userData, error: userErr } = await admin.auth.getUser(token);
+  if (userErr || !userData.user) {
+    return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: corsHeaders });
+  }
+  const userId = userData.user.id;
+
   try {
-    const { licenseKey, productId, userId, template } = await req.json();
-    if (!licenseKey || !productId || !userId || !template) {
-      return new Response(JSON.stringify({ error: "missing licenseKey, productId, userId or template" }), {
+    const { licenseKey, productId, template } = await req.json();
+    if (!licenseKey || !productId || !template) {
+      return new Response(JSON.stringify({ error: "missing licenseKey, productId or template" }), {
         status: 400,
         headers: corsHeaders,
       });
@@ -89,8 +116,6 @@ Deno.serve(async (req: Request) => {
         { status: 200, headers: corsHeaders }
       );
     }
-
-    const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
     const { data: existing, error: selectErr } = await admin
       .from("license_redemptions")

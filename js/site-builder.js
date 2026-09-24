@@ -1424,6 +1424,14 @@ async function publishSite() {
       note.innerHTML = `פרסום לאוויר זמנית לא זמין אצלנו בגלל עומס אצל ספק האחסון — זה לא קשור לרכישה שלכם, והיא בתוקף. האתר שלכם מוכן ושמור: אפשר להוריד את הקבצים עכשיו עם "הורדת קובצי האתר (ZIP)" למטה, ולנסות לפרסם שוב מאוחר יותר מאותו מסך. תקועים? <a href="mailto:digital.dz.studio@gmail.com?subject=${encodeURIComponent("פרסום נכשל — בניית אתר")}" style="color:inherit; text-decoration:underline;">כתבו לנו</a>.`;
       return;
     }
+    if (data.reason === "not_purchased") {
+      // Should be unreachable from this UI — reaching this point means
+      // financeGateOpened/unlock-done are already showing, which only
+      // happens after a real redeem-license success. Kept as a plain,
+      // non-broken message rather than assuming it can never happen.
+      note.textContent = "לא נמצאה רכישה מאומתת לתבנית הזו. אם כבר רכשתם, נסו לאמת את קוד הרישוי מחדש.";
+      return;
+    }
     if (data.reason === "limit_reached") {
       sitePublishCount = data.publishCount;
       renderPublishRemaining();
