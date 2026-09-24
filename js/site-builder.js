@@ -1415,7 +1415,15 @@ async function publishSite() {
     if (data.claimUrl) {
       note.innerHTML = `
         <a href="${data.claimUrl}" target="_blank" rel="noopener" id="publish-claim-btn" class="btn btn-gold" style="width:100%; box-sizing:border-box; text-align:center; display:block;">שלב אחרון: לחצו כאן להפעלת האתר וקבלת בעלות מלאה (חינם לתמיד) 🚀</a>
-        <p style="font-size:12.5px; color:var(--grey); margin:10px 0 0; line-height:1.6;">💡 כדי להשלים את התהליך, חובה ללחוץ על הכפתור למעלה. לחיצה זו מעבירה את האתר מהשרת הזמני שלנו לחשבון הפרטי והמאובטח שלכם. זה יאפשר לכם לשמור על האתר יציב באוויר ולערוך אותו בעתיד בכל זמן שתרצו.</p>
+        <div class="claim-steps">
+          <b>💡 שלב חובה להפעלת האתר:</b>
+          <ol>
+            <li>לחצו על הכפתור למעלה — ייפתח לכם חלון חדש של Netlify.</li>
+            <li>בחלון שייפתח, לחצו על הכפתור הטורקיז/ירוק הגדול שכתוב עליו <bdi>"Claim apps"</bdi> (במידה ואין לכם חשבון, תתחברו קודם בחינם ברגע).</li>
+            <li>מיד לאחר שלחצתם, חזרו לכאן לאתר כדי לקבל את הקישור הרשמי והסופי שלכם.</li>
+          </ol>
+          אם תלחצו על הכפתור <bdi>"Claim apps"</bdi> בתוך Netlify, האתר יישמר בחשבון האישי שלכם ותוכלו לעדכן אותו בעתיד.
+        </div>
       `;
       document.getElementById("publish-claim-btn").addEventListener("click", () => renderPublishClaimedScreen(data.url), { once: true });
     } else {
