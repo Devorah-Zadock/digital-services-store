@@ -125,6 +125,23 @@ function initProductsPage() {
     const canonicalTag = document.querySelector('link[rel="canonical"]');
     const canonicalUrl = "https://deskkit.co.il/products.html?type=" + type + (activeSub !== "all" ? "&cat=" + activeSub : "");
     if (canonicalTag) canonicalTag.setAttribute("href", canonicalUrl);
+
+    const breadcrumbTag = document.getElementById("breadcrumb-schema");
+    if (breadcrumbTag) {
+      const typeLabel = (PRODUCT_TYPES.find((x) => x.slug === type) || {}).label || type;
+      const items = [
+        { "@type": "ListItem", position: 1, name: "DeskKit", item: "https://deskkit.co.il/" },
+        { "@type": "ListItem", position: 2, name: typeLabel, item: "https://deskkit.co.il/products.html?type=" + type },
+      ];
+      if (subHero) {
+        items.push({ "@type": "ListItem", position: 3, name: subHero.title, item: canonicalUrl });
+      }
+      breadcrumbTag.textContent = JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: items,
+      });
+    }
   }
   renderHero();
   document.querySelectorAll(".nav-links a[data-nav-type]").forEach((a) => {
@@ -234,6 +251,19 @@ function initProductPage() {
     });
   }
   const pType = productType(p);
+  const breadcrumbTag = document.getElementById("breadcrumb-schema");
+  if (breadcrumbTag) {
+    const pTypeLabel = (PRODUCT_TYPES.find((x) => x.slug === pType) || {}).label || pType;
+    breadcrumbTag.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "DeskKit", item: "https://deskkit.co.il/" },
+        { "@type": "ListItem", position: 2, name: pTypeLabel, item: "https://deskkit.co.il/products.html?type=" + pType },
+        { "@type": "ListItem", position: 3, name: p.title, item: pageUrl },
+      ],
+    });
+  }
   // product.html is one shared shell for every product type, but its nav
   // markup had "קורות חיים" hardcoded as the active link — so a deck or
   // xlsx product page still showed the CV tab highlighted. Set it here
