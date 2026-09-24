@@ -2,8 +2,17 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
+<script>
+  try {
+    if (localStorage.getItem("deskkit_lang") === "en") {
+      document.documentElement.classList.add("lang-pending");
+      setTimeout(() => document.documentElement.classList.remove("lang-pending"), 1200);
+    }
+  } catch (e) {}
+</script>
+<style>html.lang-pending body { visibility: hidden; }</style>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>מדריכים — DeskKit</title>
+<title data-i18n="guides_title">מדריכים — DeskKit</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -37,26 +46,27 @@
   <nav class="nav">
     <a href="index.html" class="brand"><span class="brand-badge"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path class="bm-doc" d="M7,4 H14 L18,8 V20 H7 Z"/><path class="bm-fold" d="M14,4 L14,8 L18,8 Z"/><path class="bm-spark" d="M15,14.3 C15.3,16 16,16.7 17.7,17 C16,17.3 15.3,18 15,19.7 C14.7,18 14,17.3 12.3,17 C14,16.7 14.7,16 15,14.3 Z"/></svg></span><span class="brand-text"><span class="brand-desk">Desk</span><span class="brand-kit">Kit</span></span></a>
     <div class="nav-links">
-      <a href="index.html">בית</a>
-      <a href="products.html?type=cv">קורות חיים</a>
-      <a href="sites.html?browse=1">אתרים</a>
-      <a href="quote-app.html">הצעות מחיר</a>
-      <a href="invoice-app.html">חשבוניות</a>
-      <a href="products.html?type=deck">מצגות</a>
-      <a href="products.html?type=xlsx">גליונות</a>
-      <a href="about.html">אודות</a>
-      <a href="contact.html">צור קשר</a>
+      <a href="index.html" data-i18n="nav_home">בית</a>
+      <a href="products.html?type=cv" data-i18n="nav_cv">קורות חיים</a>
+      <a href="sites.html?browse=1" data-i18n="nav_sites">אתרים</a>
+      <a href="quote-app.html" data-i18n="nav_quotes">הצעות מחיר</a>
+      <a href="invoice-app.html" data-i18n="nav_invoices">חשבוניות</a>
+      <a href="products.html?type=deck" data-i18n="nav_decks">מצגות</a>
+      <a href="products.html?type=xlsx" data-i18n="nav_xlsx">גליונות</a>
+      <a href="about.html" data-i18n="nav_about">אודות</a>
+      <a href="contact.html" data-i18n="nav_contact">צור קשר</a>
     </div>
     <div class="nav-end-group">
-      <a href="account.html?redirect=tools.html" id="nav-login-link" class="nav-login nav-login-pending">כניסה</a>
+      <a href="account.html?redirect=tools.html" id="nav-login-link" class="nav-login nav-login-pending" data-i18n="nav_login">כניסה</a>
+      <button type="button" id="lang-toggle" class="lang-toggle" aria-label="Switch language">EN</button>
     </div>
     <button class="burger" aria-label="תפריט">☰</button>
   </nav>
 </header>
 
 <section class="hero" style="padding:60px 24px 70px;">
-  <h1 style="font-size:32px;">מדריכים</h1>
-  <p class="lead">טיפים פרקטיים, בלי מילים גבוהות — כדי שתוכלו ליישם אותם תוך דקות.</p>
+  <h1 style="font-size:32px;" data-i18n="guides_h1">מדריכים</h1>
+  <p class="lead" data-i18n="guides_lead">טיפים פרקטיים, בלי מילים גבוהות — כדי שתוכלו ליישם אותם תוך דקות.</p>
 </section>
 
 <section>
@@ -66,27 +76,27 @@
       <a href="guide-school-schedule.html" class="card" style="text-decoration:none; color:inherit;">
         <div class="body">
           <div style="font-size:30px;">🗓️</div>
-          <h3>איך בונים מערכת שעות אוטומטית לבית ספר</h3>
-          <p style="font-size:14px; color:var(--grey); margin:0; flex:1;">מה זה אילוצים, ואיך מקבלים מערכת שעות ללא התנגשויות תוך דקות.</p>
-          <span style="color:var(--teal); font-weight:600;">לקריאת המדריך ←</span>
+          <h3 data-i18n="guides_schedule_h">איך בונים מערכת שעות אוטומטית לבית ספר</h3>
+          <p style="font-size:14px; color:var(--grey); margin:0; flex:1;" data-i18n="guides_schedule_p">מה זה אילוצים, ואיך מקבלים מערכת שעות ללא התנגשויות תוך דקות.</p>
+          <span style="color:var(--teal); font-weight:600;" data-i18n="guides_read_more">לקריאת המדריך ←</span>
         </div>
       </a>
 
       <a href="guide-cv-tips.html" class="card" style="text-decoration:none; color:inherit;">
         <div class="body">
           <div style="font-size:30px;">📄</div>
-          <h3>5 טיפים לקורות חיים שמתקבלים</h3>
-          <p style="font-size:14px; color:var(--grey); margin:0; flex:1;">כללי אצבע פשוטים שעושים הבדל אמיתי — מהיקף העמוד ועד הישגים מדידים.</p>
-          <span style="color:var(--teal); font-weight:600;">לקריאת המדריך ←</span>
+          <h3 data-i18n="guides_cv_h">5 טיפים לקורות חיים שמתקבלים</h3>
+          <p style="font-size:14px; color:var(--grey); margin:0; flex:1;" data-i18n="guides_cv_p">כללי אצבע פשוטים שעושים הבדל אמיתי — מהיקף העמוד ועד הישגים מדידים.</p>
+          <span style="color:var(--teal); font-weight:600;" data-i18n="guides_read_more">לקריאת המדריך ←</span>
         </div>
       </a>
 
       <a href="guide-business-website.html" class="card" style="text-decoration:none; color:inherit;">
         <div class="body">
           <div style="font-size:30px;">🌐</div>
-          <h3>איך בונים אתר עסקי מקצועי בלי לדעת קוד</h3>
-          <p style="font-size:14px; color:var(--grey); margin:0; flex:1;">מה חייב להיות בכל אתר עסקי, ואיך עושים את זה שלב אחר שלב.</p>
-          <span style="color:var(--teal); font-weight:600;">לקריאת המדריך ←</span>
+          <h3 data-i18n="guides_site_h">איך בונים אתר עסקי מקצועי בלי לדעת קוד</h3>
+          <p style="font-size:14px; color:var(--grey); margin:0; flex:1;" data-i18n="guides_site_p">מה חייב להיות בכל אתר עסקי, ואיך עושים את זה שלב אחר שלב.</p>
+          <span style="color:var(--teal); font-weight:600;" data-i18n="guides_read_more">לקריאת המדריך ←</span>
         </div>
       </a>
 
@@ -99,38 +109,38 @@
     <div class="footer-grid">
       <div>
         <h4>DeskKit</h4>
-        <p style="font-size:14px; max-width:320px;">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות, אתרים ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
+        <p style="font-size:14px; max-width:320px;" data-i18n="footer_blurb">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות, אתרים ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
       </div>
       <div>
-        <h4>ניווט</h4>
+        <h4 data-i18n="footer_nav_heading">ניווט</h4>
         <ul>
-          <li><a href="products.html?type=cv">קורות חיים</a></li>
-          <li><a href="sites.html?browse=1">אתרים</a></li>
-          <li><a href="quote-app.html">הצעות מחיר</a></li>
-          <li><a href="invoice-app.html">חשבוניות</a></li>
-          <li><a href="products.html?type=deck">מצגות</a></li>
-          <li><a href="products.html?type=xlsx">גליונות</a></li>
-          <li><a href="about.html">אודות</a></li>
-          <li><a href="contact.html">צור קשר</a></li>
+          <li><a href="products.html?type=cv" data-i18n="nav_cv">קורות חיים</a></li>
+          <li><a href="sites.html?browse=1" data-i18n="nav_sites">אתרים</a></li>
+          <li><a href="quote-app.html" data-i18n="nav_quotes">הצעות מחיר</a></li>
+          <li><a href="invoice-app.html" data-i18n="nav_invoices">חשבוניות</a></li>
+          <li><a href="products.html?type=deck" data-i18n="nav_decks">מצגות</a></li>
+          <li><a href="products.html?type=xlsx" data-i18n="nav_xlsx">גליונות</a></li>
+          <li><a href="about.html" data-i18n="nav_about">אודות</a></li>
+          <li><a href="contact.html" data-i18n="nav_contact">צור קשר</a></li>
         </ul>
       </div>
       <div>
-        <h4>מידע</h4>
+        <h4 data-i18n="footer_info_heading">מידע</h4>
         <ul>
-          <li><a href="guides.html">מדריכים</a></li>
-          <li><a href="admin.html">ניהול</a></li>
-          <li><a href="terms.html">מדיניות</a></li>
-          <li><a href="accessibility.html">נגישות</a></li>
+          <li><a href="guides.html" data-i18n="footer_guides">מדריכים</a></li>
+          <li><a href="admin.html" data-i18n="footer_admin">ניהול</a></li>
+          <li><a href="terms.html" data-i18n="footer_terms">מדיניות</a></li>
+          <li><a href="accessibility.html" data-i18n="footer_accessibility">נגישות</a></li>
         </ul>
       </div>
       <div>
-        <h4>צור קשר</h4>
+        <h4 data-i18n="nav_contact">צור קשר</h4>
         <ul>
           <li>digital.dz.studio@gmail.com</li>
         </ul>
       </div>
     </div>
-    <div class="footer-bottom">© 2026 DeskKit. כל הזכויות שמורות.</div>
+    <div class="footer-bottom" data-i18n="footer_copyright">© 2026 DeskKit. כל הזכויות שמורות.</div>
   </div>
 </footer>
 
@@ -141,5 +151,6 @@
 <script src="js/main.js"></script>
 <script src="js/widgets.js?v=10"></script>
 <script src="js/effects.js"></script>
+<script src="js/i18n.js?v=6"></script>
 </body>
 </html>

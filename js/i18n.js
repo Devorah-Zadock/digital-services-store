@@ -83,6 +83,17 @@ const I18N = {
     product_banner_h3: "צריכים גם אתר תדמית?",
     product_banner_p: "בנו אתר תדמית שלם עם תצוגה חיה ועיצוב מקצועי, ותורידו את הקבצים המוכנים תוך דקות.",
     product_banner_cta: "לבניית האתר שלי",
+
+    guides_title: "מדריכים — DeskKit",
+    guides_h1: "מדריכים",
+    guides_lead: "טיפים פרקטיים, בלי מילים גבוהות — כדי שתוכלו ליישם אותם תוך דקות.",
+    guides_read_more: "לקריאת המדריך ←",
+    guides_schedule_h: "איך בונים מערכת שעות אוטומטית לבית ספר",
+    guides_schedule_p: "מה זה אילוצים, ואיך מקבלים מערכת שעות ללא התנגשויות תוך דקות.",
+    guides_cv_h: "5 טיפים לקורות חיים שמתקבלים",
+    guides_cv_p: "כללי אצבע פשוטים שעושים הבדל אמיתי — מהיקף העמוד ועד הישגים מדידים.",
+    guides_site_h: "איך בונים אתר עסקי מקצועי בלי לדעת קוד",
+    guides_site_p: "מה חייב להיות בכל אתר עסקי, ואיך עושים את זה שלב אחר שלב.",
   },
   en: {
     nav_home: "Home", nav_sites: "Sites", nav_quotes: "Quotes", nav_cv: "Resumes",
@@ -155,6 +166,17 @@ const I18N = {
     product_banner_h3: "Need a business website too?",
     product_banner_p: "Build a complete business website with a live preview and professional design, and download the ready files in minutes.",
     product_banner_cta: "Build my site",
+
+    guides_title: "Guides — DeskKit",
+    guides_h1: "Guides",
+    guides_lead: "Practical tips, no jargon — so you can put them to use in minutes.",
+    guides_read_more: "Read the guide ←",
+    guides_schedule_h: "How to build an automatic school schedule",
+    guides_schedule_p: "What constraints are, and how to get a conflict-free schedule in minutes.",
+    guides_cv_h: "5 tips for a resume that gets hired",
+    guides_cv_p: "Simple rules of thumb that make a real difference — from page length to measurable achievements.",
+    guides_site_h: "How to build a professional business website without knowing how to code",
+    guides_site_p: "What every business website needs, and how to do it step by step.",
   },
 };
 
