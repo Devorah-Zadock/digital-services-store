@@ -31,7 +31,7 @@ function openDomainGuide() {
         <div class="domain-guide-num">2</div>
         <div class="domain-guide-step-body">
           <h3>מוסיפים אותו ב-Netlify</h3>
-          <p>נכנסים לחשבון ה-Netlify שלכם (אותו חשבון שתפסתם בו את האתר), ובהגדרות האתר לוחצים <b>Add custom domain</b> ומזינים את הכתובת שקניתם. Netlify יציג רשימה של 4 כתובות בשם <b>Name servers</b> — משאירים את זה פתוח בצד.</p>
+          <p>נכנסים לחשבון ה-Netlify שלכם (אותו חשבון שתפסתם בו את האתר), ובהגדרות האתר לוחצים <b>Add custom domain</b> ומזינים את הכתובת שקניתם. Netlify יציג רשימה של 4 כתובות בשם <b>Name servers</b> (כתובת שרת — מעין תעודת זהות שמקשרת בין השם שלכם לאתר) — משאירים את זה פתוח בצד.</p>
         </div>
       </div>
 
