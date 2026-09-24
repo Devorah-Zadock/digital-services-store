@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<script>
+  try {
+    if (localStorage.getItem("deskkit_lang") === "en") {
+      document.documentElement.classList.add("lang-pending");
+      setTimeout(() => document.documentElement.classList.remove("lang-pending"), 1200);
+    }
+  } catch (e) {}
+</script>
+<style>html.lang-pending body { visibility: hidden; }</style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title data-i18n="faq_title">שאלות נפוצות — DeskKit</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="description" content="תשובות לשאלות נפוצות על DeskKit — תשלום, עריכה, קבלת המוצר, ביטולים ופרטיות.">
+<link rel="canonical" href="https://deskkit.co.il/faq.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=75">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "האם יש מנוי חודשי?",
+      "acceptedAnswer": { "@type": "Answer", "text": "לא. DeskKit אינו מבוסס על מנוי חודשי. התשלום מתבצע בהתאם למוצר או לשירות שנבחר — תבניות קורות החיים, המצגות והגיליונות חינמיות לגמרי, ובניית אתר עסקי היא בתשלום חד-פעמי בלבד." } },
+    { "@type": "Question", "name": "מה אני מקבל אחרי הרכישה?",
+      "acceptedAnswer": { "@type": "Answer", "text": "זה תלוי בכלי: תבניות קורות חיים, מצגות וגיליונות Excel מורידים ישירות כקובץ מוכן — PDF, PowerPoint או Excel — ללא עלות. בבניית אתר עסקי מקבלים את קבצי האתר המוכנים להורדה, ואפשרות לפרסם את האתר ישירות לאוויר." } },
+    { "@type": "Question", "name": "האם אפשר לערוך את המסמך?",
+      "acceptedAnswer": { "@type": "Answer", "text": "כן. קורות חיים ואתרים נערכים ישירות בבילדר החי של DeskKit לפני ההורדה. קובצי המצגות (PowerPoint) והגיליונות (Excel) מגיעים כקובץ פתוח לעריכה מלאה בתוכנה המתאימה במחשב שלכם." } },
+    { "@type": "Question", "name": "איך מקבלים את המוצר לאחר הרכישה?",
+      "acceptedAnswer": { "@type": "Answer", "text": "תבניות קורות חיים, מצגות וגיליונות מורידים ישירות מהדפדפן. בבניית אתר עסקי מקבלים קישור להורדת קבצי האתר, או לפרסום ישיר לאוויר, מיד עם סיום התהליך." } },
+    { "@type": "Question", "name": "האם אפשר להשתמש בתוצרים עבור העסק שלי?",
+      "acceptedAnswer": { "@type": "Answer", "text": "כן — התוצר הסופי (קורות החיים, המצגת, האתר וכו') מיועד לשימוש האישי או העסקי שלכם ללא הגבלה. הרישיון אינו כולל מכירה או הפצה מחדש של התבנית או הקוד עצמם כמוצר משלכם." } },
+    { "@type": "Question", "name": "האם אפשר לקבל החזר?",
+      "acceptedAnswer": { "@type": "Answer", "text": "בהתאם לחוק הגנת הצרכן, עסקה לרכישת תוכן דיגיטלי שנמסר לצרכן אינה ניתנת לביטול לאחר מסירתו. אם קובץ שקיבלתם פגום, לא נפתח, או לא תואם למה שתואר — כתבו לנו ונפתור את זה." } },
+    { "@type": "Question", "name": "האם המידע שאני מזין באתר נשמר?",
+      "acceptedAnswer": { "@type": "Answer", "text": "כן. תוכן שאתם שומרים באופן פעיל בכלים — כמו קורות חיים, פרטי עסק להצעת מחיר, או פרויקט אתר — נשמר בחשבון שלכם אצל Supabase, בצורה מוצפנת ומוגבלת אליכם בלבד." } },
+    { "@type": "Question", "name": "איך אפשר ליצור קשר?",
+      "acceptedAnswer": { "@type": "Answer", "text": "הכי פשוט במייל: digital.dz.studio@gmail.com, או דרך עמוד צור הקשר באתר." } }
+  ]
+}
+</script>
+</head>
+<body>
+<script>
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf("sb-") === 0 && k.indexOf("-auth-token") !== -1 && localStorage.getItem(k)) {
+        document.body.classList.add("has-sites-rail");
+        break;
+      }
+    }
+    var rw = localStorage.getItem("deskkit_rail_w");
+    if (rw) document.documentElement.style.setProperty("--rail-w", rw + "px");
+    if (localStorage.getItem("deskkit_rail_collapsed") === "1") {
+      document.documentElement.style.setProperty("--rail-w", "0px");
+      document.body.classList.add("rail-collapsed");
+    }
+  } catch (e) {}
+</script>
+
+<header class="site">
+  <nav class="nav">
+    <a href="index.html" class="brand"><span class="brand-badge"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path class="bm-doc" d="M7,4 H14 L18,8 V20 H7 Z"/><path class="bm-fold" d="M14,4 L14,8 L18,8 Z"/><path class="bm-spark" d="M15,14.3 C15.3,16 16,16.7 17.7,17 C16,17.3 15.3,18 15,19.7 C14.7,18 14,17.3 12.3,17 C14,16.7 14.7,16 15,14.3 Z"/></svg></span><span class="brand-text"><span class="brand-desk">Desk</span><span class="brand-kit">Kit</span></span></a>
+    <div class="nav-links">
+      <a href="index.html" data-i18n="nav_home">בית</a>
+      <a href="products.html?type=cv" data-i18n="nav_cv">קורות חיים</a>
+      <a href="sites.html?browse=1" data-i18n="nav_sites">אתרים</a>
+      <a href="quote-app.html" data-i18n="nav_quotes">הצעות מחיר</a>
+      <a href="invoice-app.html" data-i18n="nav_invoices">חשבוניות</a>
+      <a href="products.html?type=deck" data-i18n="nav_decks">מצגות</a>
+      <a href="products.html?type=xlsx" data-i18n="nav_xlsx">גליונות</a>
+      <a href="about.html" data-i18n="nav_about">אודות</a>
+      <a href="contact.html" data-i18n="nav_contact">צור קשר</a>
+    </div>
+    <div class="nav-end-group">
+      <a href="account.html?redirect=tools.html" id="nav-login-link" class="nav-login nav-login-pending" data-i18n="nav_login">כניסה</a>
+      <button type="button" id="lang-toggle" class="lang-toggle" aria-label="Switch language">EN</button>
+    </div>
+    <button class="burger" aria-label="תפריט">☰</button>
+  </nav>
+</header>
+
+<section class="hero" style="padding:60px 24px 70px;">
+  <h1 style="font-size:34px;" data-i18n="faq_h1">שאלות נפוצות</h1>
+  <p class="lead" data-i18n="faq_lead">תשובות קצרות וברורות לשאלות שהכי נשאלות — לפני שמתחילים, ולפני שמשלמים.</p>
+</section>
+
+<section>
+  <div class="container faq-list" style="max-width:720px;">
+    <details class="faq-item" open>
+      <summary data-i18n="faq_q1">האם יש מנוי חודשי?</summary>
+      <p data-i18n="faq_a1">לא. DeskKit אינו מבוסס על מנוי חודשי. התשלום מתבצע בהתאם למוצר או לשירות שנבחר — תבניות קורות החיים, המצגות והגיליונות חינמיות לגמרי, ובניית אתר עסקי היא בתשלום חד-פעמי בלבד.</p>
+    </details>
+    <details class="faq-item">
+      <summary data-i18n="faq_q2">מה אני מקבל אחרי הרכישה?</summary>
+      <p data-i18n="faq_a2">זה תלוי בכלי: תבניות קורות חיים, מצגות וגיליונות Excel מורידים ישירות כקובץ מוכן — PDF, PowerPoint או Excel — ללא עלות. בבניית אתר עסקי מקבלים את קבצי האתר המוכנים להורדה, ואפשרות לפרסם את האתר ישירות לאוויר.</p>
+    </details>
+    <details class="faq-item">
+      <summary data-i18n="faq_q3">האם אפשר לערוך את המסמך?</summary>
+      <p data-i18n="faq_a3">כן. קורות חיים ואתרים נערכים ישירות בבילדר החי של DeskKit לפני ההורדה. קובצי המצגות (PowerPoint) והגיליונות (Excel) מגיעים כקובץ פתוח לעריכה מלאה בתוכנה המתאימה במחשב שלכם.</p>
+    </details>
+    <details class="faq-item">
+      <summary data-i18n="faq_q4">איך מקבלים את המוצר לאחר הרכישה?</summary>
+      <p data-i18n="faq_a4">תבניות קורות חיים, מצגות וגיליונות מורידים ישירות מהדפדפן. בבניית אתר עסקי מקבלים קישור להורדת קבצי האתר, או לפרסום ישיר לאוויר, מיד עם סיום התהליך.</p>
+    </details>
+    <details class="faq-item">
+      <summary data-i18n="faq_q5">האם אפשר להשתמש בתוצרים עבור העסק שלי?</summary>
+      <p><span data-i18n="faq_a5a">כן — התוצר הסופי (קורות החיים, המצגת, האתר וכו') מיועד לשימוש האישי או העסקי שלכם ללא הגבלה. הרישיון אינו כולל מכירה או הפצה מחדש של התבנית או הקוד עצמם כמוצר משלכם. לפרטים המלאים ראו את </span><a href="terms.html" style="color:var(--teal); font-weight:600;" data-i18n="faq_terms_link">תנאי השימוש</a><span data-i18n="faq_a5b">.</span></p>
+    </details>
+    <details class="faq-item">
+      <summary data-i18n="faq_q6">האם אפשר לקבל החזר?</summary>
+      <p><span data-i18n="faq_a6a">בהתאם לחוק הגנת הצרכן, עסקה לרכישת תוכן דיגיטלי שנמסר לצרכן אינה ניתנת לביטול לאחר מסירתו — בדיוק כמו רכישת ספר דיגיטלי או קובץ מוזיקה. אם קובץ שקיבלתם פגום, לא נפתח, או לא תואם למה שתואר — </span><a href="contact.html" data-i18n="faq_contact_link" style="color:var(--teal); font-weight:600;">כתבו לנו</a><span data-i18n="faq_a6b"> ונפתור את זה. הפרטים המלאים נמצאים ב</span><a href="terms.html" style="color:var(--teal); font-weight:600;" data-i18n="faq_terms_link2">מדיניות המכירה והביטולים</a><span data-i18n="faq_a6c">.</span></p>
+    </details>
+    <details class="faq-item">
+      <summary data-i18n="faq_q7">האם המידע שאני מזין באתר נשמר?</summary>
+      <p><span data-i18n="faq_a7a">כן. תוכן שאתם שומרים באופן פעיל בכלים — כמו קורות חיים, פרטי עסק להצעת מחיר, או פרויקט אתר — נשמר בחשבון שלכם אצל Supabase, בצורה מוצפנת ומוגבלת אליכם בלבד. לפרטים המלאים ראו את </span><a href="terms.html#privacy" style="color:var(--teal); font-weight:600;" data-i18n="faq_privacy_link">מדיניות הפרטיות</a><span data-i18n="faq_a7b">.</span></p>
+    </details>
+    <details class="faq-item">
+      <summary data-i18n="faq_q8">איך אפשר ליצור קשר?</summary>
+      <p><span data-i18n="faq_a8a">הכי פשוט במייל: </span><a href="mailto:digital.dz.studio@gmail.com" style="color:var(--teal); font-weight:600;">digital.dz.studio@gmail.com</a><span data-i18n="faq_a8b">, או דרך </span><a href="contact.html" style="color:var(--teal); font-weight:600;" data-i18n="faq_contact_page_link">עמוד יצירת הקשר</a><span data-i18n="faq_a8c">.</span></p>
+    </details>
+  </div>
+</section>
+
+<footer class="site">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <h4>DeskKit</h4>
+        <p style="font-size:14px; max-width:320px;" data-i18n="footer_blurb">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
+      </div>
+      <div>
+        <h4 data-i18n="footer_nav_heading">ניווט</h4>
+        <ul>
+          <li><a href="products.html?type=cv" data-i18n="nav_cv">קורות חיים</a></li>
+          <li><a href="sites.html?browse=1" data-i18n="nav_sites">אתרים</a></li>
+          <li><a href="quote-app.html" data-i18n="nav_quotes">הצעות מחיר</a></li>
+          <li><a href="invoice-app.html" data-i18n="nav_invoices">חשבוניות</a></li>
+          <li><a href="products.html?type=deck" data-i18n="nav_decks">מצגות</a></li>
+          <li><a href="products.html?type=xlsx" data-i18n="nav_xlsx">גליונות</a></li>
+          <li><a href="about.html" data-i18n="nav_about">אודות</a></li>
+          <li><a href="contact.html" data-i18n="nav_contact">צור קשר</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 data-i18n="footer_info_heading">מידע</h4>
+        <ul>
+          <li><a href="guides.html" data-i18n="footer_guides">מדריכים</a></li>
+          <li><a href="faq.html" data-i18n="footer_faq">שאלות נפוצות</a></li>
+          <li><a href="admin.html" data-i18n="footer_admin">ניהול</a></li>
+          <li><a href="terms.html" data-i18n="footer_terms">מדיניות</a></li>
+          <li><a href="accessibility.html" data-i18n="footer_accessibility">נגישות</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 data-i18n="nav_contact">צור קשר</h4>
+        <ul>
+          <li>digital.dz.studio@gmail.com</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-identity">
+      <p class="footer-identity-tagline" data-i18n="footer_identity_tagline">DeskKit — כלים ומסמכים דיגיטליים לעסקים</p>
+      <p class="footer-identity-owner" data-i18n="footer_identity_owner">נוצר ומופעל באופן עצמאי על ידי דבורה צדוק &middot; עוסק פטור</p>
+      <p class="footer-identity-links"><a href="contact.html" data-i18n="nav_contact">צור קשר</a> &middot; <a href="terms.html#privacy" data-i18n="footer_privacy_link">מדיניות פרטיות</a> &middot; <a href="terms.html" data-i18n="footer_terms_link">תנאי שימוש</a></p>
+    </div>
+    <div class="footer-bottom" data-i18n="footer_copyright">© 2026 DeskKit. כל הזכויות שמורות.</div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/nav-auth.js"></script>
+<script src="js/my-panel.js?v=12"></script>
+<script src="js/main.js"></script>
+<script src="js/widgets.js?v=10"></script>
+<script src="js/effects.js"></script>
+<script src="js/i18n.js?v=8"></script>
+</body>
+</html>
