@@ -682,40 +682,43 @@ const PRODUCTS = [
    axes into one row of pills (the old CATEGORIES array) is exactly what
    read as cluttered: "כללי" and "מצגות" look like peers but aren't. */
 const PRODUCT_TYPES = [
-  { slug: "cv", label: "קורות חיים" },
-  { slug: "deck", label: "מצגות עסקיות" },
-  { slug: "xlsx", label: "גיליונות Excel" },
+  { slug: "cv", label: "קורות חיים", labelEn: "Resumes" },
+  { slug: "deck", label: "מצגות עסקיות", labelEn: "Business decks" },
+  { slug: "xlsx", label: "גיליונות Excel", labelEn: "Excel spreadsheets" },
 ];
 /* products.html is one page reused per ?type= — each type gets its own
    dedicated-feeling hero (title + lead), the same way sites.html has its
    own, instead of one generic "קטלוג המוצרים" header regardless of which
    type is actually showing. */
 const TYPE_HERO = {
-  cv: { title: "קורות חיים", lead: "תבניות קורות חיים מוכנות, בעיצוב מקצועי — ממלאים פרטים ורואים תוצאה חיה, לפי מקצוע." },
-  deck: { title: "מצגות עסקיות", lead: "תבניות PowerPoint מוכנות להורדה ועריכה — לכל צורך: פרופיל חברה, השקת מוצר, גיוס משקיעים ועוד." },
-  xlsx: { title: "גיליונות Excel", lead: "כלי ניהול מוכנים להורדה — תקציב, חשבוניות, מעקב הוצאות ולקוחות." },
+  cv: { title: "קורות חיים", lead: "תבניות קורות חיים מוכנות, בעיצוב מקצועי — ממלאים פרטים ורואים תוצאה חיה, לפי מקצוע.",
+        titleEn: "Resumes", leadEn: "Ready-made, professionally designed resume templates — fill in your details and see a live result, by profession." },
+  deck: { title: "מצגות עסקיות", lead: "תבניות PowerPoint מוכנות להורדה ועריכה — לכל צורך: פרופיל חברה, השקת מוצר, גיוס משקיעים ועוד.",
+          titleEn: "Business decks", leadEn: "Ready-to-download, ready-to-edit PowerPoint templates — for any need: company profile, product launch, fundraising and more." },
+  xlsx: { title: "גיליונות Excel", lead: "כלי ניהול מוכנים להורדה — תקציב, חשבוניות, מעקב הוצאות ולקוחות.",
+          titleEn: "Excel spreadsheets", leadEn: "Ready-to-download management tools — budgeting, invoicing, expense and customer tracking." },
 };
 const CV_PROFESSIONS = [
-  { slug: "all", label: "הכל" },
-  { slug: "general", label: "כללי" },
-  { slug: "dev", label: "תכנות" },
-  { slug: "design", label: "עיצוב" },
-  { slug: "accounting", label: "הנהלת חשבונות" },
+  { slug: "all", label: "הכל", labelEn: "All" },
+  { slug: "general", label: "כללי", labelEn: "General" },
+  { slug: "dev", label: "תכנות", labelEn: "Development" },
+  { slug: "design", label: "עיצוב", labelEn: "Design" },
+  { slug: "accounting", label: "הנהלת חשבונות", labelEn: "Accounting" },
 ];
 const DECK_TOPICS = [
-  { slug: "all", label: "הכל" },
-  { slug: "business", label: "עסקי" },
-  { slug: "marketing", label: "שיווק ותוכן" },
-  { slug: "creative", label: "יצירתי" },
+  { slug: "all", label: "הכל", labelEn: "All" },
+  { slug: "business", label: "עסקי", labelEn: "Business" },
+  { slug: "marketing", label: "שיווק ותוכן", labelEn: "Marketing & content" },
+  { slug: "creative", label: "יצירתי", labelEn: "Creative" },
 ];
 const XLSX_TOPICS = [
-  { slug: "all", label: "הכל" },
-  { slug: "finance", label: "ניהול כספים" },
-  { slug: "customers", label: "ניהול לקוחות" },
-  { slug: "operations", label: "תפעול ומלאי" },
-  { slug: "projects", label: "ניהול פרויקטים" },
-  { slug: "sales", label: "מכירות" },
-  { slug: "hr", label: "כוח אדם ושעות עבודה" },
+  { slug: "all", label: "הכל", labelEn: "All" },
+  { slug: "finance", label: "ניהול כספים", labelEn: "Finance" },
+  { slug: "customers", label: "ניהול לקוחות", labelEn: "Customer management" },
+  { slug: "operations", label: "תפעול ומלאי", labelEn: "Operations & inventory" },
+  { slug: "projects", label: "ניהול פרויקטים", labelEn: "Project management" },
+  { slug: "sales", label: "מכירות", labelEn: "Sales" },
+  { slug: "hr", label: "כוח אדם ושעות עבודה", labelEn: "HR & timesheets" },
 ];
 /* One lookup per type instead of a parallel if/else chain everywhere a
    type's sub-topic list is needed (catalog.js's initProductsPage). */
@@ -742,5 +745,7 @@ function productSubtopicLabel(p) {
   const topic = productSubtopic(p);
   const list = TYPE_SUBTOPICS[productType(p)] || [];
   const match = list.find((t) => t.slug === topic);
-  return (match && match.label) || p.category;
+  const isEn = typeof currentLang === "function" && currentLang() === "en";
+  if (match) return (isEn && match.labelEn) || match.label;
+  return p.category;
 }

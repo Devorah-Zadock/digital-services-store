@@ -77,6 +77,12 @@ const I18N = {
     tools_quote_p: "נרשמים פעם אחת, שומרים את פרטי העסק והלוגו שלכם, ויוצרים הצעת מחיר מוכנה תוך דקה.",
     tools_new_badge: "חדש!",
     tools_invoice_p: "נרשמים פעם אחת, ומפיקים חשבונית מס-קבלה או קבלה ממוספרת אוטומטית — כולל התאמה לעוסק פטור.",
+
+    products_search_ph: "חיפוש תבנית לפי שם...",
+    product_related_kicker: "אולי גם יעניין אתכם", product_related_h2: "תבניות נוספות באותה קטגוריה",
+    product_banner_h3: "צריכים גם אתר תדמית?",
+    product_banner_p: "בנו אתר תדמית שלם עם תצוגה חיה ועיצוב מקצועי, ותורידו את הקבצים המוכנים תוך דקות.",
+    product_banner_cta: "לבניית האתר שלי",
   },
   en: {
     nav_home: "Home", nav_sites: "Sites", nav_quotes: "Quotes", nav_cv: "Resumes",
@@ -143,6 +149,12 @@ const I18N = {
     tools_quote_p: "Sign up once, save your business details and logo, and create a ready price quote in a minute.",
     tools_new_badge: "New!",
     tools_invoice_p: "Sign up once, and generate a numbered tax invoice or receipt automatically — including support for Israeli exempt-dealer (osek patur) status.",
+
+    products_search_ph: "Search templates by name...",
+    product_related_kicker: "You might also like", product_related_h2: "More templates in the same category",
+    product_banner_h3: "Need a business website too?",
+    product_banner_p: "Build a complete business website with a live preview and professional design, and download the ready files in minutes.",
+    product_banner_cta: "Build my site",
   },
 };
 
@@ -156,6 +168,12 @@ function applyLang(lang) {
     const key = el.dataset.i18n;
     if (dict[key] !== undefined) el.textContent = dict[key];
   });
+  // Same idea as data-i18n, for the one attribute textContent can't
+  // reach — an <input placeholder> (e.g. the catalog search box).
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    const key = el.dataset.i18nPlaceholder;
+    if (dict[key] !== undefined) el.placeholder = dict[key];
+  });
   const toggle = document.getElementById("lang-toggle");
   if (toggle) toggle.textContent = lang === "en" ? "עברית" : "EN";
   try { localStorage.setItem(I18N_LANG_KEY, lang); } catch (err) { /* storage unavailable */ }
@@ -163,6 +181,15 @@ function applyLang(lang) {
   // its comment) — a no-op class removal when that script never hid it
   // (the common, default-Hebrew case) in the first place.
   document.documentElement.classList.remove("lang-pending");
+  // Pages with their own JS-rendered content (catalog.js's product grid,
+  // hero title/lead per ?type=, etc.) can't be reached by the plain
+  // data-i18n sweep above — they listen for this and re-render themselves
+  // in the new language instead.
+  document.dispatchEvent(new CustomEvent("deskkit:langchange", { detail: { lang } }));
+}
+
+function currentLang() {
+  try { return localStorage.getItem(I18N_LANG_KEY) || "he"; } catch (err) { return "he"; }
 }
 
 // No DOMContentLoaded wrapper needed: this script's own <script> tag

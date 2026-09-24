@@ -1,17 +1,49 @@
-function money(n) { return n === 0 ? "חינם" : "₪" + n; }
+/* Small UI-chrome dictionary local to this file — separate from js/i18n.js
+   on purpose: everything here is generated INSIDE dynamically-built HTML
+   (card labels, button text), which data-i18n's textContent sweep can't
+   reach. The actual product names/descriptions (PRODUCTS in
+   products-data.js) are NOT covered here — they stay Hebrew-only for now,
+   a separate, much bigger translation task. */
+const CATALOG_STR = {
+  he: { free: "חינם", download: "להורדה", edit: "לעריכה", view: "לצפייה",
+        emptyCategory: "אין עדיין מוצרים בקטגוריה הזו.",
+        emptySearch: (term) => `אין תבניות שמתאימות לחיפוש "${term}".`,
+        previewAlt: (title) => `תצוגה מקדימה של ${title}`,
+        catalogFallback: "קטלוג",
+        viewFull: "צפייה מלאה בתוכן", downloadFile: "הורדת הקובץ — חינם",
+        downloadNote: (linkHtml) => `קובץ מלא, מוכן לעריכה. אפשר לצפות בכל התוכן לפני שמורידים. ההורדה עצמה דורשת התחברות (חשבון פשוט וחינמי) כדי שתישאר לכם גישה קבועה. יש שאלה? ${linkHtml} ונשמח לעזור.`,
+        contactUs: "כתבו לנו",
+        editDownload: "עריכה והורדה — חינם",
+        editNote: "ממלאים את הפרטים שלכם ורואים תוצאה חיה, בעברית או באנגלית. עריכה חינמית לגמרי — רק צריך להתחבר כדי להיכנס לעורך." },
+  en: { free: "Free", download: "Download", edit: "Edit", view: "View",
+        emptyCategory: "No products in this category yet.",
+        emptySearch: (term) => `No templates match the search "${term}".`,
+        previewAlt: (title) => `Preview of ${title}`,
+        catalogFallback: "Catalog",
+        viewFull: "View full content", downloadFile: "Download file — free",
+        downloadNote: (linkHtml) => `A complete, ready-to-edit file. You can view all the content before downloading. The download itself requires signing in (a simple, free account) so you keep permanent access. Have a question? ${linkHtml} and we'll be happy to help.`,
+        contactUs: "Write to us",
+        editDownload: "Edit & download — free",
+        editNote: "Fill in your details and see a live result, in Hebrew or English. Editing is completely free — you just need to sign in to open the editor." },
+};
+function catalogLang() { return (typeof currentLang === "function" ? currentLang() : "he"); }
+function cs() { return CATALOG_STR[catalogLang()] || CATALOG_STR.he; }
+
+function money(n) { return n === 0 ? cs().free : "₪" + n; }
 function escapeHtmlC(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 function cardHtml(p) {
-  const actionLabel = p.downloadUrl ? "להורדה" : (p.price === 0 ? "לעריכה" : "לצפייה");
+  const t = cs();
+  const actionLabel = p.downloadUrl ? t.download : (p.price === 0 ? t.edit : t.view);
   return `
     <div class="card" data-cat="${productSubtopic(p)}">
       <div class="thumb"><img src="images/previews/${p.image}" alt="${p.title}" loading="lazy"></div>
       <div class="body">
         <div class="card-meta">
           <span class="tag">${productSubtopicLabel(p)}</span>
-          ${p.price === 0 ? `<span class="tag tag-free">חינם</span>` : `<span class="price">${money(p.price)}</span>`}
+          ${p.price === 0 ? `<span class="tag tag-free">${t.free}</span>` : `<span class="price">${money(p.price)}</span>`}
         </div>
         <h3>${p.title}</h3>
         <a href="product.html?slug=${p.slug}" class="btn btn-teal card-cta">${actionLabel}</a>
@@ -22,7 +54,7 @@ function cardHtml(p) {
 function renderGrid(el, products) {
   el.innerHTML = products.length
     ? products.map(cardHtml).join("")
-    : `<p style="grid-column:1/-1; text-align:center; color:var(--grey);">אין עדיין מוצרים בקטגוריה הזו.</p>`;
+    : `<p style="grid-column:1/-1; text-align:center; color:var(--grey);">${cs().emptyCategory}</p>`;
 }
 
 /* products.html is one page reused per ?type= (קורות חיים / מצגות /
@@ -51,26 +83,31 @@ function initProductsPage() {
   let activeSub = (TYPE_SUBTOPICS[type] || []).some((c) => c.slug === catParam) ? catParam : "all";
   let searchTerm = "";
 
-  const hero = TYPE_HERO[type];
-  if (hero) {
-    if (heroTitleEl) heroTitleEl.textContent = hero.title;
+  function renderHero() {
+    const hero = TYPE_HERO[type];
+    if (!hero) return;
+    const isEn = catalogLang() === "en";
+    const title = (isEn && hero.titleEn) || hero.title;
+    const lead = (isEn && hero.leadEn) || hero.lead;
+    if (heroTitleEl) heroTitleEl.textContent = title;
     if (heroLeadEl) {
-      heroLeadEl.textContent = hero.lead + " ";
+      heroLeadEl.textContent = lead + " ";
       if (type === "cv") {
         const guideLink = document.createElement("a");
         guideLink.href = "guide-cv-tips.html";
         guideLink.style.color = "var(--teal)";
         guideLink.style.fontWeight = "600";
-        guideLink.textContent = "5 טיפים לקורות חיים שמתקבלים";
+        guideLink.textContent = isEn ? "5 tips for a resume that gets hired" : "5 טיפים לקורות חיים שמתקבלים";
         heroLeadEl.appendChild(guideLink);
       }
     }
-    document.title = hero.title + " — קטלוג — DeskKit";
+    document.title = title + (isEn ? " — Catalog — DeskKit" : " — קטלוג — DeskKit");
     const descTag = document.querySelector('meta[name="description"]');
-    if (descTag) descTag.setAttribute("content", hero.lead);
+    if (descTag) descTag.setAttribute("content", lead);
     const canonicalTag = document.querySelector('link[rel="canonical"]');
     if (canonicalTag) canonicalTag.setAttribute("href", "https://deskkit.co.il/products.html?type=" + type);
   }
+  renderHero();
   document.querySelectorAll(".nav-links a[data-nav-type]").forEach((a) => {
     a.classList.toggle("active", a.dataset.navType === type);
   });
@@ -84,9 +121,10 @@ function initProductsPage() {
 
   function renderSubTabs() {
     const topics = TYPE_SUBTOPICS[type] || [];
+    const isEn = catalogLang() === "en";
     if (!topics.length) { subTabsEl.style.display = "none"; subTabsEl.innerHTML = ""; return; }
     subTabsEl.style.display = "";
-    subTabsEl.innerHTML = topics.map((c) => `<button class="tab tab-sub${c.slug === activeSub ? " active" : ""}" data-prof="${c.slug}">${c.label}</button>`).join("");
+    subTabsEl.innerHTML = topics.map((c) => `<button class="tab tab-sub${c.slug === activeSub ? " active" : ""}" data-prof="${c.slug}">${(isEn && c.labelEn) || c.label}</button>`).join("");
     subTabsEl.querySelectorAll(".tab").forEach((btn) => {
       btn.addEventListener("click", () => {
         activeSub = btn.dataset.prof;
@@ -106,7 +144,7 @@ function initProductsPage() {
       return true;
     });
     if (term && !list.length) {
-      grid.innerHTML = `<p class="tpl-search-empty">אין תבניות שמתאימות לחיפוש "${escapeHtmlC(term)}".</p>`;
+      grid.innerHTML = `<p class="tpl-search-empty">${cs().emptySearch(escapeHtmlC(term))}</p>`;
     } else {
       renderGrid(grid, list);
     }
@@ -122,6 +160,14 @@ function initProductsPage() {
   }
 
   apply();
+
+  // Language toggled while already on this page (no reload) — data-i18n's
+  // own sweep can't reach any of the JS-rendered content above, so redo
+  // the language-dependent pieces by hand instead.
+  document.addEventListener("deskkit:langchange", () => {
+    renderHero();
+    apply();
+  });
 }
 
 function initProductPage() {
@@ -140,7 +186,6 @@ function initProductPage() {
   const canonicalTag = document.querySelector('link[rel="canonical"]');
   if (canonicalTag) canonicalTag.setAttribute("href", "https://deskkit.co.il/product.html?slug=" + p.slug);
   const pType = productType(p);
-  const pTypeLabel = (PRODUCT_TYPES.find((t) => t.slug === pType) || {}).label || "קטלוג";
   // product.html is one shared shell for every product type, but its nav
   // markup had "קורות חיים" hardcoded as the active link — so a deck or
   // xlsx product page still showed the CV tab highlighted. Set it here
@@ -148,41 +193,57 @@ function initProductPage() {
   document.querySelectorAll(".nav-links a").forEach((a) => {
     a.classList.toggle("active", a.getAttribute("href") === `products.html?type=${pType}`);
   });
-  root.innerHTML = `
-    <div class="product-hero">
-      <div class="thumb"><img src="images/previews/${p.image}" alt="תצוגה מקדימה של ${p.title}"></div>
-      <div>
-        <div class="breadcrumb"><a href="products.html?type=${pType}">${pTypeLabel}</a> / ${p.title}</div>
-        <h1>${p.title}</h1>
-        <p class="desc">${p.heroDesc}</p>
-        <div class="format-badges">${p.formatBadges.map((b) => `<span class="format-badge">${b}</span>`).join("")}</div>
-        <div class="price-block">
-          <span class="price">${money(p.price)}</span>
-        </div>
-        <ul class="checklist">${p.checklist.map((c) => `<li>${c}</li>`).join("")}</ul>
-        ${p.downloadUrl ? `
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <a href="preview.html?slug=${p.slug}" class="btn btn-outline-dark">צפייה מלאה בתוכן</a>
-          <button type="button" id="download-file-btn" class="btn btn-gold">הורדת הקובץ — חינם</button>
-        </div>
-        <div class="note-box">קובץ מלא, מוכן לעריכה. אפשר לצפות בכל התוכן לפני שמורידים. ההורדה עצמה דורשת התחברות (חשבון פשוט וחינמי) כדי שתישאר לכם גישה קבועה. יש שאלה? <a href="contact.html" style="color:var(--teal); font-weight:600;">כתבו לנו</a> ונשמח לעזור.</div>
-        ` : `
-        <a href="builder.html?template=${p.slug}" class="btn btn-gold">עריכה והורדה — חינם</a>
-        <div class="note-box">ממלאים את הפרטים שלכם ורואים תוצאה חיה, בעברית או באנגלית. עריכה חינמית לגמרי — רק צריך להתחבר כדי להיכנס לעורך.</div>
-        `}
-      </div>
-    </div>`;
 
-  if (p.downloadUrl) {
-    const downloadBtn = document.getElementById("download-file-btn");
-    if (downloadBtn) downloadBtn.addEventListener("click", () => handleGatedDownload(p));
+  // p.title/heroDesc/formatBadges/checklist are the product's own content
+  // (PRODUCTS in products-data.js) and stay Hebrew-only for now — see the
+  // CATALOG_STR comment above. Everything else here (breadcrumb label,
+  // buttons, note text) IS UI chrome, so it's re-rendered on language
+  // change same as the catalog grid.
+  function render() {
+    const t = cs();
+    const isEn = catalogLang() === "en";
+    const pTypeLabel = (PRODUCT_TYPES.find((x) => x.slug === pType) || {}).labelEn && isEn
+      ? PRODUCT_TYPES.find((x) => x.slug === pType).labelEn
+      : (PRODUCT_TYPES.find((x) => x.slug === pType) || {}).label || t.catalogFallback;
+    root.innerHTML = `
+      <div class="product-hero">
+        <div class="thumb"><img src="images/previews/${p.image}" alt="${t.previewAlt(p.title)}"></div>
+        <div>
+          <div class="breadcrumb"><a href="products.html?type=${pType}">${pTypeLabel}</a> / ${p.title}</div>
+          <h1>${p.title}</h1>
+          <p class="desc">${p.heroDesc}</p>
+          <div class="format-badges">${p.formatBadges.map((b) => `<span class="format-badge">${b}</span>`).join("")}</div>
+          <div class="price-block">
+            <span class="price">${money(p.price)}</span>
+          </div>
+          <ul class="checklist">${p.checklist.map((c) => `<li>${c}</li>`).join("")}</ul>
+          ${p.downloadUrl ? `
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <a href="preview.html?slug=${p.slug}" class="btn btn-outline-dark">${t.viewFull}</a>
+            <button type="button" id="download-file-btn" class="btn btn-gold">${t.downloadFile}</button>
+          </div>
+          <div class="note-box">${t.downloadNote(`<a href="contact.html" style="color:var(--teal); font-weight:600;">${t.contactUs}</a>`)}</div>
+          ` : `
+          <a href="builder.html?template=${p.slug}" class="btn btn-gold">${t.editDownload}</a>
+          <div class="note-box">${t.editNote}</div>
+          `}
+        </div>
+      </div>`;
+
+    if (p.downloadUrl) {
+      const downloadBtn = document.getElementById("download-file-btn");
+      if (downloadBtn) downloadBtn.addEventListener("click", () => handleGatedDownload(p));
+    }
   }
+  render();
+  document.addEventListener("deskkit:langchange", render);
 
   const related = document.getElementById("related-grid");
   if (related) {
     const list = PRODUCTS.filter((x) => x.categorySlug === p.categorySlug && x.slug !== p.slug).slice(0, 3);
     if (list.length) {
       renderGrid(related, list);
+      document.addEventListener("deskkit:langchange", () => renderGrid(related, list));
     } else {
       document.getElementById("related-section")?.remove();
     }
