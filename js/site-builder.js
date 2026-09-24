@@ -260,12 +260,16 @@ function showCatalog() {
   document.getElementById("tpl-catalog-section").style.display = "";
   document.getElementById("wizard-section").style.display = "none";
   document.getElementById("builder-top-banner").style.display = "";
+  const seo = document.getElementById("sites-seo-content");
+  if (seo) seo.style.display = "";
   renderTplCatalog();
 }
 
 function showWizard() {
   document.getElementById("tpl-catalog-section").style.display = "none";
   document.getElementById("wizard-section").style.display = "";
+  const seo = document.getElementById("sites-seo-content");
+  if (seo) seo.style.display = "none";
   // The intro banner ("בניית אתר תדמית") only makes sense while browsing —
   // once actually editing, it just eats vertical space above the canvas.
   document.getElementById("builder-top-banner").style.display = "none";
