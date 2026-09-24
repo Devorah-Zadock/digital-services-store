@@ -174,7 +174,7 @@ Deno.serve(async (req: Request) => {
     // authenticated caller before touching Netlify on their behalf.
     const { data: project, error: fetchErr } = await admin
       .from("site_projects")
-      .select("id, user_id, template, netlify_site_id, publish_count")
+      .select("id, user_id, template, netlify_site_id, publish_count, slug")
       .eq("id", siteProjectId)
       .maybeSingle();
     if (fetchErr) return jsonResponse({ error: fetchErr.message }, 500);
@@ -203,6 +203,59 @@ Deno.serve(async (req: Request) => {
     if (licenseErr) return jsonResponse({ error: licenseErr.message }, 500);
     if (!license) {
       return jsonResponse({ success: false, reason: "not_purchased" }, 402);
+    }
+
+    // Self-hosting pilot (see supabase/sql/hosted_site_pages*.sql and
+    // api/site-preview.js): gated to a specific allowlist of test user
+    // ids, never a global switch — turning this on must never change what
+    // a REAL customer's publish click does. Only accounts listed in
+    // SELF_HOSTING_TEST_USER_IDS take this path; every other caller falls
+    // straight through to the unchanged Netlify flow below, exactly as
+    // it's always worked. Checked BEFORE the Netlify publish-count limit
+    // below on purpose — that limit exists only because a Netlify deploy
+    // spends real, shared credits, which doesn't apply to this path at
+    // all, so a self-hosting test account should never be blocked by it.
+    const selfHostingTestUserIds = (Deno.env.get("SELF_HOSTING_TEST_USER_IDS") || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (selfHostingTestUserIds.includes(userId)) {
+      let slug = project.slug as string | null;
+      if (!slug) {
+        // No chosen name yet — the real Gmail-style picker (see
+        // check-site-slug) isn't wired into the site builder during this
+        // pilot. A short id-derived fallback is enough to test the actual
+        // publish→store→serve pipeline itself; `.is("slug", null)` keeps
+        // the claim atomic the same way a real picker's claim will.
+        slug = "site-" + siteProjectId.replace(/-/g, "").slice(0, 8);
+        const { error: claimErr } = await admin
+          .from("site_projects")
+          .update({ slug })
+          .eq("id", siteProjectId)
+          .is("slug", null);
+        if (claimErr) return jsonResponse({ error: claimErr.message }, 500);
+      }
+
+      const { error: upsertErr } = await admin
+        .from("hosted_site_pages")
+        .upsert({ slug, site_project_id: siteProjectId, pages, updated_at: new Date().toISOString() });
+      if (upsertErr) return jsonResponse({ error: upsertErr.message }, 500);
+
+      // Stand-in URL until real <slug>.deskkit.co.il subdomain routing is
+      // wired up (needs wildcard DNS + adding the domain in Vercel — both
+      // still pending, separate pieces of this migration).
+      const selfHostedUrl = "https://deskkit.co.il/api/site-preview?slug=" + encodeURIComponent(slug);
+      const { error: publishUpdateErr } = await admin
+        .from("site_projects")
+        .update({ published_url: selfHostedUrl, published_at: new Date().toISOString() })
+        .eq("id", siteProjectId);
+      if (publishUpdateErr) return jsonResponse({ error: publishUpdateErr.message }, 500);
+
+      // No publish_count/limit here on purpose: that cap exists only
+      // because a Netlify deploy spends real, shared credits. A database
+      // upsert doesn't — no limit needed is the whole point of this
+      // migration, not an oversight.
+      return jsonResponse({ success: true, url: selfHostedUrl, selfHosted: true });
     }
 
     // Each publish is a real Netlify deploy — real Netlify credits, shared
