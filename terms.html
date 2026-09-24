@@ -2,8 +2,17 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
+<script>
+  try {
+    if (localStorage.getItem("deskkit_lang") === "en") {
+      document.documentElement.classList.add("lang-pending");
+      setTimeout(() => document.documentElement.classList.remove("lang-pending"), 1200);
+    }
+  } catch (e) {}
+</script>
+<style>html.lang-pending body { visibility: hidden; }</style>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>מדיניות — DeskKit</title>
+<title data-i18n="terms_title">מדיניות — DeskKit</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -43,61 +52,62 @@
   <nav class="nav">
     <a href="index.html" class="brand"><span class="brand-badge"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path class="bm-doc" d="M7,4 H14 L18,8 V20 H7 Z"/><path class="bm-fold" d="M14,4 L14,8 L18,8 Z"/><path class="bm-spark" d="M15,14.3 C15.3,16 16,16.7 17.7,17 C16,17.3 15.3,18 15,19.7 C14.7,18 14,17.3 12.3,17 C14,16.7 14.7,16 15,14.3 Z"/></svg></span><span class="brand-text"><span class="brand-desk">Desk</span><span class="brand-kit">Kit</span></span></a>
     <div class="nav-links">
-      <a href="index.html">בית</a>
-      <a href="products.html?type=cv">קורות חיים</a>
-      <a href="sites.html?browse=1">אתרים</a>
-      <a href="quote-app.html">הצעות מחיר</a>
-      <a href="invoice-app.html">חשבוניות</a>
-      <a href="products.html?type=deck">מצגות</a>
-      <a href="products.html?type=xlsx">גליונות</a>
-      <a href="about.html">אודות</a>
-      <a href="contact.html">צור קשר</a>
+      <a href="index.html" data-i18n="nav_home">בית</a>
+      <a href="products.html?type=cv" data-i18n="nav_cv">קורות חיים</a>
+      <a href="sites.html?browse=1" data-i18n="nav_sites">אתרים</a>
+      <a href="quote-app.html" data-i18n="nav_quotes">הצעות מחיר</a>
+      <a href="invoice-app.html" data-i18n="nav_invoices">חשבוניות</a>
+      <a href="products.html?type=deck" data-i18n="nav_decks">מצגות</a>
+      <a href="products.html?type=xlsx" data-i18n="nav_xlsx">גליונות</a>
+      <a href="about.html" data-i18n="nav_about">אודות</a>
+      <a href="contact.html" data-i18n="nav_contact">צור קשר</a>
     </div>
     <div class="nav-end-group">
-      <a href="account.html?redirect=tools.html" id="nav-login-link" class="nav-login nav-login-pending">כניסה</a>
+      <a href="account.html?redirect=tools.html" id="nav-login-link" class="nav-login nav-login-pending" data-i18n="nav_login">כניסה</a>
+      <button type="button" id="lang-toggle" class="lang-toggle" aria-label="Switch language">EN</button>
     </div>
     <button class="burger" aria-label="תפריט">☰</button>
   </nav>
 </header>
 
 <section class="hero" style="padding:60px 24px 70px;">
-  <h1 style="font-size:34px;">מדיניות</h1>
+  <h1 style="font-size:34px;" data-i18n="terms_h1">מדיניות</h1>
 </section>
 
 <section>
   <div class="container" style="max-width:720px;">
-    <h3 style="color:var(--teal-dark);">מוצרים דיגיטליים וביטול עסקה</h3>
-    <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;">
+    <h3 style="color:var(--teal-dark);" data-i18n="terms_s1_h">מוצרים דיגיטליים וביטול עסקה</h3>
+    <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;" data-i18n="terms_s1_p">
       כל המוצרים ב-DeskKit הם קבצים דיגיטליים (מסמכים, קובצי אתר) הנשלחים או מורדים באופן מיידי. בהתאם לחוק הגנת הצרכן, תשמ"א-1981, עסקה לרכישת תוכן דיגיטלי שנמסר לצרכן אינה ניתנת לביטול לאחר מסירתו — בדיוק כמו רכישת ספר דיגיטלי או קובץ מוזיקה. אנחנו עומדים מאחורי המוצרים שלנו: אם קובץ שקיבלתם פגום, לא נפתח, או לא תואם למה שתואר — כתבו לנו ונפתור את זה.
     </p>
 
-    <h3 style="color:var(--teal-dark);">תיאור מוצרים</h3>
-    <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;">
+    <h3 style="color:var(--teal-dark);" data-i18n="terms_s2_h">תיאור מוצרים</h3>
+    <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;" data-i18n="terms_s2_p">
       אנחנו משתדלים שהתיאור של כל מוצר יהיה מדויק ועדכני. בבונה האתרים, התצוגה המקדימה החיה מציגה בדיוק את מה שתורידו — אין הפתעות בין מה שרואים למה שמקבלים.
     </p>
 
-    <h3 style="color:var(--teal-dark);">תנאי שימוש</h3>
-    <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;">
+    <h3 style="color:var(--teal-dark);" data-i18n="terms_s3_h">תנאי שימוש</h3>
+    <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;" data-i18n="terms_s3_p">
       התבניות, הבילדרים והתוכן באתר שייכים ל-DeskKit. רכישת תבנית אתר או שימוש בכלים מקנים לכם רישיון שימוש אישי בתוצר שיצרתם — לא בעלות על הקוד/העיצוב עצמו למכירה או הפצה חוזרת כמוצר משלכם. אנחנו משתדלים שהאתר יפעל כראוי, אך אינו מובטח נטול תקלות; שימוש באתר הוא באחריות המשתמש, ואיננו אחראים לנזק עקיף שייגרם משימוש בו. תנאים אלה כפופים לדין הישראלי.
     </p>
 
-    <h3 id="privacy" style="color:var(--teal-dark);">פרטיות ומידע שנאסף</h3>
-    <p style="font-size:15.5px; color:var(--grey); margin-bottom:12px;">
+    <h3 id="privacy" style="color:var(--teal-dark);" data-i18n="terms_s4_h">פרטיות ומידע שנאסף</h3>
+    <p style="font-size:15.5px; color:var(--grey); margin-bottom:12px;" data-i18n="terms_s4_p1">
       שימוש בכלים (קורות חיים, בניית אתר, הצעות מחיר) מחייב כניסה עם מייל וסיסמה או חשבון Google, כדי שהעבודה שלכם תישמר ותהיה נגישה גם ממכשיר אחר. כתובת המייל, ותוכן שאתם שומרים באופן פעיל בכלים (קורות חיים, פרטי עסק להצעות מחיר, פרויקטי אתרים) — נשמרים אצל Supabase, ספק תשתית שמאחסן את המידע בצורה מוצפנת ומוגבל אליכם בלבד. פרטי קשר שאתם משאירים בטופס יצירת קשר משמשים אותנו רק כדי לחזור אליכם.
     </p>
     <p style="font-size:15.5px; color:var(--grey); margin-bottom:12px;">
-      <b>ספקים חיצוניים שאנחנו עובדים איתם:</b> Supabase (אחסון חשבון ותוכן שמור), Google (כניסה עם חשבון גוגל, כאפשרות לצד מייל וסיסמה), Gumroad (עיבוד תשלום ברכישת אתר), ו-Formspree (טופס יצירת קשר ומשוב). לכל אחד מהם מדיניות פרטיות משלו.
+      <b data-i18n="terms_s4_p2_b">ספקים חיצוניים שאנחנו עובדים איתם:</b> <span data-i18n="terms_s4_p2_s">Supabase (אחסון חשבון ותוכן שמור), Google (כניסה עם חשבון גוגל, כאפשרות לצד מייל וסיסמה), Gumroad (עיבוד תשלום ברכישת אתר), ו-Formspree (טופס יצירת קשר ומשוב). לכל אחד מהם מדיניות פרטיות משלו.</span>
     </p>
     <p style="font-size:15.5px; color:var(--grey); margin-bottom:12px;">
-      <b>עוגיות (Cookies) ואחסון מקומי:</b> האתר עצמו לא משתמש בעוגיות מעקב/פרסום. עותק עבודה מקומי (כמו קורות חיים או אתר שעדיין עורכים) נשמר גם באחסון המקומי של הדפדפן (localStorage), לצד השמירה בחשבון — כדי שהעריכה תהיה מהירה ולא תאבדו עבודה בטעות בזמן שהיא מתעדכנת בענן. שירותי גוגל/Gumroad עשויים להציב עוגיות משלהם בזמן תהליך הכניסה/התשלום, בהתאם למדיניות שלהם.
+      <b data-i18n="terms_s4_p3_b">עוגיות (Cookies) ואחסון מקומי:</b> <span data-i18n="terms_s4_p3_s">האתר עצמו לא משתמש בעוגיות מעקב/פרסום. עותק עבודה מקומי (כמו קורות חיים או אתר שעדיין עורכים) נשמר גם באחסון המקומי של הדפדפן (localStorage), לצד השמירה בחשבון — כדי שהעריכה תהיה מהירה ולא תאבדו עבודה בטעות בזמן שהיא מתעדכנת בענן. שירותי גוגל/Gumroad עשויים להציב עוגיות משלהם בזמן תהליך הכניסה/התשלום, בהתאם למדיניות שלהם.</span>
     </p>
     <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;">
-      <b>מחיקת מידע:</b> אפשר לבקש מחיקת חשבון וכל המידע השמור עליו בכל עת, דרך <a href="account-settings.html" style="color:var(--teal); font-weight:600;">החשבון שלי</a>.
+      <b data-i18n="terms_s4_p4_b">מחיקת מידע:</b> <span data-i18n="terms_s4_p4_s1">אפשר לבקש מחיקת חשבון וכל המידע השמור עליו בכל עת, דרך </span><a href="account-settings.html" style="color:var(--teal); font-weight:600;" data-i18n="terms_account_link">החשבון שלי</a><span data-i18n="terms_s4_p4_s2">.</span>
     </p>
 
-    <h3 style="color:var(--teal-dark);">יצירת קשר</h3>
+    <h3 style="color:var(--teal-dark);" data-i18n="terms_s5_h">יצירת קשר</h3>
     <p style="font-size:15.5px; color:var(--grey);">
-      DeskKit — שאלה, בעיה עם מוצר, או כל דבר אחר — <a href="contact.html" style="color:var(--teal); font-weight:600;">צרו קשר</a> ונחזור אליכם בהקדם.
+      <span data-i18n="terms_s5_p1">DeskKit — שאלה, בעיה עם מוצר, או כל דבר אחר — </span><a href="contact.html" style="color:var(--teal); font-weight:600;" data-i18n="terms_contact_link">צרו קשר</a><span data-i18n="terms_s5_p2"> ונחזור אליכם בהקדם.</span>
     </p>
   </div>
 </section>
@@ -107,38 +117,38 @@
     <div class="footer-grid">
       <div>
         <h4>DeskKit</h4>
-        <p style="font-size:14px; max-width:320px;">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
+        <p style="font-size:14px; max-width:320px;" data-i18n="footer_blurb">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
       </div>
       <div>
-        <h4>ניווט</h4>
+        <h4 data-i18n="footer_nav_heading">ניווט</h4>
         <ul>
-          <li><a href="products.html?type=cv">קורות חיים</a></li>
-          <li><a href="sites.html?browse=1">אתרים</a></li>
-          <li><a href="quote-app.html">הצעות מחיר</a></li>
-          <li><a href="invoice-app.html">חשבוניות</a></li>
-          <li><a href="products.html?type=deck">מצגות</a></li>
-          <li><a href="products.html?type=xlsx">גליונות</a></li>
-          <li><a href="about.html">אודות</a></li>
-          <li><a href="contact.html">צור קשר</a></li>
+          <li><a href="products.html?type=cv" data-i18n="nav_cv">קורות חיים</a></li>
+          <li><a href="sites.html?browse=1" data-i18n="nav_sites">אתרים</a></li>
+          <li><a href="quote-app.html" data-i18n="nav_quotes">הצעות מחיר</a></li>
+          <li><a href="invoice-app.html" data-i18n="nav_invoices">חשבוניות</a></li>
+          <li><a href="products.html?type=deck" data-i18n="nav_decks">מצגות</a></li>
+          <li><a href="products.html?type=xlsx" data-i18n="nav_xlsx">גליונות</a></li>
+          <li><a href="about.html" data-i18n="nav_about">אודות</a></li>
+          <li><a href="contact.html" data-i18n="nav_contact">צור קשר</a></li>
         </ul>
       </div>
       <div>
-        <h4>מידע</h4>
+        <h4 data-i18n="footer_info_heading">מידע</h4>
         <ul>
-          <li><a href="guides.html">מדריכים</a></li>
-          <li><a href="admin.html">ניהול</a></li>
-          <li><a href="terms.html">מדיניות</a></li>
-          <li><a href="accessibility.html">נגישות</a></li>
+          <li><a href="guides.html" data-i18n="footer_guides">מדריכים</a></li>
+          <li><a href="admin.html" data-i18n="footer_admin">ניהול</a></li>
+          <li><a href="terms.html" data-i18n="footer_terms">מדיניות</a></li>
+          <li><a href="accessibility.html" data-i18n="footer_accessibility">נגישות</a></li>
         </ul>
       </div>
       <div>
-        <h4>צור קשר</h4>
+        <h4 data-i18n="nav_contact">צור קשר</h4>
         <ul>
           <li>digital.dz.studio@gmail.com</li>
         </ul>
       </div>
     </div>
-    <div class="footer-bottom">© 2026 DeskKit. כל הזכויות שמורות.</div>
+    <div class="footer-bottom" data-i18n="footer_copyright">© 2026 DeskKit. כל הזכויות שמורות.</div>
   </div>
 </footer>
 
@@ -150,5 +160,6 @@
 <script src="js/main.js"></script>
 <script src="js/widgets.js?v=10"></script>
 <script src="js/effects.js"></script>
+<script src="js/i18n.js?v=6"></script>
 </body>
 </html>

@@ -2,8 +2,17 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
+<script>
+  try {
+    if (localStorage.getItem("deskkit_lang") === "en") {
+      document.documentElement.classList.add("lang-pending");
+      setTimeout(() => document.documentElement.classList.remove("lang-pending"), 1200);
+    }
+  } catch (e) {}
+</script>
+<style>html.lang-pending body { visibility: hidden; }</style>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DeskKit CRM — ניהול לקוחות פשוט וחכם</title>
+<title data-i18n="crmp_title">DeskKit CRM — ניהול לקוחות פשוט וחכם</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -61,18 +70,19 @@
   <nav class="nav">
     <a href="index.html" class="brand"><span class="brand-badge"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path class="bm-doc" d="M7,4 H14 L18,8 V20 H7 Z"/><path class="bm-fold" d="M14,4 L14,8 L18,8 Z"/><path class="bm-spark" d="M15,14.3 C15.3,16 16,16.7 17.7,17 C16,17.3 15.3,18 15,19.7 C14.7,18 14,17.3 12.3,17 C14,16.7 14.7,16 15,14.3 Z"/></svg></span><span class="brand-text"><span class="brand-desk">Desk</span><span class="brand-kit">Kit</span></span></a>
     <div class="nav-links">
-      <a href="index.html">בית</a>
-      <a href="products.html?type=cv">קורות חיים</a>
-      <a href="sites.html?browse=1">אתרים</a>
-      <a href="quote-app.html">הצעות מחיר</a>
-      <a href="invoice-app.html">חשבוניות</a>
-      <a href="products.html?type=deck">מצגות</a>
-      <a href="products.html?type=xlsx">גליונות</a>
-      <a href="about.html">אודות</a>
-      <a href="contact.html">צור קשר</a>
+      <a href="index.html" data-i18n="nav_home">בית</a>
+      <a href="products.html?type=cv" data-i18n="nav_cv">קורות חיים</a>
+      <a href="sites.html?browse=1" data-i18n="nav_sites">אתרים</a>
+      <a href="quote-app.html" data-i18n="nav_quotes">הצעות מחיר</a>
+      <a href="invoice-app.html" data-i18n="nav_invoices">חשבוניות</a>
+      <a href="products.html?type=deck" data-i18n="nav_decks">מצגות</a>
+      <a href="products.html?type=xlsx" data-i18n="nav_xlsx">גליונות</a>
+      <a href="about.html" data-i18n="nav_about">אודות</a>
+      <a href="contact.html" data-i18n="nav_contact">צור קשר</a>
     </div>
     <div class="nav-end-group">
-      <a href="account.html?redirect=tools.html" id="nav-login-link" class="nav-login nav-login-pending">כניסה</a>
+      <a href="account.html?redirect=tools.html" id="nav-login-link" class="nav-login nav-login-pending" data-i18n="nav_login">כניסה</a>
+      <button type="button" id="lang-toggle" class="lang-toggle" aria-label="Switch language">EN</button>
     </div>
     <button class="burger" aria-label="תפריט">☰</button>
   </nav>
@@ -83,34 +93,34 @@
     <div class="thumb">
       <div class="crm-mini-board" aria-hidden="true">
         <div class="crm-mini-col">
-          <div class="crm-mini-col-label">ליד חדש</div>
+          <div class="crm-mini-col-label" data-i18n="crmp_col1">ליד חדש</div>
           <div class="crm-mini-card"><b>דנה כהן</b><span>₪1,200</span></div>
           <div class="crm-mini-card"><b>עידו לוי</b><span>₪850</span></div>
         </div>
         <div class="crm-mini-col">
-          <div class="crm-mini-col-label">פולו-אפ</div>
+          <div class="crm-mini-col-label" data-i18n="crmp_col2">פולו-אפ</div>
           <div class="crm-mini-card"><b>מיכל אזולאי</b><span>₪2,400</span></div>
         </div>
         <div class="crm-mini-col">
-          <div class="crm-mini-col-label">נסגר בהצלחה!</div>
+          <div class="crm-mini-col-label" data-i18n="crmp_col3">נסגר בהצלחה!</div>
           <div class="crm-mini-card"><b>יוסי מזרחי</b><span>₪3,100</span></div>
         </div>
       </div>
     </div>
     <div>
-      <div class="breadcrumb">ניהול עסק / DeskKit CRM</div>
-      <h1>DeskKit CRM — ניהול לקוחות פשוט, בלי בלגן</h1>
-      <p class="desc">לוח קנבן מעוצב שמראה בול איפה כל לקוח נמצא בתהליך המכירה — ליד חדש, בטיפול, פולו-אפ, או כבר סגור. מוסיפים לקוח, גוררים בין השלבים, ורואים כל הזמן כמה כסף יש לכם בצנרת. הכל נשמר ישירות בדפדפן שלכם — בלי הרשמה, בלי שרת, בלי לחכות.</p>
-      <div class="price-block"><span class="price">99 ₪</span><span style="color:var(--grey); font-size:14px;">תשלום חד-פעמי — גישה לכל החיים</span></div>
+      <div class="breadcrumb" data-i18n="crmp_breadcrumb">ניהול עסק / DeskKit CRM</div>
+      <h1 data-i18n="crmp_h1">DeskKit CRM — ניהול לקוחות פשוט, בלי בלגן</h1>
+      <p class="desc" data-i18n="crmp_desc">לוח קנבן מעוצב שמראה בול איפה כל לקוח נמצא בתהליך המכירה — ליד חדש, בטיפול, פולו-אפ, או כבר סגור. מוסיפים לקוח, גוררים בין השלבים, ורואים כל הזמן כמה כסף יש לכם בצנרת. הכל נשמר ישירות בדפדפן שלכם — בלי הרשמה, בלי שרת, בלי לחכות.</p>
+      <div class="price-block"><span class="price">99 ₪</span><span style="color:var(--grey); font-size:14px;" data-i18n="crmp_price_note">תשלום חד-פעמי — גישה לכל החיים</span></div>
       <ul class="checklist">
-        <li>לוח קנבן עם 4 שלבי מכירה מוכנים מראש</li>
-        <li>הוספת לקוח חדש (שם, טלפון, מייל, הערות וסכום עסקה) בכמה שניות</li>
-        <li>גרירה חופשית של כרטיסי לקוחות בין השלבים</li>
-        <li>שורת סיכום שמראה אוטומטית כמה כסף יש בכל העסקאות הפתוחות</li>
-        <li>בלי מנוי חודשי, בלי חוזה, בלי הגבלת מספר לקוחות</li>
+        <li data-i18n="crmp_li1">לוח קנבן עם 4 שלבי מכירה מוכנים מראש</li>
+        <li data-i18n="crmp_li2">הוספת לקוח חדש (שם, טלפון, מייל, הערות וסכום עסקה) בכמה שניות</li>
+        <li data-i18n="crmp_li3">גרירה חופשית של כרטיסי לקוחות בין השלבים</li>
+        <li data-i18n="crmp_li4">שורת סיכום שמראה אוטומטית כמה כסף יש בכל העסקאות הפתוחות</li>
+        <li data-i18n="crmp_li5">בלי מנוי חודשי, בלי חוזה, בלי הגבלת מספר לקוחות</li>
       </ul>
-      <button type="button" class="btn btn-gold" id="crm-buy-btn" style="font-size:16px; padding:16px 36px;">רכישה מאובטחת וגישה מיידית למערכת</button>
-      <div class="note-box">תשלום חד-פעמי אמיתי מגיע בקרוב עם חשבון משתמש; בינתיים הרכישה כאן היא הדגמה שפותחת לכם גישה מיידית למערכת, כדי שתוכלו להתחיל לעבוד בה כבר עכשיו.</div>
+      <button type="button" class="btn btn-gold" id="crm-buy-btn" style="font-size:16px; padding:16px 36px;" data-i18n="crmp_buy_btn">רכישה מאובטחת וגישה מיידית למערכת</button>
+      <div class="note-box" data-i18n="crmp_note">תשלום חד-פעמי אמיתי מגיע בקרוב עם חשבון משתמש; בינתיים הרכישה כאן היא הדגמה שפותחת לכם גישה מיידית למערכת, כדי שתוכלו להתחיל לעבוד בה כבר עכשיו.</div>
     </div>
   </div>
 </section>
@@ -118,25 +128,25 @@
 <section class="bg-ice">
   <div class="container">
     <div class="section-head">
-      <div class="kicker">למה DeskKit CRM</div>
-      <h2>לא צריך מערכת מסובכת כדי לדעת מה קורה עם הלקוחות</h2>
-      <p>מערכות CRM גדולות עולות מאות שקלים בחודש, דורשות הדרכה, ומלאות בפיצ'רים שאף פעם לא תשתמשו בהם. DeskKit CRM עושה בדיוק את הדבר האחד שחשוב — לראות איפה כל לקוח נמצא — בלי כל השאר.</p>
+      <div class="kicker" data-i18n="crmp_kicker">למה DeskKit CRM</div>
+      <h2 data-i18n="crmp_h2">לא צריך מערכת מסובכת כדי לדעת מה קורה עם הלקוחות</h2>
+      <p data-i18n="crmp_intro">מערכות CRM גדולות עולות מאות שקלים בחודש, דורשות הדרכה, ומלאות בפיצ'רים שאף פעם לא תשתמשו בהם. DeskKit CRM עושה בדיוק את הדבר האחד שחשוב — לראות איפה כל לקוח נמצא — בלי כל השאר.</p>
     </div>
     <div class="features">
       <div class="feature">
         <div class="icon">💳</div>
-        <h4>תשלום חד-פעמי</h4>
-        <p>99 ₪ פעם אחת, לא כל חודש. בלי הפתעות בכרטיס האשראי.</p>
+        <h4 data-i18n="crmp_f1_h">תשלום חד-פעמי</h4>
+        <p data-i18n="crmp_f1_p">99 ₪ פעם אחת, לא כל חודש. בלי הפתעות בכרטיס האשראי.</p>
       </div>
       <div class="feature">
         <div class="icon">⚡</div>
-        <h4>מוכן תוך שנייה</h4>
-        <p>בלי הדרכה, בלי הטמעה. פותחים ומתחילים לעבוד מיד.</p>
+        <h4 data-i18n="crmp_f2_h">מוכן תוך שנייה</h4>
+        <p data-i18n="crmp_f2_p">בלי הדרכה, בלי הטמעה. פותחים ומתחילים לעבוד מיד.</p>
       </div>
       <div class="feature">
         <div class="icon">🔒</div>
-        <h4>המידע אצלכם</h4>
-        <p>כל הלידים נשמרים בדפדפן שלכם, לא בשרת של מישהו אחר.</p>
+        <h4 data-i18n="crmp_f3_h">המידע אצלכם</h4>
+        <p data-i18n="crmp_f3_p">כל הלידים נשמרים בדפדפן שלכם, לא בשרת של מישהו אחר.</p>
       </div>
     </div>
   </div>
@@ -145,8 +155,8 @@
 <div class="crm-payment-overlay" id="crm-payment-overlay">
   <div class="crm-payment-card">
     <div class="crm-payment-spinner" id="crm-payment-spinner"></div>
-    <h3 id="crm-payment-title" style="margin:0 0 8px;">מעבדים את התשלום...</h3>
-    <p id="crm-payment-sub" style="color:var(--grey); font-size:13.5px; margin:0;">רגע אחד, כמעט סיימנו.</p>
+    <h3 id="crm-payment-title" style="margin:0 0 8px;" data-i18n="crmp_processing">מעבדים את התשלום...</h3>
+    <p id="crm-payment-sub" style="color:var(--grey); font-size:13.5px; margin:0;" data-i18n="crmp_processing_sub">רגע אחד, כמעט סיימנו.</p>
   </div>
 </div>
 
@@ -155,38 +165,38 @@
     <div class="footer-grid">
       <div>
         <h4>DeskKit</h4>
-        <p style="font-size:14px; max-width:320px;">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
+        <p style="font-size:14px; max-width:320px;" data-i18n="footer_blurb">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
       </div>
       <div>
-        <h4>ניווט</h4>
+        <h4 data-i18n="footer_nav_heading">ניווט</h4>
         <ul>
-          <li><a href="products.html?type=cv">קורות חיים</a></li>
-          <li><a href="sites.html?browse=1">אתרים</a></li>
-          <li><a href="quote-app.html">הצעות מחיר</a></li>
-          <li><a href="invoice-app.html">חשבוניות</a></li>
-          <li><a href="products.html?type=deck">מצגות</a></li>
-          <li><a href="products.html?type=xlsx">גליונות</a></li>
-          <li><a href="about.html">אודות</a></li>
-          <li><a href="contact.html">צור קשר</a></li>
+          <li><a href="products.html?type=cv" data-i18n="nav_cv">קורות חיים</a></li>
+          <li><a href="sites.html?browse=1" data-i18n="nav_sites">אתרים</a></li>
+          <li><a href="quote-app.html" data-i18n="nav_quotes">הצעות מחיר</a></li>
+          <li><a href="invoice-app.html" data-i18n="nav_invoices">חשבוניות</a></li>
+          <li><a href="products.html?type=deck" data-i18n="nav_decks">מצגות</a></li>
+          <li><a href="products.html?type=xlsx" data-i18n="nav_xlsx">גליונות</a></li>
+          <li><a href="about.html" data-i18n="nav_about">אודות</a></li>
+          <li><a href="contact.html" data-i18n="nav_contact">צור קשר</a></li>
         </ul>
       </div>
       <div>
-        <h4>מידע</h4>
+        <h4 data-i18n="footer_info_heading">מידע</h4>
         <ul>
-          <li><a href="guides.html">מדריכים</a></li>
-          <li><a href="admin.html">ניהול</a></li>
-          <li><a href="terms.html">מדיניות</a></li>
-          <li><a href="accessibility.html">נגישות</a></li>
+          <li><a href="guides.html" data-i18n="footer_guides">מדריכים</a></li>
+          <li><a href="admin.html" data-i18n="footer_admin">ניהול</a></li>
+          <li><a href="terms.html" data-i18n="footer_terms">מדיניות</a></li>
+          <li><a href="accessibility.html" data-i18n="footer_accessibility">נגישות</a></li>
         </ul>
       </div>
       <div>
-        <h4>צור קשר</h4>
+        <h4 data-i18n="nav_contact">צור קשר</h4>
         <ul>
           <li>digital.dz.studio@gmail.com</li>
         </ul>
       </div>
     </div>
-    <div class="footer-bottom">© 2026 DeskKit. כל הזכויות שמורות.</div>
+    <div class="footer-bottom" data-i18n="footer_copyright">© 2026 DeskKit. כל הזכויות שמורות.</div>
   </div>
 </footer>
 
@@ -196,6 +206,7 @@
 <script src="js/my-panel.js?v=12"></script>
 <script src="js/main.js"></script>
 <script src="js/widgets.js?v=10"></script>
+<script src="js/i18n.js?v=6"></script>
 <script src="js/crm.js?v=1"></script>
 <script>
   /* Purchase simulation, exactly as scoped: no real payment gateway here
@@ -208,11 +219,13 @@
     const title = document.getElementById("crm-payment-title");
     const sub = document.getElementById("crm-payment-sub");
     const spinner = document.getElementById("crm-payment-spinner");
+    let isEn = false;
+    try { isEn = localStorage.getItem("deskkit_lang") === "en"; } catch (e) {}
     overlay.style.display = "flex";
     setTimeout(() => {
       spinner.style.display = "none";
-      title.textContent = "התשלום אושר! ✓";
-      sub.textContent = "מעבירים אתכם למערכת...";
+      title.textContent = isEn ? "Payment approved! ✓" : "התשלום אושר! ✓";
+      sub.textContent = isEn ? "Taking you to the system..." : "מעבירים אתכם למערכת...";
       crmUnlock();
       setTimeout(() => { window.location.href = "crm.html"; }, 900);
     }, 1400);
