@@ -22,14 +22,30 @@
 // Updated for hosted_site_pages_multipage.sql: a site has up to 3 real
 // pages (index/about/contact — same set publish-site enforces via
 // ALLOWED_PAGE_NAMES), stored as one {index, about, contact} jsonb
-// object per slug rather than one row per page. ?page= picks which one;
-// defaults to index, same as a real site's homepage. Still reached by
-// ?slug= only for now — the real <slug>.deskkit.co.il subdomain routing
-// is a separate, later piece of this migration (needs wildcard DNS +
-// adding the domain in Vercel, both still pending).
+// object per slug rather than one row per page.
+//
+// Now reachable two ways:
+//   - a real visit to <slug>.deskkit.co.il/(about|contact)? — vercel.json
+//     rewrites this here with ?slug=<slug>&path=/<whatever came after the
+//     subdomain>, once the *.deskkit.co.il wildcard domain is added in
+//     Vercel and the matching DNS record exists.
+//   - the old ?slug=&page= form, kept for manual testing without needing
+//     a real subdomain request (what Phase 1/2 testing used).
+// `path` wins when both are present — a real subdomain visit is always
+// the real thing, `?page=` is a testing convenience only.
 
 const SLUG_PATTERN = /^[a-z0-9-]{1,63}$/;
 const ALLOWED_PAGE_NAMES = new Set(["index", "about", "contact"]);
+
+function resolvePageName(req) {
+  if (typeof req.query.path === "string") {
+    const clean = req.query.path.replace(/^\/+|\/+$/g, "");
+    if (clean === "") return "index";
+    return ALLOWED_PAGE_NAMES.has(clean) ? clean : null;
+  }
+  const page = String(req.query.page || "index").trim();
+  return ALLOWED_PAGE_NAMES.has(page) ? page : null;
+}
 
 module.exports = async function handler(req, res) {
   const slug = String(req.query.slug || "").trim();
@@ -37,9 +53,9 @@ module.exports = async function handler(req, res) {
     res.status(400).send("invalid slug");
     return;
   }
-  const page = String(req.query.page || "index").trim();
-  if (!ALLOWED_PAGE_NAMES.has(page)) {
-    res.status(400).send("invalid page");
+  const page = resolvePageName(req);
+  if (!page) {
+    res.status(404).send("not found");
     return;
   }
 

@@ -1,0 +1,14 @@
+{
+  "rewrites": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "^(?!www\\.)(?<slug>[a-z0-9-]+)\\.deskkit\\.co\\.il$"
+        }
+      ],
+      "destination": "/api/site-preview?slug=:slug&path=/:path*"
+    }
+  ]
+}
