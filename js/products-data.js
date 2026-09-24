@@ -724,6 +724,84 @@ const XLSX_TOPICS = [
    type's sub-topic list is needed (catalog.js's initProductsPage). */
 const TYPE_SUBTOPICS = { cv: CV_PROFESSIONS, deck: DECK_TOPICS, xlsx: XLSX_TOPICS };
 
+/* Without this, every one of products.html's 13 real sub-topic filters
+   (?type=cv&cat=dev, ?type=xlsx&cat=finance, ...) showed the exact same
+   type-level hero/title/meta-description as every other sub-topic of
+   that type — 13 distinct, crawlable URLs all carrying near-duplicate
+   content, exactly the "dozens of almost-identical pages" problem to
+   avoid, just without the dozens of separate files. This gives each
+   sub-topic its own real, specific title + description (grounded in
+   what's actually in that sub-topic — see catalog.js's renderHero(),
+   which falls back to TYPE_HERO whenever a sub-topic has no entry here,
+   e.g. "all") — no new pages, same shared products.html shell. */
+const SUBTOPIC_HERO = {
+  "cv/general": {
+    title: "קורות חיים — כללי", titleEn: "Resumes — General",
+    lead: "תבניות קורות חיים לכל תחום ותפקיד — כולל עיצובים לתפקידי מכירות ופיתוח עסקי ותפקידי שירות לקוחות. עורכים את הפרטים ורואים תוצאה חיה, ומורידים PDF מוכן בחינם.",
+    leadEn: "Resume templates for any field and role — including sales/business-development and customer-service roles. Edit your details, see a live result, and download a free PDF.",
+  },
+  "cv/dev": {
+    title: "קורות חיים למפתחים", titleEn: "Resumes for Developers",
+    lead: "תבניות קורות חיים שנבנו במיוחד למפתחים — עם מקום ייעודי לקישורי GitHub ופורטפוליו, תגיות טכנולוגיות, וגרסה שמתאימה גם לג'וניורים ובוגרי בוטקאמפ בתחילת הדרך.",
+    leadEn: "Resume templates built specifically for developers — with a dedicated spot for GitHub/portfolio links, technology tags, and a version suited for juniors and bootcamp graduates just starting out.",
+  },
+  "cv/design": {
+    title: "קורות חיים למעצבים", titleEn: "Resumes for Designers",
+    lead: "תבניות קורות חיים עם דגש עיצובי — למעצבי גרפיקה, מעצבי UI/UX, ואנשי מושן/וידאו. טיפוגרפיה בולטת ופריסה שמדגישה את הפורטפוליו.",
+    leadEn: "Design-forward resume templates — for graphic designers, UI/UX designers, and motion/video professionals. Bold typography and a layout that highlights your portfolio.",
+  },
+  "cv/accounting": {
+    title: "קורות חיים להנהלת חשבונות וכספים", titleEn: "Resumes for Accounting & Finance",
+    lead: "תבניות קורות חיים נקיות ומקצועיות למנהלי/ות חשבונות ואנליסטים פיננסיים — עיצוב מאופק שמתאים לתחום הכספים.",
+    leadEn: "Clean, professional resume templates for accountants and financial analysts — a restrained design suited to the finance field.",
+  },
+  "deck/business": {
+    title: "מצגות עסקיות", titleEn: "Business Decks",
+    lead: "תבניות PowerPoint לפרופיל חברה, פיץ' למשקיעים, ופיץ' בעיצוב קולנועי כהה — מוכנות להורדה ועריכה מיידית.",
+    leadEn: "PowerPoint templates for a company profile, an investor pitch, and a cinematic dark-themed pitch — ready to download and edit immediately.",
+  },
+  "deck/marketing": {
+    title: "מצגות שיווק ותוכן", titleEn: "Marketing & Content Decks",
+    lead: "תבניות PowerPoint להצגת מוצר, וובינר או תוכן שיווקי, ותבנית פופ-ארט אנרגטית לבולטות — כולן מוכנות להורדה כקובץ PowerPoint מלא לעריכה.",
+    leadEn: "PowerPoint templates for a product launch, a webinar or content presentation, and an energetic pop-art template for standing out — all ready to download as a fully editable PowerPoint file.",
+  },
+  "deck/creative": {
+    title: "מצגות יצירתיות", titleEn: "Creative Decks",
+    lead: "תבניות PowerPoint לתיק עבודות יצירתי ולמצגת בסגנון מגזין אופנה — לסטודיו עיצוב, יוצרים ומותגים שרוצים להיראות אחרת.",
+    leadEn: "PowerPoint templates for a creative portfolio and a fashion-magazine-style presentation — for design studios, creators and brands that want to look different.",
+  },
+  "xlsx/finance": {
+    title: "גיליונות ניהול כספים", titleEn: "Financial Management Spreadsheets",
+    lead: "כלי Excel לניהול כספי העסק — תקציב חודשי, חשבונית עסקית, מעקב הוצאות, תזרים מזומנים, דוח רווח והפסד, ונקודת איזון ותמחור. כולם עם נוסחאות אמיתיות, לא מספרים קבועים.",
+    leadEn: "Excel tools for managing your business finances — monthly budget, business invoice, expense tracking, cash flow, P&L, and break-even/pricing. All with real formulas, not fixed numbers.",
+  },
+  "xlsx/customers": {
+    title: "גיליון מעקב לקוחות", titleEn: "Customer Tracking Spreadsheet",
+    lead: "טבלת Excel לניהול פרטי לקוחות ומעקב אחר סטטוס כל לקוח — כלי פשוט לעסק קטן שרוצה סדר בלי מערכת CRM מסובכת.",
+    leadEn: "An Excel table for managing customer details and tracking each customer's status — a simple tool for a small business that wants order without a complex CRM system.",
+  },
+  "xlsx/operations": {
+    title: "גיליונות תפעול ומלאי", titleEn: "Operations & Inventory Spreadsheets",
+    lead: "כלי Excel למעקב מלאי ולהשוואת ספקים — לעסקים שצריכים לעקוב אחרי מוצרים, כמויות ועלויות מול כמה ספקים במקביל.",
+    leadEn: "Excel tools for inventory tracking and supplier comparison — for businesses that need to track products, quantities and costs across several suppliers at once.",
+  },
+  "xlsx/projects": {
+    title: "גיליון ניהול פרויקטים", titleEn: "Project Management Spreadsheet",
+    lead: "לוח זמנים לפרויקט ב-Excel — מעקב אחר משימות, אחראים ותאריכי יעד, לעסק שמנהל כמה פרויקטים במקביל.",
+    leadEn: "An Excel project timeline — track tasks, owners and due dates, for a business managing several projects at once.",
+  },
+  "xlsx/sales": {
+    title: "גיליון מכירות מול יעדים", titleEn: "Sales vs. Targets Spreadsheet",
+    lead: "כלי Excel למעקב אחר ביצועי מכירות מול יעדים שהוגדרו מראש — לראות בכל רגע איפה העסק עומד.",
+    leadEn: "An Excel tool for tracking sales performance against predefined targets — see where the business stands at any moment.",
+  },
+  "xlsx/hr": {
+    title: "גיליון מעקב שעות עבודה", titleEn: "Work-Hours Tracking Spreadsheet",
+    lead: "טבלת Excel למעקב אחר שעות עבודה של עובדים — לעסק קטן שרוצה תיעוד פשוט וברור בלי תוכנת שכר מסובכת.",
+    leadEn: "An Excel table for tracking employee work hours — for a small business that wants simple, clear records without complex payroll software.",
+  },
+};
+
 function productType(p) {
   if (p.categorySlug === "deck") return "deck";
   if (p.categorySlug === "xlsx") return "xlsx";

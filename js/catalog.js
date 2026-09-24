@@ -93,8 +93,16 @@ function initProductsPage() {
   let activeSub = (TYPE_SUBTOPICS[type] || []).some((c) => c.slug === catParam) ? catParam : "all";
   let searchTerm = "";
 
+  // A sub-topic (e.g. ?type=cv&cat=dev) used to just filter the grid —
+  // the hero/title/meta-description stayed the type-level one regardless
+  // of which of the 13 real sub-topics was showing, so 13 separately
+  // crawlable URLs all carried near-duplicate content. SUBTOPIC_HERO
+  // (products-data.js) gives the real ones their own specific text;
+  // "all" (and anything without an entry) falls back to TYPE_HERO as
+  // before.
   function renderHero() {
-    const hero = TYPE_HERO[type];
+    const subHero = activeSub !== "all" ? SUBTOPIC_HERO[type + "/" + activeSub] : null;
+    const hero = subHero || TYPE_HERO[type];
     if (!hero) return;
     const isEn = catalogLang() === "en";
     const title = (isEn && hero.titleEn) || hero.title;
@@ -115,7 +123,8 @@ function initProductsPage() {
     const descTag = document.querySelector('meta[name="description"]');
     if (descTag) descTag.setAttribute("content", lead);
     const canonicalTag = document.querySelector('link[rel="canonical"]');
-    if (canonicalTag) canonicalTag.setAttribute("href", "https://deskkit.co.il/products.html?type=" + type);
+    const canonicalUrl = "https://deskkit.co.il/products.html?type=" + type + (activeSub !== "all" ? "&cat=" + activeSub : "");
+    if (canonicalTag) canonicalTag.setAttribute("href", canonicalUrl);
   }
   renderHero();
   document.querySelectorAll(".nav-links a[data-nav-type]").forEach((a) => {
@@ -145,6 +154,7 @@ function initProductsPage() {
   }
 
   function apply() {
+    renderHero();
     renderSubTabs();
     const term = searchTerm.trim();
     const list = PRODUCTS.filter((p) => {
@@ -173,11 +183,10 @@ function initProductsPage() {
 
   // Language toggled while already on this page (no reload) — data-i18n's
   // own sweep can't reach any of the JS-rendered content above, so redo
-  // the language-dependent pieces by hand instead.
-  document.addEventListener("deskkit:langchange", () => {
-    renderHero();
-    apply();
-  });
+  // the language-dependent pieces by hand instead. apply() already calls
+  // renderHero() itself (see above — a sub-topic switch needs the same
+  // refresh), so this alone covers both cases.
+  document.addEventListener("deskkit:langchange", apply);
 }
 
 function initProductPage() {
