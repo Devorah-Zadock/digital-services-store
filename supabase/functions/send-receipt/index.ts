@@ -11,7 +11,11 @@
 //                        real PDF via actual Chromium, so Hebrew/RTL text
 //                        comes out correct — not something worth hand-
 //                        rolling with a PDF-drawing library)
-//   DESKKIT_TAX_ID    — the business's עוסק פטור number
+//   DESKKIT_TAX_ID    — the business's עוסק פטור number. If unset, the
+//                        receipt honestly says so instead of printing a
+//                        fake-looking placeholder digit string — set this
+//                        before treating any receipt as a real legal
+//                        document.
 //
 // Deploy: paste this file's contents into Supabase Dashboard →
 // Edge Functions → New Function ("send-receipt") → Deploy, or via the
@@ -19,7 +23,13 @@
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const PDFSHIFT_API_KEY = Deno.env.get("PDFSHIFT_API_KEY");
-const TAX_ID = Deno.env.get("DESKKIT_TAX_ID") || "000000000";
+// Deliberately NOT defaulting to a fake-looking number like "000000000" —
+// a real עוסק פטור receipt must show the real business ID, and a fallback
+// that merely LOOKS like a real (if wrong) number is worse than an honest
+// placeholder: it could ship on a real receipt without anyone noticing.
+// Set DESKKIT_TAX_ID in this function's Supabase secrets before relying on
+// receipts for anything legally/accountingly real.
+const TAX_ID = Deno.env.get("DESKKIT_TAX_ID") || null;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,16 +41,23 @@ function escapeHtml(s: string): string {
 }
 
 function receiptHtml(opts: { buyerName: string; buyerEmail: string; itemDescription: string; amount: string; receiptNumber: string; date: string }, forPdf: boolean) {
+  // Honest either way: the real number if it's actually configured, or a
+  // visibly-a-placeholder line (never a fake-looking digit string) if not
+  // — see the TAX_ID comment above for why.
+  const taxLine = TAX_ID
+    ? `עוסק פטור מס' ${escapeHtml(TAX_ID)} — פטור מהוצאת חשבונית מס לפי סעיף 31 לחוק מס ערך מוסף, התשל"ו-1975.`
+    : `עוסק פטור — פטור מהוצאת חשבונית מס לפי סעיף 31 לחוק מס ערך מוסף, התשל"ו-1975. (מספר עוסק פטור טרם הוגדר במערכת)`;
   const card = `
 <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 28px; border: 1px solid #EAEDEC; border-radius: 10px;">
   <h2 style="color:#1F5C4E; margin:0 0 4px;">קבלה — DeskKit</h2>
   <p style="color:#777; font-size:13px; margin:0 0 20px;">מספר קבלה: ${escapeHtml(opts.receiptNumber)} &nbsp;|&nbsp; תאריך: ${escapeHtml(opts.date)}</p>
-  <p style="margin:0 0 16px;">לכבוד: ${escapeHtml(opts.buyerName || opts.buyerEmail)}</p>
+  <p style="margin:0 0 4px;">לכבוד: ${escapeHtml(opts.buyerName || opts.buyerEmail)}</p>
+  <p style="color:#777; font-size:12.5px; margin:0 0 16px;">מאת: דבורה צדוק (DeskKit)</p>
   <hr style="border:none; border-top:1px solid #EAEDEC;">
   <p style="margin:16px 0;">${escapeHtml(opts.itemDescription)}</p>
   <p style="font-size:19px; font-weight:bold; color:#1F5C4E; margin:0 0 20px;">סה"כ לתשלום: ${escapeHtml(opts.amount)} (פטור ממע"מ)</p>
   <hr style="border:none; border-top:1px solid #EAEDEC;">
-  <p style="font-size:11.5px; color:#999; margin:16px 0 4px;">עוסק פטור מס' ${escapeHtml(TAX_ID)} — פטור מהוצאת חשבונית מס לפי סעיף 31 לחוק מס ערך מוסף, התשל"ו-1975.</p>
+  <p style="font-size:11.5px; color:#999; margin:16px 0 4px;">${taxLine}</p>
   <p style="font-size:11.5px; color:#999; margin:0;">שאלות: digital.dz.studio@gmail.com</p>
 </div>`;
   // The PDF needs a full document (charset + page background); the email
@@ -127,7 +144,7 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: errText }), { status: 502, headers: corsHeaders });
     }
 
-    return new Response(JSON.stringify({ success: true, receiptNumber, pdfAttached: !!pdfBytes }), { status: 200, headers: corsHeaders });
+    return new Response(JSON.stringify({ success: true, receiptNumber, pdfAttached: !!pdfBytes, taxIdConfigured: !!TAX_ID }), { status: 200, headers: corsHeaders });
   } catch (err) {
     return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: corsHeaders });
   }

@@ -1197,6 +1197,10 @@ section { padding: 88px 0; }
 .breadcrumb a { color: var(--teal); }
 .product-hero h1 { font-size: 34px; margin: 0 0 14px; color: var(--dark); letter-spacing: -.01em; }
 .product-hero .desc { color: var(--grey); font-size: 16px; margin-bottom: 22px; }
+.crmp-demo-badge {
+  display: inline-block; background: #FDF0DC; color: #8A5A1A; font-size: 12.5px; font-weight: 700;
+  padding: 6px 12px; border-radius: 20px; margin-bottom: 16px;
+}
 .product-hero .price-block { display: flex; align-items: baseline; gap: 10px; margin-bottom: 26px; }
 .product-hero .price-block .price { font-size: 34px; }
 .format-badges { display: flex; gap: 10px; margin-bottom: 26px; flex-wrap: wrap; }
