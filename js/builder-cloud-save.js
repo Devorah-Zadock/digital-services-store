@@ -20,6 +20,46 @@ async function saveCvNow() {
   await supabaseClient.from("cv_saves").upsert({ user_id: cvCurrentUserId, data: snapshot, updated_at: new Date().toISOString() });
 }
 
+const CV_LOCAL_KEY_PREFIX = "deskkit_cv_local_";
+const CV_LAST_SLUG_KEY = "deskkit_cv_last_slug";
+function cvLocalKey(slug) { return CV_LOCAL_KEY_PREFIX + (slug || ""); }
+
+/* Autosave to this browser alone, independent of any account — closing
+   the tab (or a crash) used to lose everything typed since the last
+   explicit cloud save, and cloud save itself only ever happens once
+   someone's signed in. Called from renderPreview() in builder.js, the
+   same "one hook point catches every edit" trick site-builder.js's own
+   saveSiteState() already uses, rather than needing every individual
+   input handler across this whole form to know about saving. */
+function saveCvLocalState() {
+  if (!state.content) return;
+  try {
+    const snapshot = {
+      slug: state.slug, lang: state.lang, fontId: state.fontId, content: state.content,
+      color: document.getElementById("color-picker").value,
+      textColor: document.getElementById("text-color-picker").value,
+    };
+    localStorage.setItem(cvLocalKey(state.slug), JSON.stringify(snapshot));
+    localStorage.setItem(CV_LAST_SLUG_KEY, state.slug);
+  } catch (err) { /* storage unavailable — not fatal, just won't persist */ }
+}
+
+/* Pass a slug to load THAT template's own local draft only (never falls
+   back to a different one — picking a different template from the
+   catalog must actually start that template, not silently resurrect an
+   old draft of some other one); pass nothing to resume whichever
+   template was last active. Mirrors site-builder.js's loadSiteState(). */
+function loadCvLocalState(slug) {
+  try {
+    const key = slug ? cvLocalKey(slug) : cvLocalKey(localStorage.getItem(CV_LAST_SLUG_KEY));
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && parsed.content && CV_TEMPLATES[parsed.slug]) return parsed;
+  } catch (err) { /* corrupt/old data — ignore and start fresh */ }
+  return null;
+}
+
 function applyCvSnapshot(snap) {
   state.slug = snap.slug;
   state.lang = snap.lang || "he";
@@ -62,7 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const status = document.getElementById("cv-save-status");
   if (btn) {
     btn.addEventListener("click", async () => {
-      if (!cvCurrentUserId) { window.location.href = "account.html?redirect=builder.html"; return; }
+      if (!cvCurrentUserId) { if (typeof openAuthPrompt === "function") openAuthPrompt(); return; }
       btn.disabled = true;
       await saveCvNow();
       btn.disabled = false;

@@ -60,6 +60,7 @@ function renderPreview() {
   const html = renderCVHtml({ layout: tpl.layout, font, palette, content: state.content, lang: state.lang, textColor, isPro: state.isPro });
   document.getElementById("preview-doc").innerHTML = html;
   fitPreviewToContainer();
+  if (typeof saveCvLocalState === "function") saveCvLocalState();
 }
 
 /* The CV doc is always rendered at its true fixed A4 width (794px) so the
@@ -277,6 +278,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   wireStaticInputs();
   document.getElementById("download-btn").addEventListener("click", () => {
+    // Free to edit, free to preview — an account is only asked for at
+    // the actual moment of keeping something (download or cloud save),
+    // same reasoning and same popup as #cv-save-btn in
+    // builder-cloud-save.js. cvCurrentUserId is set there, async, once
+    // the session check resolves — a click before that resolves is the
+    // same small race the save button already accepted.
+    if (typeof cvCurrentUserId !== "undefined" && !cvCurrentUserId) {
+      if (typeof openAuthPrompt === "function") openAuthPrompt();
+      return;
+    }
     window.print();
     if (window.showUpsellBanner) {
       showUpsellBanner("מעבר לקורות החיים המרשימים שבניתם, הגיע הזמן שגם לעסק שלכם יהיה אתר תדמית יפהפה.", "רוצה להיראות עוד יותר מקצועי?");
@@ -285,8 +296,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const startSlug = new URLSearchParams(location.search).get("template");
   const startLang = new URLSearchParams(location.search).get("lang");
-  state.lang = startLang === "en" ? "en" : "he";
-  document.querySelectorAll(".lang-big").forEach((b) => b.classList.toggle("active", b.dataset.lang === state.lang));
-  loadTemplate(startSlug && CV_TEMPLATES[startSlug] ? startSlug : Object.keys(CV_TEMPLATES)[0]);
-  select.value = state.slug;
+  // A local draft (this browser, any account or none) wins the very
+  // first paint — see saveCvLocalState()/loadCvLocalState() in
+  // builder-cloud-save.js. If this visitor turns out to be signed in
+  // with a cloud save of their own, that file's own async check
+  // replaces this with the cloud version right after, same as before;
+  // this only changes what shows up in the meantime, from always a
+  // blank template to whatever was actually last on screen.
+  const localDraft = typeof loadCvLocalState === "function" ? loadCvLocalState(startSlug) : null;
+  if (localDraft && (!startSlug || localDraft.slug === startSlug)) {
+    applyCvSnapshot(localDraft); // also sets font-select/tpl-select internally
+  } else {
+    state.lang = startLang === "en" ? "en" : "he";
+    document.querySelectorAll(".lang-big").forEach((b) => b.classList.toggle("active", b.dataset.lang === state.lang));
+    loadTemplate(startSlug && CV_TEMPLATES[startSlug] ? startSlug : Object.keys(CV_TEMPLATES)[0]);
+    select.value = state.slug;
+  }
 });

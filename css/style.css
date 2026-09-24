@@ -1423,6 +1423,26 @@ body.cookie-notice-active .fab { display: none; }
 .domain-guide-providers a { font-size: 12.5px; font-weight: 700; color: var(--teal); border: 1.5px solid var(--ice); border-radius: 20px; padding: 6px 14px; text-decoration: none; }
 .domain-guide-providers a:hover { border-color: var(--teal); background: var(--ice); }
 .domain-guide-note { background: var(--grey-light); border-radius: 10px; padding: 13px 15px; font-size: 12px; color: var(--grey); line-height: 1.7; margin-top: 26px; }
+
+/* ---------- Auth prompt (join-to-save popup — see js/auth-prompt.js) ---------- */
+.auth-prompt-modal { max-width: 400px; text-align: center; }
+.auth-prompt-modal .lead { margin-bottom: 24px; }
+/* Google's own "Sign in with Google" branding guidelines: white
+   background, a specific grey border (not the site's own teal/dark
+   button language), Roboto/system-default medium weight, and the real
+   4-color "G" mark rather than a generic icon — this is what actually
+   reads as "a real Google button" and builds the trust a from-scratch
+   styled button wouldn't. */
+.google-signin-btn {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 12px;
+  background: #fff; color: #1F1F1F; border: 1px solid #747775; border-radius: 8px;
+  padding: 11px 16px; font-family: 'Roboto', Arial, sans-serif; font-size: 14.5px; font-weight: 500;
+  cursor: pointer; transition: background .15s ease, box-shadow .15s ease;
+}
+.google-signin-btn:hover { background: #F8F9FA; box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+.google-signin-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+.auth-prompt-email-link { display: block; margin-top: 16px; font-size: 12.5px; color: var(--grey); text-decoration: underline; }
+.auth-prompt-email-link:hover { color: var(--teal-dark); }
 .my-content-domain-btn {
   background: none; border: none; cursor: pointer; color: #8A8A8A;
   padding: 8px; border-radius: 8px; line-height: 1; flex-shrink: 0;

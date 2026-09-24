@@ -1400,20 +1400,62 @@ async function publishSite() {
       return;
     }
     if (typeof data.publishCount === "number") { sitePublishCount = data.publishCount; renderPublishRemaining(); }
-    note.innerHTML = `
-      <div style="margin-bottom:4px;">האתר חי!</div>
-      <a href="${data.url}" target="_blank" rel="noopener" style="display:block; font-size:16px; font-weight:700; color:#2B6CB0; word-break:break-all;">${data.url}</a>
-      ${data.claimUrl ? `<a href="${data.claimUrl}" target="_blank" rel="noopener" class="btn btn-teal" style="width:100%; box-sizing:border-box; text-align:center; display:block; margin-top:12px;">תפיסת האתר בחשבון Netlify שלכם (חינם)</a>
-      <p style="font-size:12px; color:var(--grey); margin:8px 0 0;">חשוב: בלי הצעד הזה האתר יישאר תחת החשבון שלנו — לוחצים כדי שהאתר יהיה שלכם לצמיתות.</p>` : ""}
-      <button type="button" id="publish-domain-guide-btn" class="btn-mini" style="width:100%; margin-top:10px;">🌐 רוצים גם דומיין משלכם? לחצו כאן</button>
-    `;
-    document.getElementById("publish-domain-guide-btn").addEventListener("click", openDomainGuide);
+    // Claim first, link second — not the other way around. The free
+    // netlify.app URL works immediately either way, but every site
+    // publishes under DeskKit's own Netlify account until claimed (see
+    // publish-site's own comment: that's what keeps hosting liability
+    // off a free plan meant for many customers at once). Showing the
+    // link before the claim step trained people to skip it. See
+    // renderPublishClaimedScreen for why this counts a claim as done
+    // the moment the button is clicked, not verified.
+    if (data.claimUrl) {
+      note.innerHTML = `
+        <a href="${data.claimUrl}" target="_blank" rel="noopener" id="publish-claim-btn" class="btn btn-gold" style="width:100%; box-sizing:border-box; text-align:center; display:block;">שלב אחרון: לחצו כאן להפעלת האתר וקבלת בעלות מלאה (חינם לתמיד) 🚀</a>
+        <p style="font-size:12.5px; color:var(--grey); margin:10px 0 0; line-height:1.6;">💡 כדי להשלים את התהליך, חובה ללחוץ על הכפתור למעלה. לחיצה זו מעבירה את האתר מהשרת הזמני שלנו לחשבון הפרטי והמאובטח שלכם. זה יאפשר לכם לשמור על האתר יציב באוויר ולערוך אותו בעתיד בכל זמן שתרצו.</p>
+      `;
+      document.getElementById("publish-claim-btn").addEventListener("click", () => renderPublishClaimedScreen(data.url), { once: true });
+    } else {
+      renderPublishClaimedScreen(data.url);
+    }
   } catch (err) {
     note.textContent = "הפרסום נכשל. נסו שוב בעוד רגע.";
   } finally {
     btn.disabled = false;
     btn.textContent = originalLabel;
   }
+}
+
+/* The actual "you're done" screen — reached either straight from
+   publishSite() (no claimUrl at all — nothing to gate on) or once the
+   claim button above has been clicked. Netlify's claim flow opens in a
+   new tab on their own domain and has no callback wired up to tell this
+   page it actually finished (confirmed in publish-site/index.ts's own
+   setup comment: "no redirect URI needed for this flow") — so this is
+   deliberately optimistic, the same trust-the-click model the buy/
+   license flow above already uses, rather than leaving the customer
+   staring at a spinner for a confirmation that isn't coming. */
+function renderPublishClaimedScreen(url) {
+  const note = document.getElementById("publish-note");
+  note.innerHTML = `
+    <div style="margin-bottom:4px; font-weight:700; color:var(--teal-dark);">האתר חי ושייך לכם!</div>
+    <div class="publish-url-box">
+      <span id="publish-url-text">${url}</span>
+      <button type="button" id="publish-copy-btn" class="btn-mini publish-copy-btn">העתקת קישור</button>
+    </div>
+    <button type="button" id="publish-domain-guide-btn" class="btn-mini" style="width:100%; margin-top:10px;">🌐 רוצים גם דומיין משלכם? לחצו כאן</button>
+  `;
+  document.getElementById("publish-copy-btn").addEventListener("click", async (e) => {
+    const copyBtn = e.currentTarget;
+    const original = copyBtn.textContent;
+    try {
+      await navigator.clipboard.writeText(url);
+      copyBtn.textContent = "הועתק ✓";
+    } catch (err) {
+      copyBtn.textContent = "לא הצלחנו להעתיק — סמנו ידנית";
+    }
+    setTimeout(() => { copyBtn.textContent = original; }, 2000);
+  });
+  document.getElementById("publish-domain-guide-btn").addEventListener("click", openDomainGuide);
 }
 
 /* The purchase panel used to be visible from the very first moment someone
