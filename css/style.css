@@ -1295,7 +1295,7 @@ footer.site { background: linear-gradient(180deg, var(--teal-dark), #000000); co
 
 .chat-panel {
   position: fixed; bottom: 90px; right: 24px; z-index: 250;
-  width: 320px; max-width: calc(100vw - 32px); height: 420px; max-height: calc(100vh - 130px);
+  width: 380px; max-width: calc(100vw - 32px); height: 520px; max-height: calc(100vh - 130px);
   background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow-lg);
   display: none; flex-direction: column; overflow: hidden; border: 1px solid #EAEDEC;
 }
@@ -1314,13 +1314,13 @@ footer.site { background: linear-gradient(180deg, var(--teal-dark), #000000); co
 .chat-msg-user .chat-bubble { background: var(--teal); color: var(--white); }
 .chat-link { display: block; margin-top: 6px; font-weight: 700; color: var(--teal); font-size: 12.5px; }
 .chat-msg-user .chat-link { color: #DCEBE5; }
-.chat-quick { display: flex; flex-direction: column; gap: 6px; padding: 0 12px 10px; }
+.chat-quick { display: flex; flex-direction: column; gap: 9px; padding: 0 14px 14px; }
 .chat-chip { background: var(--ice); color: var(--teal-dark); border: none; padding: 6px 11px; border-radius: 20px; font-size: 11.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
 .chat-menu-btn {
-  display: flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box;
+  display: flex; align-items: center; gap: 9px; width: 100%; box-sizing: border-box;
   background: var(--ice); color: var(--teal-dark); border: none; border-radius: 10px;
-  padding: 9px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit;
-  text-align: right; line-height: 1.4; transition: background .15s ease;
+  padding: 12px 14px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+  text-align: right; line-height: 1.45; transition: background .15s ease;
 }
 .chat-menu-btn:hover { background: #DDF0F0; }
 .chat-menu-back {
@@ -1384,7 +1384,7 @@ body.cookie-notice-active .fab { display: none; }
 }
 
 @media (max-width: 480px) {
-  .chat-panel { right: 12px; bottom: 84px; width: calc(100vw - 24px); }
+  .chat-panel { right: 12px; bottom: 84px; width: calc(100% - 40px); }
   .fab-chat { right: 14px; }
   .fab-feedback { left: 14px; }
   .fab-a11y { left: 14px; }
