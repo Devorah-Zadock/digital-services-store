@@ -152,7 +152,7 @@ Deno.serve(async (req: Request) => {
     const pdfBytes = await renderReceiptPdf(receiptHtml(receiptOpts, true));
 
     const emailBody: Record<string, unknown> = {
-      from: "DeskKit <onboarding@resend.dev>",
+      from: "DeskKit <receipts@deskkit.co.il>",
       to: [buyerEmail],
       subject: "קבלה על רכישתך ב-DeskKit",
       html: receiptHtml(receiptOpts, false),
