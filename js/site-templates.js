@@ -3006,15 +3006,15 @@ const SITE_CATEGORIES = [
    made the whole catalog read as bland at a glance even though the more
    distinctive templates were there too, just scrolled past. */
 const SITE_TEMPLATES = {
-  "studio": { label: "סטודיו קריאייטיב", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "הירו א-סימטרי כהה, ניווט צדי אנכי, וטקסטים שנכנסים באנימציה בגלילה", thumb: "images/previews/site-studio.webp?v=2", render: renderStudioSite,
+  "studio": { label: "סטודיו מעוצב", category: "יוצרים וסטודיו", categorySlug: "creative", desc: "הירו א-סימטרי כהה, ניווט צדי אנכי, וטקסטים שנכנסים באנימציה בגלילה", thumb: "images/previews/site-studio.webp?v=2", render: renderStudioSite,
     features: ["הירו א-סימטרי כהה עם ניווט צדי אנכי", "טקסטים שנכנסים באנימציה תוך כדי גלילה", "עיצוב נועז שממש לא נראה כמו \"תבנית\"", "מתאים לסטודיו עיצוב או מותג יצירתי"], tags: ["dark", "rail"] },
   "noir": { label: "יוקרתי כהה", category: "אירועים ובוטיק", categorySlug: "events", desc: "רקע כהה, טיפוגרפיה איטלקית עדינה, ורשימת שירותים בסגנון תפריט", thumb: "images/previews/site-noir.webp", render: renderNoirSite,
     features: ["רקע כהה ויוקרתי עם וידאו רקע אפשרי", "טיפוגרפיה איטלקית עדינה", "רשימת שירותים בסגנון תפריט מסעדה", "מתאים לאירועים ומותגים יוקרתיים"], tags: ["dark", "video"] },
-  "bold": { label: "נועז ומודרני", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "מסגרות עבות, צללים חדים, טיפוגרפיה גדולה", thumb: "images/previews/site-bold.webp?v=2", render: renderBoldSite,
+  "bold": { label: "נועז ומודרני", category: "יוצרים וסטודיו", categorySlug: "creative", desc: "מסגרות עבות, צללים חדים, טיפוגרפיה גדולה", thumb: "images/previews/site-bold.webp?v=2", render: renderBoldSite,
     features: ["טיפוגרפיה גדולה ותוססת שקופצת לעין", "מסגרות עבות וצללים חדים", "גלריית תמונות מתחלפות בכותרת", "מתאים למותגים שרוצים לבלוט"], tags: [] },
   "elegant": { label: "אלגנטי ומעוצב", category: "אירועים ובוטיק", categorySlug: "events", desc: "טיפוגרפיה עדינה, תמונה מפוצלת, מתאים לאירועים ועסקי בוטיק", thumb: "images/previews/site-elegant.webp", render: renderElegantSite,
     features: ["פריסה מפוצלת: תמונה בצד, טקסט בצד", "גלריית תמונות מתחלפות", "טיפוגרפיה עדינה שמתאימה לאירועים", "מושלם לעסקי בוטיק ואירועים"], tags: [] },
-  "gallery": { label: "גלריה מודרנית", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "תמונה מלאה ברקע, עיצוב עיתונאי ואלגנטי", thumb: "images/previews/site-gallery.webp?v=2", render: renderGallerySite,
+  "gallery": { label: "גלריה מודרנית", category: "יוצרים וסטודיו", categorySlug: "creative", desc: "תמונה מלאה ברקע, עיצוב עיתונאי ואלגנטי", thumb: "images/previews/site-gallery.webp?v=2", render: renderGallerySite,
     features: ["תמונת רקע מלאה בכותרת, בסגנון עיתונאי", "פריסת \"בֶּנְטוֹ\" מודרנית למוצרים או עבודות", "טיפוגרפיה עדינה ואלגנטית", "צבע ראשי לבחירה שצובע את כל האתר"], tags: [] },
   "portfolio": { label: "תיק עבודות יצירתי", category: "תדמית אישית", categorySlug: "personal", desc: "כותרת אישית גדולה ורשימת עבודות ממוספרת, בסגנון פורטפוליו", thumb: "images/previews/site-portfolio.webp?v=2", render: renderPortfolioSite,
     features: ["כותרת אישית גדולה עם שם ותפקיד", "רשימת עבודות ממוספרת בסגנון פורטפוליו", "גלריית תמונות מתחלפות", "מתאים למעצבים, יוצרים ואנשי מקצוע יצירתיים"], tags: [] },
@@ -3034,13 +3034,13 @@ const SITE_TEMPLATES = {
     features: ["רקע כהה עם אפקט זכוכית מטושטשת (Glassmorphism)", "הילה זוהרת שעוקבת אחרי תנועת העכבר", "טיפוגרפיה ענקית שמרגישה כמו אפליקציית פרימיום", "מתאים לעורכי דין, יועצים ומותגים יוקרתיים"], tags: ["dark", "effects"] },
   "brutal": { label: "נאו-ברוטליזם נועז", category: "קטלוג ומכירות", categorySlug: "shop", desc: "רקעי צבע עזים, מסגרות שחורות עבות, וכפתורי לחיצה בסגנון ארקייד", thumb: "images/previews/site-brutal.webp", render: renderBrutalSite,
     features: ["רקעים צבעוניים נועזים עם מסגרות שחורות עבות", "כפתורים שנלחצים פיזית בלחיצה, כמו במכונת ארקייד", "כותרת נעה בלולאה (Marquee) בסגנון בורסה", "מתאים לחנויות, מאמנים ומותגים צעירים ותוססים"], tags: [] },
-  "neon": { label: "העתיד הניאוני", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "רקע מש-גרדיאנט ניאוני זז, זכוכית מטושטשת, וכותרות שנפתחות דרמטית בגלילה", thumb: "images/previews/site-neon.webp", render: renderNeonSite,
+  "neon": { label: "העתיד הניאוני", category: "יוצרים וסטודיו", categorySlug: "creative", desc: "רקע מש-גרדיאנט ניאוני זז, זכוכית מטושטשת, וכותרות שנפתחות דרמטית בגלילה", thumb: "images/previews/site-neon.webp", render: renderNeonSite,
     features: ["רקע גרדיאנט ניאוני (סגול/ורוד/תכלת) שזז לאט וברציפות", "סמן עכבר מותאם אישית עם התפוצצות חלקיקים בלחיצה", "כותרות שנפתחות מילה-אחר-מילה בגלילה", "מתאים לסוכנויות דיגיטל ומותגי קריאייטיב מובילים"], tags: ["dark", "effects"] },
   "chaos": { label: "הכאוס המאורגן", category: "קטלוג ומכירות", categorySlug: "shop", desc: "טיפוגרפיה ענקית, גרדיאנטים חומציים, גלילה אופקית וכפתורים מגנטיים", thumb: "images/previews/site-chaos.webp", render: renderChaosSite,
     features: ["גלילה אופקית ייחודית לתצוגת שירותים/מוצרים", "כפתורים מגנטיים שנמשכים אחרי העכבר", "תמונות עם אפקט עיוות (distortion) בריחוף", "מתאים למותגי אופנה, אמנים ופורטפוליו נועז"], tags: ["hscroll", "effects"] },
   "luxury3d": { label: "יוקרה מינימליסטית תלת-ממדית", category: "אירועים ובוטיק", categorySlug: "events", desc: "פרלקס תלת-ממדי עמוק, גווני פנינה וזהב חיוור, ומעבר כניסה בסגנון עדשת מצלמה", thumb: "images/previews/site-luxury3d.webp", render: renderLuxurySite,
     features: ["אפקט פרלקס תלת-ממדי עם שכבות תמונה וטקסט נעות", "מעבר כניסה אלגנטי בסגנון פתיחת עדשת מצלמה", "טיפוגרפיה עדינה וגווני פנינה וזהב חיוור", "מתאים לאדריכלים, נדל\"ן יוקרתי ומוצרי פרימיום"], tags: ["effects"] },
-  "playground": { label: "מגרש המשחקים הפיזיקלי", category: "עיצובי ויצירתי", categorySlug: "creative", desc: "בועות שירותים עם פיזיקה אמיתית שאפשר לגרור ולזרוק, כותרת מסך-גרדיאנט וכפתור נוזלי", thumb: "images/previews/site-playground.webp", render: renderPlaygroundSite,
+  "playground": { label: "מגרש המשחקים הפיזיקלי", category: "יוצרים וסטודיו", categorySlug: "creative", desc: "בועות שירותים עם פיזיקה אמיתית שאפשר לגרור ולזרוק, כותרת מסך-גרדיאנט וכפתור נוזלי", thumb: "images/previews/site-playground.webp", render: renderPlaygroundSite,
     features: ["בועות שירותים עם מנוע פיזיקה אמיתי — גוררים, זורקים, מתנגשות", "כותרת ענק עם גרדיאנט צבעוני זז שמוסתר בתוך הטקסט", "כפתור ראשי עם אפקט עיוות נוזלי בריחוף", "מתאים למותגים צעירים, סדנאות והרצאות מרימות אנרגיה"], tags: ["dark", "effects"] },
 };
 

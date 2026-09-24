@@ -173,7 +173,7 @@ body.has-sites-rail header.site {
      RTL context, where a plain row would otherwise place the icon
      last, after the wordmark — confirmed live, that's what a first try
      without this looked like. */
-  display: flex; flex-direction: row-reverse; align-items: center; gap: 9px; letter-spacing: -.01em;
+  display: flex; flex-direction: row-reverse; align-items: center; gap: 6px; letter-spacing: -.01em;
 }
 /* Icon + wordmark, same everywhere the brand or a link back to the
    homepage appears, not just the homepage itself. "Desk" bold in near-
@@ -189,7 +189,7 @@ body.has-sites-rail header.site {
    header) instead of just reordering the two words inside it. */
 .brand-text { direction: ltr; }
 .brand-badge { display: flex; align-items: center; }
-.brand-mark { width: 27px; height: 27px; }
+.brand-mark { width: 30px; height: 30px; }
 .bm-doc { fill: none; stroke: #1A1A1A; stroke-width: 1.6; stroke-linejoin: round; }
 .bm-fold { fill: #E4E4E4; stroke: #1A1A1A; stroke-width: 1.6; stroke-linejoin: round; }
 .bm-spark { fill: #0E8C8C; }

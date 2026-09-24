@@ -21,7 +21,7 @@ const MY_PANEL_TEMPLATE_LABELS = {
   "portfolio": "תיק עבודות יצירתי",
   "boutique": "חנות בוטיק",
   "noir": "יוקרתי כהה",
-  "studio": "סטודיו קריאייטיב",
+  "studio": "סטודיו מעוצב",
 };
 
 const MY_PANEL_COLLAPSE_KEY = "deskkit_panel_collapsed";
