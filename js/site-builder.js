@@ -11,6 +11,28 @@
    that instead of product_permalink. */
 const SITE_GUMROAD_CONFIG = { productId: "NUyzNlvxdpU_49TE5nk9fg==", checkoutUrl: "https://dizstudio.gumroad.com/l/rhkfld" };
 const SITE_UNLOCK_KEY = "deskkit_sites_unlocked_" + SITE_GUMROAD_CONFIG.productId;
+
+/* EMERGENCY MANUAL SWITCH — set true 2026-09-24 after Netlify's account
+   hit its monthly production-deploy credit limit (their own email: "Your
+   team can't ship to production right now... paused until you upgrade or
+   your billing cycle resets") and a real customer paid, then hit "פרסום"
+   (publish) and got a failure — meaning we took money for a live site we
+   could not actually deliver at that moment.
+   While this is true, new site purchases are blocked (see refreshUnlockUI
+   below) so nobody pays for a "live URL" that can't be issued right now.
+   Already-unlocked customers can still try to publish — see publishSite's
+   own "host_unavailable" handling for what happens if Netlify still
+   refuses; they can always fall back to "הורדת קובצי האתר (ZIP)", which
+   never touches Netlify and is unaffected by this.
+   This is a MANUAL flag, not an automatic one: there is no live check
+   against Netlify's actual remaining credits here, because that needs its
+   own authenticated server-side call (the NETLIFY_AUTH_TOKEN secret is
+   only readable by the publish-site Edge Function, never the browser) —
+   a real project if wanted, not something to fake from the client. Flip
+   this back to false once purchases are confirmed safe again (Netlify's
+   own email named a billing-cycle reset on Oct 4, or sooner if the plan
+   is upgraded before then). */
+const SITE_HOSTING_PAUSED = true;
 /* Scoped per template, not just per product: unlocking one site must not
    silently unlock a download of a totally different template later —
    each template is its own purchase (see site-cloud-save.js). */
@@ -1393,6 +1415,15 @@ async function publishSite() {
       note.textContent = "הפרסום נכשל. נסו שוב בעוד רגע.";
       return;
     }
+    if (data.reason === "host_unavailable") {
+      // Netlify itself is refusing new deploys account-wide (see
+      // SITE_HOSTING_PAUSED's comment) — not a per-user glitch, so "try
+      // again in a moment" would be false. The customer already paid and
+      // their site is saved; the ZIP download never touches Netlify at
+      // all, so it stays a real way to get their product right now.
+      note.innerHTML = `פרסום לאוויר זמנית לא זמין אצלנו בגלל עומס אצל ספק האחסון — זה לא קשור לרכישה שלכם, והיא בתוקף. האתר שלכם מוכן ושמור: אפשר להוריד את הקבצים עכשיו עם "הורדת קובצי האתר (ZIP)" למטה, ולנסות לפרסם שוב מאוחר יותר מאותו מסך. תקועים? <a href="mailto:digital.dz.studio@gmail.com?subject=${encodeURIComponent("פרסום נכשל — בניית אתר")}" style="color:inherit; text-decoration:underline;">כתבו לנו</a>.`;
+      return;
+    }
     if (data.reason === "limit_reached") {
       sitePublishCount = data.publishCount;
       renderPublishRemaining();
@@ -1494,6 +1525,14 @@ function refreshUnlockUI() {
   done.style.display = "none";
   gate.style.display = financeGateOpened ? "none" : "";
   pending.style.display = financeGateOpened ? "" : "none";
+  // Inside unlock-pending: hide only the "buy a new code" block during
+  // the outage (see SITE_HOSTING_PAUSED above), never the license-key
+  // redemption box below it — someone who already paid before the outage
+  // started still needs to be able to enter a code they already have.
+  const buyBlock = document.getElementById("buy-new-block");
+  const pausedNotice = document.getElementById("hosting-paused");
+  if (buyBlock) buyBlock.style.display = SITE_HOSTING_PAUSED ? "none" : "";
+  if (pausedNotice) pausedNotice.style.display = SITE_HOSTING_PAUSED ? "" : "none";
 }
 
 /* Verification itself happens server-side, in the redeem-license Edge

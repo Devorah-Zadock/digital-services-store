@@ -60,6 +60,21 @@ function jsonResponse(body: Record<string, unknown>, status = 200) {
    into the site at creation time and into the claim link's signed
    token, which is how Netlify matches "this claim link" to "that site"
    (see the guide: session_id is the double-verification signal). */
+// Thrown by createNetlifySite/deployZipToNetlify specifically when
+// Netlify's response looks like an account-level block (out of
+// production-deploy credits, plan paused) rather than a one-off/transient
+// failure — so the caller can tell a customer the truth ("we can't
+// deliver a live URL right now, but your files are safe") instead of the
+// generic "try again in a moment", which is actively misleading when
+// retrying can't possibly help.
+class NetlifyAccountBlockedError extends Error {}
+
+function isAccountBlockedResponse(status: number, bodyText: string): boolean {
+  if (status === 402) return true; // payment required — plan/credits exhausted
+  if (status === 403 && /credit|paused|plan|quota/i.test(bodyText)) return true;
+  return false;
+}
+
 async function createNetlifySite(siteProjectId: string) {
   const res = await fetch("https://api.netlify.com/api/v1/sites", {
     method: "POST",
@@ -71,7 +86,13 @@ async function createNetlifySite(siteProjectId: string) {
       session_id: siteProjectId,
     }),
   });
-  if (!res.ok) throw new Error(`Netlify site creation failed: ${res.status} ${await res.text()}`);
+  if (!res.ok) {
+    const bodyText = await res.text();
+    if (isAccountBlockedResponse(res.status, bodyText)) {
+      throw new NetlifyAccountBlockedError(`Netlify site creation blocked: ${res.status} ${bodyText}`);
+    }
+    throw new Error(`Netlify site creation failed: ${res.status} ${bodyText}`);
+  }
   return res.json();
 }
 
@@ -81,7 +102,13 @@ async function deployZipToNetlify(netlifySiteId: string, zipBytes: Uint8Array) {
     headers: { Authorization: `Bearer ${NETLIFY_AUTH_TOKEN}`, "Content-Type": "application/zip" },
     body: zipBytes,
   });
-  if (!res.ok) throw new Error(`Netlify deploy failed: ${res.status} ${await res.text()}`);
+  if (!res.ok) {
+    const bodyText = await res.text();
+    if (isAccountBlockedResponse(res.status, bodyText)) {
+      throw new NetlifyAccountBlockedError(`Netlify deploy blocked: ${res.status} ${bodyText}`);
+    }
+    throw new Error(`Netlify deploy failed: ${res.status} ${bodyText}`);
+  }
   return res.json();
 }
 
@@ -184,6 +211,14 @@ Deno.serve(async (req: Request) => {
       limit: PUBLISH_LIMIT,
     });
   } catch (err) {
+    if (err instanceof NetlifyAccountBlockedError) {
+      // 200, not 500: this is a known, handled condition (Netlify's
+      // account-level credit limit), not an unexpected server error — the
+      // client checks data.reason the same way it already does for
+      // "limit_reached", and shows the customer their files are safe
+      // rather than a scary generic failure.
+      return jsonResponse({ success: false, reason: "host_unavailable" });
+    }
     return jsonResponse({ error: String(err) }, 500);
   }
 });
