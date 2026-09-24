@@ -41,15 +41,57 @@ const CHAT_FALLBACK = {
   a: "לא הצלחתי למצוא תשובה מדויקת לזה. אפשר לנסות לשאול אחרת, או לפנות אלינו ישירות.",
   link: { href: "contact.html", label: "לעמוד צור קשר" },
 };
-const CHAT_QUICK = [
-  "איך בונים קורות חיים?",
-  "המצגות בחינם?",
-  "איך מורידים PDF?",
-  "אפשר לשנות גופן וצבע?",
-  "אפשר להעלות תמונה?",
-  "יש תבניות באנגלית?",
-  "יש קבצי Excel?",
-  "איך יוצרים קשר?",
+
+/* The category tree shown when the chat opens, in place of the old flat
+   list of quick-suggestion chips — grouped to match the tool families
+   that actually exist on the site today, with answers that reflect each
+   tool's real current behavior (free editing vs. gated download, autosave,
+   etc.) rather than generic copy. */
+const CHAT_CATEGORIES = [
+  {
+    id: "cv",
+    icon: "📄",
+    label: "קורות חיים ומצגות",
+    items: [
+      { q: "האם עריכת קורות החיים בחינם?",
+        a: "לגמרי. עריכת התוכן, הצבע והגופן בבילדר פתוחה לכולם בלי הרשמה — הרשמה מהירה (מייל או Google) נדרשת רק ברגע השמירה או ההורדה, בלי כרטיס אשראי.",
+        link: { href: "products.html?type=cv", label: "לתבניות קורות החיים" } },
+      { q: "העבודה שלי נשמרת אוטומטית?",
+        a: "כן — הטיוטה נשמרת אוטומטית בדפדפן תוך כדי הקלדה, גם בלי חשבון. אחרי הרשמה אפשר גם לשמור לענן ולהמשיך לערוך מכל מכשיר." },
+      { q: "יש גם תבניות מצגות?",
+        a: "יש תבניות מצגות עסקיות מוכנות בקטלוג, כולן להורדה ישירה כקובץ PowerPoint מלא לעריכה.",
+        link: { href: "products.html?type=deck", label: "לתבניות המצגות" } },
+    ],
+  },
+  {
+    id: "sites",
+    icon: "🌐",
+    label: "בניית אתרים ודומיינים",
+    items: [
+      { q: "איך בונים אתר עסקי באתר?",
+        a: "בוחרים אחת מ-18 תבניות מוכנות, ממלאים את פרטי העסק ורואים תצוגה חיה שמתעדכנת מיד תוך כדי העריכה — בלי לדעת לתכנת.",
+        link: { href: "sites.html", label: "לבניית אתר" } },
+      { q: "כמה עולה לבנות אתר?",
+        a: "עריכת התוכן, הצבע והתמונות באתר חינמית וללא הגבלה לתמיד. יש תשלום חד-פעמי אחד כדי לפתוח את פרסום האתר הסופי — בלי מנוי חודשי." },
+      { q: "איך מחברים דומיין אישי לאתר?",
+        a: "האתר עולה לאוויר באחסון חינמי לתמיד עם קישור משלו. אם תרצו בהמשך דומיין אישי, אפשר לרכוש אותו מכל ספק ולחבר אותו לפי המדריך המלא שמופיע בסיום התהליך." },
+    ],
+  },
+  {
+    id: "biz",
+    icon: "💼",
+    label: "כלים לעסקים וחשבוניות",
+    items: [
+      { q: "איך מתחילים עם הצעות מחיר או חשבוניות?",
+        a: "נרשמים פעם אחת עם מייל או Google וממלאים את פרטי העסק והלוגו — ומכאן והלאה כל הצעת מחיר או חשבונית מופקת מוכנה תוך דקה." },
+      { q: "החשבוניות מתאימות לעוסק פטור?",
+        a: "כן, כולל התאמה מלאה לעוסק פטור ומספור אוטומטי של חשבונית מס-קבלה או קבלה.",
+        link: { href: "invoice-app.html", label: "לחשבוניות וקבלות" } },
+      { q: "מה זה ה-CRM ואיך הוא עוזר?",
+        a: "מערכת ניהול לקוחות פשוטה עם לוח קנבן, ישירות בדפדפן — עוזרת לעקוב אחרי לידים ולקוחות בלי אקסל מבולגן.",
+        link: { href: "crm-product.html", label: "למערכת ה-CRM" } },
+    ],
+  },
 ];
 
 function escapeHtml(s) {
@@ -153,21 +195,40 @@ function injectChatWidget() {
         <button type="button" class="widget-close" id="chat-close" aria-label="סגירה">✕</button>
       </div>
       <div class="chat-body" id="chat-body"></div>
-      <div class="chat-quick" id="chat-quick">${CHAT_QUICK.map((q) => `<button type="button" class="chat-chip" data-q="${escapeHtml(q)}">${escapeHtml(q)}</button>`).join("")}</div>
+      <div class="chat-quick" id="chat-quick"></div>
       <form class="chat-input-row" id="chat-form">
         <input type="text" id="chat-input" placeholder="כתבו שאלה..." autocomplete="off">
-        <button type="submit" class="btn btn-teal">שליחה</button>
+        <button type="submit" class="btn btn-gold">שליחה</button>
       </form>
     </div>`;
   document.body.appendChild(wrap);
 
   const panel = document.getElementById("chat-panel");
   const body = document.getElementById("chat-body");
+  const quick = document.getElementById("chat-quick");
   let greeted = false;
 
   function addMsg(text, link, who) {
     body.insertAdjacentHTML("beforeend", bubbleHtml(text, link, who));
     body.scrollTop = body.scrollHeight;
+  }
+
+  // Top-level category buttons — the chat's home screen.
+  function renderCategoryMenu() {
+    quick.innerHTML = CHAT_CATEGORIES.map((cat) =>
+      `<button type="button" class="chat-menu-btn" data-cat="${cat.id}">${cat.icon} ${escapeHtml(cat.label)}</button>`
+    ).join("");
+  }
+
+  // A category's 2-3 questions, plus a way back to the category menu.
+  function renderCategoryQuestions(catId) {
+    const cat = CHAT_CATEGORIES.find((c) => c.id === catId);
+    if (!cat) return renderCategoryMenu();
+    quick.innerHTML =
+      `<button type="button" class="chat-menu-btn chat-menu-back" data-back="1">⬅ חזרה לתפריט הראשי</button>` +
+      cat.items.map((item, i) =>
+        `<button type="button" class="chat-menu-btn" data-cat="${cat.id}" data-item="${i}">${escapeHtml(item.q)}</button>`
+      ).join("");
   }
 
   function ask(text) {
@@ -181,13 +242,32 @@ function injectChatWidget() {
     panel.classList.toggle("open");
     if (panel.classList.contains("open") && !greeted) {
       greeted = true;
-      addMsg("היי! אני העוזר של DeskKit 👋 אפשר לשאול אותי על התבניות, הבילדר או ההורדות.", null, "bot");
+      addMsg("היי! אני העוזר של DeskKit 🤖 אפשר לבחור נושא למטה, או לכתוב שאלה בעצמכם.", null, "bot");
+      renderCategoryMenu();
     }
   });
   document.getElementById("chat-close").addEventListener("click", () => panel.classList.remove("open"));
-  document.getElementById("chat-quick").addEventListener("click", (e) => {
-    const q = e.target.dataset.q;
-    if (q) ask(q);
+  quick.addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    if (btn.dataset.back) { renderCategoryMenu(); return; }
+    if (btn.dataset.item !== undefined) {
+      const cat = CHAT_CATEGORIES.find((c) => c.id === btn.dataset.cat);
+      const item = cat && cat.items[Number(btn.dataset.item)];
+      if (!item) return;
+      addMsg(item.q, null, "user");
+      setTimeout(() => addMsg(item.a, item.link, "bot"), 300);
+      return;
+    }
+    if (btn.dataset.cat) {
+      const cat = CHAT_CATEGORIES.find((c) => c.id === btn.dataset.cat);
+      if (!cat) return;
+      addMsg(cat.icon + " " + cat.label, null, "user");
+      setTimeout(() => {
+        addMsg("בחרו שאלה מהרשימה, או חזרו לתפריט הראשי:", null, "bot");
+        renderCategoryQuestions(cat.id);
+      }, 300);
+    }
   });
   document.getElementById("chat-form").addEventListener("submit", (e) => {
     e.preventDefault();

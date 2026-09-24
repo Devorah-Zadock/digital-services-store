@@ -780,7 +780,7 @@ body.home-neo .footer-bottom { color: #7A7A82; }
 /* Same reasoning as the footer above: these are shared, sitewide widgets
    still in the old teal/gold, so the recolor to the black/white/accent
    palette is scoped to the homepage only. */
-body.home-neo .fab-chat { background: var(--hn-dark); }
+body.home-neo .fab-chat { background: var(--hn-accent); }
 body.home-neo .fab-feedback { background: var(--hn-accent); color: var(--hn-dark-text); }
 body.home-neo .fab-a11y { border-color: var(--hn-border); color: var(--hn-ink); }
 body.home-neo .fab-a11y:hover { border-color: var(--hn-accent); }
@@ -1257,7 +1257,7 @@ footer.site { background: linear-gradient(180deg, var(--teal-dark), #000000); co
 }
 .fab:hover { transform: translateY(-3px) scale(1.04); box-shadow: 0 14px 30px rgba(0,0,0,.28); }
 .fab-feedback { left: 24px; background: linear-gradient(135deg, var(--gold-light), var(--gold)); color: var(--teal-dark); }
-.fab-chat { right: 24px; background: linear-gradient(135deg, var(--teal), var(--teal-light)); }
+.fab-chat { right: 24px; background: linear-gradient(135deg, var(--gold-light), var(--gold)); }
 .fab-chat svg { width: 24px; height: 24px; }
 .fab-a11y {
   left: 24px; bottom: 88px; box-shadow: 0 6px 16px rgba(0,0,0,.12);
@@ -1314,8 +1314,20 @@ footer.site { background: linear-gradient(180deg, var(--teal-dark), #000000); co
 .chat-msg-user .chat-bubble { background: var(--teal); color: var(--white); }
 .chat-link { display: block; margin-top: 6px; font-weight: 700; color: var(--teal); font-size: 12.5px; }
 .chat-msg-user .chat-link { color: #DCEBE5; }
-.chat-quick { display: flex; gap: 6px; padding: 0 12px 10px; flex-wrap: wrap; }
+.chat-quick { display: flex; flex-direction: column; gap: 6px; padding: 0 12px 10px; }
 .chat-chip { background: var(--ice); color: var(--teal-dark); border: none; padding: 6px 11px; border-radius: 20px; font-size: 11.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.chat-menu-btn {
+  display: flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box;
+  background: var(--ice); color: var(--teal-dark); border: none; border-radius: 10px;
+  padding: 9px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit;
+  text-align: right; line-height: 1.4; transition: background .15s ease;
+}
+.chat-menu-btn:hover { background: #DDF0F0; }
+.chat-menu-back {
+  align-self: flex-start; background: none; color: var(--grey); font-weight: 600;
+  padding: 2px 2px 4px; font-size: 12px;
+}
+.chat-menu-back:hover { background: none; color: var(--teal-dark); }
 .chat-input-row { display: flex; gap: 8px; padding: 12px; border-top: 1px solid #EDEFEE; }
 .chat-input-row input {
   flex: 1; min-width: 0; padding: 9px 12px; border-radius: 20px; border: 1px solid #DADFDD; font-family: inherit; font-size: 13px;
