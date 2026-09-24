@@ -146,7 +146,7 @@ function renderQuoteHtml(q) {
   <div class="quote-doc skin-${skin}" dir="rtl">
     <div class="bsd">בס"ד</div>
     <div class="letterhead">
-      ${q.logoUrl ? `<img class="letterhead-logo" src="${escapeHtmlQ(q.logoUrl)}" alt="">` : ""}
+      ${q.logoUrl ? `<img class="letterhead-logo" src="${escapeHtmlQ(q.logoUrl)}" alt="${escapeHtmlQ("לוגו " + (q.businessName || ""))}">` : ""}
       <div class="biz-name">${escapeHtmlQ(q.businessName)}</div>
       <div class="tagline">${escapeHtmlQ(q.tagline1)}</div>
       <div class="tagline">${escapeHtmlQ(q.tagline2)}</div>

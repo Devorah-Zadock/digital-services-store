@@ -40,7 +40,7 @@ function initialsOf(name) {
   return (first + last).toUpperCase();
 }
 function photoCircleHtml(photo, size) {
-  return `<div style="width:${size}px; height:${size}px; border-radius:50%; overflow:hidden; flex:none;"><img src="${photo}" alt="" style="width:100%; height:100%; object-fit:cover; display:block;"></div>`;
+  return `<div style="width:${size}px; height:${size}px; border-radius:50%; overflow:hidden; flex:none;"><img src="${photo}" alt="תמונת פרופיל" style="width:100%; height:100%; object-fit:cover; display:block;"></div>`;
 }
 
 function sharedCss(tc) {

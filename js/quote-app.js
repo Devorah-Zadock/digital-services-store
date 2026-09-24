@@ -89,7 +89,7 @@ function renderLogoPreview(url) {
   const el = document.getElementById("pf-logo-preview");
   const removeBtn = document.getElementById("pf-logo-remove");
   if (url) {
-    el.innerHTML = `<img src="${url}" alt="">`;
+    el.innerHTML = `<img src="${url}" alt="הלוגו שהעליתם">`;
     removeBtn.style.display = "";
   } else {
     el.innerHTML = `<span>🖼</span>`;

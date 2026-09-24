@@ -116,7 +116,7 @@ window.addEventListener("resize", () => {
 function renderPhotoPreview() {
   const el = document.getElementById("photo-preview");
   el.innerHTML = state.content.photo
-    ? `<img src="${state.content.photo}" alt="">`
+    ? `<img src="${state.content.photo}" alt="תמונת הפרופיל שהעליתם">`
     : `<span class="photo-placeholder">👤</span>`;
 }
 

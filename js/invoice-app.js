@@ -42,7 +42,7 @@ function showInvoiceSection(id) {
 function renderInvoiceLogoPreview(url) {
   const el = document.getElementById("ipf-logo-preview");
   const removeBtn = document.getElementById("ipf-logo-remove");
-  if (url) { el.innerHTML = `<img src="${url}" alt="">`; removeBtn.style.display = ""; }
+  if (url) { el.innerHTML = `<img src="${url}" alt="הלוגו שהעליתם">`; removeBtn.style.display = ""; }
   else { el.innerHTML = `<span>🖼</span>`; removeBtn.style.display = "none"; }
 }
 

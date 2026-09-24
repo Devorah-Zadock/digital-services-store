@@ -123,7 +123,7 @@ function renderInvoiceHtml(inv, liveProfile) {
       : ""}
     <div class="letterhead">
       <div>
-        ${letterhead.logoUrl ? `<img class="letterhead-logo" src="${escapeHtmlI(letterhead.logoUrl)}" alt="">` : ""}
+        ${letterhead.logoUrl ? `<img class="letterhead-logo" src="${escapeHtmlI(letterhead.logoUrl)}" alt="${escapeHtmlI("לוגו " + (letterhead.businessName || ""))}">` : ""}
         <div class="biz-name">${escapeHtmlI(letterhead.businessName)}</div>
         <div class="tagline">${escapeHtmlI(letterhead.tagline1)}</div>
         <div class="tagline">${escapeHtmlI(letterhead.tagline2)}</div>

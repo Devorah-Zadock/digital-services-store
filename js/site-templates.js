@@ -94,9 +94,10 @@ function heroMediaHtml(d, imgClass) {
   const images = (d.heroImages && d.heroImages.length) ? d.heroImages : (d.heroImage ? [d.heroImage] : []);
   if (!images.length) return "";
   const cls = imgClass ? ` ${imgClass}` : "";
-  if (images.length === 1) return `<img class="${imgClass || ""}" src="${images[0]}" alt="">`;
+  const alt = escapeHtmlS((d.businessName || "").trim() || "תמונת נושא");
+  if (images.length === 1) return `<img class="${imgClass || ""}" src="${images[0]}" alt="${alt}">`;
   return `<div class="site-hero-slideshow${cls}">${images.map((src, i) =>
-    `<img class="site-hero-slide${i === 0 ? " active" : ""}" src="${src}" alt="">`).join("")}</div>`;
+    `<img class="site-hero-slide${i === 0 ? " active" : ""}" src="${src}" alt="${alt}">`).join("")}</div>`;
 }
 /* Runs on every page regardless of whether it actually has a slideshow —
    querySelectorAll on an absent class is just an empty, harmless no-op. */

@@ -732,7 +732,7 @@ function wireTextStyleControls() {
 function renderPhotoPreview() {
   const el = document.getElementById("s-photo-preview");
   el.innerHTML = siteState.data.heroImage
-    ? `<img src="${siteState.data.heroImage}" alt="">`
+    ? `<img src="${siteState.data.heroImage}" alt="תמונת הכותרת שהעליתם">`
     : `<span class="site-photo-placeholder">🖼️</span>`;
 }
 
@@ -741,7 +741,7 @@ function renderGalleryPreview() {
   const el = document.getElementById("s-gallery-preview");
   const images = siteState.data.heroImages || [];
   el.innerHTML = images.map((src, i) =>
-    `<div class="site-gallery-thumb" data-idx="${i}"><img src="${src}" alt=""><button type="button" data-action="remove-gallery-photo" aria-label="הסרה">✕</button></div>`
+    `<div class="site-gallery-thumb" data-idx="${i}"><img src="${src}" alt="תמונה ${i + 1} בגלריה"><button type="button" data-action="remove-gallery-photo" aria-label="הסרה">✕</button></div>`
   ).join("");
 }
 
