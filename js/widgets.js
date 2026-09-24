@@ -10,27 +10,45 @@
    auto-submitting. */
 const FEEDBACK_ENDPOINT = "https://formspree.io/f/moeagwvk";
 
+/* Each entry's keyword list decides which entry wins for free-typed
+   questions (highest keyword-match count, see chatMatch()) — so a
+   pricing word like "עולה"/"מחיר" is repeated INSIDE every topic-specific
+   entry rather than living in one lone generic entry. A generic entry
+   used to mean "כמה עולה אתר?" (an "אתר" question) scored only on "עולה"
+   and matched the CV entry's free-tools answer instead — wrong, and
+   confirmed live. Now the sites entry itself carries "עולה"/"מחיר", so a
+   question mentioning both "אתר" and "עולה" outscores anything vaguer. */
 const CHAT_FAQ = [
   { kw: ["קו\"ח", "קוח", "קורות חיים", "cv", "resume", "בילדר", "builder"],
-    a: "עורכים קורות חיים חיים בבילדר — בוחרים תבנית, ממלאים פרטים, ורואים תוצאה מיד. ההורדה כ-PDF חינמית לגמרי.",
-    link: { href: "products.html?cat=cv", label: "לתבניות קורות החיים" } },
+    a: "עריכת קורות החיים בבילדר חופשית וללא הגבלה, גם בלי חשבון — הרשמה מהירה נדרשת רק בשמירה או בהורדת ה-PDF, שהיא עצמה חינמית לגמרי.",
+    link: { href: "products.html?type=cv", label: "לתבניות קורות החיים" } },
   { kw: ["מצגת", "מצגות", "powerpoint", "pptx", "deck"],
-    a: "יש 5 תבניות מצגות עסקיות מוכנות, כולן חינם להורדה ישירה כקובץ PowerPoint מלא לעריכה.",
-    link: { href: "products.html?cat=deck", label: "לתבניות המצגות" } },
-  { kw: ["אקסל", "excel", "xlsx", "תקציב", "חשבונית", "גיליון"],
-    a: "יש שני קבצי Excel מוכנים — תקציב חודשי אישי וחשבונית עסקית, עם נוסחאות אמיתיות (לא מספרים קבועים).",
-    link: { href: "products.html?cat=xlsx", label: "לתבניות ה-Excel" } },
-  { kw: ["חינם", "כסף", "תשלום", "עולה", "מחיר", "לשלם"],
-    a: "הכלים חינמיים לגמרי — נדרשת כניסה מהירה עם מייל או Google כדי שהעבודה שלכם תישמר, בלי צורך בכרטיס אשראי." },
+    a: "יש תבניות מצגות עסקיות מוכנות, כולן חינם להורדה ישירה כקובץ PowerPoint מלא לעריכה.",
+    link: { href: "products.html?type=deck", label: "לתבניות המצגות" } },
+  { kw: ["אקסל", "excel", "xlsx", "תקציב", "גיליון"],
+    a: "יש קבצי Excel מוכנים להורדה — כמו תקציב חודשי אישי או חשבונית עסקית — עם נוסחאות אמיתיות, לא מספרים קבועים.",
+    link: { href: "products.html?type=xlsx", label: "לתבניות ה-Excel" } },
+  { kw: ["אתר", "אתרים", "site", "website", "דומיין", "domain", "תדמית"],
+    a: "בונים אתר עסקי שלם תוך דקות מ-18 תבניות, עם תצוגה חיה בזמן אמת. עריכת התוכן, הצבע והתמונות חינמית וללא הגבלה לתמיד — יש תשלום חד-פעמי אחד לפרסום הסופי, בלי מנוי חודשי.",
+    link: { href: "sites.html", label: "לבניית אתר" } },
+  { kw: ["הצעת מחיר", "הצעות מחיר", "quote"],
+    a: "נרשמים פעם אחת עם מייל או Google וממלאים את פרטי העסק והלוגו — ומכאן כל הצעת מחיר מופקת מוכנה תוך דקה.",
+    link: { href: "quote-app.html", label: "להצעות מחיר" } },
+  { kw: ["חשבונית", "קבלה", "עוסק פטור", "invoice"],
+    a: "יש גם מערכת חשבוניות אינטראקטיבית (הרשמה חד-פעמית, הפקה תוך דקה, כולל התאמה לעוסק פטור), וגם תבנית Excel נפרדת להורדה חד-פעמית.",
+    link: { href: "invoice-app.html", label: "לחשבוניות וקבלות" } },
+  { kw: ["crm", "ניהול לקוחות", "לידים", "קנבן"],
+    a: "מערכת CRM פשוטה עם לוח קנבן, ישירות בדפדפן — עוזרת לעקוב אחרי לידים ולקוחות בלי אקסל מבולגן.",
+    link: { href: "crm-product.html", label: "למערכת ה-CRM" } },
   { kw: ["צבע", "גופן", "פונט", "עיצוב", "פלטה"],
-    a: "בבילדר אפשר לבחור צבע ראשי וגם גופן מתוך כמה אפשרויות — התצוגה המקדימה מתעדכנת מיד." },
+    a: "בבילדרים אפשר לבחור צבע ראשי וגם גופן מתוך כמה אפשרויות — התצוגה החיה מתעדכנת מיד." },
   { kw: ["תמונה", "פרופיל", "אווטאר", "photo", "picture"],
-    a: "בבילדר יש אפשרות להעלות תמונת פרופיל (או להסיר אותה) — היא מופיעה בעיגול ליד השם." },
+    a: "בבילדר קורות החיים יש אפשרות להעלות תמונת פרופיל (או להסיר אותה) — היא מופיעה בעיגול ליד השם." },
   { kw: ["אנגלית", "english", "שפה", "language", "עברית", "ltr", "rtl"],
     a: "בראש עמוד הבילדר יש כפתור שפה גדול וברור — עברית או אנגלית, כולל היפוך כיוון אוטומטי של כל התבנית." },
   { kw: ["הורדה", "pdf", "שמירה", "export", "הדפסה"],
     a: "לוחצים על \"הורדת PDF\" בתחתית הבילדר — זה פותח את חלון ההדפסה של הדפדפן, ובוחרים \"שמירה כ-PDF\"." },
-  { kw: ["צור קשר", "יצירת קשר", "קשר", "מייל", "email", "contact", "שאלה", "עזרה", "בעיה"],
+  { kw: ["צור קשר", "יצירת קשר", "קשר", "מייל", "email", "contact", "בעיה"],
     a: "אפשר לכתוב לנו דרך עמוד צור קשר ונחזור אליכם בהקדם.",
     link: { href: "contact.html", label: "לעמוד צור קשר" } },
   { kw: ["קטלוג", "מוצרים", "תבניות", "products"],
@@ -38,9 +56,43 @@ const CHAT_FAQ = [
     link: { href: "products.html", label: "לקטלוג המלא" } },
 ];
 const CHAT_FALLBACK = {
-  a: "לא הצלחתי למצוא תשובה מדויקת לזה. אפשר לנסות לשאול אחרת, או לפנות אלינו ישירות.",
+  a: "זה נראה לא קשור לכלים של DeskKit — אפשר לנסות לשאול אחרת (קורות חיים, אתרים, הצעות מחיר, חשבוניות...), או לפנות אלינו ישירות.",
   link: { href: "contact.html", label: "לעמוד צור קשר" },
 };
+
+/* Small, honest "not really AI" layer: a handful of genuinely useful
+   things a browser already knows for free (current time/date, basic
+   arithmetic) — answered for real, with a light note that it's outside
+   what DeskKit's tools actually do, instead of either faking real
+   understanding or silently ignoring the question. Checked only after
+   CHAT_FAQ finds zero keyword matches, so a real product question never
+   gets shadowed by this. */
+function chatUtilityAnswer(q) {
+  if (/שעה/.test(q)) {
+    const time = new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+    return { a: `זו שאלה שקצת חורגת מהנושא שלנו כאן 🙂 בכל מקרה — השעה עכשיו היא ${time}. עכשיו ברצינות: אפשר לעזור עם קורות חיים, אתרים, הצעות מחיר או חשבוניות?` };
+  }
+  if (/תאריך|איזה יום/.test(q)) {
+    const date = new Date().toLocaleDateString("he-IL", { day: "numeric", month: "long", year: "numeric" });
+    return { a: `זה לא ממש קשור לכלים שלנו, אבל שירות לקוחות: היום ${date}. במה אפשר לעזור לך כאן ב-DeskKit?` };
+  }
+  const mathMatch = q.match(/(-?\d+(?:\.\d+)?)\s*([+\-*xX×÷/])\s*(-?\d+(?:\.\d+)?)/);
+  if (mathMatch) {
+    const a = parseFloat(mathMatch[1]);
+    const op = mathMatch[2];
+    const b = parseFloat(mathMatch[3]);
+    let result;
+    if (op === "+") result = a + b;
+    else if (op === "-") result = a - b;
+    else if (op === "*" || op === "x" || op === "X" || op === "×") result = a * b;
+    else if (op === "/" || op === "÷") result = b === 0 ? null : a / b;
+    if (result !== null && result !== undefined && Number.isFinite(result)) {
+      const rounded = Math.round(result * 1000) / 1000;
+      return { a: `חוץ מהתחום שלנו, אבל בשמחה: ${mathMatch[1]} ${mathMatch[2]} ${mathMatch[3]} = ${rounded}. עכשיו — במה אפשר לעזור לך עם DeskKit?` };
+    }
+  }
+  return null;
+}
 
 /* The category tree shown when the chat opens, in place of the old flat
    list of quick-suggestion chips — grouped to match the tool families
@@ -106,7 +158,8 @@ function chatMatch(text) {
     const score = item.kw.filter((k) => q.includes(k.toLowerCase())).length;
     if (score > bestScore) { bestScore = score; best = item; }
   });
-  return best || CHAT_FALLBACK;
+  if (best) return best;
+  return chatUtilityAnswer(q) || CHAT_FALLBACK;
 }
 
 function bubbleHtml(text, link, who) {
