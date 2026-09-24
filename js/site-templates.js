@@ -27,6 +27,31 @@ function nl2brS(s) {
    text categories every template actually shares (heading, business name,
    tagline, about paragraph) are wired up — per-service-item styling isn't
    part of this first pass. */
+/* Shared with textStyleCss in site-builder.js (both plain scripts on the
+   same page, same global scope) — a bare inline <span> can't be aligned
+   via text-align alone (it shrink-wraps to its own text, leaving no
+   extra room to shift within), so this needs display:block. But
+   display:block alone stretches the span to its container's FULL
+   width — for a template whose only occurrence of a given textkey sits
+   in an unpadded, full-bleed container (confirmed live: a template's
+   own copyright footer, zero horizontal padding), the block span then
+   spans the entire viewport and "align right" pushed the text flush
+   against the physical edge instead of respecting the container's own
+   padding. width:fit-content plus a single auto margin sizes the block
+   to its own content (same footprint as the original inline span) and
+   positions that box the same way margin:0 auto centers anything —
+   correct regardless of the container's own padding, since margin:auto
+   only ever distributes whatever space is actually available inside
+   it. max-width:100% is a safety net so a long unbroken phrase can't
+   overflow a narrower container instead of wrapping normally. */
+function alignStyleParts(align) {
+  if (!align) return [];
+  const parts = ["display:block", "width:fit-content", "max-width:100%"];
+  if (align === "right") parts.push("margin-inline-end:auto");
+  else if (align === "left") parts.push("margin-inline-start:auto");
+  else if (align === "center") parts.push("margin-inline:auto");
+  return parts;
+}
 function textStyleAttr(d, key) {
   const s = d.textStyles && d.textStyles[key];
   if (!s) return "";
@@ -34,11 +59,7 @@ function textStyleAttr(d, key) {
   if (s.font) { const f = SITE_FONTS[s.font]; if (f) parts.push(`font-family:${f.stack}`); }
   if (s.color) parts.push(`color:#${String(s.color).replace("#", "")}`);
   if (s.size) parts.push(`font-size:${s.size}px`);
-  // text-align on a plain inline <span> (the default here) has no visual
-  // effect at all — an inline box shrink-wraps its own text, leaving no
-  // extra room to shift it into. Forcing the span to block (confirmed
-  // live) gives it the width to actually align within.
-  if (s.align) parts.push(`text-align:${s.align}`, "display:block");
+  parts.push(...alignStyleParts(s.align));
   return parts.length ? ` style="${parts.join(";")}"` : "";
 }
 function t(d, key, html) {
@@ -2973,9 +2994,9 @@ function renderPlaygroundSite(d, page) {
 const SITE_CATEGORIES = [
   { slug: "all", label: "הכל" },
   { slug: "service", label: "עסקי שירות" },
-  { slug: "personal", label: "תדמית אישית" },
+  { slug: "personal", label: "פורטפוליו ותדמית" },
   { slug: "shop", label: "קטלוג ומכירות" },
-  { slug: "creative", label: "עיצובי ויצירתי" },
+  { slug: "creative", label: "יוצרים וסטודיו" },
   { slug: "events", label: "אירועים ובוטיק" },
 ];
 

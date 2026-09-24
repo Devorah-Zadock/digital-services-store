@@ -409,7 +409,18 @@ function syncTextStyleControls() {
     const colorInp = document.querySelector(`[data-style-color="${key}"]`);
     const sizeInp = document.querySelector(`[data-style-size="${key}"]`);
     if (fontSel) fontSel.value = s.font || "";
-    if (colorInp) colorInp.value = s.color ? `#${String(s.color).replace("#", "")}` : "#000000";
+    if (colorInp) {
+      colorInp.value = s.color ? `#${String(s.color).replace("#", "")}` : "#000000";
+      // A native <input type="color"> always reports SOME value
+      // ("#000000" by default) even when nobody has ever touched it —
+      // this flag is what lets commitTextStyle tell "the user actually
+      // picked black" apart from "nobody picked a color at all," so
+      // aligning/resizing/re-fonting a text block doesn't silently
+      // force it to black too (confirmed live: it did, on every color
+      // that wasn't already deliberately set).
+      if (s.color) colorInp.dataset.tsTouched = "1";
+      else delete colorInp.dataset.tsTouched;
+    }
     if (sizeInp) sizeInp.value = s.size || "";
     document.querySelectorAll(`[data-style-align="${key}"]`).forEach((btn) => {
       btn.classList.toggle("ts-active", btn.dataset.alignVal === s.align);
@@ -423,9 +434,9 @@ function textStyleCss(s) {
   if (s.font) { const f = SITE_FONTS[s.font]; if (f) parts.push(`font-family:${f.stack}`); }
   if (s.color) parts.push(`color:#${String(s.color).replace("#", "")}`);
   if (s.size) parts.push(`font-size:${s.size}px`);
-  // Same reasoning as textStyleAttr in site-templates.js: an inline span
-  // needs display:block or text-align on it is a visual no-op.
-  if (s.align) parts.push(`text-align:${s.align}`, "display:block");
+  // Same alignStyleParts() as textStyleAttr in site-templates.js — see
+  // its comment for why this isn't just text-align:${s.align}.
+  parts.push(...alignStyleParts(s.align));
   return parts.join(";");
 }
 
@@ -635,7 +646,10 @@ function commitTextStyle(key) {
   const activeAlignBtn = document.querySelector(`[data-style-align="${key}"].ts-active`);
   const s = {
     font: (fontSel && fontSel.value) || "",
-    color: (colorInp && colorInp.value) ? colorInp.value.replace("#", "") : "",
+    // Only counts if the user actually touched the color input — see
+    // the dataset.tsTouched comment in syncTextStyleControls for why
+    // colorInp.value alone isn't enough to tell that.
+    color: (colorInp && colorInp.dataset.tsTouched && colorInp.value) ? colorInp.value.replace("#", "") : "",
     size: (sizeInp && sizeInp.value) || "",
     align: activeAlignBtn ? activeAlignBtn.dataset.alignVal : "",
   };
@@ -681,7 +695,10 @@ function wireTextStyleControls() {
     if (e.target.matches("[data-style-font]")) commitTextStyle(e.target.dataset.styleFont);
   });
   root.addEventListener("input", (e) => {
-    if (e.target.matches("[data-style-color]")) commitTextStyle(e.target.dataset.styleColor);
+    if (e.target.matches("[data-style-color]")) {
+      e.target.dataset.tsTouched = "1";
+      commitTextStyle(e.target.dataset.styleColor);
+    }
     if (e.target.matches("[data-style-size]")) commitTextStyle(e.target.dataset.styleSize);
   });
 }
@@ -1023,7 +1040,17 @@ function scheduleSectionPatch(headingKey) {
    element it edits, the same target the hierarchy panel's own rows
    already use. */
 const FIELD_SCROLL_TARGETS = {
-  "s-name": '[data-textkey="businessName"]',
+  // Several templates only ever print businessName itself in the
+  // footer's copyright line — the hero heading (heading-heroTitle)
+  // shows it too, by default, but that's a SEPARATE data-textkey (it
+  // falls back to businessName only at render time). A plain
+  // businessName selector alone scrolled straight past the hero to
+  // the footer for those templates — confirmed live (studio: no
+  // businessName-tagged element anywhere except its footer line),
+  // which read as "the site starts from the middle." Comma-selector
+  // prefers whichever comes first in the page, which is always the
+  // hero when it exists.
+  "s-name": '[data-textkey="heading-heroTitle"], [data-textkey="businessName"]',
   "s-tagline": '[data-textkey="tagline"]',
   "s-about": '[data-textkey="aboutText"]',
   "h-heroTitle": '[data-textkey="heading-heroTitle"]',
@@ -1050,7 +1077,20 @@ function wireForm() {
     document.getElementById(id).addEventListener("input", (e) => {
       siteState.data[key] = e.target.value;
       const textkey = liveContentKeys[id];
-      if (textkey && applyTextContentLive(textkey, e.target.value, id === "s-about")) {
+      const patched = textkey && applyTextContentLive(textkey, e.target.value, id === "s-about");
+      // businessName is also the hero heading's own fallback text
+      // whenever no custom heroTitle override is set (heading(d,
+      // "heroTitle", dd.businessName) in site-templates.js) — a full
+      // reload always picked that up automatically; this keeps the
+      // live-patch path doing the same, instead of silently leaving
+      // the hero showing the old name until something else forces a
+      // real reload. Independent of the patched/reload branch below:
+      // heroTitle simply not being on this template's page, or already
+      // customized, is not itself a reason to fall back to a reload.
+      if (id === "s-name" && !siteState.data.headings.heroTitle) {
+        applyTextContentLive("heading-heroTitle", e.target.value, false);
+      }
+      if (patched) {
         saveSiteState();
       } else {
         scheduleSitePreviewRender();

@@ -258,6 +258,16 @@
 
 .builder-preview { min-width: 0; }
 .preview-sticky { position: sticky; top: 90px; }
+/* Was a tiny .btn-mini pill under the canvas — confirmed live it read
+   as almost invisible next to everything else on the page. A real
+   .btn keeps it consistent with every other button here (not a new
+   style of its own) while actually being noticeable; centered under
+   the canvas is the one spot on this whole screen naturally free for
+   a standalone secondary action. */
+.full-preview-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: fit-content; margin: 16px auto 0; padding: 11px 26px; font-size: 14px;
+}
 #preview-doc { margin-bottom: 20px; overflow: hidden; }
 #preview-doc .cv-doc { transition: transform .15s ease; }
 #quote-preview { overflow: hidden; }
