@@ -180,11 +180,40 @@ function initProductPage() {
   // Every product shares one static product.html shell (?slug=...), so
   // without this every single product would show Google the same generic
   // title/description/canonical — worst case, Google picks one slug as
-  // "the" canonical and never indexes the rest at all.
+  // "the" canonical and never indexes the rest at all. Same reasoning
+  // extends to the OG tags and the JSON-LD block below, both otherwise
+  // stuck on generic placeholder content for every product.
+  const pageUrl = "https://deskkit.co.il/product.html?slug=" + p.slug;
   const descTag = document.querySelector('meta[name="description"]');
   if (descTag) descTag.setAttribute("content", p.heroDesc);
   const canonicalTag = document.querySelector('link[rel="canonical"]');
-  if (canonicalTag) canonicalTag.setAttribute("href", "https://deskkit.co.il/product.html?slug=" + p.slug);
+  if (canonicalTag) canonicalTag.setAttribute("href", pageUrl);
+  const ogTitle = document.querySelector('meta[property="og:title"]');
+  if (ogTitle) ogTitle.setAttribute("content", p.title + " — DeskKit");
+  const ogDesc = document.querySelector('meta[property="og:description"]');
+  if (ogDesc) ogDesc.setAttribute("content", p.heroDesc);
+  const ogUrl = document.querySelector('meta[property="og:url"]');
+  if (ogUrl) ogUrl.setAttribute("content", pageUrl);
+  const ogImage = document.querySelector('meta[property="og:image"]');
+  if (ogImage) ogImage.setAttribute("content", "https://deskkit.co.il/images/previews/" + p.image);
+  const schemaTag = document.getElementById("product-schema");
+  if (schemaTag) {
+    schemaTag.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: p.title,
+      description: p.heroDesc,
+      image: "https://deskkit.co.il/images/previews/" + p.image,
+      brand: { "@type": "Brand", name: "DeskKit" },
+      offers: {
+        "@type": "Offer",
+        price: String(p.price),
+        priceCurrency: "ILS",
+        availability: "https://schema.org/InStock",
+        url: pageUrl,
+      },
+    });
+  }
   const pType = productType(p);
   // product.html is one shared shell for every product type, but its nav
   // markup had "קורות חיים" hardcoded as the active link — so a deck or
