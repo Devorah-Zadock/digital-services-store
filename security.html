@@ -12,28 +12,16 @@
 </script>
 <style>html.lang-pending body { visibility: hidden; }</style>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title data-i18n="gss_title">איך בונים מערכת שעות אוטומטית לבית ספר — מדריך | DeskKit</title>
+<title data-i18n="sec_title">אבטחת מידע — DeskKit</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="description" content="מדריך צעד-אחר-צעד לבניית מערכת שעות אוטומטית לבית ספר — אילו נתונים צריך, מהם אילוצים, ואיך מקבלים מערכת שעות ללא התנגשויות תוך דקות במקום ימים של עבודה ידנית.">
-<link rel="canonical" href="https://deskkit.co.il/guide-school-schedule.html">
+<meta name="description" content="איך DeskKit שומר על אבטחת המידע והפרטיות שלכם — חיבור מוצפן, הפרדה בין משתמשים, בקרות הרשאה והתחברות מאובטחת.">
+<link rel="canonical" href="https://deskkit.co.il/security.html">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=77">
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Article",
-  "headline": "איך בונים מערכת שעות אוטומטית לבית ספר",
-  "description": "מדריך צעד-אחר-צעד לבניית מערכת שעות אוטומטית לבית ספר ללא התנגשויות.",
-  "author": { "@type": "Organization", "name": "DeskKit" },
-  "publisher": { "@type": "Organization", "name": "DeskKit" },
-  "datePublished": "2026-09-09",
-  "mainEntityOfPage": "https://deskkit.co.il/guide-school-schedule.html"
-}
-</script>
 </head>
 <body>
 <script>
@@ -77,40 +65,50 @@
 </header>
 
 <section class="hero" style="padding:60px 24px 70px;">
-  <h1 style="font-size:32px;" data-i18n="gss_h1">איך בונים מערכת שעות אוטומטית לבית ספר בלי לשבור את הראש</h1>
-  <p class="lead" data-i18n="gss_lead">מדריך קצר לרכזי משק, מזכירות ומנהלי בתי ספר — מה באמת צריך כדי לקבל מערכת שעות מלאה, ללא התנגשויות, תוך דקות במקום ימים.</p>
+  <h1 style="font-size:34px;" data-i18n="sec_h1">אבטחת מידע</h1>
+  <p class="lead" data-i18n="sec_lead">איך אנחנו שומרים על המידע שאתם שומרים אצלנו — בשפה פשוטה, בלי אותיות קטנות.</p>
 </section>
 
 <section>
   <div class="container" style="max-width:720px;">
-
-    <h3 style="color:var(--teal-dark);" data-i18n="gss_s1_h">הבעיה עם בניית מערכת שעות ביד</h3>
-    <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;" data-i18n="gss_s1_p">
-      כל מי שאי פעם בנה מערכת שעות לבית ספר ביד — בגיליון Excel, על הלוח, או אפילו על דפים — מכיר את התחושה: ברגע שסידרתם כיתה אחת, גיליתם שמורה מסוימת "מוכפלת" בשתי כיתות באותה שעה. תיקנתם את זה, וגיליתם שכיתה אחרת לומדת אנגלית שלוש שעות ברצף ביום שני. זה משחק פאזל אינסופי, וברוב בתי הספר זה לוקח ימים שלמים בכל תחילת שנה, ולפעמים גם עדכונים חוזרים באמצע השנה.
+    <h3 style="color:var(--teal-dark);" data-i18n="sec1_h">חיבור מוצפן (HTTPS)</h3>
+    <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;" data-i18n="sec1_p">
+      כל התקשורת בין הדפדפן שלכם לבין השרתים שלנו מוצפנת באמצעות HTTPS — כמו בכל אתר בנקאות או שירות רציני אחר. אף אחד באמצע הדרך לא יכול לקרוא את מה שאתם שולחים או מקבלים.
     </p>
 
-    <h3 style="color:var(--teal-dark);" data-i18n="gss_s2_h">מה בעצם "אילוצים" — ולמה הם הלב של הבעיה</h3>
-    <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;" data-i18n="gss_s2_p">
-      מערכת שעות טובה היא בעצם פתרון לרשימה ארוכה של כללים שצריכים להתקיים בו-זמנית: מורה לא יכול ללמד בשני מקומות באותה שעה, כיתה מסוימת לא אמורה ללמוד את אותו מקצוע יותר משעה-שעתיים ברצף, מורה מסוים לא זמין בימים מסוימים, מקצוע מסוים דורש חדר ייעודי (מעבדה, חדר מחשבים) שיש ממנו רק כמות מוגבלת. כל אחד מהכללים האלה נראה פשוט בפני עצמו — הקושי הוא לספק את כולם יחד, לכל הכיתות, בו-זמנית.
+    <h3 style="color:var(--teal-dark);" data-i18n="sec2_h">איפה המידע נשמר</h3>
+    <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;" data-i18n="sec2_p">
+      המידע שלכם נשמר אצל Supabase, ספק תשתית מוכר שמצפין מידע גם באחסון וגם בהעברה, ועומד בתקני אבטחה מקובלים בתעשייה. אנחנו לא מריצים שרתים משלנו לאחסון המידע שלכם — זה בכוונה, כדי לא להמציא אבטחה בעצמנו במקום להיעזר בספק שזה כל העיסוק שלו.
     </p>
 
-    <h3 style="color:var(--teal-dark);" data-i18n="gss_s3_h">איך זה עובד עם כלי אוטומטי</h3>
-    <p style="font-size:15.5px; color:var(--grey); margin-bottom:12px;" data-i18n="gss_s3_intro">
-      במקום לפתור את הפאזל ביד, כלי אוטומטי מקבל את כל הנתונים והאילוצים ופותר אותם בשבילכם, בתוך שניות. השלבים בפועל:
-    </p>
-    <ol style="font-size:15.5px; color:var(--grey); margin:0 0 24px; padding-inline-start:22px;">
-      <li style="margin-bottom:10px;"><b data-i18n="gss_ol1_b">מזינים את הבסיס</b> <span data-i18n="gss_ol1_s">— רשימת המקצועות, הכיתות, המורים והחדרים המיוחדים (מעבדות, חדרי מחשבים וכו').</span></li>
-      <li style="margin-bottom:10px;"><b data-i18n="gss_ol2_b">קובעים לכל כיתה כמה שעות שבועיות</b> <span data-i18n="gss_ol2_s">נדרשות מכל מקצוע, ואיזה מורה מלמד אותו.</span></li>
-      <li style="margin-bottom:10px;"><b data-i18n="gss_ol3_b">מוסיפים אילוצים</b> <span data-i18n="gss_ol3_s">— ימים שמורה לא זמין בהם, מקסימום שעות רצופות לאותו מקצוע, מקסימום שעות מקצוע ביום לכיתה מסוימת.</span></li>
-      <li style="margin-bottom:10px;"><b data-i18n="gss_ol4_b">לוחצים על יצירה</b> <span data-i18n="gss_ol4_s">— והמערכת בונה מערכת שעות מלאה שעומדת בכל האילוצים, ללא התנגשויות.</span></li>
-      <li data-i18n="gss_ol5">אם רוצים לשנות משהו ידנית אחרי זה — אפשר לגרור שיעורים בעצמכם, והמערכת מתריעה מיד אם יצרתם התנגשות חדשה.</li>
-    </ol>
-
-    <h3 style="color:var(--teal-dark);" data-i18n="gss_s4_h">טיפ: להתחיל פשוט, ולהוסיף אילוצים בהדרגה</h3>
-    <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;" data-i18n="gss_s4_p">
-      אם יש לכם המון אילוצים ספציפיים (הרבה מורים חלקיים, הרבה חדרים מיוחדים), הכי יעיל להתחיל עם המקצועות והשיבוצים הבסיסיים, ליצור מערכת ראשונה, ורק אז להוסיף אילוצים נוספים אחד-אחד ולבדוק שהמערכת עדיין מסתדרת. כך קל יותר לאתר איפה בדיוק אילוץ מסוים "תוקע" את הפתרון, במקום להזין הכול בבת אחת.
+    <h3 style="color:var(--teal-dark);" data-i18n="sec3_h">הפרדה בין משתמשים</h3>
+    <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;" data-i18n="sec3_p">
+      כל משתמש רואה ויכול לגשת רק למידע שלו. ההפרדה הזו נאכפת ברמת מסד הנתונים עצמו, לא רק בממשק שאתם רואים — כלומר גם ניסיון לגשת למידע ישירות, בעקיפין, לא יחשוף מידע של משתמש אחר.
     </p>
 
+    <h3 style="color:var(--teal-dark);" data-i18n="sec4_h">בקרות הרשאה</h3>
+    <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;" data-i18n="sec4_p">
+      פעולות רגישות — כמו מחיקת חשבון, או גישה לפאנל הניהול הפנימי — מאומתות בצד השרת מול הזהות המחוברת האמיתית שלכם בכל פעם מחדש, ולא סומכות על מה שהדפדפן בלבד טוען.
+    </p>
+
+    <h3 style="color:var(--teal-dark);" data-i18n="sec5_h">התחברות מאובטחת</h3>
+    <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;" data-i18n="sec5_p">
+      הכניסה לחשבון — במייל וסיסמה, או עם Google — מנוהלת כולה על ידי Supabase Auth. אנחנו לא שומרים סיסמאות בעצמנו בשום צורה, לא כטקסט גלוי ולא בכל דרך אחרת.
+    </p>
+
+    <h3 style="color:var(--teal-dark);" data-i18n="sec6_h">מחיקת מידע</h3>
+    <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;">
+      <span data-i18n="sec6_p1">אפשר למחוק חשבון וכל התוכן שלו בכל עת, כולל העתקים שנשמרו מקומית בדפדפן, דרך </span><a href="account-settings.html" style="color:var(--teal); font-weight:600;" data-i18n="terms_account_link">החשבון שלי</a><span data-i18n="sec6_p2">. הפירוט המלא נמצא ב</span><a href="terms.html#privacy" style="color:var(--teal); font-weight:600;" data-i18n="sec_privacy_link">מדיניות הפרטיות</a><span data-i18n="sec6_p3">.</span>
+    </p>
+
+    <h3 style="color:var(--teal-dark);" data-i18n="sec7_h">ספקים חיצוניים</h3>
+    <p style="font-size:15.5px; color:var(--grey); margin-bottom:24px;" data-i18n="sec7_p">
+      עובדים רק עם ספקים חיצוניים שנדרשים בפועל, כל אחד לתפקיד ספציפי בלבד: Google (כניסה לחשבון), Gumroad (עיבוד תשלום), Formspree (טופס משוב), ו-OpenAI (בכלים מבוססי AI, כמו בדיקת ATS). לכל אחד מהם מדיניות פרטיות משלו.
+    </p>
+
+    <p style="font-size:15.5px; color:var(--grey);">
+      <span data-i18n="sec_footer_p1">מצאתם בעיית אבטחה, או יש לכם שאלה? </span><a href="contact.html" style="color:var(--teal); font-weight:600;" data-i18n="terms_contact_link">צרו קשר</a><span data-i18n="sec_footer_p2"> ונטפל בזה בהקדם.</span>
+    </p>
   </div>
 </section>
 
@@ -119,7 +117,7 @@
     <div class="footer-grid">
       <div>
         <h4>DeskKit</h4>
-        <p style="font-size:14px; max-width:320px;" data-i18n="footer_blurb">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות, אתרים ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
+        <p style="font-size:14px; max-width:320px;" data-i18n="footer_blurb">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
       </div>
       <div>
         <h4 data-i18n="footer_nav_heading">ניווט</h4>
