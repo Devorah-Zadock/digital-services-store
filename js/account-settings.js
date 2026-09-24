@@ -35,15 +35,72 @@ function clearLocalDeskkitContent() {
   } catch (err) { /* storage unavailable — nothing to clear */ }
 }
 
+/* Every RLS-protected table is queried with an explicit .eq("user_id"/
+   "id", userId) on top of RLS — belt and suspenders, and it means this
+   function reads exactly like every other per-user query in this
+   project, nothing special-cased for being "the export". Deliberately
+   client-side only (no Edge Function): these are plain, already-scoped
+   reads the signed-in user is allowed to make directly, so a server
+   round trip would add nothing except another thing to keep in sync. */
+async function exportMyData(userId, email) {
+  const [profile, cv, sites, quotes, invoices, schedules] = await Promise.all([
+    supabaseClient.from("profiles").select("*").eq("id", userId).maybeSingle(),
+    supabaseClient.from("cv_saves").select("data, updated_at").eq("user_id", userId).maybeSingle(),
+    supabaseClient.from("site_projects").select("*").eq("user_id", userId),
+    supabaseClient.from("quote_saves").select("*").eq("user_id", userId),
+    supabaseClient.from("invoice_saves").select("*").eq("user_id", userId),
+    supabaseClient.from("schedule_projects").select("*").eq("user_id", userId),
+  ]);
+  return {
+    exportedAt: new Date().toISOString(),
+    account: { email },
+    businessProfile: profile.data || null,
+    cv: (cv.data && cv.data.data) || null,
+    sites: sites.data || [],
+    quotes: quotes.data || [],
+    invoices: invoices.data || [],
+    schedules: schedules.data || [],
+  };
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   let currentUserEmail = "";
+  let currentUserId = "";
   supabaseClient.auth.getSession().then(({ data }) => {
     const user = data.session && data.session.user;
     if (!user) return; // require-auth.js already redirects; nothing to do here
     currentUserEmail = user.email;
+    currentUserId = user.id;
     document.getElementById("as-current-email").textContent = user.email;
     document.getElementById("as-delete-email-hint").textContent = user.email;
   });
+
+  const exportBtn = document.getElementById("as-export-btn");
+  const exportMsg = document.getElementById("as-export-msg");
+  if (exportBtn) {
+    exportBtn.addEventListener("click", async () => {
+      if (!currentUserId) return;
+      exportBtn.disabled = true;
+      exportMsg.textContent = "אוספים את המידע...";
+      try {
+        const payload = await exportMyData(currentUserId, currentUserEmail);
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `deskkit-my-data-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        exportMsg.textContent = "הקובץ הורד בהצלחה.";
+      } catch (err) {
+        exportMsg.textContent = "משהו השתבש — נסו שוב בעוד רגע.";
+      } finally {
+        exportBtn.disabled = false;
+      }
+    });
+  }
 
   const startBtn = document.getElementById("as-delete-start");
   const confirmBox = document.getElementById("as-delete-confirm");
