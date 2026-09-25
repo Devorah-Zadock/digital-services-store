@@ -241,10 +241,10 @@ Deno.serve(async (req: Request) => {
         .upsert({ slug, site_project_id: siteProjectId, pages, updated_at: new Date().toISOString() });
       if (upsertErr) return jsonResponse({ error: upsertErr.message }, 500);
 
-      // Stand-in URL until real <slug>.deskkit.co.il subdomain routing is
-      // wired up (needs wildcard DNS + adding the domain in Vercel — both
-      // still pending, separate pieces of this migration).
-      const selfHostedUrl = "https://deskkit.co.il/api/site-preview?slug=" + encodeURIComponent(slug);
+      // Real subdomain — wildcard DNS, the *.sites.deskkit.co.il domain in
+      // Vercel, and the middleware.js that routes it to api/site-preview
+      // are all live and verified working end to end.
+      const selfHostedUrl = "https://" + slug + ".sites.deskkit.co.il/";
       const { error: publishUpdateErr } = await admin
         .from("site_projects")
         .update({ published_url: selfHostedUrl, published_at: new Date().toISOString() })
