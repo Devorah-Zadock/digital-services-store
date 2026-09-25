@@ -1,35 +1,19 @@
 // Deploys a customer's built site to a live URL, so "publish" means
 // exactly that instead of "download a ZIP and go figure out hosting
 // yourself" (see README's competitive-landscape section for why that
-// gap mattered). Mirrors redeem-license's shape: caller sends the site's
-// user id + template + rendered page HTML, this function checks
-// ownership, builds a zip, and hands it to Netlify's API.
+// gap mattered).
 //
-// Sites are created under DeskKit's own Netlify team (via
-// NETLIFY_AUTH_TOKEN, a personal access token), never under the
-// customer's — that's on purpose. A signed "claim" link is returned
-// alongside the live URL so the customer can transfer the site into
-// their OWN free Netlify account with one click; until they do, it's
-// still live and DeskKit can keep pushing updates to it. This is what
-// keeps DeskKit from taking on permanent hosting liability for every
-// site anyone ever builds (see README's "מול מה מתחרים" section — the
-// whole point is not becoming another subscription-locked host). See
-// https://developers.netlify.com/guides/deploying-sites-from-ai-tools
-// for the flow this follows.
+// As of 2026-09-25: self-hosted on DeskKit's own infrastructure —
+// Supabase (hosted_site_pages) + Vercel (api/site-preview.js,
+// middleware.js) — at https://<slug>.sites.deskkit.co.il/. No external
+// host, no shared deploy-credit limit of any kind (that's what the
+// whole migration was for — see the Netlify-outage postmortem this
+// replaced). Before this it deployed to Netlify; that whole path is
+// still physically in this file below, intentionally unreachable, as a
+// rollback reference — see the comment marking where it starts.
 //
 // Deploy: `supabase functions deploy publish-site` (or paste into
-// Supabase Dashboard → Edge Functions → New Function). Needs these
-// secrets set first (Dashboard → Edge Functions → Secrets, or
-// `supabase secrets set NAME=value`):
-//   NETLIFY_AUTH_TOKEN         — personal access token (Netlify → User
-//                                settings → Applications → Personal
-//                                access tokens → No expiration)
-//   NETLIFY_TEAM_SLUG          — your Netlify team's slug (Netlify →
-//                                Team settings → General → Team slug)
-//   NETLIFY_OAUTH_CLIENT_ID    — from Netlify → User settings →
-//   NETLIFY_OAUTH_CLIENT_SECRET  Applications → OAuth applications →
-//                                Create new (no redirect URI needed for
-//                                this flow)
+// Supabase Dashboard → Edge Functions → New Function).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import JSZip from "https://esm.sh/jszip@3";
@@ -124,9 +108,10 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method not allowed" }, 405);
 
-  if (!NETLIFY_AUTH_TOKEN || !NETLIFY_TEAM_SLUG || !NETLIFY_OAUTH_CLIENT_ID || !NETLIFY_OAUTH_CLIENT_SECRET) {
-    return jsonResponse({ error: "Netlify secrets are not fully configured" }, 500);
-  }
+  // Netlify secrets are no longer required up front — self-hosting (see
+  // below) doesn't touch them at all. They're only read inside the now-
+  // unreachable Netlify rollback path, so a missing/removed Netlify
+  // secret can no longer block a real publish the way it used to.
 
   // Gated by real auth, same as ats-check/delete-account: the caller's own
   // Supabase session token goes in Authorization, verified server-side via
@@ -205,28 +190,27 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ success: false, reason: "not_purchased" }, 402);
     }
 
-    // Self-hosting pilot (see supabase/sql/hosted_site_pages*.sql and
-    // api/site-preview.js): gated to a specific allowlist of test user
-    // ids, never a global switch — turning this on must never change what
-    // a REAL customer's publish click does. Only accounts listed in
-    // SELF_HOSTING_TEST_USER_IDS take this path; every other caller falls
-    // straight through to the unchanged Netlify flow below, exactly as
-    // it's always worked. Checked BEFORE the Netlify publish-count limit
-    // below on purpose — that limit exists only because a Netlify deploy
-    // spends real, shared credits, which doesn't apply to this path at
-    // all, so a self-hosting test account should never be blocked by it.
-    const selfHostingTestUserIds = (Deno.env.get("SELF_HOSTING_TEST_USER_IDS") || "")
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    if (selfHostingTestUserIds.includes(userId)) {
+    // Cut over to self-hosting for everyone (see supabase/sql/
+    // hosted_site_pages*.sql and api/site-preview.js) — 2026-09-25, once
+    // the full pipeline (storage, real "פרסום" click, real subdomain via
+    // wildcard DNS + Vercel + middleware.js, and the Gmail-style name
+    // picker) was proven end to end on a test account and Devorah
+    // confirmed there were no real paying customers yet to migrate —
+    // this is a clean switch, not a live migration. Unconditional now;
+    // was gated behind a SELF_HOSTING_TEST_USER_IDS allowlist during that
+    // pilot. Everything below this block (Netlify site/deploy creation,
+    // the claim-link flow, the publish-count limit) is intentionally left
+    // in place, unreachable, rather than deleted — a rollback path if
+    // self-hosting ever needs to be reverted, not dead weight to clean up
+    // reflexively.
+    {
       let slug = project.slug as string | null;
       if (!slug) {
-        // No chosen name yet — the real Gmail-style picker (see
-        // check-site-slug) isn't wired into the site builder during this
-        // pilot. A short id-derived fallback is enough to test the actual
-        // publish→store→serve pipeline itself; `.is("slug", null)` keeps
-        // the claim atomic the same way a real picker's claim will.
+        // No chosen name yet (e.g. an old test-account project from
+        // before the picker existed) — a short id-derived fallback keeps
+        // publishing itself always possible; the picker on the success
+        // screen (see claim-site-slug) lets the customer rename any time.
+        // `.is("slug", null)` keeps the claim atomic.
         slug = "site-" + siteProjectId.replace(/-/g, "").slice(0, 8);
         const { error: claimErr } = await admin
           .from("site_projects")
@@ -241,9 +225,6 @@ Deno.serve(async (req: Request) => {
         .upsert({ slug, site_project_id: siteProjectId, pages, updated_at: new Date().toISOString() });
       if (upsertErr) return jsonResponse({ error: upsertErr.message }, 500);
 
-      // Real subdomain — wildcard DNS, the *.sites.deskkit.co.il domain in
-      // Vercel, and the middleware.js that routes it to api/site-preview
-      // are all live and verified working end to end.
       const selfHostedUrl = "https://" + slug + ".sites.deskkit.co.il/";
       const { error: publishUpdateErr } = await admin
         .from("site_projects")
@@ -257,6 +238,11 @@ Deno.serve(async (req: Request) => {
       // migration, not an oversight.
       return jsonResponse({ success: true, url: selfHostedUrl, selfHosted: true, slug });
     }
+
+    // --- Everything below is the old Netlify-hosting path. Unreachable
+    // now (the block above always returns) — kept as a rollback
+    // reference, not deleted, per explicit instruction. Do not remove
+    // without checking with Devorah first. ---
 
     // Each publish is a real Netlify deploy — real Netlify credits, shared
     // across every customer on the account's plan. Capped per-site so one
