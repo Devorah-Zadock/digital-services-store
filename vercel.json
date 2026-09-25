@@ -5,7 +5,7 @@
       "has": [
         {
           "type": "host",
-          "value": "^(?!www\\.)(?<slug>[a-z0-9-]+)\\.deskkit\\.co\\.il$"
+          "value": "^(?<slug>[a-z0-9-]+)\\.sites\\.deskkit\\.co\\.il$"
         }
       ],
       "destination": "/api/site-preview?slug=:slug&path=/:path*"
