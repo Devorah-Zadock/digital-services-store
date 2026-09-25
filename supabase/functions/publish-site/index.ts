@@ -255,7 +255,7 @@ Deno.serve(async (req: Request) => {
       // because a Netlify deploy spends real, shared credits. A database
       // upsert doesn't — no limit needed is the whole point of this
       // migration, not an oversight.
-      return jsonResponse({ success: true, url: selfHostedUrl, selfHosted: true });
+      return jsonResponse({ success: true, url: selfHostedUrl, selfHosted: true, slug });
     }
 
     // Each publish is a real Netlify deploy — real Netlify credits, shared
