@@ -24,17 +24,22 @@
 // ALLOWED_PAGE_NAMES), stored as one {index, about, contact} jsonb
 // object per slug rather than one row per page.
 //
-// Now reachable two ways:
-//   - a real visit to <slug>.deskkit.co.il/(about|contact)? — vercel.json
-//     rewrites this here with ?slug=<slug>&path=/<whatever came after the
-//     subdomain>, once the *.deskkit.co.il wildcard domain is added in
-//     Vercel and the matching DNS record exists.
+// Now reachable three ways (see middleware.js):
+//   - a real visit to <slug>.sites.deskkit.co.il/(about|contact)? —
+//     rewritten here with ?slug=<slug>&path=/<whatever came after the
+//     subdomain>.
+//   - a real visit to a customer's own connected domain (see
+//     connect-custom-domain) — rewritten here with
+//     ?customDomain=<their-domain>&path=..., resolved to a slug via
+//     site_projects.custom_domain below.
 //   - the old ?slug=&page= form, kept for manual testing without needing
 //     a real subdomain request (what Phase 1/2 testing used).
-// `path` wins when both are present — a real subdomain visit is always
-// the real thing, `?page=` is a testing convenience only.
+// `path` wins over `page` when both are present — a real subdomain/
+// custom-domain visit is always the real thing, `?page=` is a testing
+// convenience only.
 
 const SLUG_PATTERN = /^[a-z0-9-]{1,63}$/;
+const DOMAIN_PATTERN = /^[a-z0-9-]{1,63}(\.[a-z0-9-]{1,63})+$/i;
 const ALLOWED_PAGE_NAMES = new Set(["index", "about", "contact"]);
 
 function resolvePageName(req) {
@@ -47,22 +52,45 @@ function resolvePageName(req) {
   return ALLOWED_PAGE_NAMES.has(page) ? page : null;
 }
 
-module.exports = async function handler(req, res) {
+// Resolves whichever identifier the request arrived with to a real
+// hosted_site_pages slug. A customer domain never IS the slug — it's
+// looked up on site_projects, which is the only table connect-custom-
+// domain ever writes custom_domain to.
+async function resolveSlug(req, supabaseUrl, serviceRoleKey) {
   const slug = String(req.query.slug || "").trim();
-  if (!SLUG_PATTERN.test(slug)) {
-    res.status(400).send("invalid slug");
+  if (slug) {
+    return SLUG_PATTERN.test(slug) ? slug : null;
+  }
+  const customDomain = String(req.query.customDomain || "").trim().toLowerCase();
+  if (!customDomain || !DOMAIN_PATTERN.test(customDomain)) return null;
+
+  const lookupUrl =
+    supabaseUrl + "/rest/v1/site_projects?custom_domain=eq." + encodeURIComponent(customDomain) + "&select=slug";
+  const lookupRes = await fetch(lookupUrl, {
+    headers: { apikey: serviceRoleKey, Authorization: "Bearer " + serviceRoleKey },
+  });
+  if (!lookupRes.ok) return null;
+  const rows = await lookupRes.json();
+  const resolved = rows[0] && rows[0].slug;
+  return resolved && SLUG_PATTERN.test(resolved) ? resolved : null;
+}
+
+module.exports = async function handler(req, res) {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !serviceRoleKey) {
+    res.status(500).send("server not configured");
+    return;
+  }
+
+  const slug = await resolveSlug(req, supabaseUrl, serviceRoleKey);
+  if (!slug) {
+    res.status(404).send("not found");
     return;
   }
   const page = resolvePageName(req);
   if (!page) {
     res.status(404).send("not found");
-    return;
-  }
-
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !serviceRoleKey) {
-    res.status(500).send("server not configured");
     return;
   }
 

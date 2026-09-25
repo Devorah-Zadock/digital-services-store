@@ -23,26 +23,43 @@
 // A request to <slug>.sites.deskkit.co.il/<anything> gets rewritten to
 // /api/site-preview?slug=<slug>&path=/<anything>, which already knows
 // how to resolve index/about/contact from there (see resolvePageName in
-// that file). Every other host (deskkit.co.il itself, www, the
-// sites.deskkit.co.il apex with no slug, anything else) passes straight
-// through untouched — this must never affect the main site.
+// that file).
+//
+// Second branch, added for connect-custom-domain: a customer's OWN
+// domain (e.g. www.theirbusiness.co.il) is registered on this same
+// Vercel project via Vercel's API — Vercel only ever routes a request
+// to this project if the host is one we (DeskKit, or a customer through
+// us) explicitly added there, so ANY host that isn't one of DeskKit's
+// own known domains and isn't a *.sites.deskkit.co.il subdomain must be
+// a connected custom domain. Routed the same way, just with
+// ?customDomain= instead of ?slug= — see api/site-preview.js's
+// resolveSlug(), which looks it up in site_projects.custom_domain.
+//
+// Every DeskKit-owned host (deskkit.co.il, www, any *.vercel.app
+// preview URL) passes straight through untouched — this must never
+// affect the main site.
 
 const SUBDOMAIN_PATTERN = /^([a-z0-9-]+)\.sites\.deskkit\.co\.il$/i;
+const OWN_HOST_PATTERN = /^((www\.)?deskkit\.co\.il|sites\.deskkit\.co\.il)$|\.vercel\.app$/i;
 
 export default function middleware(request) {
   const host = (request.headers.get("host") || "").toLowerCase();
-  const match = SUBDOMAIN_PATTERN.exec(host);
-  if (!match) {
-    return new Response(null, { headers: { "x-middleware-next": "1" } });
+  const url = new URL(request.url);
+
+  const subdomainMatch = SUBDOMAIN_PATTERN.exec(host);
+  if (subdomainMatch) {
+    const destination = new URL("/api/site-preview", url);
+    destination.searchParams.set("slug", subdomainMatch[1]);
+    destination.searchParams.set("path", url.pathname);
+    return new Response(null, { headers: { "x-middleware-rewrite": destination.toString() } });
   }
 
-  const slug = match[1];
-  const url = new URL(request.url);
-  const destination = new URL("/api/site-preview", url);
-  destination.searchParams.set("slug", slug);
-  destination.searchParams.set("path", url.pathname);
+  if (host && !OWN_HOST_PATTERN.test(host)) {
+    const destination = new URL("/api/site-preview", url);
+    destination.searchParams.set("customDomain", host);
+    destination.searchParams.set("path", url.pathname);
+    return new Response(null, { headers: { "x-middleware-rewrite": destination.toString() } });
+  }
 
-  return new Response(null, {
-    headers: { "x-middleware-rewrite": destination.toString() },
-  });
+  return new Response(null, { headers: { "x-middleware-next": "1" } });
 }

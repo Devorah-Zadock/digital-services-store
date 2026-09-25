@@ -145,7 +145,7 @@ function myPanelRowHtml(opts) {
   // Only offered once a site is actually live (published_url set) —
   // connecting a domain to nothing wouldn't make sense before that.
   const domainBtn = opts.showDomainBtn
-    ? `<button type="button" class="my-content-domain-btn" data-domain-guide title="חיבור דומיין משלכם" aria-label="חיבור דומיין משלכם">${myPanelDomainIcon()}</button>`
+    ? `<button type="button" class="my-content-domain-btn" data-domain-guide="${opts.siteProjectId}" title="חיבור דומיין משלכם" aria-label="חיבור דומיין משלכם">${myPanelDomainIcon()}</button>`
     : "";
   const activeClass = opts.active ? " active" : "";
   const thumbClass = opts.kind === "cv" ? " my-panel-card-thumb-cv" : opts.kind === "quote" ? " my-panel-card-thumb-quote" : opts.kind === "invoice" ? " my-panel-card-thumb-invoice" : "";
@@ -199,6 +199,7 @@ function myPanelRenderSites(sites, ctx, el) {
         deleteAttr: "site:" + s.id,
         active: !!(ctx && ctx.kind === "site" && ctx.template === s.template),
         showDomainBtn: !!s.published_url,
+        siteProjectId: s.id,
       });
     }).join("");
   } else {
@@ -519,7 +520,7 @@ function mountMyPanel() {
     const domainBtn = e.target.closest("[data-domain-guide]");
     if (domainBtn) {
       e.preventDefault();
-      openDomainGuide();
+      openDomainGuide(domainBtn.dataset.domainGuide);
     }
   });
 

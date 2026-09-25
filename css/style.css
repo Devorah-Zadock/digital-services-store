@@ -1479,6 +1479,21 @@ body.cookie-notice-active .fab { display: none; }
 .domain-guide-providers a:hover { border-color: var(--teal); background: var(--ice); }
 .domain-guide-note { background: var(--grey-light); border-radius: 10px; padding: 13px 15px; font-size: 12px; color: var(--grey); line-height: 1.7; margin-top: 26px; }
 
+/* Connect-your-own-domain form (see js/domain-guide.js) — kept in
+   style.css rather than builder.css, since domain-guide.js is injected
+   on pages (about.html, index.html, etc.) that don't load builder.css. */
+.domain-connect-row { display: flex; align-items: center; gap: 8px; background: var(--white);
+  border: 2px solid #DDE4E1; border-radius: 10px; padding: 9px 13px; margin-top: 10px; }
+.domain-connect-row input { flex: 1; border: none; outline: none; font-family: inherit;
+  font-size: 14px; direction: ltr; text-align: left; background: transparent; }
+.domain-connect-status { margin-top: 8px; font-size: 13px; font-weight: 600; min-height: 18px; }
+.domain-connect-status.ok { color: #1E7A4C; }
+.domain-connect-status.bad { color: #B3401E; }
+.domain-connect-status.wait { color: var(--grey); font-weight: 500; }
+.domain-connect-records { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.domain-connect-record { background: var(--grey-light); border-radius: 10px; padding: 10px 13px; font-size: 12.5px; }
+.domain-connect-record div { direction: ltr; text-align: left; font-family: monospace; margin-top: 3px; }
+
 /* ---------- Auth prompt (join-to-save popup — see js/auth-prompt.js) ---------- */
 .auth-prompt-modal { max-width: 400px; text-align: center; }
 .auth-prompt-modal .lead { margin-bottom: 24px; }

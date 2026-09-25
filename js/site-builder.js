@@ -1521,7 +1521,7 @@ function renderPublishClaimedScreen(url, selfHosted, slug) {
     }
     setTimeout(() => { copyBtn.textContent = original; }, 2000);
   });
-  document.getElementById("publish-domain-guide-btn").addEventListener("click", openDomainGuide);
+  document.getElementById("publish-domain-guide-btn").addEventListener("click", () => openDomainGuide(siteProjectId));
   if (offerRename) wireSlugRenameUI();
 }
 
