@@ -1,12 +1,15 @@
-/* Block registry + ordering for the new Builder (Stage 1 pilot:
-   local-service, playground, catalog — see the plan for why these were
-   migrated first). Depends on the ls*Section()/pg*Section()/cat*Section()
-   functions
-   in js/site-templates.js (loaded before this file), which already
-   render each section's real HTML/CSS/behavior unchanged — this file
-   only describes which of them exist per template, in what order, and
-   how to call each one, plus the small ordering/visibility data model
-   that sits on top.
+/* Block registry + ordering for the central Builder. This file (plus
+   SITE_SECTION_VARIANTS just below) IS the Section Library: the one
+   place that defines what a "Section" is, independent of which
+   template/Starting Point uses it. Migrated so far: local-service,
+   playground, catalog, freelancer, blank — see the architecture plan
+   for why gradual, one/two at a time, beats migrating all 18 at once.
+   Depends on the ls*Section()/pg*Section()/cat*Section()/fr*Section()
+   functions in js/site-templates.js (loaded before this file), which
+   already render each section's real HTML/CSS/behavior unchanged — this
+   file only describes which of them exist per template, in what order,
+   and how to call each one, plus the small ordering/visibility/variant
+   data model that sits on top.
 
    Deliberately NOT a new content store: a block just says "render the
    services section here" — the actual service names/descriptions/
@@ -15,7 +18,30 @@
    up as real, already-editable children of the services block for
    free, and what keeps every other template (and every already-saved
    project) completely unaffected — this file adds a capability, it
-   doesn't change how existing data is stored or rendered. */
+   doesn't change how existing data is stored or rendered.
+
+   RECIPE — adding a new Section type (e.g. Testimonials/FAQ/Gallery/
+   Pricing/Opening Hours) to a template that's already migrated:
+     1. Content schema: decide which d.* field(s) hold its content. Reuse
+        an existing shape (d.services-like array, or a plain string/
+        array field) rather than inventing a new one unless the content
+        genuinely has no existing analog.
+     2. Render: write one plain function (d, pal, dd, ctx) => htmlString
+        in site-templates.js, built only from universal helpers (heading/
+        t/escapeHtmlS/etc.) so it can work across templates, not just one.
+     3. Register it under that template's key in SITE_BLOCK_DEFS below:
+        { label, render, hasItems?, active? }. hasItems shows its content
+        as child rows in the hierarchy panel; active() auto-hides it
+        (e.g. once a separate page covers the same content).
+     4. Add its key to SITE_DEFAULT_BLOCK_ORDER if it's a reasonable
+        default position (filtered per-template automatically — adding a
+        key here never affects a template that doesn't define it).
+     5. Variants are OPTIONAL and separate from step 1-4: only add a
+        SITE_SECTION_VARIANTS[type] entry once a second real, generically-
+        useful layout exists — never required just to ship the section.
+   No template-specific wiring needed anywhere else: renderBlocksHtml(),
+   the hierarchy panel, and the variant picker all already work off this
+   registry generically. */
 
 const SITE_BLOCK_DEFS = {
   "local-service": {
