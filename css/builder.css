@@ -245,6 +245,14 @@
   border-radius: 8px; padding: 10px; width: 220px; z-index: 30;
   box-shadow: 0 8px 24px rgba(0,0,0,.14);
 }
+/* An unconditional "display" on an element with the [hidden] attribute
+   beats the browser's own built-in [hidden]{display:none} rule — author
+   styles always win over user-agent styles, regardless of specificity.
+   Confirmed live: every .ts-row rendered wide open, stacked on top of
+   each other, the instant the page loaded, nobody having clicked any
+   "Aa" toggle at all. This selector's higher specificity (class +
+   attribute) is what actually restores "hidden means hidden". */
+.ts-row[hidden] { display: none; }
 .ts-row-grid { display: grid; grid-template-columns: minmax(0, 1fr) 34px 60px; gap: 6px; }
 .ts-row-grid select, .ts-row-grid input[type="number"] { font-size: 11.5px !important; padding: 5px 7px !important; color: var(--grey); }
 .ts-row-grid input[type="color"] { width: 100%; height: 28px; border: none; border-radius: 6px; padding: 0; cursor: pointer; background: none; }
