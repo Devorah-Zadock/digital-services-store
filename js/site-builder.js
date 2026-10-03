@@ -182,157 +182,26 @@ function renderServicesList() {
     siteState.data.services.map((s, i) => serviceItemHtml(s, i, siteState.data.services.length)).join("");
 }
 
-/* Full catalog-style browser for the 5 site templates — same card/tab
-   markup as the CV catalog (js/catalog.js), reusing its CSS wholesale
-   rather than the old cramped in-sidebar picker. Each card links to
-   sites.html?template=KEY, a real navigation (mirrors product.html ->
-   builder.html?template=) so the wizard below can just read it from
-   the URL on load like the CV builder already does. */
-function siteTplCardHtml(key, t) {
-  const features = t.features || [];
-  return `
-    <div class="flip-card" data-cat="${t.categorySlug}">
-      <div class="flip-card-inner">
-        <div class="flip-card-front card" data-cat="${t.categorySlug}">
-          <div class="thumb"><img src="${t.thumb}" alt="${escapeHtmlS(t.label)}" loading="lazy"></div>
-          <div class="body">
-            <div class="card-meta">
-              <span class="tag">${escapeHtmlS(t.category)}</span>
-            </div>
-            <h3>${escapeHtmlS(t.label)}</h3>
-            <p style="font-size:13px; color:var(--grey); margin:0; flex:1;">${escapeHtmlS(t.desc)}</p>
-          </div>
-        </div>
-        <div class="flip-card-back">
-          <h4>${escapeHtmlS(t.label)} — מה כלול</h4>
-          <ul>${features.map((f) => `<li>${escapeHtmlS(f)}</li>`).join("")}</ul>
-          <a href="sites.html?template=${key}" class="card-cta">בחירה ועריכה</a>
-        </div>
-      </div>
-    </div>`;
-}
-
-function renderTplCatalog() {
-  const tabsEl = document.getElementById("site-tpl-tabs");
-  const gridEl = document.getElementById("site-tpl-grid");
-  const searchEl = document.getElementById("site-tpl-search");
-  const smartBtn = document.getElementById("site-smart-filter-btn");
-  const smartPanel = document.getElementById("site-smart-panel");
-  const smartChecksEl = document.getElementById("site-smart-checks");
-  const smartCountEl = document.getElementById("site-smart-count");
-  tabsEl.innerHTML = SITE_CATEGORIES.map((c) => `<button class="tab" data-cat="${c.slug}">${escapeHtmlS(c.label)}</button>`).join("");
-  let active = "all";
-  let term = "";
-  // Selected but not-yet-applied while the panel is open — kept separate
-  // from `appliedTags` so opening the panel to look around, then closing
-  // it without hitting "החלה", doesn't silently change the grid.
-  let appliedTags = new Set();
-  function apply() {
-    tabsEl.querySelectorAll(".tab").forEach((btn) => btn.classList.toggle("active", btn.dataset.cat === active));
-    const q = term.trim().toLowerCase();
-    // "blank" (Phase 3) has no preview image and isn't a styled design
-    // choice like the other 18 — it gets its own separate CTA near the
-    // catalog instead (see sites.html), not a card in this paid grid.
-    const entries = Object.entries(SITE_TEMPLATES).filter(([key, t]) =>
-      key !== "blank" &&
-      (active === "all" || t.categorySlug === active) &&
-      (!q || t.label.toLowerCase().includes(q)) &&
-      [...appliedTags].every((tag) => (t.tags || []).includes(tag)));
-    gridEl.innerHTML = entries.length
-      ? entries.map(([key, t]) => siteTplCardHtml(key, t)).join("")
-      : `<p class="tpl-search-empty">אין עיצובים שמתאימים לחיפוש${term.trim() ? ` "${escapeHtmlS(term.trim())}"` : ""}.</p>`;
-  }
-  tabsEl.querySelectorAll(".tab").forEach((btn) => {
-    btn.addEventListener("click", () => { active = btn.dataset.cat; apply(); });
-  });
-  if (searchEl) searchEl.addEventListener("input", () => { term = searchEl.value; apply(); });
-
-  if (smartBtn && smartPanel && smartChecksEl) {
-    smartChecksEl.innerHTML = Object.entries(SITE_FILTER_TAGS).map(([tagKey, label]) =>
-      `<label class="tpl-smart-check" data-tag="${tagKey}"><input type="checkbox" value="${tagKey}"> ${escapeHtmlS(label)}</label>`
-    ).join("");
-    function syncSmartUi() {
-      smartChecksEl.querySelectorAll(".tpl-smart-check").forEach((lbl) => {
-        const checked = appliedTags.has(lbl.dataset.tag);
-        lbl.classList.toggle("checked", checked);
-        lbl.querySelector("input").checked = checked;
-      });
-      smartBtn.classList.toggle("active", appliedTags.size > 0);
-      if (appliedTags.size) { smartCountEl.textContent = appliedTags.size; smartCountEl.style.display = ""; }
-      else smartCountEl.style.display = "none";
-    }
-    smartBtn.addEventListener("click", () => {
-      const open = smartPanel.style.display === "none";
-      smartPanel.style.display = open ? "" : "none";
-      smartBtn.setAttribute("aria-expanded", String(open));
-    });
-    smartChecksEl.addEventListener("change", (e) => {
-      const lbl = e.target.closest(".tpl-smart-check");
-      if (!lbl) return;
-      lbl.classList.toggle("checked", e.target.checked);
-    });
-    document.getElementById("site-smart-clear").addEventListener("click", () => {
-      appliedTags = new Set();
-      syncSmartUi();
-      apply();
-    });
-    document.getElementById("site-smart-apply").addEventListener("click", () => {
-      appliedTags = new Set(
-        [...smartChecksEl.querySelectorAll('input[type="checkbox"]:checked')].map((i) => i.value)
-      );
-      syncSmartUi();
-      apply();
-      smartPanel.style.display = "none";
-      smartBtn.setAttribute("aria-expanded", "false");
-    });
-    syncSmartUi();
-  }
-
-  apply();
-
-  // Devices with no real hover (touch) get a tap-to-flip toggle instead —
-  // :hover alone would leave the card's back stuck showing after a tap,
-  // since there's no "unhover" gesture to flip it back.
-  gridEl.addEventListener("click", (e) => {
-    if (e.target.closest(".card-cta")) return;
-    if (window.matchMedia("(hover: hover)").matches) return;
-    const card = e.target.closest(".flip-card");
-    if (card) card.classList.toggle("is-flipped");
-  });
-}
-
 function renderCurrentTplInfo() {
   const t = SITE_TEMPLATES[siteState.template];
   document.getElementById("current-tpl-info").textContent = t ? t.label : "";
 }
 
+/* The landing screen before the Wizard starts — just the primary "בניית
+   אתר" CTA. Manual template browsing (a grid/search/filter catalog) used
+   to live here as a secondary, collapsed option; removed entirely per
+   product decision — no screen should mention "template" or show a
+   catalog to choose from. SITE_TEMPLATES/SITE_CATEGORIES/SITE_FILTER_TAGS
+   and the per-template thumb/tags/features metadata they drove stay
+   defined (still real data; nothing reads them for an on-page catalog
+   anymore) — the AI generator still picks a template internally, exactly
+   as before, the customer just never sees that happening. */
 function showCatalog() {
   document.getElementById("tpl-catalog-section").style.display = "";
   document.getElementById("wizard-section").style.display = "none";
   document.getElementById("builder-top-banner").style.display = "";
   const seo = document.getElementById("sites-seo-content");
   if (seo) seo.style.display = "";
-  renderTplCatalog();
-
-  // Manual template picking (architecture plan): collapsed by default —
-  // "בניית אתר" (the Wizard) is the primary flow now, not choosing a
-  // template first. Auto-expanded only for someone who explicitly asked
-  // to browse/change template (?browse=1, e.g. "שינוי תבנית" from an
-  // existing project) — they already know they want to pick manually,
-  // no reason to make them click through to reveal it again. Called once
-  // (showCatalog's only call site is the page's own DOMContentLoaded),
-  // so this wiring never double-binds.
-  const manualSection = document.getElementById("tpl-manual-section");
-  const manualToggle = document.getElementById("tpl-manual-toggle");
-  if (manualSection && manualToggle) {
-    const forceBrowse = new URLSearchParams(location.search).get("browse") === "1";
-    if (forceBrowse) { manualSection.style.display = ""; manualToggle.setAttribute("aria-expanded", "true"); }
-    manualToggle.addEventListener("click", () => {
-      const open = manualSection.style.display === "none";
-      manualSection.style.display = open ? "" : "none";
-      manualToggle.setAttribute("aria-expanded", String(open));
-    });
-  }
 }
 
 function showWizard() {
