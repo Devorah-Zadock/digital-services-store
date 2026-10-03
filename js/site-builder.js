@@ -1647,7 +1647,7 @@ function renderPublishClaimedScreen(url, selfHosted, slug) {
       </div>
       <div id="slug-rename-status" style="margin-top:6px; font-size:13px; font-weight:600; min-height:18px;"></div>
       <div id="slug-rename-suggestions" style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;"></div>
-      <button type="button" id="slug-rename-confirm-btn" class="btn-mini" style="width:100%; margin-top:8px;" disabled>שינוי הכתובת</button>
+      <button type="button" id="slug-rename-confirm-btn" class="btn btn-teal" style="width:100%; margin-top:8px;" disabled>שינוי הכתובת</button>
     </div>` : ""}
   `;
   document.getElementById("publish-copy-btn").addEventListener("click", async (e) => {

@@ -30,7 +30,7 @@ function openDomainGuide(siteProjectId) {
         <div class="domain-connect-records" id="domain-connect-records"></div>
       </div>
 
-      <div class="domain-guide-note">אין לכם עדיין דומיין? אפשר לקנות אחד תוך כמה דקות באתרים כמו <a href="https://domains.co.il" target="_blank" rel="noopener">Box (domains.co.il)</a> או <a href="https://www.livedns.co.il" target="_blank" rel="noopener">LiveDNS</a> (בדרך כלל 60–150 ₪ לשנה) — ואז חוזרים לכאן.</div>
+      <div class="domain-guide-note">אין לכם עדיין דומיין? אפשר לקנות אחד תוך כמה דקות באתרים כמו <a href="https://www.box.co.il" target="_blank" rel="noopener">Box (box.co.il)</a> או <a href="https://www.livedns.co.il" target="_blank" rel="noopener">LiveDNS</a> (בדרך כלל 60–150 ₪ לשנה) — ואז חוזרים לכאן.</div>
     </div>
   `;
   document.body.appendChild(overlay);

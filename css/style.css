@@ -920,6 +920,9 @@ body.home-neo .hn-trust-points {
 .btn-disabled, .btn-disabled:hover {
   pointer-events: none; opacity: .55; box-shadow: none; transform: none; cursor: default;
 }
+.btn:disabled, .btn:disabled:hover {
+  pointer-events: none; opacity: .55; box-shadow: none; transform: none; cursor: default;
+}
 
 /* ---------- Sections ---------- */
 section { padding: 88px 0; }
