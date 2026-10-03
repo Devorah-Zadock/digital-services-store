@@ -64,6 +64,14 @@ function renderPublishRemaining() {
 }
 
 const SITE_DEFAULT = {
+  // Site Schema Phase 1 (see the architecture plan): every new project
+  // now carries its own schema version from the moment freshSiteData()
+  // clones this object. A project saved before this field existed has
+  // no opinion of its own — ensurePagesShape() backfills 1 for it the
+  // same way it already backfills pages/heroImages/headings/textStyles,
+  // not a separate migration mechanism. Bump this only when a FUTURE
+  // change to this shape needs code to tell old data apart from new.
+  schemaVersion: 1,
   businessName: "",
   tagline: "",
   about: "",
@@ -114,8 +122,16 @@ let previewPage = "index";
 
 /* Older saved/loaded data (from before the multi-page feature existed)
    won't have a `pages` object — patch it in rather than special-casing
-   every read site-wide. */
+   every read site-wide. Also where schemaVersion gets backfilled (Phase
+   1 of the architecture plan) — this function already runs on every
+   load path (pre-auth loadSiteState, post-auth cloud load, every
+   preview render), so it's the one proven place new-field backfills
+   belong, not a reason to invent a separate migration step. Keeping its
+   name as-is for this phase even though it now does a bit more than
+   "pages" — a rename means touching every call site for no functional
+   gain, out of scope for an additive-only change. */
 function ensurePagesShape(data) {
+  if (typeof data.schemaVersion !== "number") data.schemaVersion = 1;
   if (!data.pages || typeof data.pages !== "object") data.pages = { about: false, contact: false };
   data.pages.about = !!data.pages.about;
   data.pages.contact = !!data.pages.contact;
