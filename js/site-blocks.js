@@ -81,14 +81,103 @@ function activeBlocksForPage(d, template, page) {
    any video embed) — computed once by the caller, same values the
    monolithic render<Name>Site functions already compute for themselves. */
 function renderBlocksHtml(d, template, page, ctx) {
-  const defs = SITE_BLOCK_DEFS[template];
   const types = activeBlocksForPage(d, template, page);
-  const blocksHtml = types.map((type) => defs[type].render(d, ctx.pal, ctx.dd, ctx)).join("\n");
+  const blocksHtml = types.map((type) => {
+    const variantKey = (d.blockVariants && d.blockVariants[type]) || "default";
+    const renderFn = blockRenderFnFor(template, type, variantKey);
+    return renderFn(d, ctx.pal, ctx.dd, ctx);
+  }).join("\n");
   // Video isn't part of the reorderable hierarchy (optional, and not
   // one of the sections the user actually asked to see as a tree node)
   // — always placed right after the ordered blocks, before the footer.
   const videoHtml = ctx.videoSection ? ctx.videoSection : "";
   return `${blocksHtml}\n${videoHtml}`;
+}
+
+/* Generic Section System (Phase 2 of the architecture plan): a Variant
+   changes how a section TYPE is laid out, never what content it shows.
+   Deliberately generic across templates rather than per-template, since
+   every section render function already only touches universal content
+   helpers (heading()/t()/taglineText()/aboutText()/heroMediaHtml()/
+   ctaHtml(), dd._services, pal) — the exact same inputs each template's
+   own default render already takes. That's what lets ONE "centered
+   hero" or "grid services" variant work for every migrated template for
+   free, with zero duplication of d.services/d.businessName/etc.
+
+   A block type with no entry here (or a variantKey of "default"/missing)
+   behaves exactly as before — SITE_BLOCK_DEFS[template][type].render is
+   itself the implicit "default" variant. Only two section types get a
+   real alternate right now (hero, services) — enough to validate the
+   model end-to-end without building options nobody asked for yet. */
+function genericHeroVariantCentered(d, pal, dd, ctx) {
+  const cta = ctx && ctx.cta;
+  const media = heroMediaHtml(d, "");
+  const navAttrs = cta && cta.page ? ` data-site-nav data-page="${cta.page}"` : "";
+  const ctaButton = cta ? `<a href="${escapeHtmlS(cta.href)}"${cta.external ? ' target="_blank" rel="noopener"' : ""}${navAttrs} style="display:inline-block; background:#fff; color:#${pal.primaryDark}; font-weight:700; padding:14px 30px; border-radius:30px; text-decoration:none;">${escapeHtmlS(cta.label)}</a>` : "";
+  return `
+    <section style="position:relative; text-align:center; padding:72px 24px 60px; background:#${pal.primaryDark}; color:#fff; overflow:hidden;">
+      ${heroVideoBgHtml(d)}
+      <div style="position:relative; z-index:1; max-width:720px; margin:0 auto;">
+        <h1 style="font-size:clamp(28px,5vw,46px); margin:0 0 14px; font-weight:800; line-height:1.15;">${heading(d, "heroTitle", dd.businessName)}</h1>
+        <p style="font-size:18px; opacity:.92; margin:0 0 26px;">${taglineText(d, dd)}</p>
+        ${ctaButton}
+        ${d.phone ? `<div style="margin-top:14px;"><a href="tel:${escapeHtmlS(d.phone)}" style="color:#fff; opacity:.85; font-size:15px;">${escapeHtmlS(d.phone)}</a></div>` : ""}
+      </div>
+      ${media ? `<div style="max-width:380px; margin:36px auto 0; border-radius:18px; overflow:hidden; box-shadow:0 18px 40px rgba(0,0,0,.35); position:relative; z-index:1;">${media}</div>` : ""}
+    </section>`;
+}
+function genericServicesVariantGrid(d, pal, dd) {
+  return `
+    <section style="padding:56px 24px;">
+      <div style="max-width:1000px; margin:0 auto;">
+        <div style="text-align:center; margin-bottom:32px;"><h2 style="font-size:28px; font-weight:800; margin:0;">${heading(d, "services", "השירותים שלנו")}</h2></div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:20px;">
+          ${dd._services.map((s) => `
+            <div style="border:1.5px solid #EEE; border-radius:16px; padding:24px; text-align:center;">
+              <h3 style="margin:0 0 8px; font-size:18px;">${escapeHtmlS(s.name)}</h3>
+              ${s.desc ? `<p style="margin:0 0 10px; color:#555; font-size:14.5px;">${escapeHtmlS(s.desc)}</p>` : ""}
+              ${s.price ? `<div style="font-weight:700; color:#${pal.primaryDark};">${escapeHtmlS(s.price)}</div>` : ""}
+            </div>`).join("")}
+        </div>
+      </div>
+    </section>`;
+}
+
+const SITE_SECTION_VARIANTS = {
+  hero: {
+    options: {
+      default: { label: "קלאסי (עיצוב התבנית)" },
+      centered: { label: "ממורכז", render: genericHeroVariantCentered },
+    },
+  },
+  services: {
+    options: {
+      default: { label: "ברירת מחדל (עיצוב התבנית)" },
+      grid: { label: "רשת כרטיסים", render: genericServicesVariantGrid },
+    },
+  },
+};
+
+/* Only offer a variant picker for a block type that (a) has real
+   alternates defined above and (b) actually exists on this template —
+   "about"/"contact" have no variants yet, and that's fine: an empty
+   result here just means the Builder shows no picker for them. */
+function variantOptionsFor(template, type) {
+  const defs = SITE_BLOCK_DEFS[template];
+  if (!defs || !defs[type] || !SITE_SECTION_VARIANTS[type]) return null;
+  return SITE_SECTION_VARIANTS[type].options;
+}
+
+/* Missing/unknown variant (old data, or a variant later removed) always
+   resolves to the template's own existing render — never a hard error,
+   never destructive. This is the one place backward compatibility for
+   blockVariants actually lives; nothing elsewhere needs to "migrate" the
+   field in because a missing value already means exactly "default". */
+function blockRenderFnFor(template, type, variantKey) {
+  const def = SITE_BLOCK_DEFS[template][type];
+  if (!variantKey || variantKey === "default") return def.render;
+  const variant = SITE_SECTION_VARIANTS[type] && SITE_SECTION_VARIANTS[type].options[variantKey];
+  return (variant && variant.render) || def.render;
 }
 
 /* Swap by TYPE, not array position — the hierarchy panel only shows

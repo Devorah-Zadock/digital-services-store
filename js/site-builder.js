@@ -879,6 +879,22 @@ function renderMigratedHierarchy(tree, addBlockRow, template, d) {
       ${removable ? `<button type="button" class="hier-btn" data-hier-remove="${type}" title="הסרה">✕</button>` : ""}
     `;
     let html = hierRowHtml({ label: def.label, key: type, hasToggle: isServices, expanded: hierExpanded.services, actions });
+    // Variant picker (Phase 2, Generic Section System) — only shown for a
+    // block type that actually has real alternates defined; switching it
+    // never touches d.services/d.businessName/etc., only how this one
+    // section is laid out. Rendered as its own always-visible row rather
+    // than packed into .hier-actions (which is hover-only, meant for the
+    // small ▲▼✕ icon buttons — a variant choice should stay visible).
+    const variantOpts = typeof variantOptionsFor === "function" ? variantOptionsFor(template, type) : null;
+    if (variantOpts) {
+      const current = (d.blockVariants && d.blockVariants[type]) || "default";
+      html += `<div class="hier-variant-row">
+        <span class="hier-variant-label">סגנון תצוגה</span>
+        <select class="hier-variant-select" data-hier-variant="${type}">
+          ${Object.keys(variantOpts).map((k) => `<option value="${k}"${k === current ? " selected" : ""}>${escapeHtmlS(variantOpts[k].label)}</option>`).join("")}
+        </select>
+      </div>`;
+    }
     if (isServices) {
       const services = d.services || [];
       const childRows = services.map((s, idx) => `
@@ -904,6 +920,13 @@ function renderMigratedHierarchy(tree, addBlockRow, template, d) {
       if (e.target.closest(".hier-btn") || e.target.closest(".hier-group-toggle")) return;
       const type = row.dataset.hierKey;
       if (scrollTargets[type]) scrollCanvasTo(scrollTargets[type]);
+    });
+  });
+  tree.querySelectorAll("[data-hier-variant]").forEach((select) => {
+    select.addEventListener("change", () => {
+      if (!d.blockVariants || typeof d.blockVariants !== "object") d.blockVariants = {};
+      d.blockVariants[select.dataset.hierVariant] = select.value;
+      renderSitePreview();
     });
   });
   tree.querySelectorAll("[data-hier-toggle]").forEach((el) => {
