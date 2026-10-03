@@ -653,6 +653,50 @@ function renderLocalServiceSite(d, page) {
 }
 
 /* ---------- Template 2: freelancer / consultant ---------- */
+/* Section-renderer decomposition (Phase 4 template migration), same
+   guarantee as local-service's own (see lsHeroSection's comment): each
+   function below returns EXACTLY the HTML chunk renderFreelancerSite's
+   index page already inlined, unchanged — migrating this template can
+   never alter what an existing, already-saved freelancer project looks
+   like, only unlocks reordering it going forward.
+
+   frServicesSection fuses about-text + service tags into one block on
+   purpose — that's genuinely how this template's own index page already
+   renders them (one shared "fr-body" div), not a new grouping invented
+   for this migration. SECTION_PATCH_ANCHOR_OVERRIDES.freelancer already
+   points "heading-services" at this exact div's id (#fr-services-wrap),
+   confirming the live-patch system already treats it as one unit. There
+   is no separate reorderable "about" block for this template — unlike
+   local-service, there's no second, independently-toggleable inline
+   about section to give one. frContactSection has no active() gate,
+   also matching the original: freelancer's own CTA footer always shows
+   on the homepage even when a separate Contact page exists. */
+function frHeroSection(d, pal, dd) {
+  return `
+      <section class="fr-hero">
+        ${heroMediaHtml(d, "site-hero-photo round")}
+        <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "פרילנסר / יועץ"}</span>
+        <div class="fr-name">${heading(d, "heroTitle", dd.businessName)}</div>
+        <div class="fr-role">${taglineText(d, dd)}</div>
+      </section>`;
+}
+function frServicesSection(d, pal, dd) {
+  return `
+      <div class="fr-body" id="fr-services-wrap">
+        <p class="fr-about">${aboutText(d, dd)}</p>
+        <div class="fr-tags">${dd._services.map((s) => `<span class="fr-tag">${escapeHtmlS(s.name)}</span>`).join("")}</div>
+      </div>`;
+}
+function frContactSection(d, pal, dd, wa) {
+  return `
+      <section class="fr-cta site-reveal">
+        <h2>${heading(d, "contact", "בואו נדבר")}</h2>
+        ${wa ? `<a class="btn" href="${wa}" target="_blank" rel="noopener">וואטסאפ</a>` : ""}
+        ${d.email ? `<a class="btn" href="mailto:${escapeHtmlS(d.email)}">שליחת מייל</a>` : ""}
+        ${d.phone ? `<a class="btn" href="tel:${escapeHtmlS(d.phone)}">התקשרות</a>` : ""}
+      </section>`;
+}
+
 function renderFreelancerSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#DC2626");
@@ -709,6 +753,9 @@ function renderFreelancerSite(d, page) {
         ${d.phone ? `<a class="btn" href="tel:${escapeHtmlS(d.phone)}">התקשרות</a>` : ""}
         ${!wa && !d.email && !d.phone ? `<p style="opacity:.85;">פרטו כאן דרכי יצירת קשר.</p>` : ""}
       </section>`;
+  } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("freelancer")) {
+    const videoSection = embedSrc ? `<div class="fr-body" style="padding-top:0;">${videoEmbedHtml(embedSrc)}</div>` : "";
+    main = renderBlocksHtml(d, "freelancer", "index", { pal, dd, wa, videoSection });
   } else {
     const services = dd._services;
     main = `

@@ -38,6 +38,24 @@ const SITE_BLOCK_DEFS = {
     services: { label: "מוצרים", hasItems: true, render: (d, pal, dd) => catServicesSection(d, pal, dd) },
     about: { label: "אודות", render: (d, pal, dd) => catAboutSection(d, pal, dd), active: (d) => !d.pages || !d.pages.about },
   },
+  // No "about" entry — freelancer's about text is fused into the same
+  // block as the service tags (see frServicesSection's own comment),
+  // not a separately toggleable section like local-service/playground
+  // have. Deliberately keyed "aboutTags", NOT "services" — the generic
+  // Section Variants (Phase 2) registered under "services" assume a
+  // pure item list and would silently drop the fused about paragraph if
+  // applied here, which is exactly the "variant changes content" bug
+  // the whole Variant model promises never happens. A distinct key
+  // means variantOptionsFor() correctly finds no options for it rather
+  // than offering a variant that doesn't actually fit. "contact" has no
+  // active() gate here (unlike local-service's): freelancer's CTA
+  // footer always shows on the homepage, even once a separate Contact
+  // page exists — matching the original unconditional render exactly.
+  "freelancer": {
+    hero: { label: "Hero", render: (d, pal, dd) => frHeroSection(d, pal, dd) },
+    aboutTags: { label: "אודות + תגיות שירות", hasItems: true, render: (d, pal, dd) => frServicesSection(d, pal, dd) },
+    contact: { label: "קריאה לפעולה", render: (d, pal, dd, ctx) => frContactSection(d, pal, dd, ctx.wa) },
+  },
 };
 
 // "blank" (Phase 3) delegates its actual rendering to local-service's
@@ -56,7 +74,12 @@ function isTemplateMigrated(template) {
   return SITE_MIGRATED_TEMPLATES.indexOf(template) !== -1;
 }
 
-const SITE_DEFAULT_BLOCK_ORDER = ["hero", "services", "about", "contact"];
+// A superset of every block-type key any migrated template defines, in
+// a sensible default sequence — each template's own ensureBlockOrder()
+// call filters this down to only the keys IT actually defines, so
+// adding a new key here (like freelancer's "aboutTags") never affects
+// local-service/playground/catalog, which simply don't have that key.
+const SITE_DEFAULT_BLOCK_ORDER = ["hero", "services", "aboutTags", "about", "contact"];
 
 /* Back-compat: a project saved before this feature existed (or a fresh
    one) has no d.blockOrder yet — seeded once, here, the first time it's
