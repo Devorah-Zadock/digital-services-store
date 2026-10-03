@@ -68,6 +68,15 @@ function t(d, key, html) {
 function bizName(d, dd) {
   return t(d, "businessName", escapeHtmlS(dd.businessName));
 }
+/* "© 2026 [business name]" in every template's footer — opt-out, not
+   opt-in, so every already-published site keeps showing it exactly as
+   before (d.hideCopyright is simply undefined/false for them). Centralized
+   here (rather than toggled per-template) so the one builder checkbox
+   (#s-hide-copyright) controls every template the same way. */
+function copyrightLineHtml(d, dd) {
+  if (d.hideCopyright) return "";
+  return `© ${new Date().getFullYear()} ${bizName(d, dd)}`;
+}
 function taglineText(d, dd) {
   return t(d, "tagline", escapeHtmlS(dd.tagline));
 }
@@ -611,7 +620,7 @@ function renderLocalServiceSite(d, page) {
   // previewNavScript() also makes this template's own in-page rail anchors
   // (#ls-services / #ls-about / #ls-contact) safe inside the preview
   // iframe, same reasoning as the studio template's rail.
-  const footer = `<div class="ls-footer">© ${new Date().getFullYear()} ${bizName(d, dd)}</div>${waFabHtml(d)}${(navLinksHtml || inPageRail) ? previewNavScript() : ""}`;
+  const footer = `<div class="ls-footer">${copyrightLineHtml(d, dd)}</div>${waFabHtml(d)}${(navLinksHtml || inPageRail) ? previewNavScript() : ""}`;
 
   let main;
   if (page === "about") {
@@ -730,7 +739,7 @@ function renderFreelancerSite(d, page) {
     .fr-footer { padding:22px 0; text-align:center; font-size:12px; color:#999; }
   `;
   const navBar = navLinksHtml ? `<div class="fr-nav"><div class="container row"><span class="fr-nav-name">${bizName(d, dd)}</span><nav>${navLinksHtml}</nav></div></div>` : "";
-  const footer = `<div class="fr-footer">© ${new Date().getFullYear()} ${bizName(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
+  const footer = `<div class="fr-footer">${copyrightLineHtml(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
 
   let main;
   if (page === "about") {
@@ -976,7 +985,7 @@ function renderGallerySite(d, page) {
       <div class="biz">${bizName(d, dd)}</div>
       ${navLinksHtml ? `<nav>${navLinksHtml}</nav>` : ""}
     </div></header>`;
-  const footer = `<div class="gl-footer">© ${new Date().getFullYear()} ${bizName(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
+  const footer = `<div class="gl-footer">${copyrightLineHtml(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
 
   let main;
   if (page === "about") {
@@ -1079,7 +1088,7 @@ function renderBoldSite(d, page) {
       <div class="biz">${bizName(d, dd)}</div>
       ${navLinksHtml ? `<nav>${navLinksHtml}</nav>` : ""}
     </div></header>`;
-  const footer = `<div class="nb-footer">© ${new Date().getFullYear()} ${bizName(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
+  const footer = `<div class="nb-footer">${copyrightLineHtml(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
 
   let main;
   if (page === "about") {
@@ -1183,7 +1192,7 @@ function renderElegantSite(d, page) {
       <div class="biz">${bizName(d, dd)}</div>
       ${navLinksHtml ? `<nav>${navLinksHtml}</nav>` : ""}
     </div></header>`;
-  const footer = `<div class="eg-footer">© ${new Date().getFullYear()} ${bizName(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
+  const footer = `<div class="eg-footer">${copyrightLineHtml(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
 
   let main;
   if (page === "about") {
@@ -1301,7 +1310,7 @@ function renderProcessSite(d, page) {
       <div class="biz">${bizName(d, dd)}</div>
       ${navLinksHtml ? `<nav>${navLinksHtml}</nav>` : ""}
     </div></header>`;
-  const footer = `<div class="pr-footer">© ${new Date().getFullYear()} ${bizName(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
+  const footer = `<div class="pr-footer">${copyrightLineHtml(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
 
   let main;
   if (page === "about") {
@@ -1407,7 +1416,7 @@ function renderPortfolioSite(d, page) {
       <div class="biz">${bizName(d, dd)}</div>
       ${navLinksHtml ? `<nav>${navLinksHtml}</nav>` : ""}
     </div></header>`;
-  const footer = `<div class="po-footer">© ${new Date().getFullYear()} ${bizName(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
+  const footer = `<div class="po-footer">${copyrightLineHtml(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
 
   let main;
   if (page === "about") {
@@ -1620,7 +1629,7 @@ function renderNoirSite(d, page) {
       <div class="biz">${bizName(d, dd)}</div>
       ${navLinksHtml ? `<nav>${navLinksHtml}</nav>` : ""}
     </div></header>`;
-  const footer = `<div class="nr-footer">© ${new Date().getFullYear()} ${bizName(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
+  const footer = `<div class="nr-footer">${copyrightLineHtml(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
 
   let main;
   if (page === "about") {
@@ -1764,7 +1773,7 @@ function renderStudioSite(d, page) {
   // rail links (#ag-services / #ag-about / #ag-contact) safe inside the
   // preview iframe — needed here even with no navLinksHtml (single-page
   // mode is exactly when those in-page anchors exist).
-  const footer = `<div class="ag-footer">© ${new Date().getFullYear()} ${bizName(d, dd)}</div>${waFabHtml(d)}${(navLinksHtml || inPageRail) ? previewNavScript() : ""}`;
+  const footer = `<div class="ag-footer">${copyrightLineHtml(d, dd)}</div>${waFabHtml(d)}${(navLinksHtml || inPageRail) ? previewNavScript() : ""}`;
 
   function contactBlock(heading) {
     return `
@@ -1900,7 +1909,7 @@ function renderBentoSite(d, page) {
       <div class="biz">${bizName(d, dd)}</div>
       ${navLinksHtml ? `<nav>${navLinksHtml}</nav>` : ""}
     </div></header>`;
-  const footer = `<div class="bt-footer">© ${new Date().getFullYear()} ${bizName(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
+  const footer = `<div class="bt-footer">${copyrightLineHtml(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
   const clockScript = `<script>
     (function () {
       var clockEl = document.getElementById("bt-clock");
@@ -2039,7 +2048,7 @@ function renderCinematicSite(d, page) {
       <div class="biz">${bizName(d, dd)}</div>
       ${navLinksHtml ? `<nav>${navLinksHtml}</nav>` : ""}
     </div></header>`;
-  const footer = `<div class="cd-footer">© ${new Date().getFullYear()} ${bizName(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
+  const footer = `<div class="cd-footer">${copyrightLineHtml(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
   const glowScript = `<script>
     (function () {
       var glow = document.getElementById("cd-glow");
@@ -2166,7 +2175,7 @@ function renderBrutalSite(d, page) {
       ${navLinksHtml ? `<nav>${navLinksHtml}</nav>` : ""}
     </div></header>
     <div class="br-ticker"><div class="br-ticker-track">${Array(6).fill(`<span class="br-ticker-item">${escapeHtmlS(tickerText)}</span>`).join("")}</div></div>`;
-  const footer = `<div class="br-footer">© ${new Date().getFullYear()} ${bizName(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
+  const footer = `<div class="br-footer">${copyrightLineHtml(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
 
   let main;
   if (page === "about") {
@@ -2290,7 +2299,7 @@ function renderNeonSite(d, page) {
       <div class="biz">${bizName(d, dd)}</div>
       ${navLinksHtml ? `<nav>${navLinksHtml}</nav>` : ""}
     </div></header>`;
-  const footer = `<div class="nf-footer">© ${new Date().getFullYear()} ${bizName(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
+  const footer = `<div class="nf-footer">${copyrightLineHtml(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
   const meshDiv = `<div class="nf-mesh"><div class="nf-blob nf-blob-1"></div><div class="nf-blob nf-blob-2"></div><div class="nf-blob nf-blob-3"></div></div>`;
   const cursorScript = `<script>
     (function () {
@@ -2481,7 +2490,7 @@ function renderChaosSite(d, page) {
       <div class="biz">${bizName(d, dd)}</div>
       ${navLinksHtml ? `<nav>${navLinksHtml}</nav>` : ""}
     </div></header>`;
-  const footer = `<div class="oc-footer">© ${new Date().getFullYear()} ${bizName(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
+  const footer = `<div class="oc-footer">${copyrightLineHtml(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
   const interactionScript = `<script>
     (function () {
       if (window.matchMedia && !window.matchMedia("(pointer: coarse)").matches) {
@@ -2644,7 +2653,7 @@ function renderLuxurySite(d, page) {
       <div class="biz">${bizName(d, dd)}</div>
       ${navLinksHtml ? `<nav>${navLinksHtml}</nav>` : ""}
     </div></header>`;
-  const footer = `<div class="lx-footer">© ${new Date().getFullYear()} ${bizName(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
+  const footer = `<div class="lx-footer">${copyrightLineHtml(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
   const iris = `<div class="lx-iris" aria-hidden="true"></div>`;
   const parallaxScript = `<script>
     (function () {
@@ -3001,7 +3010,7 @@ function renderPlaygroundSite(d, page) {
       <div class="biz">${bizName(d, dd)}</div>
       ${navLinksHtml ? `<nav>${navLinksHtml}</nav>` : ""}
     </div></header>`;
-  const footer = `<div class="pg-footer">© ${new Date().getFullYear()} ${bizName(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
+  const footer = `<div class="pg-footer">${copyrightLineHtml(d, dd)}</div>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
 
   let main;
   if (page === "about") {

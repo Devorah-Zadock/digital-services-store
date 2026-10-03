@@ -320,14 +320,12 @@
       <summary class="builder-section-head">פרטי העסק</summary>
       <div class="builder-section-body">
         <div class="field">
-          <label for="s-name">שם העסק</label>
-          <p class="field-hint">מוצג בתפריט הניווט ובתחתית העמוד. לעיצוב <b>הכותרת הגדולה</b> שבראש עמוד הבית — ערכו למטה את "כותרת ראשית (H1)".</p>
-          <input id="s-name" type="text" maxlength="40">
+          <label for="h-heroTitle" title="הכותרת הגדולה שמופיעה בראש האתר. השאירו ריק כדי שתהיה זהה לשם העסק.">כותרת ראשית</label>
+          <input id="h-heroTitle" type="text" placeholder="לדוגמה: מעצבים את המרחב שלכם מחדש" maxlength="60">
         </div>
         <div class="field">
-          <label for="h-heroTitle">כותרת ראשית (H1)</label>
-          <p class="field-hint">הכותרת הגדולה שמופיעה בראש האתר. השאירו ריק כדי שתהיה זהה לשם העסק.</p>
-          <input id="h-heroTitle" type="text" placeholder="לדוגמה: מעצבים את המרחב שלכם מחדש" maxlength="60">
+          <label for="s-name" title="מוצג בתפריט הניווט ובתחתית העמוד">שם העסק</label>
+          <input id="s-name" type="text" placeholder="שם העסק" maxlength="40">
         </div>
         <div class="field">
           <div class="field-label-row">
@@ -378,6 +376,9 @@
         <div class="field">
           <label for="s-font">גופן הטקסט באתר</label>
           <select id="s-font"></select>
+        </div>
+        <div class="field">
+          <label class="page-toggle"><input type="checkbox" id="s-hide-copyright"> הסתרת שורת "© שנה ושם העסק" מתחתית העמוד</label>
         </div>
       </div>
     </details>

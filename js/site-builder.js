@@ -371,6 +371,8 @@ function renderFormValues() {
   document.getElementById("s-video").value = d.videoUrl || "";
   const videoBgCheckbox = document.getElementById("s-video-bg");
   if (videoBgCheckbox) videoBgCheckbox.checked = d.heroVideoBg;
+  const hideCopyrightCheckbox = document.getElementById("s-hide-copyright");
+  if (hideCopyrightCheckbox) hideCopyrightCheckbox.checked = !!d.hideCopyright;
   renderPhotoPreview();
   renderGalleryPreview();
   renderServicesList();
@@ -433,28 +435,31 @@ const TEXT_STYLE_FIELDS = [
 
 function textStyleControlHtml(key) {
   return `
-    <button type="button" class="ts-toggle" data-style-toggle="${key}" title="עיצוב טקסט מותאם (גופן, צבע, גודל, יישור)">Aa</button>
-    <div class="ts-row" data-style-row="${key}" hidden>
-      <div class="ts-row-grid">
-        <select data-style-font="${key}"></select>
-        <input type="color" data-style-color="${key}" value="#000000">
-        <input type="number" data-style-size="${key}" placeholder="גודל (px)" min="8" max="140">
+    <span class="ts-wrap">
+      <button type="button" class="ts-toggle" data-style-toggle="${key}" title="עיצוב טקסט מותאם (גופן, צבע, גודל, יישור)">Aa</button>
+      <div class="ts-row" data-style-row="${key}" hidden>
+        <div class="ts-row-grid">
+          <select data-style-font="${key}"></select>
+          <input type="color" data-style-color="${key}" value="#000000">
+          <input type="number" data-style-size="${key}" placeholder="גודל (px)" min="8" max="140">
+        </div>
+        <div class="ts-align" data-style-align-group="${key}">
+          <button type="button" data-style-align="${key}" data-align-val="right">ימין</button>
+          <button type="button" data-style-align="${key}" data-align-val="center">מרכז</button>
+          <button type="button" data-style-align="${key}" data-align-val="left">שמאל</button>
+        </div>
+        <button type="button" class="ts-clear" data-style-clear="${key}">איפוס עיצוב מותאם</button>
       </div>
-      <div class="ts-align" data-style-align-group="${key}">
-        <button type="button" data-style-align="${key}" data-align-val="right">ימין</button>
-        <button type="button" data-style-align="${key}" data-align-val="center">מרכז</button>
-        <button type="button" data-style-align="${key}" data-align-val="left">שמאל</button>
-      </div>
-      <button type="button" class="ts-clear" data-style-clear="${key}">איפוס עיצוב מותאם</button>
-    </div>`;
+    </span>`;
 }
 
 /* Idempotent — safe to call again (e.g. every showWizard()) without
-   duplicating the controls it already mounted the first time. Toggle
-   button goes right after the label (both inline by default, so they sit
-   on the same line); the row itself goes right after the field's actual
-   input/textarea, so opening it never pushes the input away from its
-   own label. */
+   duplicating the controls it already mounted the first time. The whole
+   control (toggle + its popover) is one positioned ".ts-wrap" sitting
+   right after the label, on the same line as it — opening the popover
+   floats it over the field below instead of pushing that field (and
+   everything after it) down the page, which is what made the sidebar
+   feel like it never stopped growing/scrolling. */
 function mountTextStyleControls() {
   TEXT_STYLE_FIELDS.forEach(({ key, afterId }) => {
     const input = document.getElementById(afterId);
@@ -464,11 +469,10 @@ function mountTextStyleControls() {
     const label = field.querySelector("label");
     const tmp = document.createElement("div");
     tmp.innerHTML = textStyleControlHtml(key);
-    const toggleBtn = tmp.querySelector("[data-style-toggle]");
-    const row = tmp.querySelector("[data-style-row]");
-    if (label) label.insertAdjacentElement("afterend", toggleBtn);
-    else field.insertBefore(toggleBtn, input);
-    input.insertAdjacentElement("afterend", row);
+    const wrap = tmp.querySelector(".ts-wrap");
+    if (label) label.insertAdjacentElement("afterend", wrap);
+    else field.insertBefore(wrap, input);
+    const row = wrap.querySelector("[data-style-row]");
     const fontSel = row.querySelector(`[data-style-font="${key}"]`);
     fontSel.innerHTML = `<option value="">(גופן ברירת המחדל)</option>` +
       Object.keys(SITE_FONTS).map((k) => `<option value="${k}">${SITE_FONTS[k].name}</option>`).join("");
@@ -744,7 +748,13 @@ function wireTextStyleControls() {
     if (toggleBtn) {
       const key = toggleBtn.dataset.styleToggle;
       const row = root.querySelector(`[data-style-row="${key}"]`);
-      if (row) row.hidden = !row.hidden;
+      if (!row) return;
+      const opening = row.hidden;
+      // Only one popover open at a time — otherwise a second "Aa" click
+      // without closing the first leaves two floating panels stacked on
+      // screen, right back to the clutter this redesign is meant to fix.
+      closeAllTextStylePopovers(root);
+      row.hidden = !opening;
       return;
     }
     const alignBtn = e.target.closest("[data-style-align]");
@@ -775,6 +785,21 @@ function wireTextStyleControls() {
     }
     if (e.target.matches("[data-style-size]")) commitTextStyle(e.target.dataset.styleSize);
   });
+
+  // A floating popover left open after clicking elsewhere would just be a
+  // different kind of clutter — close it the moment the user's attention
+  // visibly moves away, same as any other popover/menu pattern.
+  document.addEventListener("click", (e) => {
+    if (e.target.closest(".ts-wrap")) return;
+    closeAllTextStylePopovers(root);
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeAllTextStylePopovers(root);
+  });
+}
+
+function closeAllTextStylePopovers(root) {
+  root.querySelectorAll("[data-style-row]").forEach((row) => { row.hidden = true; });
 }
 
 function renderPhotoPreview() {
@@ -1358,6 +1383,18 @@ function wireForm() {
     videoBgCheckbox.addEventListener("change", (e) => {
       siteState.data.heroVideoBg = e.target.checked;
       commitSectionPatch("heading-heroTitle");
+    });
+  }
+  const hideCopyrightCheckbox = document.getElementById("s-hide-copyright");
+  if (hideCopyrightCheckbox) {
+    hideCopyrightCheckbox.addEventListener("change", (e) => {
+      siteState.data.hideCopyright = e.target.checked;
+      saveSiteState();
+      // The footer isn't a data-textkey the live-patch helpers track (it's
+      // plain markup, not editable text) — a real reload is simplest and
+      // this checkbox is toggled rarely, not on every keystroke like the
+      // fields those helpers exist for.
+      renderSitePreview();
     });
   }
 
