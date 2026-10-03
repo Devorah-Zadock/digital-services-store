@@ -1019,6 +1019,14 @@ section { padding: 88px 0; }
 @media (max-width: 640px) { .tpl-search-row { flex-direction: column; } .tpl-search-wrap { max-width: 100%; } .tpl-smart-btn { width: 100%; justify-content: center; } }
 
 /* ---------- Product grid / cards ---------- */
+/* "Blank / Free Build" entry point (Phase 3) — a plain text link below
+   the paid template grid, not a card inside it: it has no preview image
+   of its own, and it isn't a styled design choice the way the other 18
+   templates are. */
+.tpl-blank-cta-row { text-align: center; margin-top: 30px; }
+.tpl-blank-cta { font-size: 14px; font-weight: 600; color: var(--grey); border-bottom: 1px dashed var(--grey); padding-bottom: 2px; }
+.tpl-blank-cta:hover { color: var(--teal-dark); border-color: var(--teal-dark); }
+
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
 .grid.grid-2 { grid-template-columns: repeat(2, 1fr); }
 .grid.grid-4 { grid-template-columns: repeat(4, 1fr); }

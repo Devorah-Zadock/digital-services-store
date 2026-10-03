@@ -3043,6 +3043,18 @@ const SITE_TEMPLATES = {
     features: ["אפקט פרלקס תלת-ממדי עם שכבות תמונה וטקסט נעות", "מעבר כניסה אלגנטי בסגנון פתיחת עדשת מצלמה", "טיפוגרפיה עדינה וגווני פנינה וזהב חיוור", "מתאים לאדריכלים, נדל\"ן יוקרתי ומוצרי פרימיום"], tags: ["effects"] },
   "playground": { label: "מגרש המשחקים הפיזיקלי", category: "יוצרים וסטודיו", categorySlug: "creative", desc: "בועות שירותים עם פיזיקה אמיתית שאפשר לגרור ולזרוק, כותרת מסך-גרדיאנט וכפתור נוזלי", thumb: "images/previews/site-playground.webp", render: renderPlaygroundSite,
     features: ["בועות שירותים עם מנוע פיזיקה אמיתי — גוררים, זורקים, מתנגשות", "כותרת ענק עם גרדיאנט צבעוני זז שמוסתר בתוך הטקסט", "כפתור ראשי עם אפקט עיוות נוזלי בריחוף", "מתאים למותגים צעירים, סדנאות והרצאות מרימות אנרגיה"], tags: ["dark", "effects"] },
+  // Blank / Free Build (Phase 3, Central Builder unification) —
+  // deliberately NOT a 19th visual design: it reuses local-service's
+  // own page shell (nav, footer, about/contact pages, siteDoc wrapper)
+  // as-is, zero duplicated rendering code. The only thing that makes a
+  // "blank" project look generic instead of local-service's own styled
+  // look is that freshSiteData() pre-selects the plain, template-
+  // agnostic Section variants (Phase 2) for it by default. Same
+  // Builder, same Site Schema, same renderer as every other template —
+  // exactly the point. Left out of the paid template catalog grid
+  // (renderTplCatalog() filters it out) since it has no preview image
+  // of its own and isn't a "design choice" the way the other 18 are.
+  "blank": { label: "דף ריק — בלי עיצוב קבוע", category: "התחלה חדשה", categorySlug: "blank", desc: "מתחילים מהתוכן בלבד, בלי לבחור עיצוב — ניתן לבחור סגנון תצוגה לכל חלק בנפרד תוך כדי העבודה.", render: renderLocalServiceSite },
 };
 
 /* "Smart search" filter checkboxes on the catalog page (sites.html) —

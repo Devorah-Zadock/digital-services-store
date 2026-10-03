@@ -113,6 +113,16 @@ const SITE_TEMPLATE_DEFAULT_COLOR = {
 function freshSiteData(template) {
   const data = JSON.parse(JSON.stringify(SITE_DEFAULT));
   data.primaryColor = SITE_TEMPLATE_DEFAULT_COLOR[template] || SITE_DEFAULT.primaryColor;
+  // "blank" (Phase 3) is local-service under the hood (see
+  // SITE_TEMPLATES.blank in site-templates.js) — this is the one place
+  // that makes a brand-new blank project actually LOOK generic instead
+  // of borrowing local-service's own styled identity: it starts on the
+  // plain, template-agnostic Section variants from Phase 2 rather than
+  // local-service's own default render. Only applies to a genuinely new
+  // project (freshSiteData is never called for one that already has
+  // saved data), so this never overrides a variant choice the user
+  // already made and saved.
+  if (template === "blank") data.blockVariants = { hero: "centered", services: "grid" };
   return data;
 }
 
@@ -216,7 +226,11 @@ function renderTplCatalog() {
   function apply() {
     tabsEl.querySelectorAll(".tab").forEach((btn) => btn.classList.toggle("active", btn.dataset.cat === active));
     const q = term.trim().toLowerCase();
-    const entries = Object.entries(SITE_TEMPLATES).filter(([, t]) =>
+    // "blank" (Phase 3) has no preview image and isn't a styled design
+    // choice like the other 18 — it gets its own separate CTA near the
+    // catalog instead (see sites.html), not a card in this paid grid.
+    const entries = Object.entries(SITE_TEMPLATES).filter(([key, t]) =>
+      key !== "blank" &&
       (active === "all" || t.categorySlug === active) &&
       (!q || t.label.toLowerCase().includes(q)) &&
       [...appliedTags].every((tag) => (t.tags || []).includes(tag)));
@@ -863,9 +877,20 @@ function renderHierarchyPanel() {
 function renderMigratedHierarchy(tree, addBlockRow, template, d) {
   const defs = SITE_BLOCK_DEFS[template];
   const active = activeBlocksForPage(d, template, "index");
+  // Same universal data-textkey selectors FIELD_SCROLL_TARGETS already
+  // uses — unlike a template-specific CSS class (.ls-hero/.pg-hero),
+  // these keep working regardless of which Section Variant (Phase 2) is
+  // currently active for that block, since every variant renders through
+  // the same heading()/t() calls. Also what makes "blank" (Phase 3,
+  // rendered via local-service's own markup) work here for free, with
+  // no template-specific case needed. catalog still needs its own
+  // SECTION_PATCH_ANCHOR_OVERRIDES anchor for "services" — its
+  // heading-services textkey actually lives on the HERO's eyebrow
+  // caption (see that table's own comment), not on the products grid.
+  const servicesAnchorOverride = (SECTION_PATCH_ANCHOR_OVERRIDES[template] || {})["heading-services"];
   const scrollTargets = {
-    hero: template === "local-service" ? ".ls-hero" : ".pg-hero",
-    services: template === "local-service" ? "#ls-hscroll" : "#pg-physics",
+    hero: '[data-textkey="heading-heroTitle"], [data-textkey="businessName"]',
+    services: servicesAnchorOverride || '[data-textkey="heading-services"]',
     about: '[data-textkey="heading-about"]',
     contact: '[data-textkey="heading-contact"]',
   };

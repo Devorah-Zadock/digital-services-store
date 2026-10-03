@@ -40,6 +40,16 @@ const SITE_BLOCK_DEFS = {
   },
 };
 
+// "blank" (Phase 3) delegates its actual rendering to local-service's
+// own renderLocalServiceSite (see site-templates.js), which always looks
+// its blocks up under the literal key "local-service" regardless of
+// siteState.template — so this alias only needs to cover the BUILDER'S
+// OWN sidebar (reorder/variant-picker UI), which looks blocks up by the
+// real siteState.template ("blank"). Same object, not a copy — editing
+// one editing the other is correct here since they really are the same
+// set of blocks.
+SITE_BLOCK_DEFS["blank"] = SITE_BLOCK_DEFS["local-service"];
+
 const SITE_MIGRATED_TEMPLATES = Object.keys(SITE_BLOCK_DEFS);
 
 function isTemplateMigrated(template) {
