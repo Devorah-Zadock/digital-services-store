@@ -319,8 +319,20 @@
           <p class="field-hint">הכותרת הגדולה שמופיעה בראש האתר. השאירו ריק כדי שתהיה זהה לשם העסק.</p>
           <input id="h-heroTitle" type="text" placeholder="לדוגמה: מעצבים את המרחב שלכם מחדש" maxlength="60">
         </div>
-        <div class="field"><label for="s-tagline">שורת תיאור קצרה</label><input id="s-tagline" type="text" maxlength="90"></div>
-        <div class="field"><label for="s-about">קצת עלינו</label><textarea id="s-about" rows="3" maxlength="500"></textarea></div>
+        <div class="field">
+          <div class="field-label-row">
+            <label for="s-tagline">שורת תיאור קצרה</label>
+            <button type="button" class="btn-mini ai-improve-btn" data-ai-field="tagline" data-ai-input="s-tagline">✨ שפר עם AI</button>
+          </div>
+          <input id="s-tagline" type="text" maxlength="90">
+        </div>
+        <div class="field">
+          <div class="field-label-row">
+            <label for="s-about">קצת עלינו</label>
+            <button type="button" class="btn-mini ai-improve-btn" data-ai-field="about" data-ai-input="s-about">✨ שפר עם AI</button>
+          </div>
+          <textarea id="s-about" rows="3" maxlength="500"></textarea>
+        </div>
       </div>
     </details>
 
@@ -534,6 +546,7 @@
 <script src="js/site-cloud-save.js?v=7"></script>
 <script src="js/site-ai-review.js?v=1"></script>
 <script src="js/site-ai-generate.js?v=1"></script>
+<script src="js/site-ai-field-edit.js?v=1"></script>
 <script src="js/main.js?v=2"></script>
 <script src="js/widgets.js?v=10"></script>
 </body>

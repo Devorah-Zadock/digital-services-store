@@ -1,12 +1,21 @@
-// Rewrites a CV field with AI — v1 covers the professional summary
-// (builder.html's "✨ שפר עם AI" button next to "תקציר מקצועי"): sends the
-// text currently in that field plus the job title for context, gets back
-// a tighter, more results-oriented version in the same language. Every
-// call is a real OpenAI request, so it shares the exact same cap
+// Rewrites a single text field with AI. Started as CV-only (builder.html's
+// "✨ שפר עם AI" button next to "תקציר מקצועי") and is now generalized
+// (architecture plan, Phase 6) to also cover a handful of site-builder
+// fields (tagline/about/heading/a service description) — but the
+// contract stays exactly the same shape either way: send the field's
+// OWN current text (plus light context), get back ONE rewritten string
+// for that SAME field, nothing else. This is what guarantees "AI Editing
+// changes only what the user asked for" by construction — there is no
+// field in the request or response for services/colors/layout/sections,
+// so there is no way for a summary rewrite to also touch anything else.
+//
+// Every call is a real OpenAI request, so it shares the exact same cap
 // machinery as ats-check — same tables (ai_usage / ai_usage_daily),
 // same customer_profiles.is_pro check, just its own `tool` slug
 // ("ai-rewrite") so it gets its own independent 3 free lifetime attempts
-// (or 50/day once Pro) rather than sharing the ATS checker's count.
+// (or 50/day once Pro) rather than sharing any other tool's count — one
+// shared cap across the CV summary AND every site field, all under the
+// same "tool" slug, same as before this generalization.
 //
 // Gated by real auth, same as admin-stats/ats-check: the caller's own
 // Supabase session token goes in Authorization, verified server-side via
@@ -36,6 +45,27 @@ function jsonResponse(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
 
+// What kind of text each supported `field` value actually is — this is
+// the whole generalization. Adding a future field (e.g. a testimonial
+// quote) is one line here, never a new endpoint or a new client-side
+// usage cap.
+const FIELD_PROMPTS: Record<string, string> = {
+  summary: "a professional CV summary, 2-4 sentences",
+  tagline: "a short, punchy one-line business tagline for a website hero section (roughly 4-12 words)",
+  about: "a business website's \"about us\" text, 2-4 sentences",
+  heading: "a short section heading for a business website (2-6 words, no ending punctuation)",
+  serviceDesc: "a short one-line description of a single service or product (well under 90 characters)",
+};
+// `mode` is independent of `field` on purpose — a small, fixed set that
+// composes with any field above rather than a separate hardcoded prompt
+// per (field, mode) pair. Defaults to "improve" so the existing CV
+// caller (which never sends `mode`) keeps working unchanged.
+const MODE_INSTRUCTIONS: Record<string, string> = {
+  improve: "Make it more professional, clear and specific than the original.",
+  shorten: "Make it noticeably SHORTER than the original while keeping its core meaning — this is the main goal, more important than adding polish.",
+  persuasive: "Make it more persuasive and compelling for a potential customer, while staying completely honest.",
+};
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method not allowed" }, 405);
@@ -53,13 +83,14 @@ Deno.serve(async (req: Request) => {
   if (!OPENAI_API_KEY) return jsonResponse({ error: "AI writing assistant isn't set up yet (OPENAI_API_KEY missing)" }, 500);
 
   try {
-    const { field, text, title, lang } = await req.json();
+    const { field, text, title, lang, mode } = await req.json();
     if (!text || !String(text).trim()) {
       return jsonResponse({ error: "missing text" }, 400);
     }
-    if (field !== "summary") {
+    if (typeof field !== "string" || !FIELD_PROMPTS[field]) {
       return jsonResponse({ error: "unsupported field" }, 400);
     }
+    const modeKey = (typeof mode === "string" && MODE_INSTRUCTIONS[mode]) ? mode : "improve";
 
     const { data: profile, error: profileErr } = await admin
       .from("customer_profiles")
@@ -94,13 +125,13 @@ Deno.serve(async (req: Request) => {
           {
             role: "system",
             content:
-              "You improve the phrasing of a professional summary in a CV/resume. Respond with ONLY a JSON object shaped exactly like: " +
-              '{"improved": "<the rewritten summary>"}. ' +
-              `Write it in ${responseLang}, as 2-4 concise sentences. Make it more results-oriented, specific and professional — but NEVER invent facts, employers, numbers, years of experience or credentials that aren't implied by the original text. If the original is very thin, improve its phrasing/flow without padding it with invented claims.`,
+              `You rewrite ${FIELD_PROMPTS[field]}. Respond with ONLY a JSON object shaped exactly like: ` +
+              '{"improved": "<the rewritten text>"}. ' +
+              `Write it in ${responseLang}. ${MODE_INSTRUCTIONS[modeKey]} NEVER invent facts, numbers, employers, years of experience, credentials, awards or claims that aren't implied by the original text or the context given — if the original is very thin, improve its phrasing/flow without padding it with invented claims. Return ONLY the rewritten text for this one field — never add new sections, labels or unrelated content.`,
           },
           {
             role: "user",
-            content: `Job title: ${title || "(not specified)"}\n\nCurrent summary:\n${text}`,
+            content: `Context: ${title || "(not specified)"}\n\nCurrent text:\n${text}`,
           },
         ],
       }),
