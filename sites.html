@@ -304,6 +304,12 @@
       <div class="hier-add-block-row" id="hier-add-block-row" style="display:none;">
         <button type="button" class="btn-mini hier-add-block-btn" id="hier-add-block-btn">+ הוספת בלוק</button>
       </div>
+      <div class="site-ai-command-row" id="site-ai-command-row" style="display:none;">
+        <input type="text" id="site-ai-command-input" placeholder="✨ פקודה ל-AI, לדוגמה: הזז את השירותים לפני האודות" maxlength="300">
+        <button type="button" class="btn-mini" id="site-ai-command-btn">שליחה</button>
+        <button type="button" class="btn-mini" id="site-ai-command-undo" style="display:none;">↶ בטל שינוי אחרון</button>
+        <div class="site-ai-command-note" id="site-ai-command-note"></div>
+      </div>
     </div>
 
     <details class="builder-section" open>
@@ -547,6 +553,7 @@
 <script src="js/site-ai-review.js?v=1"></script>
 <script src="js/site-ai-generate.js?v=1"></script>
 <script src="js/site-ai-field-edit.js?v=1"></script>
+<script src="js/site-ai-command.js?v=1"></script>
 <script src="js/main.js?v=2"></script>
 <script src="js/widgets.js?v=10"></script>
 </body>

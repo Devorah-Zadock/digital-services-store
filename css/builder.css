@@ -137,6 +137,11 @@
 .hier-group-toggle { transition: transform .15s ease; display: inline-block; }
 .hier-group-toggle.open { transform: rotate(90deg); }
 .hier-add-block-row { margin-top: 10px; padding-top: 10px; border-top: 1px solid #EEF1EF; }
+/* Site-level AI commands + Undo (Phase 7) */
+.site-ai-command-row { margin-top: 10px; padding-top: 10px; border-top: 1px solid #EEF1EF; display: flex; flex-wrap: wrap; gap: 6px; }
+.site-ai-command-row input { flex: 1 1 100%; min-width: 0; padding: 8px 10px; border-radius: 8px; border: 1px solid #DADFDD; font-family: inherit; font-size: 13px; }
+.site-ai-command-note { flex: 1 1 100%; font-size: 12.5px; color: var(--grey); line-height: 1.6; }
+.site-ai-command-note button { margin-inline-end: 6px; margin-top: 6px; }
 .hier-add-block-btn { width: 100%; text-align: center; }
 
 /* Compact pill row for the plain-navigation hierarchy (no reorder/add/

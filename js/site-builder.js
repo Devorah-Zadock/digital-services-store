@@ -860,6 +860,12 @@ function renderHierarchyPanel() {
   const d = ensurePagesShape(siteState.data);
   const migrated = typeof isTemplateMigrated === "function" && isTemplateMigrated(template) && previewPage === "index";
   const addBlockRow = document.getElementById("hier-add-block-row");
+  // Site-level AI commands (Phase 7, js/site-ai-command.js) only make
+  // sense where a real Section/block system exists to operate on —
+  // shown/hidden in step with the exact same "migrated" check the rest
+  // of this function already uses, not a separate one.
+  const aiCommandRow = document.getElementById("site-ai-command-row");
+  if (aiCommandRow) aiCommandRow.style.display = migrated ? "" : "none";
   // Pure-navigation rows (no reorder/add/remove controls, just "jump to
   // this section") don't need full-width cards — a wrapping row of small
   // pills says the same thing in a fraction of the height. The migrated,
