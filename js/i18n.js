@@ -13,7 +13,7 @@
    do the layout mirroring for free. */
 const I18N = {
   he: {
-    nav_home: "בית", nav_sites: "אתרים", nav_quotes: "הצעות מחיר", nav_cv: "קורות חיים",
+    nav_home: "בית", nav_sites: "בניית אתר", nav_quotes: "הצעות מחיר", nav_cv: "קורות חיים",
     nav_decks: "מצגות", nav_xlsx: "גליונות", nav_about: "אודות", nav_contact: "צור קשר",
     nav_login: "כניסה", nav_invoices: "חשבוניות",
 
@@ -325,7 +325,7 @@ const I18N = {
     crmp_processing: "פותחים עבורך את גרסת ההדגמה...", crmp_processing_sub: "רגע אחד, כמעט סיימנו — לא בוצע כאן שום חיוב.",
   },
   en: {
-    nav_home: "Home", nav_sites: "Sites", nav_quotes: "Quotes", nav_cv: "Resumes",
+    nav_home: "Home", nav_sites: "Build a Site", nav_quotes: "Quotes", nav_cv: "Resumes",
     nav_decks: "Decks", nav_xlsx: "Spreadsheets", nav_about: "About", nav_contact: "Contact",
     nav_login: "Sign in", nav_invoices: "Invoices",
 
