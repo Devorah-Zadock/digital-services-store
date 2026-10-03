@@ -179,40 +179,44 @@
   <div class="sites-hero-blob" aria-hidden="true"></div>
   <div class="container builder-top-row">
     <div>
-      <span class="sites-hero-eyebrow">✨ 18 עיצובים מוכנים, כל אחד אתר אמיתי</span>
-      <h1 class="sites-hero-h1">אתר התדמית שלך מוכן בלחיצת כפתור</h1>
-      <p class="sites-hero-sub">בוחרים תבנית, מזינים את פרטי העסק, והאתר שלכם באוויר תוך שניות. ללא התחייבות, תשלום חד-פעמי וללא דמי מנוי חודשיים. <a href="guide-business-website.html" target="_blank" rel="noopener">מדריך קצר: מה חייב להיות באתר העסקי שלך? ›</a></p>
+      <span class="sites-hero-eyebrow">✨ אתר עסקי אמיתי, מותאם לעסק שלכם</span>
+      <h1 class="sites-hero-h1">מספרים לנו על העסק, והאתר שלכם מוכן</h1>
+      <p class="sites-hero-sub">כמה שאלות קצרות וחכמות — והאתר שלכם כבר מוכן לעריכה, עם עיצוב, טקסטים ורשימת שירותים שמתאימים בדיוק אליכם. ללא התחייבות, תשלום חד-פעמי וללא דמי מנוי חודשיים. <a href="guide-business-website.html" target="_blank" rel="noopener">מדריך קצר: מה חייב להיות באתר העסקי שלך? ›</a></p>
     </div>
   </div>
 </section>
 
 <section class="no-print" id="tpl-catalog-section">
   <div class="container">
-    <div class="tpl-search-row">
-      <div class="tpl-search-wrap">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-        <input type="search" id="site-tpl-search" class="tpl-search" placeholder="חיפוש עיצוב לפי שם...">
+    <div class="site-primary-cta-row">
+      <button type="button" class="btn btn-teal site-primary-cta-btn" id="site-ai-generate-btn">🚀 בניית אתר</button>
+      <button type="button" class="tpl-manual-toggle" id="tpl-manual-toggle" aria-expanded="false">בחירה ידנית של עיצוב מתוך קטלוג ⌄</button>
+    </div>
+
+    <div id="tpl-manual-section" style="display:none;">
+      <div class="tpl-search-row">
+        <div class="tpl-search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="search" id="site-tpl-search" class="tpl-search" placeholder="חיפוש עיצוב לפי שם...">
+        </div>
+        <button type="button" id="site-smart-filter-btn" class="tpl-smart-btn" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+          חיפוש חכם
+          <span class="tpl-smart-count" id="site-smart-count" style="display:none;"></span>
+        </button>
       </div>
-      <button type="button" id="site-smart-filter-btn" class="tpl-smart-btn" aria-expanded="false">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
-        חיפוש חכם
-        <span class="tpl-smart-count" id="site-smart-count" style="display:none;"></span>
-      </button>
-    </div>
-    <div class="tpl-smart-panel" id="site-smart-panel" style="display:none;">
-      <div class="tpl-smart-checks" id="site-smart-checks"></div>
-      <div class="tpl-smart-actions">
-        <button type="button" class="tpl-smart-clear" id="site-smart-clear">איפוס</button>
-        <button type="button" class="btn btn-teal tpl-smart-apply" id="site-smart-apply">החלה</button>
+      <div class="tpl-smart-panel" id="site-smart-panel" style="display:none;">
+        <div class="tpl-smart-checks" id="site-smart-checks"></div>
+        <div class="tpl-smart-actions">
+          <button type="button" class="tpl-smart-clear" id="site-smart-clear">איפוס</button>
+          <button type="button" class="btn btn-teal tpl-smart-apply" id="site-smart-apply">החלה</button>
+        </div>
       </div>
-    </div>
-    <div class="ai-generate-cta-row">
-      <button type="button" class="btn btn-teal ai-generate-cta-btn" id="site-ai-generate-btn">✨ בניית אתר עם AI מתיאור קצר של העסק</button>
-    </div>
-    <div class="tabs" id="site-tpl-tabs"></div>
-    <div class="grid" id="site-tpl-grid"></div>
-    <div class="tpl-blank-cta-row">
-      <a href="sites.html?template=blank" class="tpl-blank-cta">○ להתחיל מדף ריק, בלי לבחור עיצוב קבוע</a>
+      <div class="tabs" id="site-tpl-tabs"></div>
+      <div class="grid" id="site-tpl-grid"></div>
+      <div class="tpl-blank-cta-row">
+        <a href="sites.html?template=blank" class="tpl-blank-cta">○ להתחיל מדף ריק, בלי לבחור עיצוב קבוע</a>
+      </div>
     </div>
   </div>
 </section>
@@ -222,8 +226,8 @@
   <div class="container">
     <div class="section-head">
       <div class="kicker">איך זה עובד</div>
-      <h2>מהבחירה לאתר חי, בלי לדעת לתכנת</h2>
-      <p>בוחרים עיצוב, ממלאים את פרטי העסק ורואים תצוגה חיה שמתעדכנת תוך כדי הקלדה — בלי צורך בידע טכני ובלי לחכות למעצב.</p>
+      <h2>מכמה שאלות קצרות לאתר חי, בלי לדעת לתכנת</h2>
+      <p>עונים על כמה שאלות קצרות על העסק, והאתר כבר מוכן לעריכה — עם עיצוב, טקסטים ורשימת שירותים שמתאימים אליכם. משם, כל שינוי בטקסט, בצבע או בתמונה מופיע מיד בתצוגה חיה — בלי צורך בידע טכני ובלי לחכות למעצב.</p>
     </div>
     <div class="features">
       <div class="feature">
@@ -559,7 +563,8 @@
 <script src="js/domain-guide.js?v=3"></script>
 <script src="js/site-cloud-save.js?v=7"></script>
 <script src="js/site-ai-review.js?v=1"></script>
-<script src="js/site-ai-generate.js?v=1"></script>
+<script src="js/site-wizard-questions.js?v=1"></script>
+<script src="js/site-ai-generate.js?v=2"></script>
 <script src="js/site-ai-field-edit.js?v=1"></script>
 <script src="js/site-ai-command.js?v=1"></script>
 <script src="js/main.js?v=2"></script>

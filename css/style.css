@@ -1027,11 +1027,17 @@ section { padding: 88px 0; }
 .tpl-blank-cta { font-size: 14px; font-weight: 600; color: var(--grey); border-bottom: 1px dashed var(--grey); padding-bottom: 2px; }
 .tpl-blank-cta:hover { color: var(--teal-dark); border-color: var(--teal-dark); }
 
-/* AI Website Generator entry point (Phase 5) — sits ABOVE the template
-   grid, more prominent than the plain-text blank-site link below it:
-   this is the flagship new way to start, not a secondary option. */
-.ai-generate-cta-row { text-align: center; margin-bottom: 30px; }
-.ai-generate-cta-btn { font-size: 15px; padding: 14px 28px; }
+/* The primary "בניית אתר" entry point (architecture plan: the Wizard is
+   the default flow, not choosing a template first) — big and central.
+   The manual template picker is a secondary, explicitly-revealed toggle
+   right under it, never removed, just not the first thing anyone sees. */
+.site-primary-cta-row { text-align: center; margin: 10px 0 36px; }
+.site-primary-cta-btn { font-size: 16px; padding: 16px 44px; }
+.tpl-manual-toggle {
+  display: block; margin: 16px auto 0; background: none; border: none; cursor: pointer;
+  font-size: 13.5px; font-weight: 600; color: var(--grey);
+}
+.tpl-manual-toggle:hover { color: var(--teal-dark); }
 
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
 .grid.grid-2 { grid-template-columns: repeat(2, 1fr); }
@@ -1534,6 +1540,40 @@ body.cookie-notice-active .fab { display: none; }
   transition: background .15s ease, color .15s ease;
 }
 .my-content-domain-btn:hover { background: #F5F5F5; color: #1A1A1A; }
+
+/* ---------- Smart onboarding Wizard (sites.html) ---------- */
+.wizard-modal { max-width: 560px; }
+.wizard-progress { font-size: 12px; color: var(--grey); margin-bottom: 6px; }
+.wizard-progress-bar { height: 4px; border-radius: 2px; background: var(--ice); overflow: hidden; margin-bottom: 20px; }
+.wizard-progress-fill { height: 100%; background: var(--teal); border-radius: 2px; transition: width .25s ease; }
+.wizard-question { font-size: 19px; color: var(--dark); margin: 0 0 16px; }
+.wizard-search {
+  width: 100%; box-sizing: border-box; border: 1.5px solid #E2E7E5; border-radius: 10px;
+  padding: 10px 14px; font-family: inherit; font-size: 13.5px; margin-bottom: 14px;
+}
+.wizard-search:focus { outline: none; border-color: var(--teal); }
+.wizard-chip-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.wizard-chip {
+  border: 1.5px solid #E2E7E5; background: var(--white); color: var(--dark); border-radius: 20px;
+  padding: 9px 18px; font-size: 13.5px; font-weight: 600; cursor: pointer; transition: border-color .12s ease, background .12s ease;
+}
+.wizard-chip:hover { border-color: var(--teal-light, #B7DED6); background: var(--ice); }
+.wizard-chip.selected { border-color: var(--teal); background: var(--teal); color: #fff; }
+.wizard-chip-other { border-style: dashed; }
+.wizard-other-input {
+  width: 100%; box-sizing: border-box; border: 1.5px solid #E2E7E5; border-radius: 10px;
+  padding: 10px 14px; font-family: inherit; font-size: 13.5px; margin-top: 4px; margin-bottom: 10px;
+}
+.wizard-other-input:focus { outline: none; border-color: var(--teal); }
+#wizard-step-body textarea, #wizard-step-body input[type="text"]:not(.wizard-search):not(.wizard-other-input) {
+  width: 100%; box-sizing: border-box; border: 1.5px solid #E2E7E5; border-radius: 10px;
+  padding: 12px 14px; font-family: inherit; font-size: 14px; resize: vertical;
+}
+#wizard-step-body textarea:focus, #wizard-step-body input[type="text"]:focus { outline: none; border-color: var(--teal); }
+.wizard-nav-row { display: flex; align-items: center; gap: 10px; margin-top: 22px; }
+.wizard-nav-row #wizard-next { flex: 1; }
+.wizard-nav-row #wizard-back:disabled { opacity: .35; cursor: default; }
+.wizard-note { font-size: 12.5px; color: #963029; margin-top: 10px; min-height: 16px; }
 
 /* ---------- ATS checker (builder.html) ---------- */
 .ats-modal { max-width: 620px; }

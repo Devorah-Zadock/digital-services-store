@@ -309,6 +309,26 @@ function showCatalog() {
   const seo = document.getElementById("sites-seo-content");
   if (seo) seo.style.display = "";
   renderTplCatalog();
+
+  // Manual template picking (architecture plan): collapsed by default —
+  // "בניית אתר" (the Wizard) is the primary flow now, not choosing a
+  // template first. Auto-expanded only for someone who explicitly asked
+  // to browse/change template (?browse=1, e.g. "שינוי תבנית" from an
+  // existing project) — they already know they want to pick manually,
+  // no reason to make them click through to reveal it again. Called once
+  // (showCatalog's only call site is the page's own DOMContentLoaded),
+  // so this wiring never double-binds.
+  const manualSection = document.getElementById("tpl-manual-section");
+  const manualToggle = document.getElementById("tpl-manual-toggle");
+  if (manualSection && manualToggle) {
+    const forceBrowse = new URLSearchParams(location.search).get("browse") === "1";
+    if (forceBrowse) { manualSection.style.display = ""; manualToggle.setAttribute("aria-expanded", "true"); }
+    manualToggle.addEventListener("click", () => {
+      const open = manualSection.style.display === "none";
+      manualSection.style.display = open ? "" : "none";
+      manualToggle.setAttribute("aria-expanded", String(open));
+    });
+  }
 }
 
 function showWizard() {
