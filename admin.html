@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=78">
+<link rel="stylesheet" href="css/style.css?v=80">
 <style>
   .admin-gate-wrap {
     min-height: 70vh; display: flex; align-items: center; justify-content: center; padding: 40px 24px;
@@ -20,17 +20,17 @@
     background: var(--white); border: 1px solid #EAEDEC; border-radius: var(--radius);
     box-shadow: var(--shadow); padding: 36px 32px; max-width: 360px; width: 100%; text-align: center;
   }
-  .admin-gate-box h1 { font-size: 20px; color: var(--teal-dark); margin: 0 0 8px; }
+  .admin-gate-box h1 { font-size: 20px; color: var(--ink-dark); margin: 0 0 8px; }
   .admin-gate-box p { font-size: 13.5px; color: var(--grey); margin: 0 0 20px; }
   .admin-gate-spinner {
-    width: 30px; height: 30px; margin: 0 auto; border: 3px solid #DDE4E1; border-top-color: var(--teal);
+    width: 30px; height: 30px; margin: 0 auto; border: 3px solid #DDE4E1; border-top-color: var(--ink);
     border-radius: 50%; animation: admin-gate-spin .8s linear infinite;
   }
   @keyframes admin-gate-spin { to { transform: rotate(360deg); } }
 
   .admin-panel-wrap { padding: 0 0 70px; }
   .admin-hero {
-    background: linear-gradient(135deg, var(--teal-dark), var(--teal) 85%); color: #fff;
+    background: linear-gradient(135deg, var(--ink-dark), var(--ink) 85%); color: #fff;
     padding: 38px 24px; text-align: center; margin-bottom: 40px;
   }
   .admin-hero h1 { font-size: 24px; margin: 0 0 6px; }
@@ -39,12 +39,12 @@
     background: var(--white); border: 1px solid #EAEDEC; border-radius: var(--radius);
     box-shadow: var(--shadow); padding: 28px 30px; margin: 0 0 16px;
   }
-  .admin-card h2 { font-size: 17px; color: var(--teal-dark); margin: 0 0 10px; }
+  .admin-card h2 { font-size: 17px; color: var(--ink-dark); margin: 0 0 10px; }
   .admin-card p { font-size: 13.5px; color: var(--grey); line-height: 1.7; margin: 0 0 14px; }
   .admin-card ol { font-size: 13px; color: var(--grey); line-height: 1.9; padding-inline-start: 20px; margin: 0 0 16px; }
   .admin-card code { background: var(--grey-light); padding: 2px 6px; border-radius: 5px; font-size: 12px; }
   .admin-status { font-size: 12.5px; font-weight: 700; padding: 6px 14px; border-radius: 20px; margin-bottom: 14px; display: inline-block; letter-spacing: .01em; }
-  .admin-status.connected { background: #E4F2EC; color: var(--teal-dark); }
+  .admin-status.connected { background: #E4F2EC; color: var(--ink-dark); }
   .admin-status.pending { background: #FBF1DD; color: #8A6212; }
 
   /* KPI numbers and the template breakdown as real Chart.js charts —
@@ -67,15 +67,15 @@
     border-bottom: 2px solid transparent; margin-bottom: -1px;
     transition: color .15s ease, border-color .15s ease;
   }
-  .admin-toptab:hover { color: var(--teal-dark); }
-  .admin-toptab.active { color: var(--teal-dark); border-bottom-color: var(--teal); }
+  .admin-toptab:hover { color: var(--ink-dark); }
+  .admin-toptab.active { color: var(--ink-dark); border-bottom-color: var(--ink); }
 
-  .admin-subhead { font-size: 16px; font-weight: 800; color: var(--teal-dark); margin: 26px 0 8px; }
+  .admin-subhead { font-size: 16px; font-weight: 800; color: var(--ink-dark); margin: 26px 0 8px; }
   .admin-subhead:first-child { margin-top: 0; }
 
   .stats-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
   .stats-table th, .stats-table td { text-align: right; padding: 10px 10px; border-bottom: 1px solid #EEF1EF; vertical-align: middle; }
-  .stats-table th { color: var(--teal-dark); font-size: 12px; background: var(--grey-light); }
+  .stats-table th { color: var(--ink-dark); font-size: 12px; background: var(--grey-light); }
   .stats-table tbody tr:hover { background: #FAFBFA; }
   .stats-table-wrap { overflow-x: auto; border: 1px solid #EEF1EF; border-radius: 10px; }
   .stats-table-wrap .stats-table { margin-top: 0; }
@@ -83,7 +83,7 @@
   .tpl-count-cell { display: flex; align-items: center; gap: 8px; }
   .tpl-count-cell .tpl-num { flex-shrink: 0; width: 20px; text-align: center; font-weight: 700; }
   .tpl-count-cell .tpl-bar-track { flex: 1; max-width: 120px; background: var(--grey-light); border-radius: 5px; height: 8px; overflow: hidden; }
-  .tpl-count-cell .tpl-bar { height: 100%; border-radius: 5px; background: var(--teal); min-width: 3px; }
+  .tpl-count-cell .tpl-bar { height: 100%; border-radius: 5px; background: var(--ink); min-width: 3px; }
   .tpl-count-cell .tpl-note { font-size: 11px; color: var(--grey); flex-shrink: 0; white-space: nowrap; }
   #stats-err { color: #B23; font-size: 13px; min-height: 16px; }
 
@@ -96,7 +96,7 @@
   .user-row td { font-size: 13px; }
   .user-row-toggle {
     display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px;
-    border-radius: 50%; background: var(--grey-light); color: var(--teal-dark); font-size: 10px;
+    border-radius: 50%; background: var(--grey-light); color: var(--ink-dark); font-size: 10px;
     transition: transform .18s ease; flex-shrink: 0;
   }
   .user-row.open .user-row-toggle { transform: rotate(90deg); background: var(--ice); }
@@ -105,7 +105,7 @@
   .user-detail-row td { padding: 0; border-bottom: 1px solid #EEF1EF; }
   .user-detail-panel { background: var(--ice); padding: 16px 20px; display: grid; gap: 14px; grid-template-columns: 1fr 1fr; }
   .user-detail-panel .user-detail-group-wide { grid-column: 1 / -1; }
-  .user-detail-group h4 { font-size: 12px; color: var(--teal-dark); margin: 0 0 8px; font-weight: 700; }
+  .user-detail-group h4 { font-size: 12px; color: var(--ink-dark); margin: 0 0 8px; font-weight: 700; }
   .usage-log-list { list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; }
   .usage-log-list li {
     display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; color: var(--dark);

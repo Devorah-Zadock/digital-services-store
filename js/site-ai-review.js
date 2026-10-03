@@ -150,7 +150,7 @@ function siteAiRenderActions(actions) {
 async function siteAiRunReview() {
   const body = document.querySelector("#site-ai-review-overlay .ats-modal-body");
   if (!body) return;
-  body.innerHTML = `<div class="ats-error" id="site-ai-loading" style="background:var(--ice); color:var(--teal-dark);">ה-AI עובר על האתר שלכם…</div>`;
+  body.innerHTML = `<div class="ats-error" id="site-ai-loading" style="background:var(--ice); color:var(--ink-dark);">ה-AI עובר על האתר שלכם…</div>`;
 
   // Best-effort: if the user is signed in, save first so the review
   // reflects whatever's actually on screen right now, not the last

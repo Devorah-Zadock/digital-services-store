@@ -1515,7 +1515,7 @@ function renderPublishClaimedScreen(url, selfHosted, slug) {
   const note = document.getElementById("publish-note");
   const offerRename = selfHosted && slug && AUTO_SLUG_PATTERN.test(slug);
   note.innerHTML = `
-    <div style="margin-bottom:4px; font-weight:700; color:var(--teal-dark);">האתר חי ושייך לכם!</div>
+    <div style="margin-bottom:4px; font-weight:700; color:var(--ink-dark);">האתר חי ושייך לכם!</div>
     <div class="publish-url-box">
       <span id="publish-url-text">${url}</span>
       <button type="button" id="publish-copy-btn" class="btn-mini publish-copy-btn">העתקת קישור</button>

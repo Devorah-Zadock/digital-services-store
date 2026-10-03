@@ -180,7 +180,7 @@ async function siteWizardSubmit() {
   const body = document.querySelector("#site-ai-generate-overlay .ats-modal-body");
   const overlay = document.getElementById("site-ai-generate-overlay");
   if (!body || !overlay) return;
-  body.innerHTML = `<div class="ats-error" style="background:var(--ice); color:var(--teal-dark);">בונים לכם הצעה ראשונית לאתר… זה יכול לקחת כמה שניות.</div>`;
+  body.innerHTML = `<div class="ats-error" style="background:var(--ice); color:var(--ink-dark);">בונים לכם הצעה ראשונית לאתר… זה יכול לקחת כמה שניות.</div>`;
 
   const a = siteWizardAnswers;
   const typeQuestion = SITE_WIZARD_QUESTIONS.find((q) => q.id === "businessType");

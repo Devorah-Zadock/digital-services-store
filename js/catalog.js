@@ -113,7 +113,7 @@ function initProductsPage() {
       if (type === "cv") {
         const guideLink = document.createElement("a");
         guideLink.href = "guide-cv-tips.html";
-        guideLink.style.color = "var(--teal)";
+        guideLink.style.color = "var(--ink)";
         guideLink.style.fontWeight = "600";
         guideLink.textContent = isEn ? "5 tips for a resume that gets hired" : "5 טיפים לקורות חיים שמתקבלים";
         heroLeadEl.appendChild(guideLink);
@@ -306,7 +306,7 @@ function initProductPage() {
             <a href="preview.html?slug=${p.slug}" class="btn btn-outline-dark">${t.viewFull}</a>
             <button type="button" id="download-file-btn" class="btn btn-gold">${t.downloadFile}</button>
           </div>
-          <div class="note-box">${t.downloadNote(`<a href="contact.html" style="color:var(--teal); font-weight:600;">${t.contactUs}</a>`)}</div>
+          <div class="note-box">${t.downloadNote(`<a href="contact.html" style="color:var(--ink); font-weight:600;">${t.contactUs}</a>`)}</div>
           ` : `
           <a href="builder.html?template=${p.slug}" class="btn btn-gold">${t.editDownload}</a>
           <div class="note-box">${t.editNote}</div>

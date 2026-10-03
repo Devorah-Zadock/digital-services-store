@@ -53,7 +53,7 @@ function renderCountTable(subhead, headerLabel, counts, labelFn, emptyMsg) {
 
 /* Real Chart.js chart instead of hand-drawn bars — an actual axis,
    gridlines and legend, so this reads as a real chart rather than styled
-   divs. Colors mirror the site's own --teal/--gold/--cat-* CSS tokens
+   divs. Colors mirror the site's own --ink/--primary-dark/--cat-* CSS tokens
    (Chart.js can't read CSS custom properties from a canvas context, so
    they're duplicated here as plain hex — keep them in sync by hand if
    the tokens in css/style.css ever change). */

@@ -39,17 +39,17 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=78">
+<link rel="stylesheet" href="css/style.css?v=80">
 <style>
   .crm-mini-board {
     display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
     background: var(--white); border-radius: 10px; padding: 16px; width: 100%;
   }
   .crm-mini-col { background: var(--grey-light); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 8px; }
-  .crm-mini-col-label { font-size: 10px; font-weight: 800; color: var(--teal-dark); padding: 2px 4px; }
+  .crm-mini-col-label { font-size: 10px; font-weight: 800; color: var(--ink-dark); padding: 2px 4px; }
   .crm-mini-card { background: var(--white); border-radius: 6px; padding: 8px 9px; box-shadow: 0 3px 8px rgba(0,0,0,.06); }
   .crm-mini-card b { display: block; font-size: 11px; color: var(--dark); margin-bottom: 3px; }
-  .crm-mini-card span { font-size: 10px; color: var(--teal); font-weight: 700; }
+  .crm-mini-card span { font-size: 10px; color: var(--ink); font-weight: 700; }
   .crm-payment-overlay {
     display: none; position: fixed; inset: 0; z-index: 300; background: rgba(15,30,26,.55);
     align-items: center; justify-content: center; padding: 20px;
@@ -59,7 +59,7 @@
     max-width: 360px; width: 100%; box-shadow: var(--shadow-lg);
   }
   .crm-payment-spinner {
-    width: 44px; height: 44px; border-radius: 50%; border: 4px solid var(--ice); border-top-color: var(--teal);
+    width: 44px; height: 44px; border-radius: 50%; border: 4px solid var(--ice); border-top-color: var(--ink);
     margin: 0 auto 18px; animation: crmSpin .8s linear infinite;
   }
   @keyframes crmSpin { to { transform: rotate(360deg); } }

@@ -3,13 +3,13 @@
   display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
   padding: 20px 0;
 }
-.crm-header-bar h1 { font-size: 26px; margin: 0; color: var(--teal-dark); }
+.crm-header-bar h1 { font-size: 26px; margin: 0; color: var(--ink-dark); }
 .crm-summary {
   display: flex; align-items: center; gap: 10px; background: var(--white);
   border: 1px solid #E2E7E4; border-radius: 30px; padding: 10px 20px; box-shadow: var(--shadow);
 }
 .crm-summary-label { font-size: 13px; color: var(--grey); font-weight: 600; }
-.crm-summary-total { font-size: 20px; font-weight: 800; color: var(--teal-dark); }
+.crm-summary-total { font-size: 20px; font-weight: 800; color: var(--ink-dark); }
 
 .crm-board {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px;
@@ -23,21 +23,21 @@
   display: flex; flex-direction: column; gap: 10px; min-height: 200px;
 }
 .crm-col-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.crm-col-head h3 { font-size: 14.5px; margin: 0; color: var(--teal-dark); }
+.crm-col-head h3 { font-size: 14.5px; margin: 0; color: var(--ink-dark); }
 .crm-col-count {
   background: var(--white); color: var(--grey); font-size: 12px; font-weight: 700;
   border-radius: 20px; padding: 2px 9px; flex: none;
 }
-.crm-col-total { font-size: 13px; font-weight: 700; color: var(--teal); margin-top: -6px; }
+.crm-col-total { font-size: 13px; font-weight: 700; color: var(--ink); margin-top: -6px; }
 .crm-col-body { display: flex; flex-direction: column; gap: 10px; min-height: 60px; border-radius: 10px; transition: background .15s ease; }
-.crm-col-body.drag-over { background: rgba(31,92,78,.08); outline: 2px dashed var(--teal-light); }
+.crm-col-body.drag-over { background: rgba(31,92,78,.08); outline: 2px dashed var(--ink-light); }
 .crm-col-empty { font-size: 12.5px; color: var(--grey); text-align: center; padding: 14px 0; margin: 0; }
 .crm-col-add {
-  background: transparent; border: 1.5px dashed #C6D0CB; border-radius: 10px; color: var(--teal);
+  background: transparent; border: 1.5px dashed #C6D0CB; border-radius: 10px; color: var(--ink);
   font-size: 13px; font-weight: 700; padding: 9px; cursor: pointer; font-family: inherit;
   transition: border-color .15s ease, background .15s ease;
 }
-.crm-col-add:hover { background: var(--white); border-color: var(--teal-light); }
+.crm-col-add:hover { background: var(--white); border-color: var(--ink-light); }
 
 .crm-card {
   background: var(--white); border-radius: 10px; padding: 12px 14px; box-shadow: var(--shadow);
@@ -53,16 +53,16 @@
   padding: 2px 4px; border-radius: 4px; flex: none;
 }
 .crm-card-del:hover { color: #B23; background: #FBEAEA; }
-.crm-card-line { font-size: 12.5px; color: var(--teal-dark); direction: ltr; text-align: end; display: block; }
+.crm-card-line { font-size: 12.5px; color: var(--ink-dark); direction: ltr; text-align: end; display: block; }
 .crm-card-notes { font-size: 12.5px; color: var(--grey); margin: 2px 0 0; line-height: 1.5; }
 .crm-card-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
-.crm-card-amount { font-weight: 800; color: var(--teal); font-size: 13.5px; }
+.crm-card-amount { font-weight: 800; color: var(--ink); font-size: 13.5px; }
 .crm-card-moves { display: flex; gap: 4px; }
 .crm-move-btn {
   width: 24px; height: 24px; border-radius: 50%; border: 1px solid #E2E7E4; background: var(--white);
-  color: var(--teal-dark); font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: var(--ink-dark); font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;
 }
-.crm-move-btn:hover:not(:disabled) { background: var(--ice); border-color: var(--teal-light); }
+.crm-move-btn:hover:not(:disabled) { background: var(--ice); border-color: var(--ink-light); }
 .crm-move-btn:disabled { opacity: .3; cursor: not-allowed; }
 
 /* ---------- Add/edit modal ---------- */
@@ -78,7 +78,7 @@
   position: absolute; top: 16px; inset-inline-start: 16px; background: none; border: none;
   font-size: 18px; color: var(--grey); cursor: pointer;
 }
-.crm-modal-card h3 { margin: 0 0 18px; font-size: 19px; color: var(--teal-dark); }
+.crm-modal-card h3 { margin: 0 0 18px; font-size: 19px; color: var(--ink-dark); }
 .crm-modal-card label { display: block; font-size: 13px; font-weight: 700; color: var(--dark); margin: 12px 0 5px; }
 .crm-modal-card input, .crm-modal-card select, .crm-modal-card textarea {
   width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 8px; border: 1px solid #DADFDD;
