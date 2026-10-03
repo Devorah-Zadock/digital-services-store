@@ -802,6 +802,31 @@ function closeAllTextStylePopovers(root) {
   root.querySelectorAll("[data-style-row]").forEach((row) => { row.hidden = true; });
 }
 
+/* Uploads to the "site-images" Storage bucket (see supabase/sql/
+   site_images_bucket.sql) and returns its public URL — or null on
+   failure. Replaces the old FileReader.readAsDataURL() path: a base64
+   photo baked directly into the saved HTML meant every single page view
+   re-sent the whole image with zero caching of its own, and bloated
+   every row in hosted_site_pages by however many megabytes the photo
+   was. A real uploaded file, referenced by a short URL string, is just
+   as transparent to everything downstream (site-templates.js and the
+   preview code only ever put this value inside src="...", never cared
+   whether that was a data: URI or an https:// URL) — so nothing else
+   needed to change, and it's purely additive: every already-published
+   site keeps its existing base64 images exactly as they are.
+   Namespaced "<user id>/<template>/<name>.<ext>" — same convention the
+   "logos" bucket already uses (invoice-app.js/quote-app.js) — so RLS can
+   enforce one customer can never touch another's files, and so a user
+   with more than one template/project never collides between them. */
+async function uploadSiteImage(file, name) {
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+  const path = `${siteCurrentUserId}/${siteState.template}/${name}.${ext}`;
+  const { error } = await supabaseClient.storage.from("site-images").upload(path, file, { upsert: true });
+  if (error) return null;
+  const { data } = supabaseClient.storage.from("site-images").getPublicUrl(path);
+  return data.publicUrl + "?t=" + Date.now();
+}
+
 function renderPhotoPreview() {
   const el = document.getElementById("s-photo-preview");
   el.innerHTML = siteState.data.heroImage
@@ -1310,7 +1335,7 @@ function wireForm() {
     });
   });
 
-  document.getElementById("s-photo").addEventListener("change", (e) => {
+  document.getElementById("s-photo").addEventListener("change", async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     if (file.size > 6 * 1024 * 1024) {
@@ -1318,13 +1343,15 @@ function wireForm() {
       e.target.value = "";
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      siteState.data.heroImage = reader.result;
-      renderPhotoPreview();
-      commitSectionPatch("heading-heroTitle");
-    };
-    reader.readAsDataURL(file);
+    const url = await uploadSiteImage(file, "hero");
+    if (!url) {
+      alert("העלאת התמונה נכשלה, נסו שוב.");
+      e.target.value = "";
+      return;
+    }
+    siteState.data.heroImage = url;
+    renderPhotoPreview();
+    commitSectionPatch("heading-heroTitle");
   });
   document.getElementById("s-photo-remove").addEventListener("click", () => {
     siteState.data.heroImage = "";
@@ -1348,20 +1375,25 @@ function wireForm() {
       alert(`אפשר עד ${SITE_GALLERY_MAX} תמונות בגלריה — נוספו רק ${toAdd.length} מתוך ${files.length} שבחרתם.`);
     }
     let remaining = toAdd.length;
-    toAdd.forEach((file) => {
+    toAdd.forEach(async (file) => {
       if (file.size > 6 * 1024 * 1024) {
         alert(`"${file.name}" גדולה מדי — בחרו קובץ עד 6MB.`);
         remaining -= 1;
         if (remaining === 0) { renderGalleryPreview(); commitSectionPatch("heading-heroTitle"); }
         return;
       }
-      const reader = new FileReader();
-      reader.onload = () => {
-        siteState.data.heroImages.push(reader.result);
-        remaining -= 1;
-        if (remaining === 0) { renderGalleryPreview(); commitSectionPatch("heading-heroTitle"); }
-      };
-      reader.readAsDataURL(file);
+      // Each gallery photo gets its own unique name (unlike the single,
+      // stable "hero" slot) — several can be mid-upload at once, and
+      // photos get removed/re-added independently of each other.
+      const name = "gallery-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+      const url = await uploadSiteImage(file, name);
+      if (!url) {
+        alert(`העלאת "${file.name}" נכשלה, נסו שוב.`);
+      } else {
+        siteState.data.heroImages.push(url);
+      }
+      remaining -= 1;
+      if (remaining === 0) { renderGalleryPreview(); commitSectionPatch("heading-heroTitle"); }
     });
     e.target.value = "";
   });

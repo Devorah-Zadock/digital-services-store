@@ -85,11 +85,13 @@ module.exports = async function handler(req, res) {
 
   const slug = await resolveSlug(req, supabaseUrl, serviceRoleKey);
   if (!slug) {
+    res.setHeader("Cache-Control", "no-store");
     res.status(404).send("not found");
     return;
   }
   const page = resolvePageName(req);
   if (!page) {
+    res.setHeader("Cache-Control", "no-store");
     res.status(404).send("not found");
     return;
   }
@@ -100,16 +102,31 @@ module.exports = async function handler(req, res) {
     headers: { apikey: serviceRoleKey, Authorization: "Bearer " + serviceRoleKey },
   });
   if (!supabaseRes.ok) {
+    res.setHeader("Cache-Control", "no-store");
     res.status(502).send("lookup failed");
     return;
   }
   const rows = await supabaseRes.json();
   const html = rows[0] && rows[0].pages && rows[0].pages[page];
   if (!html) {
+    res.setHeader("Cache-Control", "no-store");
     res.status(404).send("not found");
     return;
   }
 
+  // Every real page view hit Supabase fresh, even for a site that never
+  // changes between visits — fine at today's traffic, not fine once any
+  // one site gets genuinely popular. Vercel's Edge Network honors
+  // s-maxage/stale-while-revalidate on a Serverless Function response the
+  // same way it would for a static file: repeat visits within 60s are
+  // served straight from the edge (zero Supabase round-trip), and for the
+  // next 10 minutes after that a stale copy is served instantly while a
+  // fresh one is fetched in the background. max-age=0 keeps the browser
+  // itself always revalidating with the edge rather than caching locally,
+  // so this is purely a server-side cost/load win, not a "your edit takes
+  // 10 minutes to show up" tradeoff for the owner looking at their own
+  // live site in their own browser.
+  res.setHeader("Cache-Control", "public, max-age=0, s-maxage=60, stale-while-revalidate=600");
   res.setHeader("Content-Type", "text/html; charset=UTF-8");
   res.status(200).send(html);
 };
