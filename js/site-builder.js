@@ -50,17 +50,22 @@ function siteDataKey(template) {
   return SITE_DATA_KEY + "_" + template;
 }
 
-// Display-only mirror of PUBLISH_LIMIT in supabase/functions/publish-
-// site/index.ts, which is what actually enforces it server-side — keep
-// the two in sync by hand if the limit ever changes.
-const SITE_PUBLISH_LIMIT = 5;
+// Self-hosted publishing (see publish-site/index.ts's own comment: "No
+// publish_count/limit here on purpose... a database upsert doesn't
+// [spend shared credits] — no limit needed is the whole point of this
+// migration") has genuinely no publish cap — unlike the old Netlify
+// path this used to mirror, which really did spend shared, limited
+// deploy credits per publish. sitePublishCount/data.publishCount are
+// never actually sent by the self-hosted response, so this used to
+// silently show a permanently-frozen "5 free publishes left" that never
+// changes — accurate by coincidence (it never decrements), but
+// describing a limit that no longer exists. Left as a no-op rather than
+// deleted outright: if a real per-site publish cap is ever reintroduced
+// for self-hosting, the #publish-remaining element is still there to
+// use.
 function renderPublishRemaining() {
   const el = document.getElementById("publish-remaining");
-  if (!el) return;
-  const left = Math.max(0, SITE_PUBLISH_LIMIT - sitePublishCount);
-  el.textContent = left > 0
-    ? `נותרו ${left} מתוך ${SITE_PUBLISH_LIMIT} עדכוני פרסום חינם לאתר זה.`
-    : `הגעתם למגבלת ${SITE_PUBLISH_LIMIT} עדכוני הפרסום החינמיים לאתר זה — אפשר עדיין להוריד את קובצי האתר (ZIP) ולהעלות אותם בעצמכם.`;
+  if (el) el.textContent = "";
 }
 
 const SITE_DEFAULT = {
@@ -193,7 +198,6 @@ function siteTplCardHtml(key, t) {
           <div class="body">
             <div class="card-meta">
               <span class="tag">${escapeHtmlS(t.category)}</span>
-              <span class="price">199 ₪</span>
             </div>
             <h3>${escapeHtmlS(t.label)}</h3>
             <p style="font-size:13px; color:var(--grey); margin:0; flex:1;">${escapeHtmlS(t.desc)}</p>
@@ -801,18 +805,16 @@ function enabledSitePages() {
 // small "נבנה ב-DeskKit" badge; a paid one doesn't. Checked straight from
 // localStorage's unlock flag (the SAME check refreshUnlockUI() already
 // uses) rather than siteIsFinalized — siteIsFinalized only turns true
-// once finalizeSiteProject() actually runs (today, only from the ZIP-
-// download click), so a user who verifies a license and goes straight to
-// "פרסום" without ever downloading a ZIP would still have
-// siteIsFinalized === false at render time even though they already
-// paid, and would wrongly see a watermark. The unlock flag is set the
-// moment a license is verified — the real-time, authoritative signal.
-// Deliberately added HERE, inside the one function every render path
-// already goes through (preview iframe, live-patch diffing, ZIP export,
-// the publish payload) — not a separate integration per call site. This
-// client-side badge is a UX-honesty measure ("what you preview is what
-// you'll get"), NOT the real security boundary: a technical user could
-// still strip it locally before publishing. The actual, non-bypassable
+// once finalizeSiteProject() actually runs, and while that now happens
+// right alongside the unlock flag (verifySiteLicense sets both within
+// the same success handler), the unlock flag is the one set first and
+// is the simpler, more direct signal to read here. Deliberately added
+// HERE, inside the one function every render path already goes through
+// (preview iframe, live-patch diffing, the publish payload) — not a
+// separate integration per call site. This client-side badge is a
+// UX-honesty measure ("what you preview is what you'll get"), NOT the
+// real security boundary: a technical user could still strip it
+// locally before publishing. The actual, non-bypassable
 // enforcement is server-side, in publish-site/index.ts, which ignores
 // whatever badge markup (or lack of one) arrives in the request and
 // re-decides for itself from the real license_redemptions check — see
@@ -1399,71 +1401,16 @@ function removeServiceItem(idx) {
   commitSectionPatch("heading-services");
 }
 
-function publishGuideText(pages) {
-  const fileList = pages.map((p) => `${p}.html`).concat("site-data.json").map((f) => `  • ${f}`).join("\n");
-  return `איך להעלות את האתר לאוויר
-==========================
-
-מה יש בתיקייה הזו:
-${fileList}
-
-שלב 1 — פרסום האתר (בחינם, תוך כמה דקות):
-1. נכנסים לכתובת: https://app.netlify.com/drop
-2. גוררים את התיקייה הזו (כולה) לתוך העמוד.
-3. מקבלים כתובת אתר מיד — אבל היא זמנית! בלי לעשות את שלב 4 האתר
-   נשאר מוגן בסיסמה ונמחק תוך שעה.
-4. לוחצים על הכפתור "Sign up for free" שמופיע בעמוד — הרשמה חינמית,
-   בלי כרטיס אשראי, לוקחת דקה — כדי "לתפוס" את האתר לצמיתות ולהסיר
-   את הסיסמה הזמנית.
-
-שלב 2 — דומיין משלכם (לא חובה):
-אפשר להמשיך להשתמש בכתובת החינמית שמקבלים מ-Netlify, או לחבר בהמשך
-דומיין שרכשתם בנפרד (למשל מ-GoDaddy או מרשם דומיינים ישראלי) — אפשרות
-"Domain settings" בתוך האתר שנוצר ב-Netlify.
-
-איך אנשים ימצאו את האתר בגוגל, לא רק מי שיש לו את הקישור?
-כתובת ה-Netlify החינמית עצמה לא "עולה" בחיפוש גוגל — היא רק נגישה
-למי שקיבל את הקישור. שני דברים עוזרים הכי הרבה:
-  • לרשום את העסק בחינם ב-Google עסקים שלי (business.google.com) —
-    זה מה שמשפיע הכי הרבה על עסק מקומי/קטן.
-  • לחבר דומיין משלכם (כ-60–150 ₪ לשנה) — נראה הרבה יותר מקצועי.
-
-רוצים לערוך שוב בעתיד (גם ממחשב אחר)?
-פשוט מתחברים לחשבון שלכם בעמוד בניית האתר — הפרטים נשמרים שם
-אוטומטית וחוזרים בדיוק כמו שהיו. site-data.json נשאר כאן רק כגיבוי
-גולמי לנתונים, למי שרוצה.
-
-שאלות? digital.dz.studio@gmail.com
-`;
-}
-
-async function downloadSiteZip() {
-  const zip = new JSZip();
-  const pages = enabledSitePages();
-  pages.forEach((page) => {
-    zip.file(`${page}.html`, currentSiteHtml(page));
-  });
-  // Lets the customer restore their exact form data later — even from a
-  // different device — by re-uploading this file to the "load saved data"
-  // input, without us needing any account system or server-side storage.
-  zip.file("site-data.json", JSON.stringify(siteState, null, 2));
-  // The Netlify Drop steps live on this page too, but the ZIP needs to
-  // stand on its own — a customer opening it weeks later, or forwarding
-  // it to whoever manages their hosting, won't necessarily come back here.
-  zip.file("how-to-publish.txt", publishGuideText(pages));
-  const blob = await zip.generateAsync({ type: "blob" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  // Plain-ASCII filename on purpose: a Hebrew business name in the
-  // `download` attribute isn't handled consistently across every
-  // browser/OS combination, so keep this generic and safe everywhere.
-  a.download = "business-website.zip";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
+// ZIP download (publishGuideText/downloadSiteZip) was removed per
+// explicit product decision: non-technical customers don't know what to
+// do with raw HTML files — it only confused and worried people, and
+// DeskKit's actual deliverable is a live link, not a file. Was already
+// a safe removal: its only two documented fallback uses (reaching the
+// Netlify publish-count limit, a Netlify outage) both live in
+// publish-site/index.ts's own unreachable old-hosting path (self-hosted
+// publishing genuinely has no limit and doesn't depend on Netlify at
+// all) — neither could actually fire anymore. If a real export need
+// ever comes up again, git history has the previous implementation.
 
 /* One click to a live URL, via the publish-site Edge Function (see
    supabase/functions/publish-site) — no ZIP, no dragging files to
@@ -1530,10 +1477,12 @@ async function publishSite() {
     if (data.reason === "host_unavailable") {
       // Netlify itself is refusing new deploys account-wide (see
       // SITE_HOSTING_PAUSED's comment) — not a per-user glitch, so "try
-      // again in a moment" would be false. The customer already paid and
-      // their site is saved; the ZIP download never touches Netlify at
-      // all, so it stays a real way to get their product right now.
-      note.innerHTML = `פרסום לאוויר זמנית לא זמין אצלנו בגלל עומס אצל ספק האחסון — זה לא קשור לרכישה שלכם, והיא בתוקף. האתר שלכם מוכן ושמור: אפשר להוריד את הקבצים עכשיו עם "הורדת קובצי האתר (ZIP)" למטה, ולנסות לפרסם שוב מאוחר יותר מאותו מסך. תקועים? <a href="mailto:digital.dz.studio@gmail.com?subject=${encodeURIComponent("פרסום נכשל — בניית אתר")}" style="color:inherit; text-decoration:underline;">כתבו לנו</a>.`;
+      // again in a moment" would be false. Only reachable from the old,
+      // now-unreachable Netlify fallback path in publish-site/index.ts —
+      // self-hosted publishing doesn't depend on Netlify at all — kept
+      // as a non-broken message in case that path is ever reactivated,
+      // rather than assuming it can truly never fire.
+      note.innerHTML = `פרסום לאוויר זמנית לא זמין אצלנו בגלל עומס אצל ספק האחסון — זה לא קשור לרכישה שלכם, והיא בתוקף. האתר שלכם שמור ומוכן; אפשר לנסות לפרסם שוב בעוד כמה דקות מאותו מסך. תקועים? <a href="mailto:digital.dz.studio@gmail.com?subject=${encodeURIComponent("פרסום נכשל — בניית אתר")}" style="color:inherit; text-decoration:underline;">כתבו לנו</a>.`;
       return;
     }
     if (data.reason === "not_purchased") {
@@ -1545,9 +1494,13 @@ async function publishSite() {
       return;
     }
     if (data.reason === "limit_reached") {
+      // Same as host_unavailable above: only reachable from the
+      // unreachable old Netlify fallback path — self-hosted publishing
+      // has no such limit at all (see publish-site/index.ts's own
+      // comment). Kept as a non-broken message, not assumed dead.
       sitePublishCount = data.publishCount;
       renderPublishRemaining();
-      note.innerHTML = `הגעתם למספר המרבי של עדכוני פרסום חינמיים לאתר הזה. אפשר עדיין ללחוץ על "הורדת קובצי האתר (ZIP)" למטה ולהעלות אותם בעצמכם לכל שירות אחסון — זה לא מוגבל. רוצים להמשיך לפרסם דרכנו? <a href="mailto:digital.dz.studio@gmail.com?subject=${encodeURIComponent("בקשה להמשך פרסום — בניית אתר")}" style="color:inherit; text-decoration:underline;">כתבו לנו</a>.`;
+      note.innerHTML = `הגעתם למספר המרבי של עדכוני פרסום חינמיים לאתר הזה. רוצים להמשיך לפרסם דרכנו? <a href="mailto:digital.dz.studio@gmail.com?subject=${encodeURIComponent("בקשה להמשך פרסום — בניית אתר")}" style="color:inherit; text-decoration:underline;">כתבו לנו</a>.`;
       return;
     }
     if (!data.success) {
@@ -1826,6 +1779,21 @@ async function verifySiteLicense() {
     localStorage.setItem(currentUnlockKey(), "1");
     note.textContent = "";
     refreshUnlockUI();
+    // The preview iframe's srcdoc doesn't update itself just because the
+    // unlock flag changed — without this, the watermark badge stayed
+    // visible in preview until the next unrelated edit, contradicting
+    // "preview must show the same state the user will get on publish"
+    // (confirmed live: it really did stay stale right through this
+    // success handler). renderSitePreview() re-renders through the same
+    // currentSiteHtml() that now reads the just-updated unlock flag.
+    if (typeof renderSitePreview === "function") renderSitePreview();
+    // The actual moment of payment — this used to only happen later, from
+    // the ZIP-download button (removed; see its own comment). Marking the
+    // project "finalized" in the DB, sending the purchase receipt, and
+    // locking the template choice (applyFinalizedLockUI) all belong right
+    // here now: the real signal that a purchase just completed, not an
+    // indirect one tied to an unrelated download action.
+    if (typeof finalizeSiteProject === "function") await finalizeSiteProject();
     // "Thank you, a receipt is on its way" only makes sense the moment a
     // purchase actually just happened — every later visit to this same
     // unlocked project shows the plain "open for editing" heading instead
@@ -1961,20 +1929,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("verify-btn").addEventListener("click", verifySiteLicense);
   document.getElementById("publish-site-btn").addEventListener("click", publishSite);
-  document.getElementById("download-zip-btn").addEventListener("click", async (e) => {
-    const btn = e.currentTarget;
-    if (btn.disabled) return;
-    const originalLabel = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = "מכינים את הקבצים...";
-    try {
-      if (typeof finalizeSiteProject === "function") await finalizeSiteProject();
-      downloadSiteZip();
-    } finally {
-      btn.disabled = false;
-      btn.textContent = originalLabel;
-    }
-  });
 
   // The preview iframe's nav links can't really navigate (see
   // previewNavScript in site-templates.js — a relative href inside srcdoc
