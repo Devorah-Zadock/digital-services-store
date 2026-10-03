@@ -1,16 +1,27 @@
 /* "עזרה עם AI" on the site builder — the AI looks over the site currently
    open (business name, tagline, about text, services, which contact
    channels/photos/video are filled in) and comes back with a 1-100
-   score, what's already working, and concrete next steps. Talks to the
-   site-ai-review Edge Function, which is the only place that calls
-   OpenAI and enforces the attempt cap — same reasoning and same shared
-   ai_usage/ai_usage_daily tables as js/ats-checker.js, just a different
-   `tool` key, so nothing new had to be added to Supabase for this.
+   score, what's already working, and concrete next steps. Originally
+   talked to site-ai-review; now talks to site-ai-director (Phase 8 of
+   the architecture plan), a strict superset that returns the exact same
+   score/strengths/tips PLUS 0-3 validated, actionable structural
+   suggestions for templates with a real Section system — same reasoning
+   and same shared ai_usage/ai_usage_daily tables as js/ats-checker.js,
+   just a different `tool` key. site-ai-review itself is untouched and
+   still deployed; this file was simply pointed at the newer endpoint
+   rather than keeping two separate "analyze my site" buttons.
+
+   A suggested action is applied through js/site-ai-command.js's own
+   siteAiCommandApply() — the exact same function Phase 7's typed AI
+   commands use, Undo stack included. This file never mutates
+   siteState.data itself; it only renders the Director's read-only
+   analysis and hands any approved action to that one existing function.
 
    Self-contained and built on demand, same as ats-checker.js — reuses
    its exact modal/score/tips CSS classes (.ats-*, .domain-guide-*)
    rather than inventing near-identical ones, since the widget shape is
-   the same: a score badge plus two short lists.
+   the same: a score badge plus two short lists (plus, now, an optional
+   list of action cards).
 
    Reads siteState (the live template key + content) straight from
    site-builder.js — both are loaded as plain scripts on sites.html and
@@ -97,9 +108,43 @@ function siteAiResultHtml() {
       <div class="ats-keywords" id="site-ai-strengths"></div>
       <h3>מה כדאי לשפר</h3>
       <ul class="ats-tips" id="site-ai-tips"></ul>
+      <div id="site-ai-actions-block" style="display:none;">
+        <h3>פעולות מוצעות</h3>
+        <div id="site-ai-actions"></div>
+      </div>
     </div>
     <div class="ats-attempts" id="site-ai-attempts-note"></div>
   `;
+}
+
+/* AI Website Director (Phase 8) — the suggested actions use the exact
+   same {op, type, variant, order, explanation} shape js/site-ai-
+   command.js's siteAiCommandApply() already knows how to apply (same
+   Undo stack included), so this never builds a second apply path —
+   only its own small preview-card UI around that one shared function. */
+function siteAiActionCardHtml(action, idx) {
+  return `
+    <div class="site-ai-action-card" data-ai-action-idx="${idx}">
+      <span>${escapeHtmlSiteAi(action.explanation || "פעולה מוצעת")}</span>
+      <button type="button" class="btn-mini" data-ai-action-apply="${idx}">אישור ובצע</button>
+    </div>`;
+}
+
+function siteAiRenderActions(actions) {
+  const block = document.getElementById("site-ai-actions-block");
+  const host = document.getElementById("site-ai-actions");
+  if (!block || !host) return;
+  if (!actions || !actions.length) { block.style.display = "none"; return; }
+  block.style.display = "";
+  host.innerHTML = actions.map((a, i) => siteAiActionCardHtml(a, i)).join("");
+  host.querySelectorAll("[data-ai-action-apply]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const idx = Number(btn.dataset.aiActionApply);
+      if (typeof siteAiCommandApply === "function") siteAiCommandApply(actions[idx]);
+      const card = btn.closest(".site-ai-action-card");
+      if (card) card.remove();
+    });
+  });
 }
 
 async function siteAiRunReview() {
@@ -118,10 +163,23 @@ async function siteAiRunReview() {
     const token = sessionData.session && sessionData.session.access_token;
     if (!token) throw new Error("not signed in");
 
-    const res = await fetch(SUPABASE_URL + "/functions/v1/site-ai-review", {
+    // Structural context (Phase 8) — only present for a migrated
+    // template, same helper Phase 7's AI commands already use. Omitted
+    // entirely for the other 14 templates, which have no Section
+    // system to suggest actions against; the server already treats a
+    // missing/empty context as "never suggest structural actions".
+    const structuralCtx = (typeof siteAiCommandContext === "function" && typeof isTemplateMigrated === "function" && isTemplateMigrated(siteState.template))
+      ? siteAiCommandContext() : null;
+
+    const res = await fetch(SUPABASE_URL + "/functions/v1/site-ai-director", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + token, apikey: SUPABASE_ANON_KEY },
-      body: JSON.stringify({ summary: siteAiReviewSummary() }),
+      body: JSON.stringify({
+        summary: siteAiReviewSummary(),
+        availableTypes: structuralCtx ? structuralCtx.availableTypes : [],
+        activeTypes: structuralCtx ? structuralCtx.activeTypes : [],
+        variantOptions: structuralCtx ? structuralCtx.variantOptions : {},
+      }),
     });
     const data = await res.json();
     if (!res.ok || data.error) throw new Error(data.error || "שגיאה לא צפויה");
@@ -144,6 +202,8 @@ async function siteAiRunReview() {
 
     const tipsEl = document.getElementById("site-ai-tips");
     tipsEl.innerHTML = (data.tips || []).map((t) => `<li>${escapeHtmlSiteAi(t)}</li>`).join("");
+
+    siteAiRenderActions(data.actions);
 
     const attemptsNote = document.getElementById("site-ai-attempts-note");
     attemptsNote.textContent = data.isPro
@@ -191,7 +251,7 @@ async function openSiteAiReview() {
   }
 
   try {
-    const { data } = await supabaseClient.from("ai_usage").select("count").eq("tool", "site-ai-review").maybeSingle();
+    const { data } = await supabaseClient.from("ai_usage").select("count").eq("tool", "site-ai-director").maybeSingle();
     const used = data ? data.count : 0;
     if (used >= 3) {
       siteAiShowUpgradeCard(false);
