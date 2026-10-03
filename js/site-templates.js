@@ -87,6 +87,16 @@ function waLink(phone) {
   const digits = String(phone || "").replace(/[^\d]/g, "").replace(/^0/, "972");
   return digits ? `https://wa.me/${digits}` : "";
 }
+/* Every template fell back to d.phone as the WhatsApp number whenever
+   d.whatsapp wasn't explicitly set — fine for a business that uses the
+   same number for both, but it meant a WhatsApp button/floating action
+   button showed up on EVERY site regardless, even for an owner who has
+   no WhatsApp at all. d.noWhatsapp (opt-out, default unset/false) is
+   what #s-has-whatsapp in the builder sets — an explicit d.whatsapp
+   override still wins regardless of this flag, exactly like before. */
+function whatsAppLink(d) {
+  return waLink(d.whatsapp || (d.noWhatsapp ? "" : d.phone));
+}
 
 /* Drop-in replacement for every template's own "d.heroImage ? <img
    class=...> : ..." spot — d.heroImages (2+ photos) renders a slow
@@ -272,7 +282,7 @@ function heroVideoBgHtml(d) {
   return `<div class="site-hero-videobg"><iframe id="site-hero-videobg-frame" src="${src}" title="" tabindex="-1" aria-hidden="true" allow="autoplay; encrypted-media"></iframe>${loopScript}</div>`;
 }
 function waFabHtml(d) {
-  const href = waLink(d.whatsapp || d.phone);
+  const href = whatsAppLink(d);
   return href ? `<a class="wa-fab" href="${href}" target="_blank" rel="noopener" aria-label="וואטסאפ">💬</a>` : "";
 }
 function servicesData(d) {
@@ -334,7 +344,7 @@ function withFallback(d) {
 /* Falls back through whatever contact channel actually exists, so a CTA
    button never links to nothing. */
 function primaryCtaHref(d, page) {
-  const wa = waLink(d.whatsapp || d.phone);
+  const wa = whatsAppLink(d);
   if (wa) return { href: wa, label: "שליחת הודעה בוואטסאפ", external: true };
   if (d.email) return { href: `mailto:${d.email}`, label: "שליחת מייל", external: false };
   if (d.phone) return { href: `tel:${d.phone}`, label: "התקשרות עכשיו", external: false };
@@ -542,7 +552,7 @@ function renderLocalServiceSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#15803D");
   const dd = withFallback(d);
-  const wa = waLink(d.whatsapp || d.phone);
+  const wa = whatsAppLink(d);
   const navLinksHtml = siteNavLinks(d, page);
   const cta = primaryCtaHref(d, page);
   const embedSrc = videoEmbedSrc(d.videoUrl);
@@ -710,7 +720,7 @@ function renderFreelancerSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#DC2626");
   const dd = withFallback(d);
-  const wa = waLink(d.whatsapp || d.phone);
+  const wa = whatsAppLink(d);
   const navLinksHtml = siteNavLinks(d, page);
   const embedSrc = videoEmbedSrc(d.videoUrl);
   const css = `
@@ -840,7 +850,7 @@ function renderCatalogSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#C2410C");
   const dd = withFallback(d);
-  const wa = waLink(d.whatsapp || d.phone);
+  const wa = whatsAppLink(d);
   const navLinksHtml = siteNavLinks(d, page);
   const embedSrc = videoEmbedSrc(d.videoUrl);
   const css = `
@@ -924,7 +934,7 @@ function renderGallerySite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#BE185D");
   const dd = withFallback(d);
-  const wa = waLink(d.whatsapp || d.phone);
+  const wa = whatsAppLink(d);
   const navLinksHtml = siteNavLinks(d, page);
   const cta = primaryCtaHref(d, page);
   const embedSrc = videoEmbedSrc(d.videoUrl);
@@ -1042,7 +1052,7 @@ function renderBoldSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#BE185D");
   const dd = withFallback(d);
-  const wa = waLink(d.whatsapp || d.phone);
+  const wa = whatsAppLink(d);
   const navLinksHtml = siteNavLinks(d, page);
   const cta = primaryCtaHref(d, page);
   const embedSrc = videoEmbedSrc(d.videoUrl);
@@ -1142,7 +1152,7 @@ function renderElegantSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#B8860B");
   const dd = withFallback(d);
-  const wa = waLink(d.whatsapp || d.phone);
+  const wa = whatsAppLink(d);
   const navLinksHtml = siteNavLinks(d, page);
   const cta = primaryCtaHref(d, page);
   const embedSrc = videoEmbedSrc(d.videoUrl);
@@ -1264,7 +1274,7 @@ function renderProcessSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#15803D");
   const dd = withFallback(d);
-  const wa = waLink(d.whatsapp || d.phone);
+  const wa = whatsAppLink(d);
   const navLinksHtml = siteNavLinks(d, page);
   const cta = primaryCtaHref(d, page);
   const embedSrc = videoEmbedSrc(d.videoUrl);
@@ -1375,7 +1385,7 @@ function renderPortfolioSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#DC2626");
   const dd = withFallback(d);
-  const wa = waLink(d.whatsapp || d.phone);
+  const wa = whatsAppLink(d);
   const navLinksHtml = siteNavLinks(d, page);
   const cta = primaryCtaHref(d, page);
   const embedSrc = videoEmbedSrc(d.videoUrl);
@@ -1474,7 +1484,7 @@ function renderBoutiqueSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#C2410C");
   const dd = withFallback(d);
-  const wa = waLink(d.whatsapp || d.phone);
+  const wa = whatsAppLink(d);
   const navLinksHtml = siteNavLinks(d, page);
   const embedSrc = videoEmbedSrc(d.videoUrl);
   const css = `
@@ -1586,7 +1596,7 @@ function renderNoirSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#B8860B");
   const dd = withFallback(d);
-  const wa = waLink(d.whatsapp || d.phone);
+  const wa = whatsAppLink(d);
   const navLinksHtml = siteNavLinks(d, page);
   const cta = primaryCtaHref(d, page);
   const embedSrc = videoEmbedSrc(d.videoUrl);
@@ -1707,7 +1717,7 @@ function renderStudioSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#BE185D");
   const dd = withFallback(d);
-  const wa = waLink(d.whatsapp || d.phone);
+  const wa = whatsAppLink(d);
   const navLinksHtml = siteNavLinks(d, page);
   const embedSrc = videoEmbedSrc(d.videoUrl);
   const inPageRail = !navLinksHtml && page === "index";
@@ -1841,7 +1851,7 @@ function renderBentoSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#0E8C8C");
   const dd = withFallback(d);
-  const wa = waLink(d.whatsapp || d.phone);
+  const wa = whatsAppLink(d);
   const navLinksHtml = siteNavLinks(d, page);
   const cta = primaryCtaHref(d, page);
   const embedSrc = videoEmbedSrc(d.videoUrl);
@@ -1994,7 +2004,7 @@ function renderCinematicSite(d, page) {
   const rgb = hexToRgb(pal.primary);
   const glowRgba = `${rgb.r},${rgb.g},${rgb.b}`;
   const dd = withFallback(d);
-  const wa = waLink(d.whatsapp || d.phone);
+  const wa = whatsAppLink(d);
   const navLinksHtml = siteNavLinks(d, page);
   const cta = primaryCtaHref(d, page);
   const embedSrc = videoEmbedSrc(d.videoUrl);
@@ -2119,7 +2129,7 @@ function renderBrutalSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#FFC800");
   const dd = withFallback(d);
-  const wa = waLink(d.whatsapp || d.phone);
+  const wa = whatsAppLink(d);
   const navLinksHtml = siteNavLinks(d, page);
   const cta = primaryCtaHref(d, page);
   const embedSrc = videoEmbedSrc(d.videoUrl);
@@ -2231,7 +2241,7 @@ function renderNeonSite(d, page) {
   const rgb = hexToRgb(pal.primary);
   const glowRgba = `${rgb.r},${rgb.g},${rgb.b}`;
   const dd = withFallback(d);
-  const wa = waLink(d.whatsapp || d.phone);
+  const wa = whatsAppLink(d);
   const navLinksHtml = siteNavLinks(d, page);
   const cta = primaryCtaHref(d, page);
   const embedSrc = videoEmbedSrc(d.videoUrl);
@@ -2428,7 +2438,7 @@ function renderChaosSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#CCFF00");
   const dd = withFallback(d);
-  const wa = waLink(d.whatsapp || d.phone);
+  const wa = whatsAppLink(d);
   const navLinksHtml = siteNavLinks(d, page);
   const cta = primaryCtaHref(d, page);
   const embedSrc = videoEmbedSrc(d.videoUrl);
@@ -2589,7 +2599,7 @@ function renderLuxurySite(d, page) {
   const rgb = hexToRgb(pal.primary);
   const tintRgba = `${rgb.r},${rgb.g},${rgb.b}`;
   const dd = withFallback(d);
-  const wa = waLink(d.whatsapp || d.phone);
+  const wa = whatsAppLink(d);
   const navLinksHtml = siteNavLinks(d, page);
   const cta = primaryCtaHref(d, page);
   const embedSrc = videoEmbedSrc(d.videoUrl);
@@ -2943,7 +2953,7 @@ function renderPlaygroundSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#7C5CFF");
   const dd = withFallback(d);
-  const wa = waLink(d.whatsapp || d.phone);
+  const wa = whatsAppLink(d);
   const navLinksHtml = siteNavLinks(d, page);
   const cta = primaryCtaHref(d, page);
   const embedSrc = videoEmbedSrc(d.videoUrl);

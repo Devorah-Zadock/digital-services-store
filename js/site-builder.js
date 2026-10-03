@@ -363,6 +363,8 @@ function renderFormValues() {
   }
   if (fontSelect) fontSelect.value = d.fontFamily || "heebo";
   document.getElementById("s-phone").value = d.phone;
+  const hasWhatsappCheckbox = document.getElementById("s-has-whatsapp");
+  if (hasWhatsappCheckbox) hasWhatsappCheckbox.checked = !d.noWhatsapp;
   document.getElementById("s-whatsapp").value = d.whatsapp;
   document.getElementById("s-email").value = d.email;
   document.getElementById("s-address").value = d.address;
@@ -1287,6 +1289,18 @@ function wireForm() {
       }
     });
   });
+  const hasWhatsappCheckbox = document.getElementById("s-has-whatsapp");
+  if (hasWhatsappCheckbox) {
+    hasWhatsappCheckbox.addEventListener("change", (e) => {
+      siteState.data.noWhatsapp = !e.target.checked;
+      saveSiteState();
+      // The WhatsApp button/floating action button isn't a data-textkey
+      // any live-patch helper tracks — same reasoning as the copyright
+      // toggle: a real reload is simplest, and this isn't an every-
+      // keystroke field.
+      renderSitePreview();
+    });
+  }
   document.getElementById("s-color").addEventListener("input", (e) => {
     siteState.data.primaryColor = e.target.value;
     if (applyGlobalStylesLive()) saveSiteState();
