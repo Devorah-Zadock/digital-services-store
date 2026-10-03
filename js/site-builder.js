@@ -777,8 +777,36 @@ function enabledSitePages() {
   return pages;
 }
 
+// Freemium publish model: a project that hasn't been paid for yet gets a
+// small "נבנה ב-DeskKit" badge; a paid one doesn't. Checked straight from
+// localStorage's unlock flag (the SAME check refreshUnlockUI() already
+// uses) rather than siteIsFinalized — siteIsFinalized only turns true
+// once finalizeSiteProject() actually runs (today, only from the ZIP-
+// download click), so a user who verifies a license and goes straight to
+// "פרסום" without ever downloading a ZIP would still have
+// siteIsFinalized === false at render time even though they already
+// paid, and would wrongly see a watermark. The unlock flag is set the
+// moment a license is verified — the real-time, authoritative signal.
+// Deliberately added HERE, inside the one function every render path
+// already goes through (preview iframe, live-patch diffing, ZIP export,
+// the publish payload) — not a separate integration per call site. This
+// client-side badge is a UX-honesty measure ("what you preview is what
+// you'll get"), NOT the real security boundary: a technical user could
+// still strip it locally before publishing. The actual, non-bypassable
+// enforcement is server-side, in publish-site/index.ts, which ignores
+// whatever badge markup (or lack of one) arrives in the request and
+// re-decides for itself from the real license_redemptions check — see
+// that file's own comment. Keep DESKKIT_WATERMARK_ID in sync with that
+// file's constant.
+const DESKKIT_WATERMARK_ID = "deskkit-badge";
+function siteWatermarkHtml() {
+  return `<a id="${DESKKIT_WATERMARK_ID}" href="https://deskkit.co.il" target="_blank" rel="noopener" style="position:fixed;bottom:14px;inset-inline-start:14px;z-index:999999;background:rgba(20,20,20,.86);color:#fff;font-family:Heebo,Arial,sans-serif;font-size:12px;font-weight:600;padding:7px 14px;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,.25);text-decoration:none;">נבנה ב-DeskKit ✨</a>`;
+}
 function currentSiteHtml(page) {
-  return SITE_TEMPLATES[siteState.template].render(siteState.data, page || "index");
+  const html = SITE_TEMPLATES[siteState.template].render(siteState.data, page || "index");
+  const unlocked = typeof currentUnlockKey === "function" && localStorage.getItem(currentUnlockKey()) === "1";
+  if (unlocked) return html;
+  return html.includes("</body>") ? html.replace("</body>", siteWatermarkHtml() + "</body>") : html + siteWatermarkHtml();
 }
 
 function renderPreviewTabs() {
@@ -1685,22 +1713,29 @@ function wireSlugRenameUI() {
    unlock-done for it, on this visit and every future one. */
 let financeGateOpened = false;
 
+// Freemium publish model: publishing/downloading itself is free for
+// everyone once past "finish-gate" — unlocked only changes whether the
+// watermark-removal upsell or its "✓ removed" confirmation shows inside
+// unlock-done. Someone already unlocked (paid) skips the gate entirely
+// on return visits, same as before this change — only the "still has to
+// decide to finish editing first" behavior for a NOT-yet-unlocked user
+// is new (previously that user saw unlock-pending, a dead end without
+// paying; now finish-btn leads straight to a real, working unlock-done).
 function refreshUnlockUI() {
   const unlocked = localStorage.getItem(currentUnlockKey()) === "1";
   const gate = document.getElementById("finish-gate");
-  const pending = document.getElementById("unlock-pending");
   const done = document.getElementById("unlock-done");
-  if (unlocked) {
-    gate.style.display = "none";
-    pending.style.display = "none";
-    done.style.display = "";
-    renderPublishRemaining();
-    return;
-  }
-  done.style.display = "none";
-  gate.style.display = financeGateOpened ? "none" : "";
-  pending.style.display = financeGateOpened ? "" : "none";
-  // Inside unlock-pending: hide only the "buy a new code" block during
+  const showDone = unlocked || financeGateOpened;
+  gate.style.display = showDone ? "none" : "";
+  done.style.display = showDone ? "" : "none";
+  if (!showDone) return;
+  renderPublishRemaining();
+
+  const upsell = document.getElementById("watermark-upsell");
+  const removed = document.getElementById("watermark-removed");
+  if (upsell) upsell.style.display = unlocked ? "none" : "";
+  if (removed) removed.style.display = unlocked ? "" : "none";
+  // Inside watermark-upsell: hide only the "buy a new code" block during
   // the outage (see SITE_HOSTING_PAUSED above), never the license-key
   // redemption box below it — someone who already paid before the outage
   // started still needs to be able to enter a code they already have.

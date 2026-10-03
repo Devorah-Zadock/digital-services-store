@@ -40,6 +40,28 @@ function jsonResponse(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
 
+// Freemium watermark — the real, non-bypassable enforcement (see
+// js/site-builder.js's currentSiteHtml() for the client-side preview
+// mirror of this, which is UX-honesty only, not the security boundary).
+// Every page's HTML passes through here before it's stored in
+// hosted_site_pages, REGARDLESS of what the client sent: any badge markup
+// the client included (honest copy, or a stripped/forged one) is removed
+// first, then the server's own, authoritative one is added back only if
+// isPaid is false. A caller who edits their own request to omit the
+// badge, or to send a paid=true flag (not accepted — isPaid is computed
+// server-side from license_redemptions, never read from the request
+// body), gains nothing: this function decides on its own.
+const DESKKIT_WATERMARK_ID = "deskkit-badge";
+function stripClientWatermark(html: string): string {
+  return html.replace(new RegExp(`<a id="${DESKKIT_WATERMARK_ID}"[\\s\\S]*?<\\/a>\\s*`, "i"), "");
+}
+function applyWatermark(html: string, isPaid: boolean): string {
+  const stripped = stripClientWatermark(html);
+  if (isPaid) return stripped;
+  const badge = `<a id="${DESKKIT_WATERMARK_ID}" href="https://deskkit.co.il" target="_blank" rel="noopener" style="position:fixed;bottom:14px;inset-inline-start:14px;z-index:999999;background:rgba(20,20,20,.86);color:#fff;font-family:Heebo,Arial,sans-serif;font-size:12px;font-weight:600;padding:7px 14px;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,.25);text-decoration:none;">נבנה ב-DeskKit ✨</a>`;
+  return stripped.includes("</body>") ? stripped.replace("</body>", badge + "</body>") : stripped + badge;
+}
+
 /* siteProjectId doubles as Netlify's `session_id` — the same value goes
    into the site at creation time and into the claim link's signed
    token, which is how Netlify matches "this claim link" to "that site"
@@ -186,9 +208,11 @@ Deno.serve(async (req: Request) => {
       .limit(1)
       .maybeSingle();
     if (licenseErr) return jsonResponse({ error: licenseErr.message }, 500);
-    if (!license) {
-      return jsonResponse({ success: false, reason: "not_purchased" }, 402);
-    }
+    // Freemium publish model: a real Gumroad license still unlocks a
+    // watermark-free site, but it no longer gates publishing itself — a
+    // signed-in user can always publish for free. isPaid below is what
+    // the watermark decision (and nothing else) runs on.
+    const isPaid = !!license;
 
     // Cut over to self-hosting for everyone (see supabase/sql/
     // hosted_site_pages*.sql and api/site-preview.js) — 2026-09-25, once
@@ -220,9 +244,15 @@ Deno.serve(async (req: Request) => {
         if (claimErr) return jsonResponse({ error: claimErr.message }, 500);
       }
 
+      // Every page's HTML is re-decided here, server-side, from isPaid —
+      // never from whatever watermark markup (or lack of one) the client
+      // happened to send. See applyWatermark()'s own comment.
+      const watermarkedPages: Record<string, string> = {};
+      for (const name of pageNames) watermarkedPages[name] = applyWatermark(String(pages[name]), isPaid);
+
       const { error: upsertErr } = await admin
         .from("hosted_site_pages")
-        .upsert({ slug, site_project_id: siteProjectId, pages, updated_at: new Date().toISOString() });
+        .upsert({ slug, site_project_id: siteProjectId, pages: watermarkedPages, updated_at: new Date().toISOString() });
       if (upsertErr) return jsonResponse({ error: upsertErr.message }, 500);
 
       const selfHostedUrl = "https://" + slug + ".sites.deskkit.co.il/";
@@ -236,7 +266,7 @@ Deno.serve(async (req: Request) => {
       // because a Netlify deploy spends real, shared credits. A database
       // upsert doesn't — no limit needed is the whole point of this
       // migration, not an oversight.
-      return jsonResponse({ success: true, url: selfHostedUrl, selfHosted: true, slug });
+      return jsonResponse({ success: true, url: selfHostedUrl, selfHosted: true, slug, watermarked: !isPaid });
     }
 
     // --- Everything below is the old Netlify-hosting path. Unreachable

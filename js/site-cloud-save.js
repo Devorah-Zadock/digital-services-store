@@ -61,6 +61,15 @@ async function saveSiteNow() {
 }
 
 async function finalizeSiteProject() {
+  // Freemium publish model: unlock-done (where the ZIP-download button
+  // that calls this lives) is now reachable WITHOUT paying — so this
+  // guard is load-bearing, not defensive. Before, reaching this call
+  // site at all required localStorage's unlock flag already being "1"
+  // (unlock-done was gated behind it) — now it has to be checked
+  // explicitly, or a free user clicking "download ZIP" would mark their
+  // project "finalized" in the DB and trigger a real "thank you for
+  // your purchase" receipt email for a purchase that never happened.
+  if (typeof currentUnlockKey !== "function" || localStorage.getItem(currentUnlockKey()) !== "1") return;
   if (!siteCurrentUserId || siteIsFinalized) return;
   // Set before any await: a fast double-click fires this twice before the
   // first call's network requests resolve, so checking siteIsFinalized only
