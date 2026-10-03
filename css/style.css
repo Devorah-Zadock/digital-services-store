@@ -1027,6 +1027,12 @@ section { padding: 88px 0; }
 .tpl-blank-cta { font-size: 14px; font-weight: 600; color: var(--grey); border-bottom: 1px dashed var(--grey); padding-bottom: 2px; }
 .tpl-blank-cta:hover { color: var(--teal-dark); border-color: var(--teal-dark); }
 
+/* AI Website Generator entry point (Phase 5) — sits ABOVE the template
+   grid, more prominent than the plain-text blank-site link below it:
+   this is the flagship new way to start, not a secondary option. */
+.ai-generate-cta-row { text-align: center; margin-bottom: 30px; }
+.ai-generate-cta-btn { font-size: 15px; padding: 14px 28px; }
+
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
 .grid.grid-2 { grid-template-columns: repeat(2, 1fr); }
 .grid.grid-4 { grid-template-columns: repeat(4, 1fr); }
