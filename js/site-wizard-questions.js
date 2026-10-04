@@ -117,18 +117,56 @@ const SITE_WIZARD_QUESTIONS = [
   // --- Universal tail ---
   {
     id: "goal",
-    label: "מה המטרה המרכזית של האתר?",
+    label: "מה הכי חשוב שהאתר יעשה?",
     type: "choice",
     searchable: true,
     allowOther: true,
     optional: true,
     options: [
-      { value: "contactRequests", label: "לקבל פניות / הזמנות" },
+      { value: "contactRequests", label: "שיגרום לאנשים ליצור איתי קשר" },
       { value: "bookAppointments", label: "לאפשר קביעת תורים" },
-      { value: "lookProfessional", label: "להיראות מקצועי ואמין" },
-      { value: "showPortfolio", label: "להציג תיק עבודות" },
-      { value: "sellProducts", label: "למכור מוצרים" },
+      { value: "lookProfessional", label: "שיציג את העסק בצורה מקצועית" },
+      { value: "showPortfolio", label: "שיציג את העבודות שלי" },
+      { value: "sellProducts", label: "שימכור מוצרים" },
       { value: "explainServices", label: "להסביר מה אני מציע/ה" },
+      { value: "notSure", label: "עוד לא החלטתי" },
+    ],
+  },
+  // Rendered as visual style swatches, not text chips — see
+  // js/site-ai-generate.js's siteWizardStepBodyHtml special-case for
+  // question.id === "style". "auto" is the recommended, pre-highlighted
+  // option: the AI generator already picks a fitting Design Starting
+  // Point on its own, so this question only narrows that choice when
+  // someone has an actual preference.
+  {
+    id: "style",
+    label: "איזה סגנון מתאים לכם?",
+    type: "choice",
+    optional: true,
+    options: [
+      { value: "auto", label: "תנו ל-DeskKit לבחור" },
+      { value: "minimal", label: "מינימליסטי" },
+      { value: "luxury", label: "יוקרתי" },
+      { value: "bold", label: "נועז" },
+      { value: "warm", label: "חם" },
+      { value: "modern", label: "מודרני" },
+    ],
+  },
+  {
+    id: "sections",
+    label: "מה תרצו שיופיע באתר?",
+    type: "multiselect",
+    optional: true,
+    options: [
+      { value: "services", label: "שירותים" },
+      { value: "about", label: "אודות" },
+      { value: "testimonials", label: "המלצות" },
+      { value: "gallery", label: "גלריה" },
+      { value: "faq", label: "שאלות נפוצות" },
+      { value: "contact", label: "יצירת קשר" },
+      { value: "map", label: "מפה" },
+      { value: "whatsapp", label: "WhatsApp" },
+      { value: "hours", label: "שעות פעילות" },
     ],
   },
   {

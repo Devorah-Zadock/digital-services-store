@@ -1782,8 +1782,21 @@ window.revealGatedPage = function () {
 document.addEventListener("DOMContentLoaded", () => {
   const params = new URLSearchParams(location.search);
   const urlTemplate = params.get("template");
+  const urlSiteId = params.get("site");
   const forceBrowse = params.get("browse") === "1";
+  const isNewSite = params.get("new") === "1";
   const isFullPreview = params.get("fullpreview") === "1";
+
+  // ?new=1 (always a genuinely fresh project) and a bare visit with no
+  // template/id named at all are both handled by the new Website
+  // Creation Flow router (js/site-wizard-router.js, dkSitesRouterHandles)
+  // instead of the legacy showWizard()/showCatalog() decision just below
+  // — but NOT instead of the rest of this handler: the finish/verify/
+  // publish/full-preview wiring further down is still load-bearing for
+  // the Builder-Shell's own publish button (which hands off to the old
+  // #finish-btn), so it must always run regardless of which path decided
+  // the initial screen.
+  const dkRouterHandled = typeof dkSitesRouterHandles === "function" && dkSitesRouterHandles({ urlTemplate, urlSiteId, forceBrowse, isNewSite });
 
   const saved = loadSiteState(urlTemplate || null);
   if (saved) {
@@ -1813,13 +1826,33 @@ document.addEventListener("DOMContentLoaded", () => {
   // builder.html — only entering the wizard (an actual template chosen,
   // ready to customize) does, so the auth check sits right here rather
   // than gating the whole page.
-  const wantsWizard = (urlTemplate && SITE_TEMPLATES[urlTemplate]) || (!forceBrowse && hasSavedContent);
-  if (wantsWizard) {
+  const wantsWizard = !!urlSiteId || (urlTemplate && SITE_TEMPLATES[urlTemplate]) || (!forceBrowse && hasSavedContent);
+  if (dkRouterHandled) {
+    // js/site-wizard-router.js already decided and is showing its own
+    // screen (the intro, "האתרים שלי", or — for ?new=1 — launching the
+    // questionnaire directly); nothing further to do here.
+  } else if (wantsWizard) {
     const overlay = document.getElementById("auth-gate-overlay");
     if (overlay) overlay.style.display = "flex";
-    supabaseClient.auth.getSession().then(({ data }) => {
+    supabaseClient.auth.getSession().then(async ({ data }) => {
       if (data.session && data.session.user) {
         if (urlTemplate && SITE_TEMPLATES[urlTemplate]) siteState.template = urlTemplate;
+        // ?site=<id> names an exact project by identity, not by template —
+        // the synchronous loadSiteState() peek above has no way to know
+        // which template that project uses, so it's resolved here with a
+        // direct fetch before deciding Shell vs. the old sidebar. (A
+        // second, redundant resolution in js/site-cloud-save.js's own
+        // DOMContentLoaded handler re-confirms the same row a moment
+        // later — same dual-resolution pattern already used for
+        // ?template=, not something new to this id-based path.)
+        if (urlSiteId) {
+          const { data: row } = await supabaseClient.from("site_projects").select("*").eq("id", urlSiteId).eq("user_id", data.session.user.id).maybeSingle();
+          if (row) {
+            siteState.template = row.template;
+            siteState.data = row.data;
+            ensurePagesShape(siteState.data);
+          }
+        }
         // Builder-Shell entry point — the DEFAULT now for every migrated
         // Design Starting Point (BSHELL_SUPPORTED_TEMPLATES is literally
         // SITE_MIGRATED_TEMPLATES, all 18 — see js/builder-shell.js's own

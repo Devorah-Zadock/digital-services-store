@@ -31,6 +31,7 @@
 <link rel="stylesheet" href="css/style.css?v=81">
 <link rel="stylesheet" href="css/builder.css?v=17">
 <link rel="stylesheet" href="css/builder-shell.css?v=5">
+<link rel="stylesheet" href="css/deskkit-ui.css?v=1">
 <style>
   .services-item { border: 1px solid #EDEFEE; border-radius: 8px; padding: 12px; margin-bottom: 12px; display: grid; gap: 8px; }
   .services-item-head { display: flex; justify-content: space-between; align-items: center; }
@@ -187,11 +188,39 @@
   </div>
 </section>
 
-<section class="no-print" id="tpl-catalog-section">
+<section class="no-print" id="tpl-catalog-section" style="display:none;">
   <div class="container">
     <div class="site-primary-cta-row">
       <button type="button" class="btn btn-teal site-primary-cta-btn" id="site-ai-generate-btn">🚀 בניית אתר</button>
     </div>
+  </div>
+</section>
+
+<!-- New Website Creation Flow entry screens (js/site-wizard-router.js).
+     Exactly one of these two is shown for a normal bare sites.html
+     visit (or ?new=1): the intro for a 0-site user (or anyone not yet
+     signed in), the list for an existing user with >=1 real website.
+     Neither ever shows a template name or a template grid. -->
+<section class="no-print" id="dk-sites-intro-section" style="display:none;">
+  <div class="dk-sites-intro">
+    <h1>בואו נבנה לכם אתר.</h1>
+    <p class="lead">ענו על כמה שאלות קצרות, ו-DeskKit יבנה עבורכם נקודת התחלה מותאמת.</p>
+    <div class="dk-sites-intro-facts">
+      <span>⏱ כ-2 דקות</span>
+      <span>❓ 6 שאלות</span>
+      <span>✓ ללא צורך בידע טכני</span>
+    </div>
+    <button type="button" class="dk-btn dk-btn-primary dk-btn-lg" id="dk-sites-intro-cta">בואו נתחיל ←</button>
+  </div>
+</section>
+
+<section class="no-print" id="dk-mysites-section" style="display:none;">
+  <div class="dk-mysites-wrap">
+    <div class="dk-mysites-head">
+      <h1>האתרים שלי</h1>
+      <button type="button" class="dk-btn dk-btn-primary" id="dk-mysites-new-btn">+ צור אתר חדש</button>
+    </div>
+    <div class="dk-pcard-grid" id="dk-mysites-grid"></div>
   </div>
 </section>
 
@@ -482,7 +511,10 @@
 
 <div id="bshell-root" class="bshell no-print">
   <div class="bshell-top">
-    <span class="bshell-top-name" id="bshell-top-name"></span>
+    <span class="dk-crumb" id="bshell-breadcrumb">
+      <a href="index.html">DeskKit</a><span class="dk-crumb-sep">/</span><a href="projects.html">הפרויקטים שלי</a><span class="dk-crumb-sep">/</span><span class="dk-crumb-current" id="bshell-breadcrumb-current"></span>
+    </span>
+    <span class="bshell-top-name" id="bshell-top-name" style="display:none;"></span>
     <span class="bshell-top-status" id="bshell-top-status"></span>
     <div class="bshell-top-spacer"></div>
     <div class="bshell-device-row" id="bshell-device-row">
@@ -514,7 +546,7 @@
     <button type="button" class="bshell-top-btn" id="bshell-preview-btn">תצוגה מקדימה ⤢</button>
     <button type="button" class="bshell-top-btn" id="bshell-save-btn">שמירה</button>
     <button type="button" class="bshell-top-btn bshell-top-btn-primary" id="bshell-publish-btn">פרסום</button>
-    <a href="sites.html?browse=1" class="bshell-exit-link">יציאה</a>
+    <a href="sites.html" class="bshell-exit-link">יציאה</a>
   </div>
 
   <div class="bshell-mobile-tabs no-print" style="padding:8px 14px; background:var(--surface); border-bottom:1px solid var(--border);">
@@ -595,19 +627,23 @@
 <script src="js/color-utils.js"></script>
 <script src="js/site-templates.js?v=31"></script>
 <script src="js/site-blocks.js?v=2"></script>
-<script src="js/site-builder.js?v=54"></script>
+<script src="js/site-builder.js?v=55"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>
 <script src="js/my-panel.js?v=13"></script>
+<script src="js/header.js?v=1"></script>
+<script src="js/create-chooser.js?v=1"></script>
+<script src="js/mobile-nav.js?v=1"></script>
 <script src="js/domain-guide.js?v=3"></script>
-<script src="js/site-cloud-save.js?v=7"></script>
+<script src="js/site-cloud-save.js?v=8"></script>
 <script src="js/builder-shell.js?v=4"></script>
 <script src="js/site-ai-review.js?v=1"></script>
-<script src="js/site-wizard-questions.js?v=1"></script>
-<script src="js/site-ai-generate.js?v=2"></script>
+<script src="js/site-wizard-questions.js?v=2"></script>
+<script src="js/site-ai-generate.js?v=3"></script>
 <script src="js/site-ai-field-edit.js?v=1"></script>
 <script src="js/site-ai-command.js?v=1"></script>
+<script src="js/site-wizard-router.js?v=1"></script>
 <script src="js/main.js?v=2"></script>
 <script src="js/widgets.js?v=10"></script>
 </body>

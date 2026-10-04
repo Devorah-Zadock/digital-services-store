@@ -144,7 +144,14 @@ function applyFinalizedLockUI() {
 document.addEventListener("DOMContentLoaded", () => {
   const params = new URLSearchParams(location.search);
   const urlTemplate = params.get("template");
+  const urlSiteId = params.get("site");
   const forceBrowse = params.get("browse") === "1";
+  // "+ צור אתר חדש" / the create-chooser always sends ?new=1 — never
+  // auto-resume ANY existing project (by template or otherwise) in that
+  // case, same as forceBrowse. js/site-builder.js's own router is what
+  // decides what to show instead (the intro screen or the questionnaire
+  // modal), not this file.
+  const isNewSite = params.get("new") === "1";
 
   supabaseClient.auth.getSession().then(async ({ data }) => {
     const user = data.session && data.session.user;
@@ -172,19 +179,24 @@ document.addEventListener("DOMContentLoaded", () => {
         .order("created_at", { ascending: false });
       const allRows = rows || [];
 
-      // Explicitly asked to browse the catalog (no template picked yet) —
-      // nothing to resume, and resuming here would silently snap the page
-      // right back to the wizard the moment this async check resolves,
-      // making "שינוי תבנית" look like it does nothing.
-      if (!forceBrowse) {
-        // A template named explicitly (arriving from a catalog card or
-        // the "האתרים שלי" list) means "resume or start THAT template's
-        // own project" — never fall back to a different, unrelated one.
-        // No template in the URL means "just continue where I left off"
-        // — the most recent project of any template.
-        const row = urlTemplate
-          ? allRows.find((r) => r.template === urlTemplate)
-          : allRows[0];
+      // Explicitly asked to browse the catalog, or to start a genuinely
+      // new site (?new=1) — nothing to resume either way, and resuming
+      // here would silently snap the page right back to a DIFFERENT,
+      // already-saved project the moment this async check resolves.
+      if (!forceBrowse && !isNewSite) {
+        // ?site=<id> (the My Websites list, and every new-flow redirect
+        // after generation) names an exact project by its own identity —
+        // takes priority over ?template= so a second site using the same
+        // Design Starting Point is never confused with a different one.
+        // A bare ?template= (an old bookmark, or the internal catalog
+        // fallback) still means "resume or start THAT template's own
+        // project". No template/id in the URL means "just continue where
+        // I left off" — the most recent project of any kind.
+        const row = urlSiteId
+          ? allRows.find((r) => String(r.id) === urlSiteId) || (urlTemplate ? allRows.find((r) => r.template === urlTemplate) : allRows[0])
+          : urlTemplate
+            ? allRows.find((r) => r.template === urlTemplate)
+            : allRows[0];
 
         if (row) {
           siteProjectId = row.id;

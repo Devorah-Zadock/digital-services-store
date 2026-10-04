@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<script>
+  try {
+    if (localStorage.getItem("deskkit_lang") === "en") {
+      document.documentElement.classList.add("lang-pending");
+      setTimeout(() => document.documentElement.classList.remove("lang-pending"), 1200);
+    }
+  } catch (e) {}
+</script>
+<style>html.lang-pending body { visibility: hidden; }</style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeskKit Automate — בקרוב</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="description" content="DeskKit Automate — אוטומציות פשוטות לעסק שלכם. בקרוב.">
+<link rel="canonical" href="https://deskkit.co.il/automate.html">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=81">
+<link rel="stylesheet" href="css/deskkit-ui.css?v=1">
+</head>
+<body>
+<script>
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf("sb-") === 0 && k.indexOf("-auth-token") !== -1 && localStorage.getItem(k)) {
+        document.body.classList.add("has-sites-rail");
+        break;
+      }
+    }
+    var rw = localStorage.getItem("deskkit_rail_w");
+    if (rw) document.documentElement.style.setProperty("--rail-w", rw + "px");
+    if (localStorage.getItem("deskkit_rail_collapsed") === "1") {
+      document.documentElement.style.setProperty("--rail-w", "0px");
+      document.body.classList.add("rail-collapsed");
+    }
+  } catch (e) {}
+</script>
+
+<header class="site">
+  <nav class="nav">
+    <a href="index.html" class="brand"><span class="brand-badge"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path class="bm-doc" d="M7,4 H14 L18,8 V20 H7 Z"/><path class="bm-fold" d="M14,4 L14,8 L18,8 Z"/><path class="bm-spark" d="M15,14.3 C15.3,16 16,16.7 17.7,17 C16,17.3 15.3,18 15,19.7 C14.7,18 14,17.3 12.3,17 C14,16.7 14.7,16 15,14.3 Z"/></svg></span><span class="brand-text"><span class="brand-desk">Desk</span><span class="brand-kit">Kit</span></span></a>
+    <div class="nav-links">
+      <a href="index.html">בית</a>
+      <a href="products.html?type=cv">קורות חיים</a>
+      <a href="sites.html">בניית אתר</a>
+      <a href="quote-app.html">הצעות מחיר</a>
+      <a href="invoice-app.html">חשבוניות</a>
+      <a href="about.html">אודות</a>
+    </div>
+    <div class="nav-end-group">
+      <a href="account.html?redirect=automate.html" id="nav-login-link" class="nav-login nav-login-pending">כניסה</a>
+    </div>
+    <button class="burger" aria-label="תפריט">☰</button>
+  </nav>
+</header>
+
+<main>
+<div class="dk-automate-wrap">
+  <span class="dk-pill">✨ בקרוב</span>
+  <h1>DeskKit Automate</h1>
+  <p>מה הייתם רוצים שיקרה אוטומטית בעסק שלכם? DeskKit Automate יחבר בין הכלים שלכם לבין מה שקורה בעסק — בלי קוד.</p>
+
+  <div class="dk-automate-example">
+    לדוגמה: <b>"כשמגיע מייל עם חשבונית, תשמור אותה ותכניס את הפרטים לגליון."</b>
+  </div>
+
+  <div class="dk-automate-flow">
+    <span>הבנה</span><span class="sep">→</span><span>חיבור</span><span class="sep">→</span><span>הגדרה</span><span class="sep">→</span><span>בדיקה</span><span class="sep">→</span><span>הפעלה</span>
+  </div>
+
+  <p style="font-size:14px;">אנחנו עדיין בונים את זה. בינתיים, כל הכלים הקיימים — אתרים, קורות חיים, הצעות מחיר וחשבוניות — ממשיכים לעבוד כרגיל ב<a href="projects.html" style="color:var(--primary-dark); font-weight:700;">הפרויקטים שלי</a>.</p>
+</div>
+</main>
+
+<footer class="site">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <h4>DeskKit</h4>
+        <p style="font-size:14px; max-width:320px;">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
+      </div>
+      <div>
+        <h4>ניווט</h4>
+        <ul>
+          <li><a href="products.html?type=cv">קורות חיים</a></li>
+          <li><a href="sites.html">בניית אתר</a></li>
+          <li><a href="quote-app.html">הצעות מחיר</a></li>
+          <li><a href="invoice-app.html">חשבוניות</a></li>
+          <li><a href="about.html">אודות</a></li>
+          <li><a href="contact.html">צור קשר</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>מידע</h4>
+        <ul>
+          <li><a href="guides.html">מדריכים</a></li>
+          <li><a href="faq.html">שאלות נפוצות</a></li>
+          <li><a href="terms.html">מדיניות</a></li>
+          <li><a href="security.html">אבטחת מידע</a></li>
+          <li><a href="accessibility.html">נגישות</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>צור קשר</h4>
+        <ul>
+          <li>digital.dz.studio@gmail.com</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-identity">
+      <p class="footer-identity-tagline">DeskKit — כלים ומסמכים דיגיטליים לעסקים</p>
+      <p class="footer-identity-owner">נוצר ומופעל באופן עצמאי על ידי דבורה צדוק &middot; עוסק פטור</p>
+      <p class="footer-identity-links"><a href="contact.html">צור קשר</a> &middot; <a href="terms.html#privacy">מדיניות פרטיות</a> &middot; <a href="terms.html">תנאי שימוש</a></p>
+    </div>
+    <div class="footer-bottom">© 2026 DeskKit. כל הזכויות שמורות.</div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/nav-auth.js"></script>
+<script src="js/my-panel.js?v=13"></script>
+<script src="js/header.js?v=1"></script>
+<script src="js/create-chooser.js?v=1"></script>
+<script src="js/mobile-nav.js?v=1"></script>
+<script src="js/domain-guide.js?v=3"></script>
+<script src="js/main.js?v=2"></script>
+<script src="js/widgets.js?v=10"></script>
+<script src="js/effects.js"></script>
+<script src="js/i18n.js?v=12"></script>
+</body>
+</html>
