@@ -1905,6 +1905,49 @@ function renderBoutiqueSite(d, page) {
 }
 
 /* ---------- Template 10: dark luxury (events / boutique) ---------- */
+/* Section-renderer decomposition (Phase 7 template migration), same
+   guarantee as local-service's own: each function below returns
+   EXACTLY the HTML chunk renderNoirSite's index page already
+   inlined, unchanged. */
+function nrHeroSection(d, pal, dd, cta) {
+  return `
+      <section class="nr-hero">
+        ${d.heroVideoBg && videoBgEmbedSrc(d.videoUrl) ? heroVideoBgHtml(d) : heroMediaHtml(d, "")}
+        <div class="nr-hero-inner">
+          <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "אירוע ובוטיק"}</span>
+          <h1>${heading(d, "heroTitle", dd.businessName)}</h1>
+          <p>${taglineText(d, dd)}</p>
+          ${ctaHtml(cta, "nr-cta")}
+        </div>
+      </section>`;
+}
+function nrServicesSection(d, pal, dd) {
+  return `
+      <section class="nr-menu site-reveal"><div class="container">
+        <div class="nr-menu-head"><span class="nr-kicker">מה אנחנו מציעים</span><h2>${heading(d, "services", "השירותים שלנו")}</h2></div>
+        <div class="nr-menu-list">${dd._services.map((s) => `
+          <div class="nr-menu-row"><span class="name">${escapeHtmlS(s.name)}</span><span class="leader"></span>${s.price ? `<span class="price">${escapeHtmlS(s.price)}</span>` : ""}</div>
+          ${s.desc ? `<div class="nr-menu-desc">${escapeHtmlS(s.desc)}</div>` : ""}`).join("")}</div>
+      </div></section>`;
+}
+function nrVideoSection(embedSrc) {
+  return embedSrc ? `<div class="container"><div style="padding:0 0 50px;">${videoEmbedHtml(embedSrc)}</div></div>` : "";
+}
+function nrAboutSection(d, pal, dd) {
+  return (!d.pages || !d.pages.about) ? `<section class="nr-about site-reveal"><div class="container"><span class="nr-kicker">מי אנחנו</span><blockquote style="margin-top:16px;">${aboutText(d, dd)}</blockquote></div></section>` : "";
+}
+function nrContactSection(d, pal, dd, wa) {
+  return (!d.pages || !d.pages.contact) ? `<section class="nr-contact site-reveal"><div class="container">
+        <span class="nr-kicker">נשמח לשמוע מכם</span>
+        <h2 style="font-family:'Frank Ruhl Libre',serif; font-style:italic; font-size:28px; margin:12px 0 26px; color:#fff;">${heading(d, "contact", "יצירת קשר")}</h2>
+        ${dd._hasContact ? `
+          ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
+          ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
+          ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
+        ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת.</div>`}
+      </div></section>` : "";
+}
+
 function renderNoirSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#B8860B");
@@ -1969,6 +2012,10 @@ function renderNoirSite(d, page) {
         ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת ליצירת קשר.</div>`}
         ${wa ? `<a class="nr-cta" style="margin-top:16px;" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}
       </div></section>`;
+  } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("noir")) {
+    main = renderBlocksHtml(d, "noir", "index", {
+      pal, dd, cta, wa, videoSection: nrVideoSection(embedSrc),
+    });
   } else {
     main = `
       <section class="nr-hero">
