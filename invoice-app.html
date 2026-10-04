@@ -32,7 +32,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&family=Rubik:wght@500;600;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=81">
-<link rel="stylesheet" href="css/deskkit-ui.css?v=2">
+<link rel="stylesheet" href="css/deskkit-ui.css?v=3">
 <link rel="stylesheet" href="css/builder.css?v=18">
 <link rel="stylesheet" href="css/builder-shell.css?v=7">
 <style>
@@ -133,6 +133,20 @@
     </form>
   </div>
 </div>
+
+<!-- Free-text-first entry for a NEW document (DeskKit redesign): every
+     bare visit with no ?invoice=<id> lands here first instead of an
+     empty Builder-Shell -- js/invoice-ai-generate.js owns this screen. -->
+<section class="no-print" id="ia-intro" style="display:none;">
+  <div class="dk-form-intro">
+    <h1>מה אתם צריכים לחייב?</h1>
+    <p class="lead">תארו במשפט אחד מה מחויב, ו-DeskKit תכין עבורכם שורות טיוטה ראשוניות למסמך.</p>
+    <textarea id="ia-intro-input" class="dk-form-intro-textarea" rows="3" placeholder="לדוגמה: ייעוץ עסקי חודשי + הקמת דף נחיתה"></textarea>
+    <button type="button" class="dk-btn dk-btn-primary dk-btn-lg" id="ia-intro-cta">✨ צור טיוטה עם AI</button>
+    <div id="ia-intro-note" class="ai-limit-note"></div>
+    <button type="button" class="dk-intro-skip" id="ia-intro-skip">או התחילו מטופס ריק ←</button>
+  </div>
+</section>
 
 <!-- Document builder -->
 <div id="ia-app" style="display:none;">
@@ -320,7 +334,8 @@
 <script src="js/widgets.js?v=10"></script>
 <script src="js/usage-log.js?v=1"></script>
 <script src="js/invoice-cloud-save.js?v=1"></script>
-<script src="js/invoice-app.js?v=4"></script>
+<script src="js/invoice-app.js?v=5"></script>
+<script src="js/invoice-ai-generate.js?v=1"></script>
 <script src="js/invoice-builder-shell.js?v=3"></script>
 </body>
 </html>

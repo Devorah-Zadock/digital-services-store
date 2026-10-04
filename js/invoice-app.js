@@ -35,7 +35,7 @@ function emptyInvoiceEventState(docType) {
 }
 
 function showInvoiceSection(id) {
-  ["ia-profile", "ia-app"].forEach((s) => {
+  ["ia-profile", "ia-app", "ia-intro"].forEach((s) => {
     document.getElementById(s).style.display = s === id ? "" : "none";
   });
 }
@@ -123,6 +123,8 @@ function wireInvoiceProfileForm() {
     if (invoiceEventState) {
       renderInvoicePreviewIA();
       if (typeof invoiceBshellRenderCanvas === "function" && typeof invoiceBshellActiveFlag !== "undefined" && invoiceBshellActiveFlag) invoiceBshellRenderCanvas();
+    } else if (invoiceWantsShellAfterProfile && typeof dkShowInvoiceIntro === "function") {
+      dkShowInvoiceIntro();
     } else {
       showInvoiceBuilder();
       if (invoiceWantsShellAfterProfile && typeof invoiceBshellActivate === "function") invoiceBshellActivate();
@@ -293,9 +295,17 @@ async function routeAfterInvoiceAuth(user) {
   const { data } = await supabaseClient.from("profiles").select("*").eq("id", user.id).maybeSingle();
   if (data) {
     currentInvoiceProfile = data;
-    const loaded = iid ? await loadInvoiceById(iid, user.id) : null;
-    showInvoiceBuilder(loaded);
-    if (shellMode && typeof invoiceBshellActivate === "function") invoiceBshellActivate();
+    if (iid) {
+      const loaded = await loadInvoiceById(iid, user.id);
+      showInvoiceBuilder(loaded);
+      if (shellMode && typeof invoiceBshellActivate === "function") invoiceBshellActivate();
+    } else if (shellMode && typeof dkShowInvoiceIntro === "function") {
+      // A new document, Shell mode on (the default) — "מה אתם צריכים
+      // לחייב?" first, same pattern as quote-app.js's dkShowQuoteIntro.
+      dkShowInvoiceIntro();
+    } else {
+      showInvoiceBuilder(null);
+    }
   } else {
     currentInvoiceProfile = null;
     showInvoiceSection("ia-profile");

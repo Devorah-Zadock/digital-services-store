@@ -52,7 +52,7 @@ function emptyQuoteEventState() {
 }
 
 function showSection(id) {
-  ["qa-catalog", "qa-profile", "qa-app"].forEach((s) => {
+  ["qa-catalog", "qa-profile", "qa-app", "qa-intro"].forEach((s) => {
     document.getElementById(s).style.display = s === id ? "" : "none";
   });
 }
@@ -182,6 +182,8 @@ function wireProfileForm() {
     if (quoteEventState) {
       renderQuotePreviewQA();
       if (typeof quoteBshellRenderCanvas === "function" && typeof quoteBshellActiveFlag !== "undefined" && quoteBshellActiveFlag) quoteBshellRenderCanvas();
+    } else if (quoteWantsShellAfterProfile && typeof dkShowQuoteIntro === "function") {
+      dkShowQuoteIntro();
     } else {
       showQuoteBuilder();
       if (quoteWantsShellAfterProfile && typeof quoteBshellActivate === "function") quoteBshellActivate();
@@ -325,9 +327,23 @@ async function routeAfterAuth(user) {
   const { data } = await supabaseClient.from("profiles").select("*").eq("id", user.id).maybeSingle();
   if (data) {
     currentProfile = data;
-    const loaded = qid ? await loadQuoteById(qid, user.id) : null;
-    showQuoteBuilder(loaded);
-    if (shellMode && typeof quoteBshellActivate === "function") quoteBshellActivate();
+    if (qid) {
+      // Resuming an existing quote — straight to the Shell, never the
+      // free-text intro (that's only ever for a genuinely new quote).
+      const loaded = await loadQuoteById(qid, user.id);
+      showQuoteBuilder(loaded);
+      if (shellMode && typeof quoteBshellActivate === "function") quoteBshellActivate();
+    } else if (shellMode && typeof dkShowQuoteIntro === "function") {
+      // A new quote, Shell mode on (the default) — "מה אתם צריכים
+      // להכין?" first, instead of dropping straight into a blank
+      // Builder-Shell. js/quote-ai-generate.js owns this screen and
+      // its own "start from a blank form" fallback, which still just
+      // calls showQuoteBuilder()+quoteBshellActivate() exactly as this
+      // branch used to do unconditionally.
+      dkShowQuoteIntro();
+    } else {
+      showQuoteBuilder(null);
+    }
   } else {
     currentProfile = null;
     showSection("qa-profile");
