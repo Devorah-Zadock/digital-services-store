@@ -52,6 +52,12 @@
   --shadow: 0 10px 30px rgba(13, 13, 20, 0.10);
   --shadow-lg: 0 24px 60px rgba(13, 13, 20, 0.18);
   --max: 1120px;
+  /* Wider contained width for the navbar + Home hero specifically (the
+     user's own explicit "wrap the Navbar and the Hero at 1280px,
+     centered" ask) — separate from --max/.container's 1120px so this
+     doesn't also reflow every other page's already-tuned content
+     width, which wasn't part of the ask. */
+  --max-wide: 1280px;
 
   /* Modern design-system token names (explicit design-system pass) —
      aliases to the equivalent values above rather than new hex codes:
@@ -117,7 +123,7 @@
 html { scroll-behavior: smooth; overflow-x: clip; overflow-y: scroll; scrollbar-gutter: stable; }
 body {
   margin: 0;
-  font-family: 'Heebo', Arial, sans-serif;
+  font-family: 'Heebo', system-ui, -apple-system, Arial, sans-serif;
   color: var(--dark);
   background: var(--white);
   /* Inherits direction from <html dir="..."> rather than hardcoding rtl —
@@ -201,8 +207,24 @@ body.has-sites-rail header.site {
    padding-inline-* reserve room on both sides so links never run under
    either pinned group. */
 .nav {
-  display: flex; align-items: center; justify-content: center;
-  padding: 22px 24px; padding-inline-start: 190px; padding-inline-end: 150px; max-width: var(--max); margin: 0 auto;
+  /* Was: .brand/.nav-end-group pinned via position:absolute to the true
+     viewport edges (24px in), with only .nav-links centered inside a
+     capped box — meaning the logo and login sat flush against the
+     screen edge on any wide monitor regardless of --max-wide. The user
+     explicitly asked for logo+links+login to all sit together inside
+     one contained, centered row instead.
+     NOT justify-content:space-between — header.site's markup has a
+     4th flex child after .nav-end-group (.burger, just display:none on
+     desktop), and space-between spaces ALL flex items evenly rather
+     than treating [.nav-end-group, .burger] as one edge group — on
+     mobile, with .burger actually visible, that pushed it clean
+     outside the viewport (confirmed live). Instead .nav-links itself
+     takes the remaining space (flex:1) and centers its own links
+     inside it, which naturally leaves .brand pinned to the start edge
+     and [.nav-end-group, .burger] packed together at the end edge,
+     regardless of whether .burger is shown. */
+  display: flex; align-items: center;
+  padding: 16px 32px; max-width: var(--max-wide); margin: 0 auto;
   /* The home page sets its own page-wide font-family ('Assistant', for
      its own hero/body copy — body.home-neo below) — without pinning the
      header back to the site's base font here, that cascaded into the
@@ -210,20 +232,16 @@ body.has-sites-rail header.site {
      still looked different from every other page's after the previous
      round's fix (which only removed home's separate nav-link color/
      weight/spacing, not this). */
-  font-family: 'Heebo', Arial, sans-serif;
+  font-family: 'Heebo', system-ui, -apple-system, Arial, sans-serif;
 }
 .brand {
-  position: absolute; top: 50%; inset-inline-start: 24px; transform: translateY(-50%);
   font-family: 'Space Grotesk', Arial, sans-serif; font-size: 22px; color: #1A1A1A;
-  /* row-reverse, not direction:ltr — .brand's own inset-inline-start
-     positioning depends on ITS direction (see .brand-text below for
-     what went wrong last time this was tried with direction), but
-     flex order is independent of that: reversing it is what actually
-     puts the icon first (leftmost, before "DeskKit") in the page's
-     RTL context, where a plain row would otherwise place the icon
-     last, after the wordmark — confirmed live, that's what a first try
-     without this looked like. */
-  display: flex; flex-direction: row-reverse; align-items: center; gap: 6px; letter-spacing: -.01em;
+  /* row-reverse, not direction:ltr — a plain row would place the icon
+     last, after the wordmark, in the page's RTL context; reversing
+     flex order (independent of direction) is what puts it first
+     (closest to the viewport edge) instead — confirmed live, that's
+     what a first try without this looked like. */
+  display: flex; flex-direction: row-reverse; align-items: center; gap: 6px; letter-spacing: -.01em; flex-shrink: 0;
 }
 /* Icon + wordmark, same everywhere the brand or a link back to the
    homepage appears, not just the homepage itself. "Desk" bold in near-
@@ -253,27 +271,33 @@ body.has-sites-rail header.site {
 .bm-spark { fill: #fff; }
 .brand-desk { font-weight: 700; }
 .brand-kit { font-weight: 400; color: #0E8C8C; }
-.nav-end-group {
-  position: absolute; top: 50%; inset-inline-end: 24px; transform: translateY(-50%);
-  display: flex; align-items: center; gap: 14px;
-}
+.nav-end-group { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+/* js/header.js injects a ~126px CTA button into .nav-end-group for
+   logged-out visitors, on top of the login widget + lang toggle — on
+   a narrow phone viewport that group alone can run ~290px wide. On
+   desktop that's fine (1280px of room), but as a normal, non-shrinking
+   flex sibling of .brand on a ~350px-wide mobile .nav, confirmed live
+   it pushed the whole end group (and the burger after it) off the
+   left edge entirely — unclickable. Taking .brand back out of the
+   flex flow on mobile (its own pre-existing position:absolute, the
+   same technique this file already used for every page before this
+   pass) restores the exact layout this always had below 860px; only
+   desktop gets the new contained/centered row. */
 @media (max-width: 860px) {
-  .nav { justify-content: space-between; padding-inline-end: 24px; }
-  .nav-end-group { position: static; transform: none; }
+  .nav { padding-inline: 20px; }
+  .brand { position: absolute; top: 50%; inset-inline-start: 20px; transform: translateY(-50%); }
 }
-.nav-links { display: flex; align-items: center; gap: 28px; font-size: 15px; font-weight: 500; }
-/* No padding/border-bottom underline here on purpose — the homepage's
-   header (body.home-neo) used to be the only place with this compact,
-   color-only active/hover treatment, which left it a measurable 14px
-   shorter than the header on every other page. Made the default so the
-   header is the same height and style everywhere; --dark already equals
-   home-neo's own --hn-ink (#1A1A1A), so the color carries over exactly. */
-/* display:inline-block + vertical padding grows the actual clickable/
-   tappable box past its text's own ~16-17px line height — confirmed via
-   real measurement that every nav link's hit area was under the 24px
-   minimum touch-target size. */
-.nav-links a { position: relative; color: var(--dark); opacity: .85; transition: opacity .15s ease; display: inline-block; padding-block: 6px; padding-inline: 3px; }
-.nav-links a:hover, .nav-links a.active { opacity: 1; }
+.nav-links { display: flex; align-items: center; justify-content: center; flex: 1; gap: 6px; font-size: 15px; font-weight: 500; }
+/* Rounded "pill" hover target per link — a subtle brand-tinted
+   background instead of just an opacity shift, the modern-hover
+   language the user asked for, with the padding now living on the
+   link itself (not a separate gap) so the highlight hugs the text. */
+.nav-links a {
+  position: relative; color: var(--dark); opacity: .85; display: inline-block;
+  padding: 8px 14px; border-radius: 999px; transition: background .15s ease, opacity .15s ease;
+}
+.nav-links a:hover { background: rgba(20, 184, 166, .08); opacity: 1; }
+.nav-links a.active { opacity: 1; }
 /* The current page's own tab — a small turquoise underline under just
    that link, so it's obvious at a glance which page you're on regardless
    of how similar two neighboring link labels look. var(--ink) is NOT
@@ -281,7 +305,7 @@ body.has-sites-rail header.site {
    brand teal directly, the same #0E8C8C used for .brand-kit and the
    quote/invoice card accents. */
 .nav-links a.active::after {
-  content: ""; position: absolute; inset-inline: 3px; bottom: 0;
+  content: ""; position: absolute; inset-inline: 14px; bottom: 0;
   height: 2px; border-radius: 2px; background: #0E8C8C;
 }
 .nav-login { color: var(--grey); font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: flex-end; gap: 5px; min-width: 92px; padding-block: 6px; transition: color .15s ease; }
