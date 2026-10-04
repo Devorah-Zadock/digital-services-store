@@ -3052,6 +3052,53 @@ function renderNeonSite(d, page) {
 }
 
 /* ---------- Template 16: organized chaos (fashion / artist portfolio) ---------- */
+/* Section-renderer decomposition (Phase 7 template migration), same
+   guarantee as local-service's own: each function below returns
+   EXACTLY the HTML chunk renderChaosSite's index page already
+   inlined, unchanged. The marquee ticker is fused into ocHeroSection
+   (it's decorative chrome tied to the hero, not its own section, same
+   as the original always rendering it immediately after the hero).
+   interactionScript (magnetic buttons + horizontal-scroll pacing)
+   stays appended by renderChaosSite itself, same position as the
+   original — genuinely last, after even about/contact, so it can't go
+   through the videoSection slot (that always lands right after the
+   active blocks, before about/contact would be wrong here). */
+function ocHeroSection(d, pal, dd, cta, tickerText) {
+  return `
+      <section class="oc-hero"><div class="container">
+        <span class="eyebrow" style="background:#0A0A0A; color:#${pal.primary}; border-radius:0;">${dd.tagline ? "ברוכים הבאים" : "מותג שלא מתנצל"}</span>
+        <h1>${heading(d, "heroTitle", dd.businessName)}</h1>
+        <p>${taglineText(d, dd)}</p>
+        ${ctaHtml(cta, "oc-cta")}
+        ${heroHasImage(d) ? `<div class="oc-distort" style="max-width:420px; margin:34px auto 0;">${heroMediaHtml(d, "")}</div>` : ""}
+      </div></section>
+      <div class="oc-marquee"><div class="oc-marquee-track">${Array(6).fill(`<span class="oc-marquee-item">${escapeHtmlS(tickerText)}</span>`).join("")}</div></div>`;
+}
+function ocServicesSection(d, pal, dd) {
+  return `
+      <div class="oc-hscroll-wrap" id="oc-hscroll"><div class="oc-hscroll-sticky"><div class="oc-hscroll-track" id="oc-hscroll-track">
+        ${dd._services.map((s) => `<div class="oc-hcard"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}
+      </div></div></div>`;
+}
+function ocVideoSection(embedSrc) {
+  return embedSrc ? `<section class="oc-section site-reveal"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : "";
+}
+function ocAboutSection(d, pal, dd) {
+  return (!d.pages || !d.pages.about) ? `<section class="oc-section oc-about site-reveal"><div class="container"><p>${aboutText(d, dd)}</p></div></section>` : "";
+}
+function ocContactSection(d, pal, dd, wa) {
+  return (!d.pages || !d.pages.contact) ? `<section class="oc-section site-reveal"><div class="container">
+        <div class="oc-section-head"><span class="oc-tag">נשמח לשמוע מכם</span><h2>${heading(d, "contact", "יצירת קשר")}</h2></div>
+        <div class="oc-contact">
+          ${dd._hasContact ? `
+            ${d.phone ? `<span class="line">טלפון: ${escapeHtmlS(d.phone)}</span>` : ""}
+            ${d.email ? `<span class="line">מייל: ${escapeHtmlS(d.email)}</span>` : ""}
+            ${d.address ? `<span class="line">כתובת: ${escapeHtmlS(d.address)}</span>` : ""}
+          ` : `<p style="font-weight:700;">פרטו כאן טלפון, מייל וכתובת.</p>`}
+        </div>
+      </div></section>` : "";
+}
+
 function renderChaosSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#CCFF00");
@@ -3178,6 +3225,10 @@ function renderChaosSite(d, page) {
           <div style="margin-top:20px;">${wa ? `<a class="oc-cta" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}</div>
         </div>
       </div></section>`;
+  } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("chaos")) {
+    main = renderBlocksHtml(d, "chaos", "index", {
+      pal, dd, cta, wa, tickerText, videoSection: ocVideoSection(embedSrc),
+    }) + interactionScript + " ";
   } else {
     main = `
       <section class="oc-hero"><div class="container">
