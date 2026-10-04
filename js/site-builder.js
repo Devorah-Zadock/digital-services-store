@@ -870,6 +870,10 @@ function renderMigratedHierarchy(tree, addBlockRow, template, d) {
     services: servicesAnchorOverride || '[data-textkey="heading-services"]',
     about: '[data-textkey="heading-about"]',
     contact: '[data-textkey="heading-contact"]',
+    // bento's fused "grid" block has no heading textkey of its own —
+    // #bt-grid is the one stable anchor every cell inside it renders
+    // into, regardless of which cells are currently active.
+    grid: "#bt-grid",
   };
   tree.innerHTML = active.map((type, i) => {
     const def = defs[type];

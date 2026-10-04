@@ -2262,6 +2262,69 @@ function renderStudioSite(d, page) {
 }
 
 /* ---------- Template 12: bento grid (modular, apple-widget style) ---------- */
+/* Section-renderer decomposition (Phase 7 template migration), same
+   guarantee as local-service's own, but with a DIFFERENT shape than
+   hero/services/about/contact: bento's whole design is ONE continuous
+   CSS grid (cells can span rows/columns across what would otherwise
+   be separate sections), so splitting it into reorderable
+   services/about/contact blocks would change the actual layout, not
+   just the data model. Instead, like freelancer's fused "aboutTags"
+   block, everything after the hero is ONE fused "grid" block —
+   welcome/clock/photo/about/video/services/contact cells exactly as
+   the original built them, in the same fixed relative order, still
+   individually gated by d.pages.about/d.pages.contact exactly as
+   before. hasItems:true still shows d.services as child rows in the
+   hierarchy, same idea as freelancer's own fused block. */
+function btHeroSection(d, pal, dd, cta) {
+  return `
+      <section class="bt-hero"><div class="container">
+        <span class="eyebrow">עסק מודולרי, מותאם אישית</span>
+        <h1>${heading(d, "heroTitle", dd.businessName)}</h1>
+        ${ctaHtml(cta, "bt-cta")}
+      </div></section>`;
+}
+function btClockScript() {
+  return `<script>
+    (function () {
+      var clockEl = document.getElementById("bt-clock");
+      var dateEl = document.getElementById("bt-date");
+      if (!clockEl) return;
+      function pad(n) { return String(n).padStart(2, "0"); }
+      function tick() {
+        var now = new Date();
+        clockEl.textContent = pad(now.getHours()) + ":" + pad(now.getMinutes());
+        if (dateEl) dateEl.textContent = now.toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" });
+      }
+      tick();
+      setInterval(tick, 15000);
+    })();
+  </script>`;
+}
+function btGridSection(d, pal, dd, wa, embedSrc) {
+  const hasPhoto = heroHasImage(d);
+  const cellsList = [];
+  cellsList.push(`<div class="bt-cell bt-span-2x1 bt-cell-accent"><div class="bt-cell-label">ברוכים הבאים</div><h3 style="font-size:20px;">${taglineText(d, dd)}</h3></div>`);
+  cellsList.push(`<div class="bt-cell"><div class="bt-cell-label">השעה עכשיו</div><div class="bt-clock" id="bt-clock">--:--</div><div class="bt-clock-date" id="bt-date"></div></div>`);
+  if (hasPhoto) cellsList.push(`<div class="bt-cell bt-cell-photo bt-span-1x2">${heroMediaHtml(d, "")}</div>`);
+  if (!d.pages || !d.pages.about) {
+    cellsList.push(`<div class="bt-cell bt-span-2x1"><div class="bt-cell-label">מי אנחנו</div><p>${aboutText(d, dd)}</p></div>`);
+  }
+  if (embedSrc) {
+    cellsList.push(`<div class="bt-cell bt-cell-video bt-span-2x1"><iframe src="${embedSrc}" title="סרטון" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`);
+  }
+  dd._services.forEach((s) => {
+    cellsList.push(`<div class="bt-cell"><div class="bt-cell-label">שירות</div><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`);
+  });
+  if (!d.pages || !d.pages.contact) {
+    cellsList.push(`<div class="bt-cell bt-span-2x2 bt-cell-dark"><div class="bt-cell-label">יצירת קשר</div>${dd._hasContact ? `${d.phone ? `<span class="line">טלפון: ${escapeHtmlS(d.phone)}</span>` : ""}${d.email ? `<span class="line">מייל: ${escapeHtmlS(d.email)}</span>` : ""}${d.address ? `<span class="line">כתובת: ${escapeHtmlS(d.address)}</span>` : ""}` : `<span class="line">פרטו כאן טלפון, מייל וכתובת.</span>`}${wa ? `<a class="bt-cta-mini" href="${wa}" target="_blank" rel="noopener">וואטסאפ</a>` : ""}</div>`);
+  }
+  return `
+      <section class="bt-section site-reveal"><div class="container">
+        <div class="bt-grid" id="bt-grid">${cellsList.join("")}</div>
+      </div></section>
+      ${btClockScript()}`;
+}
+
 function renderBentoSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#0E8C8C");
@@ -2379,6 +2442,8 @@ function renderBentoSite(d, page) {
           ${wa ? `<a class="bt-cta-mini" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}
         </div>
       </div></section>`;
+  } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("bento")) {
+    main = renderBlocksHtml(d, "bento", "index", { pal, dd, cta, wa, embedSrc });
   } else {
     const cellsList = [];
     cellsList.push(`<div class="bt-cell bt-span-2x1 bt-cell-accent"><div class="bt-cell-label">ברוכים הבאים</div><h3 style="font-size:20px;">${taglineText(d, dd)}</h3></div>`);

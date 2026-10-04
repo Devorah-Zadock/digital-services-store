@@ -135,6 +135,17 @@ const SITE_BLOCK_DEFS = {
     about: { label: "אודות", render: (d, pal, dd) => agAboutSection(d, pal, dd), active: (d) => !d.pages || !d.pages.about },
     contact: { label: "צור קשר", render: (d, pal, dd, ctx) => agContactSection(d, pal, dd, ctx.wa), active: (d) => !d.pages || !d.pages.contact },
   },
+  // Unlike every other migrated template, bento has no separate
+  // services/about/contact SECTIONS to reorder -- it's one continuous
+  // CSS grid where welcome/clock/photo/about/video/services/contact
+  // are individual CELLS inside it (see btGridSection's own comment).
+  // "grid" is a single fused block, same idea as freelancer's
+  // "aboutTags" — hasItems:true still surfaces d.services as child
+  // rows in the hierarchy even though they're cells, not a section.
+  "bento": {
+    hero: { label: "Hero", render: (d, pal, dd, ctx) => btHeroSection(d, pal, dd, ctx.cta) },
+    grid: { label: "רשת תוכן (שעון, שירותים, אודות, קשר)", hasItems: true, render: (d, pal, dd, ctx) => btGridSection(d, pal, dd, ctx.wa, ctx.embedSrc) },
+  },
 };
 
 // "blank" (Phase 3) delegates its actual rendering to local-service's
@@ -158,7 +169,7 @@ function isTemplateMigrated(template) {
 // call filters this down to only the keys IT actually defines, so
 // adding a new key here (like freelancer's "aboutTags") never affects
 // local-service/playground/catalog, which simply don't have that key.
-const SITE_DEFAULT_BLOCK_ORDER = ["hero", "services", "aboutTags", "about", "contact"];
+const SITE_DEFAULT_BLOCK_ORDER = ["hero", "services", "aboutTags", "about", "contact", "grid"];
 
 /* Back-compat: a project saved before this feature existed (or a fresh
    one) has no d.blockOrder yet — seeded once, here, the first time it's
