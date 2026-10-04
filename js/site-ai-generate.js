@@ -323,7 +323,11 @@ async function siteWizardSubmit() {
       return;
     }
 
-    await dkApplyGeneratedSite(data.site || {}, values);
+    if (!data.site || !data.site.template || typeof SITE_TEMPLATES === "undefined" || !SITE_TEMPLATES[data.site.template]) {
+      throw new Error("לא התקבל עיצוב תקין מהשרת");
+    }
+
+    await dkApplyGeneratedSite(data.site, values);
     dkShowGeneratedPreview(overlay, body, values);
   } catch (err) {
     body.innerHTML = `<div class="ats-error">משהו השתבש ביצירת האתר. אפשר לנסות שוב בעוד רגע. (${escapeHtmlS(err.message || String(err))})</div>`;
@@ -413,8 +417,27 @@ function dkShowGeneratedPreview(overlay, body, values) {
           const revalues = siteWizardBuildValues(`בקשת שינוי סגנון: ${hint}`);
           const [data] = await Promise.all([dkCallGenerateSite(revalues), new Promise((r) => setTimeout(r, 1800))]);
           transition.stop();
-          if (!data) return;
-          await dkApplyGeneratedSite(data.site || {}, revalues);
+          if (!data) return; // redirected to login
+
+          // "שנה סגנון" fires a real second AI call (a deliberate user
+          // action, same cost discipline as every other call here) — it
+          // can hit the exact same daily/session fair-use limit the
+          // FIRST generation can. Missing this check is what let
+          // data.site end up undefined below and crash deep inside
+          // currentSiteHtml() with no explanation (confirmed live: "Cannot
+          // read properties of undefined (reading 'render')") instead of
+          // showing this same limit message siteWizardSubmit already has.
+          if (data.limitReached) {
+            body.innerHTML = data.isPro
+              ? `<div class="ats-error">הגעת למכסת השימוש ההוגן היומית ליצירת אתרים. אפשר להמשיך מחר.</div>`
+              : `<div class="ats-upgrade-card"><p>הגעת למכסת הניסיונות החינמיים ליצירת אתר. רוצה להמשיך? שדרג לגרסת Pro בתשלום חד-פעמי!</p><a href="#" class="btn btn-gold ats-upgrade-btn">שדרוג ל-Pro</a></div>`;
+            return;
+          }
+          if (!data.site || !data.site.template || typeof SITE_TEMPLATES === "undefined" || !SITE_TEMPLATES[data.site.template]) {
+            throw new Error("לא התקבל עיצוב תקין מהשרת");
+          }
+
+          await dkApplyGeneratedSite(data.site, revalues);
           dkShowGeneratedPreview(overlay, body, revalues);
         } catch (err) {
           body.innerHTML = `<div class="ats-error">משהו השתבש. אפשר לנסות שוב. (${escapeHtmlS(err.message || String(err))})</div>`;
