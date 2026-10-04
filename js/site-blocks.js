@@ -146,6 +146,12 @@ const SITE_BLOCK_DEFS = {
     hero: { label: "Hero", render: (d, pal, dd, ctx) => btHeroSection(d, pal, dd, ctx.cta) },
     grid: { label: "רשת תוכן (שעון, שירותים, אודות, קשר)", hasItems: true, render: (d, pal, dd, ctx) => btGridSection(d, pal, dd, ctx.wa, ctx.embedSrc) },
   },
+  "cinematic": {
+    hero: { label: "Hero", render: (d, pal, dd, ctx) => cdHeroSection(d, pal, dd, ctx.cta) },
+    services: { label: "שירותים / מוצרים", hasItems: true, render: (d, pal, dd) => cdServicesSection(d, pal, dd) },
+    about: { label: "אודות", render: (d, pal, dd) => cdAboutSection(d, pal, dd), active: (d) => !d.pages || !d.pages.about },
+    contact: { label: "צור קשר", render: (d, pal, dd, ctx) => cdContactSection(d, pal, dd, ctx.wa), active: (d) => !d.pages || !d.pages.contact },
+  },
 };
 
 // "blank" (Phase 3) delegates its actual rendering to local-service's

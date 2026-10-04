@@ -2478,6 +2478,47 @@ function renderBentoSite(d, page) {
 }
 
 /* ---------- Template 13: cinematic dark (glassmorphism, mouse-glow) ---------- */
+/* Section-renderer decomposition (Phase 7 template migration), same
+   guarantee as local-service's own: each function below returns
+   EXACTLY the HTML chunk renderCinematicSite's index page already
+   inlined, unchanged. */
+function cdHeroSection(d, pal, dd, cta) {
+  return `
+      <section class="cd-hero"><div class="container">
+        <span class="cd-kicker">${dd.tagline ? "ברוכים הבאים" : "חוויה פרימיום"}</span>
+        <h1>${heading(d, "heroTitle", dd.businessName)}</h1>
+        <p>${taglineText(d, dd)}</p>
+        ${ctaHtml(cta, "cd-cta")}
+        ${heroHasImage(d) ? `<div class="cd-photo">${heroMediaHtml(d, "")}</div>` : ""}
+      </div></section>`;
+}
+function cdServicesSection(d, pal, dd) {
+  const showSearch = dd._services.length >= 3;
+  return `
+      <section class="cd-section site-reveal"><div class="container">
+        <div class="cd-section-head"><span class="cd-kicker">מה אנחנו מציעים</span><h2>${heading(d, "services", "השירותים שלנו")}</h2>
+        ${showSearch ? searchBoxHtml("#cd-grid", "חיפוש שירות...") : ""}</div>
+        <div class="cd-grid" id="cd-grid">${dd._services.map((s) => `
+          <div class="cd-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
+        ${showSearch ? searchScriptHtml() : ""}
+      </div></section>`;
+}
+function cdVideoSection(embedSrc) {
+  return embedSrc ? `<section class="cd-section site-reveal" style="padding-top:0;"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : "";
+}
+function cdAboutSection(d, pal, dd) {
+  return (!d.pages || !d.pages.about) ? `<section class="cd-section site-reveal" style="text-align:center;"><div class="container"><span class="cd-kicker">מי אנחנו</span><h2 style="font-size:28px; font-weight:800; color:#fff; margin:10px 0 26px;">${heading(d, "about", "קצת עלינו")}</h2><div class="cd-panel"><p>${aboutText(d, dd)}</p></div></div></section>` : "";
+}
+function cdContactSection(d, pal, dd, wa) {
+  return (!d.pages || !d.pages.contact) ? `<section class="cd-section site-reveal" style="text-align:center;"><div class="container"><span class="cd-kicker">נשמח לשמוע מכם</span><h2 style="font-size:28px; font-weight:800; color:#fff; margin:10px 0 26px;">${heading(d, "contact", "יצירת קשר")}</h2><div class="cd-panel">
+        ${dd._hasContact ? `
+          ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
+          ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
+          ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
+        ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת.</div>`}
+      </div></div></section>` : "";
+}
+
 function renderCinematicSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#4338CA");
@@ -2571,6 +2612,10 @@ function renderCinematicSite(d, page) {
           ${wa ? `<a class="cd-cta" style="margin-top:18px;" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}
         </div>
       </div></section>`;
+  } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("cinematic")) {
+    main = renderBlocksHtml(d, "cinematic", "index", {
+      pal, dd, cta, wa, videoSection: cdVideoSection(embedSrc),
+    });
   } else {
     const showSearch = dd._services.length >= 3;
     main = `
