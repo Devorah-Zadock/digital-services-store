@@ -209,6 +209,8 @@ function bshellWireTopBar() {
     if (e.shiftKey) bshellRedo(); else bshellUndo();
   });
 
+  document.getElementById("bshell-settings-btn").addEventListener("click", bshellSelectSettings);
+
   document.getElementById("bshell-device-row").addEventListener("click", (e) => {
     const btn = e.target.closest(".bshell-device-btn");
     if (!btn) return;
@@ -409,6 +411,7 @@ function bshellRenderHierarchy() {
   const list = document.getElementById("bshell-hier-list");
   const d = siteState.data;
   const template = siteState.template;
+  document.getElementById("bshell-settings-btn").classList.toggle("is-selected", !!(bshellSelection && bshellSelection.kind === "settings"));
   // The FULL saved order, not activeBlocksForPage()'s filtered list —
   // a hidden block still needs its own row (dimmed, with a dot) so the
   // Properties panel's visibility switch can bring it back. Filtering
@@ -552,6 +555,24 @@ function bshellSelectService(idx) {
   if (!el) return;
   bshellSelection = { kind: "service", idx, rootEl: el };
   el.scrollIntoView({ behavior: "smooth", block: "center" });
+  bshellApplySelectionVisual();
+  bshellRenderProperties();
+  bshellRenderHierarchy();
+}
+
+/* Site-wide settings (contact info, WhatsApp, copyright, brand color/
+   font, images, video) — not tied to any one Section/Element, so this
+   is a FOURTH selection kind alongside text/service/section rather
+   than forcing it through the Section model. Reached via its own
+   always-visible row above the Sections list (not nested inside the
+   hierarchy tree, since it isn't part of the page structure), same
+   "click something -> see it in Properties" pattern as everything
+   else in the Shell. No live canvas anchor (these fields render as
+   plain text/attributes in several places, not one selectable
+   element), so this never touches bshellApplySelectionVisual's outline
+   — clears whatever WAS outlined in the canvas instead. */
+function bshellSelectSettings() {
+  bshellSelection = { kind: "settings" };
   bshellApplySelectionVisual();
   bshellRenderProperties();
   bshellRenderHierarchy();
@@ -709,6 +730,7 @@ function bshellRenderProperties() {
   if (bshellSelection.kind === "text") body.innerHTML = bshellPropsHtmlForText(bshellSelection.key);
   else if (bshellSelection.kind === "service") body.innerHTML = bshellPropsHtmlForService(bshellSelection.idx);
   else if (bshellSelection.kind === "section") body.innerHTML = bshellPropsHtmlForSection(bshellSelection.type);
+  else if (bshellSelection.kind === "settings") body.innerHTML = bshellPropsHtmlForSettings();
   bshellWirePropertiesPanel();
 }
 
@@ -796,10 +818,122 @@ function bshellPropsHtmlForSection(type) {
     </div>`;
 }
 
+/* Site-wide settings that have no live canvas anchor at all — unlike
+   every other Properties view, this one isn't contextual to a
+   selection in the page structure, it's the Shell's own equivalent of
+   the old sidebar's "עיצוב האתר" / "תמונות ומדיה" / "פרטי יצירת קשר"
+   groups. Same underlying d.* fields, same uploadSiteImage()/
+   SITE_FONTS/SITE_GALLERY_MAX the old sidebar already uses — this is
+   a new way to reach them, not a new place they're stored. */
+function bshellPropsHtmlForSettings() {
+  const d = siteState.data;
+  const fontKeys = (typeof SITE_FONTS === "object") ? Object.keys(SITE_FONTS) : [];
+  const hasWhatsapp = !d.noWhatsapp;
+  return `
+    <span class="bshell-props-kind">הגדרות האתר</span>
+
+    <div class="bshell-settings-group">
+      <div class="bshell-settings-group-title">פרטי קשר</div>
+      <div class="bshell-props-field">
+        <label class="bshell-props-label">טלפון</label>
+        <input type="text" id="bshell-set-phone" dir="ltr" value="${escapeHtmlS(d.phone || "")}">
+      </div>
+      <div class="bshell-props-field">
+        <div class="bshell-toggle-row">
+          <label class="bshell-props-label" style="margin:0;">המספר הזה הוא גם הוואטסאפ שלי</label>
+          <label class="bshell-switch">
+            <input type="checkbox" id="bshell-set-has-whatsapp"${hasWhatsapp ? " checked" : ""}>
+            <span class="bshell-switch-track"></span>
+            <span class="bshell-switch-thumb"></span>
+          </label>
+        </div>
+      </div>
+      <div class="bshell-props-field">
+        <label class="bshell-props-label">מספר וואטסאפ אחר (אם שונה מהטלפון)</label>
+        <input type="text" id="bshell-set-whatsapp" dir="ltr" value="${escapeHtmlS(d.whatsapp || "")}">
+      </div>
+      <div class="bshell-props-field">
+        <label class="bshell-props-label">מייל</label>
+        <input type="text" id="bshell-set-email" dir="ltr" value="${escapeHtmlS(d.email || "")}">
+      </div>
+      <div class="bshell-props-field">
+        <label class="bshell-props-label">כתובת</label>
+        <input type="text" id="bshell-set-address" value="${escapeHtmlS(d.address || "")}">
+      </div>
+    </div>
+
+    <div class="bshell-settings-group">
+      <div class="bshell-settings-group-title">עיצוב ומותג</div>
+      <div class="bshell-props-field">
+        <label class="bshell-props-label">צבע ראשי</label>
+        <input type="color" id="bshell-set-color" value="${escapeHtmlS(d.primaryColor || "#1F5C4E")}">
+      </div>
+      <div class="bshell-props-field">
+        <label class="bshell-props-label">גופן</label>
+        <select id="bshell-set-font">
+          ${fontKeys.map((k) => `<option value="${k}"${(d.fontFamily || "heebo") === k ? " selected" : ""}>${escapeHtmlS(SITE_FONTS[k].name)}</option>`).join("")}
+        </select>
+      </div>
+      <div class="bshell-props-field">
+        <div class="bshell-toggle-row">
+          <label class="bshell-props-label" style="margin:0;">הסתרת שורת זכויות יוצרים בתחתית</label>
+          <label class="bshell-switch">
+            <input type="checkbox" id="bshell-set-hide-copyright"${d.hideCopyright ? " checked" : ""}>
+            <span class="bshell-switch-track"></span>
+            <span class="bshell-switch-thumb"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="bshell-settings-group">
+      <div class="bshell-settings-group-title">תמונות ומדיה</div>
+      <div class="bshell-props-field">
+        <label class="bshell-props-label">תמונה ראשית</label>
+        <div class="photo-row">
+          <div class="photo-preview" id="bshell-set-photo-preview">${d.heroImage ? `<img src="${escapeHtmlS(d.heroImage)}" alt="תמונת הכותרת">` : `<span class="site-photo-placeholder">🖼️</span>`}</div>
+          <div class="photo-actions">
+            <label class="btn-mini photo-upload-btn" for="bshell-set-photo">העלאת תמונה</label>
+            <input type="file" id="bshell-set-photo" accept="image/*" style="display:none;">
+            <button type="button" class="photo-remove" id="bshell-set-photo-remove">הסרת תמונה</button>
+          </div>
+        </div>
+      </div>
+      <div class="bshell-props-field">
+        <label class="bshell-props-label">גלריית תמונות (עד ${SITE_GALLERY_MAX})</label>
+        <p class="bshell-settings-field-hint">אם יש תמונות בגלריה, הן מתחלפות אוטומטית במקום התמונה הראשית.</p>
+        <div id="bshell-set-gallery-preview" class="site-gallery-preview">${bshellGalleryPreviewHtml(d)}</div>
+        <label class="btn-mini photo-upload-btn" for="bshell-set-gallery">הוספת תמונה לגלריה</label>
+        <input type="file" id="bshell-set-gallery" accept="image/*" multiple style="display:none;">
+      </div>
+      <div class="bshell-props-field">
+        <label class="bshell-props-label">קישור לסרטון (יוטיוב)</label>
+        <input type="text" id="bshell-set-video" dir="ltr" placeholder="https://youtube.com/watch?v=..." value="${escapeHtmlS(d.videoUrl || "")}">
+      </div>
+      <div class="bshell-props-field">
+        <div class="bshell-toggle-row">
+          <label class="bshell-props-label" style="margin:0;">הצגת הסרטון כרקע לכותרת הראשית</label>
+          <label class="bshell-switch">
+            <input type="checkbox" id="bshell-set-video-bg"${d.heroVideoBg ? " checked" : ""}>
+            <span class="bshell-switch-track"></span>
+            <span class="bshell-switch-thumb"></span>
+          </label>
+        </div>
+      </div>
+    </div>`;
+}
+function bshellGalleryPreviewHtml(d) {
+  const images = d.heroImages || [];
+  return images.map((src, i) =>
+    `<div class="site-gallery-thumb" data-idx="${i}"><img src="${escapeHtmlS(src)}" alt="תמונה ${i + 1} בגלריה"><button type="button" data-action="bshell-remove-gallery-photo" aria-label="הסרה">✕</button></div>`
+  ).join("");
+}
+
 function bshellWirePropertiesPanel() {
   if (bshellSelection.kind === "text") return bshellWireTextProps(bshellSelection.key);
   if (bshellSelection.kind === "service") return bshellWireServiceProps(bshellSelection.idx);
   if (bshellSelection.kind === "section") return bshellWireSectionProps(bshellSelection.type);
+  if (bshellSelection.kind === "settings") return bshellWireSettingsProps();
 }
 
 function bshellWireTextProps(key) {
@@ -952,5 +1086,202 @@ function bshellWireSectionProps(type) {
       bshellRenderHierarchy();
       bshellScheduleSave();
     });
+  }
+}
+
+/* ---------- Settings (site-wide, no canvas anchor) ----------
+   Plain text fields re-render the whole canvas on every keystroke —
+   same already-shipped pattern bshellWireServiceProps uses for name/
+   desc/price, since none of these fields (phone/email/address/
+   videoUrl) are a single data-textkey span that could be live-patched
+   in place. Color/font go through bshellApplyGlobalStylesLive()
+   instead, same reasoning as the old sidebar's own applyGlobalStylesLive()
+   — reloading the entire iframe on every drag of the color wheel would
+   be visibly laggy where patching just the <style> tag's text isn't. */
+function bshellWireSettingsProps() {
+  const d = siteState.data;
+
+  const bindPlainText = (id, key) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("focus", () => bshellBeginEdit(el));
+    el.addEventListener("blur", () => bshellEndEdit(el));
+    el.addEventListener("input", () => {
+      d[key] = el.value;
+      bshellRenderCanvas();
+      bshellScheduleSave();
+    });
+  };
+  bindPlainText("bshell-set-phone", "phone");
+  bindPlainText("bshell-set-whatsapp", "whatsapp");
+  bindPlainText("bshell-set-email", "email");
+  bindPlainText("bshell-set-address", "address");
+  bindPlainText("bshell-set-video", "videoUrl");
+
+  const hasWhatsappEl = document.getElementById("bshell-set-has-whatsapp");
+  if (hasWhatsappEl) {
+    hasWhatsappEl.addEventListener("change", () => {
+      bshellSnapshot();
+      d.noWhatsapp = !hasWhatsappEl.checked;
+      bshellRenderCanvas();
+      bshellScheduleSave();
+    });
+  }
+
+  const colorEl = document.getElementById("bshell-set-color");
+  if (colorEl) {
+    colorEl.addEventListener("focus", () => bshellBeginEdit(colorEl));
+    colorEl.addEventListener("change", () => bshellEndEdit(colorEl));
+    colorEl.addEventListener("input", () => {
+      d.primaryColor = colorEl.value;
+      bshellApplyGlobalStylesLive();
+      bshellScheduleSave();
+    });
+  }
+
+  const fontEl = document.getElementById("bshell-set-font");
+  if (fontEl) {
+    fontEl.addEventListener("change", () => {
+      bshellSnapshot();
+      d.fontFamily = fontEl.value;
+      bshellApplyGlobalStylesLive();
+      bshellScheduleSave();
+    });
+  }
+
+  const hideCopyrightEl = document.getElementById("bshell-set-hide-copyright");
+  if (hideCopyrightEl) {
+    hideCopyrightEl.addEventListener("change", () => {
+      bshellSnapshot();
+      d.hideCopyright = hideCopyrightEl.checked;
+      bshellRenderCanvas();
+      bshellScheduleSave();
+    });
+  }
+
+  const videoBgEl = document.getElementById("bshell-set-video-bg");
+  if (videoBgEl) {
+    videoBgEl.addEventListener("change", () => {
+      bshellSnapshot();
+      d.heroVideoBg = videoBgEl.checked;
+      bshellRenderCanvas();
+      bshellScheduleSave();
+    });
+  }
+
+  const photoEl = document.getElementById("bshell-set-photo");
+  if (photoEl) {
+    photoEl.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 6 * 1024 * 1024) {
+        alert("התמונה גדולה מדי — בחרו קובץ עד 6MB.");
+        e.target.value = "";
+        return;
+      }
+      bshellSnapshot();
+      const url = await uploadSiteImage(file, "hero");
+      if (!url) {
+        alert("העלאת התמונה נכשלה, נסו שוב.");
+        bshellUndoStack.pop();
+        bshellSyncUndoButtons();
+        e.target.value = "";
+        return;
+      }
+      d.heroImage = url;
+      bshellRenderProperties();
+      bshellRenderCanvas();
+      bshellScheduleSave();
+    });
+  }
+  const photoRemoveEl = document.getElementById("bshell-set-photo-remove");
+  if (photoRemoveEl) {
+    photoRemoveEl.addEventListener("click", () => {
+      if (!d.heroImage) return;
+      bshellSnapshot();
+      d.heroImage = "";
+      const fileInput = document.getElementById("bshell-set-photo");
+      if (fileInput) fileInput.value = "";
+      bshellRenderProperties();
+      bshellRenderCanvas();
+      bshellScheduleSave();
+    });
+  }
+
+  const galleryEl = document.getElementById("bshell-set-gallery");
+  if (galleryEl) {
+    galleryEl.addEventListener("change", (e) => {
+      const files = Array.from(e.target.files || []);
+      if (!files.length) return;
+      bshellSnapshot();
+      d.heroImages = d.heroImages || [];
+      const roomLeft = SITE_GALLERY_MAX - d.heroImages.length;
+      if (roomLeft <= 0) {
+        alert(`אפשר עד ${SITE_GALLERY_MAX} תמונות בגלריה — הסירו אחת כדי להוסיף חדשה.`);
+        bshellUndoStack.pop();
+        bshellSyncUndoButtons();
+        e.target.value = "";
+        return;
+      }
+      const toAdd = files.slice(0, roomLeft);
+      if (files.length > toAdd.length) {
+        alert(`אפשר עד ${SITE_GALLERY_MAX} תמונות בגלריה — נוספו רק ${toAdd.length} מתוך ${files.length} שבחרתם.`);
+      }
+      let remaining = toAdd.length;
+      toAdd.forEach(async (file) => {
+        if (file.size > 6 * 1024 * 1024) {
+          alert(`"${file.name}" גדולה מדי — בחרו קובץ עד 6MB.`);
+          remaining -= 1;
+          if (remaining === 0) { bshellRenderProperties(); bshellRenderCanvas(); bshellScheduleSave(); }
+          return;
+        }
+        // Each gallery photo gets its own unique name (unlike the single,
+        // stable "hero" slot) — same convention site-builder.js's own
+        // gallery upload already uses.
+        const name = "gallery-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+        const url = await uploadSiteImage(file, name);
+        if (!url) alert(`העלאת "${file.name}" נכשלה, נסו שוב.`);
+        else d.heroImages.push(url);
+        remaining -= 1;
+        if (remaining === 0) { bshellRenderProperties(); bshellRenderCanvas(); bshellScheduleSave(); }
+      });
+      e.target.value = "";
+    });
+  }
+  const galleryPreviewEl = document.getElementById("bshell-set-gallery-preview");
+  if (galleryPreviewEl) {
+    galleryPreviewEl.addEventListener("click", (e) => {
+      const btn = e.target.closest('[data-action="bshell-remove-gallery-photo"]');
+      if (!btn) return;
+      bshellSnapshot();
+      const idx = parseInt(btn.closest("[data-idx]").dataset.idx, 10);
+      d.heroImages.splice(idx, 1);
+      bshellRenderProperties();
+      bshellRenderCanvas();
+      bshellScheduleSave();
+    });
+  }
+}
+
+/* Same trick applyGlobalStylesLive() (site-builder.js) already uses for
+   the old sidebar's own color/font fields, aimed at the Shell's iframe
+   instead of the old #site-preview-frame — patches the live <style>
+   tag's text (and the Google Fonts <link>s) from a freshly rendered
+   copy of the page, rather than reloading the whole iframe. Falls back
+   to a full canvas re-render if the current document has no <style>
+   tag to patch yet (shouldn't normally happen). */
+function bshellApplyGlobalStylesLive() {
+  const iframe = document.getElementById("bshell-canvas-iframe");
+  const doc = iframe && iframe.contentDocument;
+  const styleEl = doc && doc.querySelector("style");
+  if (!styleEl) { bshellRenderCanvas(); return; }
+  const html = currentSiteHtml("index");
+  const styleMatch = html.match(/<style>([\s\S]*?)<\/style>/);
+  if (!styleMatch) { bshellRenderCanvas(); return; }
+  styleEl.textContent = styleMatch[1];
+  const linkMatches = html.match(/<link rel="preconnect"[^>]*>|<link href="https:\/\/fonts\.googleapis\.com[^>]*>/g);
+  if (linkMatches) {
+    doc.querySelectorAll('head link[rel="preconnect"], head link[href*="fonts.googleapis.com"]').forEach((el) => el.remove());
+    doc.head.insertAdjacentHTML("afterbegin", linkMatches.join(""));
   }
 }
