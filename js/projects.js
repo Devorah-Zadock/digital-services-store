@@ -46,6 +46,10 @@ const DK_PCARD_ICONS = {
   schedule: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M4 15h16M10 4v16M15 4v16"/></svg>',
 };
 
+// Same 6 colors as the sidebar/create-chooser/home cards (data-dk-product);
+// "schedule" (the XLSX/sheet product) reuses the xlsx color.
+const DK_PCARD_PRODUCT = { site: "site", cv: "cv", quote: "quote", invoice: "invoice", schedule: "xlsx" };
+
 const MY_PANEL_TEMPLATE_LABELS_FALLBACK = typeof MY_PANEL_TEMPLATE_LABELS !== "undefined" ? MY_PANEL_TEMPLATE_LABELS : {};
 
 async function dkProjectsFetchAll(user) {
@@ -117,23 +121,20 @@ async function dkProjectsFetchAll(user) {
 }
 
 function dkPcardHtml(item) {
-  const canDuplicate = item.kind === "site" || item.kind === "quote" || item.kind === "schedule";
-  const canDelete = item.kind !== "invoice" || item.status !== "live";
+  const product = DK_PCARD_PRODUCT[item.kind] || "site";
   return `
-    <div class="dk-pcard" data-dk-pcard-kind="${item.kind}" data-dk-pcard-id="${dkProjectsEscape(item.id)}">
-      <div class="dk-pcard-thumb">${DK_PCARD_ICONS[item.kind] || ""}</div>
-      <div class="dk-pcard-body">
-        <p class="dk-pcard-name">${dkProjectsEscape(item.name)}</p>
-        <p class="dk-pcard-meta">
-          ${item.sub ? `<span>${dkProjectsEscape(item.sub)}</span>` : ""}
-          ${item.statusLabel ? `<span class="dk-pcard-status ${item.status === "live" ? "live" : "draft"}">${dkProjectsEscape(item.statusLabel)}</span>` : ""}
-          <span>${dkProjectsTimeAgo(item.updatedAt)}</span>
-        </p>
-        <div class="dk-pcard-actions">
-          <a href="${item.href}" class="dk-pcard-cta">פתיחה</a>
-          <button type="button" class="dk-pcard-more" data-dk-pcard-more aria-label="עוד">⋮</button>
-        </div>
+    <div class="dk-pcard" data-dk-product="${product}" data-dk-pcard-kind="${item.kind}" data-dk-pcard-id="${dkProjectsEscape(item.id)}">
+      <div class="dk-pcard-head">
+        <div class="dk-pcard-icon">${DK_PCARD_ICONS[item.kind] || ""}</div>
+        <button type="button" class="dk-pcard-more" data-dk-pcard-more aria-label="עוד">⋮</button>
       </div>
+      <p class="dk-pcard-name">${dkProjectsEscape(item.name)}</p>
+      <p class="dk-pcard-meta">
+        ${item.sub ? `<span>${dkProjectsEscape(item.sub)}</span>` : ""}
+        ${item.statusLabel ? `<span class="dk-pcard-status ${item.status === "live" ? "live" : "draft"}">${dkProjectsEscape(item.statusLabel)}</span>` : ""}
+      </p>
+      <p class="dk-pcard-date">${dkProjectsTimeAgo(item.updatedAt)}</p>
+      <a href="${item.href}" class="dk-pcard-cta">פתיחה</a>
     </div>`;
 }
 

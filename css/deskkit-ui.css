@@ -81,9 +81,10 @@ body.dk-has-mobile-nav:has(.bshell.active) .dk-mobile-nav { display: none; }
    removed, not repurposed. */
 .dk-app-sidebar {
   position: fixed; top: var(--header-h, 70px); bottom: 0; inset-inline-start: 0;
-  width: 216px; overflow-y: auto; background: var(--surface);
+  width: var(--app-sidebar-w, 216px); overflow-y: auto; overflow-x: visible; background: var(--surface);
   border-inline-end: 1px solid var(--border); z-index: 30;
   display: flex; flex-direction: column; gap: 2px; padding: 18px 12px;
+  transition: width .18s ease;
 }
 /* Keyed off .dk-app-sidebar-mounted (added by js/app-sidebar.js only
    once a real logged-in session is confirmed and the sidebar actually
@@ -92,23 +93,49 @@ body.dk-has-mobile-nav:has(.bshell.active) .dk-mobile-nav { display: none; }
    layout shift off the static marker would push a logged-OUT
    visitor's whole page sideways to make room for a sidebar that was
    never actually shown. */
-body.dk-app-sidebar-mounted { padding-inline-start: 216px; }
+body.dk-app-sidebar-mounted { padding-inline-start: var(--app-sidebar-w, 216px); transition: padding-inline-start .18s ease; }
 /* header.site is a normal-flow child of body, so the padding above
    would also narrow/push it — it isn't fixed-position like the
    sidebar. Counter it so the header still spans the full browser
    width above the sidebar (same counter-margin technique the old,
    removed rail used for the exact same reason). */
-body.dk-app-sidebar-mounted header.site { margin-inline-start: -216px; width: calc(100% + 216px); }
+body.dk-app-sidebar-mounted header.site {
+  margin-inline-start: calc(var(--app-sidebar-w, 216px) * -1); width: calc(100% + var(--app-sidebar-w, 216px));
+  transition: margin-inline-start .18s ease, width .18s ease;
+}
+/* Collapse toggle (js/app-sidebar.js's own button): shrinks the one
+   variable everything above already reads, instead of a parallel set
+   of "collapsed" rules per property. */
+body.dk-app-sidebar-collapsed { --app-sidebar-w: 70px; }
+body.dk-app-sidebar-collapsed .dk-app-sidebar-item { justify-content: center; padding-inline: 0; }
+body.dk-app-sidebar-collapsed .dk-app-sidebar-item-label { display: none; }
+.dk-app-sidebar-toggle {
+  position: absolute; top: 18px; inset-inline-end: -12px; width: 24px; height: 24px; border-radius: 50%;
+  border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; font-size: 13px; line-height: 1; z-index: 31;
+  box-shadow: var(--shadow-sm); padding: 0;
+}
+.dk-app-sidebar-toggle:hover { color: var(--brand-color); border-color: var(--brand-color); }
+body.dk-app-sidebar-collapsed .dk-app-sidebar-toggle { transform: scaleX(-1); }
+/* A Builder Shell (sites/CV/Quote/Invoice) normally owns the full
+   viewport at z-index:5000, which would simply bury the sidebar behind
+   it rather than let the two coexist — so when the sidebar is mounted,
+   the Shell starts after it instead of at the true edge. */
+body.dk-app-sidebar-mounted .bshell.active {
+  inset-inline-start: var(--app-sidebar-w, 216px); transition: inset-inline-start .18s ease;
+}
 @media (max-width: 900px) {
   .dk-app-sidebar { display: none; }
   body.dk-app-sidebar-mounted { padding-inline-start: 0; }
   body.dk-app-sidebar-mounted header.site { margin-inline-start: 0; width: 100%; }
+  body.dk-app-sidebar-mounted .bshell.active { inset-inline-start: 0; }
 }
 .dk-app-sidebar-item {
   display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 10px;
   color: var(--text-secondary); text-decoration: none; font-size: 14px; font-weight: 600;
   transition: background .15s ease, color .15s ease;
 }
+.dk-app-sidebar-item-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dk-app-sidebar-item:hover { background: var(--bg); color: var(--text); }
 .dk-app-sidebar-item.active { background: var(--primary-light); color: var(--primary-dark); }
 .dk-app-sidebar-icon {
@@ -126,12 +153,12 @@ body.dk-app-sidebar-mounted header.site { margin-inline-start: -216px; width: ca
    product, not one monochrome teal repeated six times). Specificity
    (attribute selector + descendant class) wins over each element's
    own plain-class default background declared elsewhere. */
-[data-dk-product="site"] .dk-app-sidebar-icon, [data-dk-product="site"] .dk-home-card-icon, [data-dk-product="site"] .dk-create-opt-icon { background: #CCFBF1; color: #0F766E; }
-[data-dk-product="cv"] .dk-app-sidebar-icon, [data-dk-product="cv"] .dk-home-card-icon, [data-dk-product="cv"] .dk-create-opt-icon { background: #EDE9FE; color: #6D28D9; }
-[data-dk-product="quote"] .dk-app-sidebar-icon, [data-dk-product="quote"] .dk-home-card-icon, [data-dk-product="quote"] .dk-create-opt-icon { background: #FEF3C7; color: #B45309; }
-[data-dk-product="invoice"] .dk-app-sidebar-icon, [data-dk-product="invoice"] .dk-home-card-icon, [data-dk-product="invoice"] .dk-create-opt-icon { background: #FFE4E6; color: #BE123C; }
-[data-dk-product="deck"] .dk-app-sidebar-icon, [data-dk-product="deck"] .dk-home-card-icon, [data-dk-product="deck"] .dk-create-opt-icon { background: #DBEAFE; color: #1D4ED8; }
-[data-dk-product="xlsx"] .dk-app-sidebar-icon, [data-dk-product="xlsx"] .dk-home-card-icon, [data-dk-product="xlsx"] .dk-create-opt-icon { background: #DCFCE7; color: #15803D; }
+[data-dk-product="site"] .dk-app-sidebar-icon, [data-dk-product="site"] .dk-home-card-icon, [data-dk-product="site"] .dk-create-opt-icon, [data-dk-product="site"] .dk-pcard-icon { background: #CCFBF1; color: #0F766E; }
+[data-dk-product="cv"] .dk-app-sidebar-icon, [data-dk-product="cv"] .dk-home-card-icon, [data-dk-product="cv"] .dk-create-opt-icon, [data-dk-product="cv"] .dk-pcard-icon { background: #EDE9FE; color: #6D28D9; }
+[data-dk-product="quote"] .dk-app-sidebar-icon, [data-dk-product="quote"] .dk-home-card-icon, [data-dk-product="quote"] .dk-create-opt-icon, [data-dk-product="quote"] .dk-pcard-icon { background: #FEF3C7; color: #B45309; }
+[data-dk-product="invoice"] .dk-app-sidebar-icon, [data-dk-product="invoice"] .dk-home-card-icon, [data-dk-product="invoice"] .dk-create-opt-icon, [data-dk-product="invoice"] .dk-pcard-icon { background: #FFE4E6; color: #BE123C; }
+[data-dk-product="deck"] .dk-app-sidebar-icon, [data-dk-product="deck"] .dk-home-card-icon, [data-dk-product="deck"] .dk-create-opt-icon, [data-dk-product="deck"] .dk-pcard-icon { background: #DBEAFE; color: #1D4ED8; }
+[data-dk-product="xlsx"] .dk-app-sidebar-icon, [data-dk-product="xlsx"] .dk-home-card-icon, [data-dk-product="xlsx"] .dk-create-opt-icon, [data-dk-product="xlsx"] .dk-pcard-icon { background: #DCFCE7; color: #15803D; }
 
 /* ============ Create-chooser modal (js/create-chooser.js) ============ */
 .dk-create-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 18px 0 20px; }
@@ -267,33 +294,47 @@ body.dk-home { background: var(--bg); }
 .dk-home-recent-head h2 { font-size: 21px; margin: 0; }
 .dk-home-recent-head a { font-size: 13.5px; font-weight: 700; color: var(--primary-dark); text-decoration: none; }
 
-/* ============ Shared project card (Home-recent + Projects page + My Websites) ============ */
-.dk-pcard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
-.dk-pcard { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; position: relative; transition: box-shadow .15s ease, border-color .15s ease; }
-.dk-pcard:hover { box-shadow: var(--shadow); border-color: var(--primary); }
-.dk-pcard-thumb {
-  height: 108px; background: var(--primary-light); display: flex; align-items: center; justify-content: center;
-  color: var(--primary-dark);
+/* ============ Shared project card (Home-recent + Projects page + My Websites) ============
+   Rebuilt in the visual-design pass: white bg-card, soft shadow-md,
+   generous 24px padding, colorful icon badge top-start, 3-dot menu
+   top-end, clean CTA pinned to the bottom — replacing the old flat
+   color-square thumbnail with the reference mockup's card language. */
+.dk-pcard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+.dk-pcard {
+  background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);
+  padding: 24px; display: flex; flex-direction: column; position: relative;
+  box-shadow: var(--shadow-md); transition: box-shadow .15s ease, transform .15s ease;
 }
-.dk-pcard-thumb svg { width: 30px; height: 30px; }
-.dk-pcard-body { padding: 14px 16px 16px; }
-.dk-pcard-name { font-weight: 700; font-size: 14.5px; margin: 0 0 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dk-pcard-meta { font-size: 12px; color: var(--text-secondary); margin: 0 0 12px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.dk-pcard:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+.dk-pcard-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.dk-pcard-icon {
+  width: 42px; height: 42px; border-radius: 12px; background: var(--primary-light); color: var(--primary-dark);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.dk-pcard-icon svg { width: 21px; height: 21px; }
+.dk-pcard-name { font-weight: 700; font-size: 16px; margin: 0 0 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dk-pcard-meta { font-size: 12.5px; color: var(--text-muted); margin: 0 0 4px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-height: 18px; }
 .dk-pcard-status { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; }
 .dk-pcard-status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); }
 .dk-pcard-status.live::before { background: var(--success); }
 .dk-pcard-status.draft::before { background: var(--warning); }
-.dk-pcard-actions { display: flex; align-items: center; gap: 8px; }
-.dk-pcard-cta { flex: 1; text-align: center; padding: 8px 10px; border-radius: 10px; background: var(--primary); color: #fff; font-size: 13px; font-weight: 700; text-decoration: none; }
-.dk-pcard-cta:hover { background: var(--primary-dark); }
-.dk-pcard-more { flex-shrink: 0; width: 34px; height: 34px; border-radius: 9px; border: 1.5px solid var(--border); background: var(--surface); cursor: pointer; color: var(--text-secondary); font-size: 16px; }
-.dk-pcard-more:hover { border-color: var(--primary); color: var(--primary-dark); }
+.dk-pcard-date { font-size: 12px; color: var(--text-muted); margin: 0 0 18px; }
+.dk-pcard-cta {
+  margin-top: auto; text-align: center; padding: 11px 10px; border-radius: var(--radius-sm); background: var(--brand-color);
+  color: #fff; font-size: 13.5px; font-weight: 700; text-decoration: none; transition: background .15s ease;
+}
+.dk-pcard-cta:hover { background: var(--brand-dark); }
+.dk-pcard-more {
+  flex-shrink: 0; width: 30px; height: 30px; border-radius: 8px; border: none; background: transparent;
+  cursor: pointer; color: var(--text-muted); font-size: 17px; line-height: 1; display: flex; align-items: center; justify-content: center;
+}
+.dk-pcard-more:hover { background: var(--bg-main); color: var(--text-main); }
 .dk-pcard-menu {
-  position: absolute; inset-inline-end: 16px; bottom: 54px; background: var(--surface); border: 1px solid var(--border);
+  position: absolute; inset-inline-end: 16px; top: 58px; background: var(--bg-card); border: 1px solid var(--border-color);
   border-radius: 10px; box-shadow: var(--shadow-lg); min-width: 150px; z-index: 20; overflow: hidden;
 }
 .dk-pcard-menu button { display: block; width: 100%; text-align: start; background: none; border: none; padding: 10px 14px; font-size: 13px; font-family: inherit; color: var(--text); cursor: pointer; }
-.dk-pcard-menu button:hover { background: var(--bg); }
+.dk-pcard-menu button:hover { background: var(--bg-main); }
 .dk-pcard-menu button.danger { color: var(--error); }
 .dk-pcard-empty { grid-column: 1/-1; text-align: center; padding: 50px 20px; color: var(--text-secondary); }
 .dk-pcard-empty a { color: var(--primary-dark); font-weight: 700; }

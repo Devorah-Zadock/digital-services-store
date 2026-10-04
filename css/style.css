@@ -53,6 +53,30 @@
   --shadow-lg: 0 24px 60px rgba(13, 13, 20, 0.18);
   --max: 1120px;
 
+  /* Modern design-system token names (explicit design-system pass) —
+     aliases to the equivalent values above rather than new hex codes:
+     those values are already near-identical in intent, and aliasing
+     keeps one real color per concept instead of two slightly
+     different sources of truth for the same teal/background/text.
+     New/rebuilt components (sidebar, cards) should reach for these
+     names; everything existing keeps working unchanged. */
+  --bg-main: var(--bg);
+  --bg-card: var(--surface);
+  --brand-color: var(--primary);
+  --brand-dark: var(--primary-dark);
+  --text-main: var(--text);
+  --border-color: var(--border);
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.02);
+  --shadow-md: 0 4px 20px -2px rgba(148, 163, 184, 0.12);
+  /* Persistent app-shell sidebar's current width — a real variable (not
+     an alias) so js/app-sidebar.js's collapse toggle can shrink it
+     site-wide (216px -> 70px icon-only) by only ever touching this one
+     value; every rule below that cares about the sidebar's width reads
+     it instead of a hardcoded 216px. */
+  --app-sidebar-w: 216px;
+
   /* Category accents — used to give the catalog visual variety instead of
      every product looking the same teal/gold regardless of type. */
   --cat-general: #1A1A1A; --cat-general-bg: #EAF6F6;

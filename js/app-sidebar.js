@@ -5,13 +5,18 @@
    screens read as a real workspace specifically because of this rail,
    not the top bar alone.
 
-   Deliberately narrow in scope, unlike the old (removed) my-panel.js
-   rail: opt-in per page via body.dk-has-app-sidebar (index.html's
-   logged-in view, projects.html), desktop only, and only once a real
-   session is confirmed — never shown to a logged-out visitor, never
-   flashed in before the auth check resolves. Builder-Shell pages keep
-   their own full chrome and never opt in; mobile keeps the bottom nav
-   (js/mobile-nav.js) as the one mobile nav, same non-stacking rule
+   Opt-in per page via body.dk-has-app-sidebar (Home's logged-in view,
+   Projects, and all four Builder Shells: CV/Sites/Quote/Invoice),
+   desktop only, and only once a real session is confirmed — never
+   shown to a logged-out visitor, never flashed in before the auth
+   check resolves. On a Builder-Shell page, css/deskkit-ui.css shrinks
+   the Shell's own `inset-inline-start` to start after the sidebar
+   instead of at the true edge, so the sidebar and the Shell coexist —
+   the sidebar never disappears while editing. A collapse toggle button
+   (own id #dk-app-sidebar-toggle) shrinks it from 216px to a 70px
+   icon-only rail via the shared --app-sidebar-w custom property, for
+   when the Shell needs the extra width back; mobile keeps the bottom
+   nav (js/mobile-nav.js) as the one mobile nav, same non-stacking rule
    that already governs that file.
 
    --header-h is read by the shared top-offset in css/deskkit-ui.css
@@ -50,7 +55,19 @@ function dkAppSidebarItemHtml(it, here) {
   if (it.divider) return '<div class="dk-app-sidebar-divider"></div>';
   const active = it.href.split("?")[0] === here;
   const iconBox = `<span class="dk-app-sidebar-icon">${DK_SIDEBAR_ICONS[it.key] || ""}</span>`;
-  return `<a href="${it.href}" class="dk-app-sidebar-item${active ? " active" : ""}"${it.product ? ` data-dk-product="${it.product}"` : ""}>${iconBox}${it.label}</a>`;
+  return `<a href="${it.href}" class="dk-app-sidebar-item${active ? " active" : ""}"${it.product ? ` data-dk-product="${it.product}"` : ""} title="${it.label}">${iconBox}<span class="dk-app-sidebar-item-label">${it.label}</span></a>`;
+}
+
+// Collapse state (260px <-> 70px icon-only) is a per-viewer convenience,
+// remembered the same way the lang toggle already does — never required
+// for the sidebar to render correctly if it's missing or blocked.
+function dkSidebarCollapsedPref() {
+  try { return localStorage.getItem("dk_sidebar_collapsed") === "1"; } catch (e) { return false; }
+}
+
+function dkToggleAppSidebar() {
+  const collapsed = document.body.classList.toggle("dk-app-sidebar-collapsed");
+  try { localStorage.setItem("dk_sidebar_collapsed", collapsed ? "1" : "0"); } catch (e) {}
 }
 
 function dkMountAppSidebar() {
@@ -62,9 +79,12 @@ function dkMountAppSidebar() {
   const aside = document.createElement("aside");
   aside.id = "dk-app-sidebar";
   aside.className = "dk-app-sidebar no-print";
-  aside.innerHTML = DK_SIDEBAR_ITEMS.map((it) => dkAppSidebarItemHtml(it, here)).join("");
+  const toggleBtn = '<button type="button" class="dk-app-sidebar-toggle" id="dk-app-sidebar-toggle" aria-label="כיווץ או הרחבת סרגל הצד">‹</button>';
+  aside.innerHTML = toggleBtn + DK_SIDEBAR_ITEMS.map((it) => dkAppSidebarItemHtml(it, here)).join("");
   document.body.appendChild(aside);
   document.body.classList.add("dk-app-sidebar-mounted");
+  if (dkSidebarCollapsedPref()) document.body.classList.add("dk-app-sidebar-collapsed");
+  document.getElementById("dk-app-sidebar-toggle").addEventListener("click", dkToggleAppSidebar);
 }
 
 function dkUnmountAppSidebar() {

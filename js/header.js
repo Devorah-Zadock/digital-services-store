@@ -33,7 +33,12 @@ function dkHeaderApply(session) {
   const links = loggedIn ? DK_HEADER_LOGGED_IN_LINKS() : DK_HEADER_LOGGED_OUT_LINKS();
 
   linksEl.innerHTML = links.map((l) => {
-    const isActive = !l.action && l.href.split("#")[0] === here;
+    // Anchor links (index.html#tools, index.html#how) are same-page
+    // scroll jumps, not separate destinations — matching them by page
+    // alone made BOTH "מה אפשר ליצור" and "איך זה עובד" show active at
+    // once on index.html (confirmed live), since both resolve to the
+    // same page. Only a real, anchor-free destination can be "active".
+    const isActive = !l.action && !l.href.includes("#") && l.href.split("#")[0] === here;
     return `<a href="${l.href}"${l.action ? ` data-dk-nav-action="${l.action}"` : ""}${isActive ? ' class="active"' : ""}>${l.label}</a>`;
   }).join("");
 
