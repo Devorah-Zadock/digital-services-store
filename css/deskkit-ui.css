@@ -153,12 +153,30 @@ body.dk-app-sidebar-mounted .bshell.active {
    product, not one monochrome teal repeated six times). Specificity
    (attribute selector + descendant class) wins over each element's
    own plain-class default background declared elsewhere. */
-[data-dk-product="site"] .dk-app-sidebar-icon, [data-dk-product="site"] .dk-home-card-icon, [data-dk-product="site"] .dk-create-opt-icon, [data-dk-product="site"] .dk-pcard-icon { background: #CCFBF1; color: #0F766E; }
-[data-dk-product="cv"] .dk-app-sidebar-icon, [data-dk-product="cv"] .dk-home-card-icon, [data-dk-product="cv"] .dk-create-opt-icon, [data-dk-product="cv"] .dk-pcard-icon { background: #EDE9FE; color: #6D28D9; }
-[data-dk-product="quote"] .dk-app-sidebar-icon, [data-dk-product="quote"] .dk-home-card-icon, [data-dk-product="quote"] .dk-create-opt-icon, [data-dk-product="quote"] .dk-pcard-icon { background: #FEF3C7; color: #B45309; }
-[data-dk-product="invoice"] .dk-app-sidebar-icon, [data-dk-product="invoice"] .dk-home-card-icon, [data-dk-product="invoice"] .dk-create-opt-icon, [data-dk-product="invoice"] .dk-pcard-icon { background: #FFE4E6; color: #BE123C; }
-[data-dk-product="deck"] .dk-app-sidebar-icon, [data-dk-product="deck"] .dk-home-card-icon, [data-dk-product="deck"] .dk-create-opt-icon, [data-dk-product="deck"] .dk-pcard-icon { background: #DBEAFE; color: #1D4ED8; }
-[data-dk-product="xlsx"] .dk-app-sidebar-icon, [data-dk-product="xlsx"] .dk-home-card-icon, [data-dk-product="xlsx"] .dk-create-opt-icon, [data-dk-product="xlsx"] .dk-pcard-icon { background: #DCFCE7; color: #15803D; }
+[data-dk-product="site"] .dk-app-sidebar-icon, [data-dk-product="site"] .dk-home-card-icon, [data-dk-product="site"] .dk-create-opt-icon { background: #CCFBF1; color: #0F766E; }
+[data-dk-product="cv"] .dk-app-sidebar-icon, [data-dk-product="cv"] .dk-home-card-icon, [data-dk-product="cv"] .dk-create-opt-icon { background: #EDE9FE; color: #6D28D9; }
+[data-dk-product="quote"] .dk-app-sidebar-icon, [data-dk-product="quote"] .dk-home-card-icon, [data-dk-product="quote"] .dk-create-opt-icon { background: #FEF3C7; color: #B45309; }
+[data-dk-product="invoice"] .dk-app-sidebar-icon, [data-dk-product="invoice"] .dk-home-card-icon, [data-dk-product="invoice"] .dk-create-opt-icon { background: #FFE4E6; color: #BE123C; }
+[data-dk-product="deck"] .dk-app-sidebar-icon, [data-dk-product="deck"] .dk-home-card-icon, [data-dk-product="deck"] .dk-create-opt-icon { background: #DBEAFE; color: #1D4ED8; }
+[data-dk-product="xlsx"] .dk-app-sidebar-icon, [data-dk-product="xlsx"] .dk-home-card-icon, [data-dk-product="xlsx"] .dk-create-opt-icon { background: #DCFCE7; color: #15803D; }
+
+/* Project-card thumbnail strip: same per-product color, as a soft
+   gradient wash with a large faint watermark icon — a real preview of
+   the product rather than a flat icon chip, without relying on
+   unlicensed stock photography or a screenshot pipeline that doesn't
+   exist yet (a feature, not a visual-pass change). */
+[data-dk-product="site"] .dk-pcard-thumb { background: linear-gradient(135deg, #CCFBF1, var(--bg-card)); }
+[data-dk-product="site"] .dk-pcard-thumb-icon { color: #0F766E; }
+[data-dk-product="cv"] .dk-pcard-thumb { background: linear-gradient(135deg, #EDE9FE, var(--bg-card)); }
+[data-dk-product="cv"] .dk-pcard-thumb-icon { color: #6D28D9; }
+[data-dk-product="quote"] .dk-pcard-thumb { background: linear-gradient(135deg, #FEF3C7, var(--bg-card)); }
+[data-dk-product="quote"] .dk-pcard-thumb-icon { color: #B45309; }
+[data-dk-product="invoice"] .dk-pcard-thumb { background: linear-gradient(135deg, #FFE4E6, var(--bg-card)); }
+[data-dk-product="invoice"] .dk-pcard-thumb-icon { color: #BE123C; }
+[data-dk-product="deck"] .dk-pcard-thumb { background: linear-gradient(135deg, #DBEAFE, var(--bg-card)); }
+[data-dk-product="deck"] .dk-pcard-thumb-icon { color: #1D4ED8; }
+[data-dk-product="xlsx"] .dk-pcard-thumb { background: linear-gradient(135deg, #DCFCE7, var(--bg-card)); }
+[data-dk-product="xlsx"] .dk-pcard-thumb-icon { color: #15803D; }
 
 /* ============ Create-chooser modal (js/create-chooser.js) ============ */
 .dk-create-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 18px 0 20px; }
@@ -207,11 +225,106 @@ body.dk-app-sidebar-mounted .bshell.active {
 @media (max-width: 760px) { .dk-crumb { max-width: 46vw; font-size: 12px; } }
 
 /* ============ New Home page ============ */
-body.dk-home { background: var(--bg); }
-.dk-home-hero { padding: 76px 0 54px; text-align: center; }
-.dk-home-hero h1 { font-size: 52px; font-weight: 700; line-height: 1.18; margin: 0 0 16px; color: var(--text); font-family: Heebo, Arial, sans-serif; }
-.dk-home-hero p { font-size: 19px; color: var(--text-secondary); line-height: 1.6; max-width: 620px; margin: 0 auto; }
-@media (max-width: 680px) { .dk-home-hero { padding: 48px 0 34px; } .dk-home-hero h1 { font-size: 34px; } .dk-home-hero p { font-size: 16px; } }
+body.dk-home { background: var(--bg-main); }
+/* Hero: headline+CTAs+quick-create icons anchored to the reading-start
+   side (right, in RTL — first in source order so it's the primary
+   focus), a browser-chrome mockup of the product on the other side.
+   Both sit above the fold together — the "why DeskKit" section below
+   only shows once the visitor scrolls past this, matching the
+   reference mockup's "at first you only see the hero" framing. */
+.dk-home-hero { padding: 64px 0 56px; overflow: hidden; }
+/* min-height (desktop only) keeps the hero filling close to the first
+   viewport, so "why DeskKit" below only appears once the visitor
+   scrolls — matching the reference mockup's "at first you only see
+   the hero" framing instead of both sections being visible at once on
+   a typical laptop screen. Skipped on mobile, where forcing near-full-
+   height just adds empty space above the fold instead of removing it. */
+@media (min-width: 681px) {
+  .dk-home-hero { min-height: calc(100vh - var(--header-h, 70px)); display: flex; align-items: center; padding: 40px 0; }
+  .dk-home-hero .container { width: 100%; }
+}
+.dk-home-hero-inner { display: flex; align-items: center; gap: 48px; }
+.dk-home-hero-text { flex: 1; min-width: 0; }
+.dk-home-hero-text h1 { font-size: 46px; font-weight: 800; line-height: 1.18; margin: 18px 0 16px; color: var(--text-main); font-family: Heebo, Arial, sans-serif; }
+.dk-home-hero-text p { font-size: 17.5px; color: var(--text-secondary); line-height: 1.65; max-width: 480px; margin: 0 0 24px; }
+.dk-home-hero-icons { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 26px; }
+.dk-home-hero-icon {
+  display: inline-flex; align-items: center; gap: 7px; background: var(--bg-card); border: 1px solid var(--border-color);
+  border-radius: 999px; padding: 6px 14px 6px 6px; font-size: 13px; font-weight: 700; color: var(--text-main);
+  text-decoration: none; box-shadow: var(--shadow-sm); transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.dk-home-hero-icon:hover { border-color: var(--brand-color); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.dk-home-hero-icon-badge {
+  width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  background: var(--primary-light); color: var(--primary-dark);
+}
+.dk-home-hero-icon-badge svg { width: 13px; height: 13px; }
+.dk-home-hero-ctas { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+.dk-home-hero-watch {
+  display: inline-flex; align-items: center; gap: 9px; color: var(--text-main); font-weight: 700; font-size: 14.5px; text-decoration: none;
+}
+.dk-home-hero-watch:hover .dk-home-hero-play { background: var(--brand-color); color: #fff; }
+.dk-home-hero-play {
+  width: 32px; height: 32px; border-radius: 50%; background: var(--bg-card); border: 1px solid var(--border-color);
+  display: flex; align-items: center; justify-content: center; font-size: 11px; transition: background .15s ease, color .15s ease;
+}
+
+/* Visual: a browser-chrome frame around a small, purely CSS mockup of
+   the actual product (dashboard header + colorful create-tiles +
+   project rows) — a real preview of DeskKit itself rather than
+   unlicensed stock photography standing in for one. */
+.dk-home-hero-visual { flex: 0 0 44%; max-width: 480px; }
+.dk-home-hero-browser {
+  background: var(--bg-card); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+.dk-home-hero-browser-bar { display: flex; gap: 6px; padding: 12px 16px; border-bottom: 1px solid var(--border-color); }
+.dk-home-hero-browser-bar span { width: 9px; height: 9px; border-radius: 50%; background: var(--border-color); }
+.dk-home-hero-browser-screen { padding: 22px 22px 26px; background: linear-gradient(165deg, var(--bg-main), var(--bg-card)); }
+.dk-home-hero-screen-top { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+.dk-home-hero-screen-avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--brand-color); flex-shrink: 0; }
+.dk-home-hero-screen-greet { font-size: 13.5px; font-weight: 700; color: var(--text-main); }
+.dk-home-hero-screen-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+.dk-home-hero-screen-tiles span {
+  display: block; aspect-ratio: 1; border-radius: 10px; background: var(--primary-light);
+}
+.dk-home-hero-screen-tiles span[data-dk-product="cv"] { background: #EDE9FE; }
+.dk-home-hero-screen-tiles span[data-dk-product="quote"] { background: #FEF3C7; }
+.dk-home-hero-screen-tiles span[data-dk-product="invoice"] { background: #FFE4E6; }
+.dk-home-hero-screen-card {
+  display: flex; align-items: center; gap: 10px; background: var(--bg-card); border: 1px solid var(--border-color);
+  border-radius: 10px; padding: 10px; margin-bottom: 8px; box-shadow: var(--shadow-sm);
+}
+.dk-home-hero-screen-card-thumb { width: 26px; height: 26px; border-radius: 7px; background: var(--primary-light); flex-shrink: 0; }
+.dk-home-hero-screen-card-thumb[data-dk-product="cv"] { background: #EDE9FE; }
+.dk-home-hero-screen-card-lines { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.dk-home-hero-screen-card-lines b { display: block; width: 58%; height: 7px; border-radius: 4px; background: var(--border-color); }
+.dk-home-hero-screen-card-lines i { display: block; width: 32%; height: 6px; border-radius: 4px; background: var(--border-color); opacity: .6; }
+
+@media (max-width: 860px) {
+  .dk-home-hero-inner { flex-direction: column; }
+  .dk-home-hero-visual { max-width: 420px; width: 100%; }
+}
+@media (max-width: 680px) {
+  .dk-home-hero { padding: 40px 0 36px; }
+  .dk-home-hero-text h1 { font-size: 30px; }
+  .dk-home-hero-text p { font-size: 15.5px; max-width: none; }
+}
+
+/* ============ "Why DeskKit" — first thing visible after the hero on
+   scroll, matching the reference mockup's below-the-fold framing. ============ */
+.dk-home-why { padding: 0 0 64px; }
+.dk-home-why-grid { max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+@media (max-width: 860px) { .dk-home-why-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .dk-home-why-grid { grid-template-columns: 1fr; } }
+.dk-home-why-item { text-align: center; }
+.dk-home-why-icon {
+  width: 52px; height: 52px; border-radius: 15px; background: var(--primary-light); color: var(--primary-dark);
+  display: flex; align-items: center; justify-content: center; margin: 0 auto 14px;
+}
+.dk-home-why-icon svg { width: 24px; height: 24px; }
+.dk-home-why-item h4 { margin: 0 0 6px; font-size: 16px; font-weight: 700; color: var(--text-main); }
+.dk-home-why-item p { margin: 0; font-size: 13.5px; color: var(--text-secondary); line-height: 1.55; }
 
 .dk-home-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin: 0 0 56px; }
 @media (max-width: 980px) { .dk-home-cards { grid-template-columns: repeat(2, 1fr); } }
@@ -302,16 +415,14 @@ body.dk-home { background: var(--bg); }
 .dk-pcard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
 .dk-pcard {
   background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);
-  padding: 24px; display: flex; flex-direction: column; position: relative;
+  overflow: hidden; display: flex; flex-direction: column; position: relative;
   box-shadow: var(--shadow-md); transition: box-shadow .15s ease, transform .15s ease;
 }
 .dk-pcard:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
-.dk-pcard-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-.dk-pcard-icon {
-  width: 42px; height: 42px; border-radius: 12px; background: var(--primary-light); color: var(--primary-dark);
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.dk-pcard-icon svg { width: 21px; height: 21px; }
+.dk-pcard-thumb { position: relative; height: 108px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.dk-pcard-thumb-icon { width: 44px; height: 44px; opacity: .55; }
+.dk-pcard-thumb-icon svg { width: 100%; height: 100%; }
+.dk-pcard-body { padding: 18px 20px 20px; display: flex; flex-direction: column; flex: 1; }
 .dk-pcard-name { font-weight: 700; font-size: 16px; margin: 0 0 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dk-pcard-meta { font-size: 12.5px; color: var(--text-muted); margin: 0 0 4px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-height: 18px; }
 .dk-pcard-status { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; }
@@ -325,12 +436,13 @@ body.dk-home { background: var(--bg); }
 }
 .dk-pcard-cta:hover { background: var(--brand-dark); }
 .dk-pcard-more {
-  flex-shrink: 0; width: 30px; height: 30px; border-radius: 8px; border: none; background: transparent;
-  cursor: pointer; color: var(--text-muted); font-size: 17px; line-height: 1; display: flex; align-items: center; justify-content: center;
+  position: absolute; top: 10px; inset-inline-end: 10px; width: 30px; height: 30px; border-radius: 8px; border: none;
+  background: rgba(255, 255, 255, .82); cursor: pointer; color: var(--text-main); font-size: 17px; line-height: 1;
+  display: flex; align-items: center; justify-content: center; transition: background .15s ease;
 }
-.dk-pcard-more:hover { background: var(--bg-main); color: var(--text-main); }
+.dk-pcard-more:hover { background: #fff; }
 .dk-pcard-menu {
-  position: absolute; inset-inline-end: 16px; top: 58px; background: var(--bg-card); border: 1px solid var(--border-color);
+  position: absolute; inset-inline-end: 16px; top: 104px; background: var(--bg-card); border: 1px solid var(--border-color);
   border-radius: 10px; box-shadow: var(--shadow-lg); min-width: 150px; z-index: 20; overflow: hidden;
 }
 .dk-pcard-menu button { display: block; width: 100%; text-align: start; background: none; border: none; padding: 10px 14px; font-size: 13px; font-family: inherit; color: var(--text); cursor: pointer; }

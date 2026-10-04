@@ -238,11 +238,19 @@ body.has-sites-rail header.site {
    ltr there flipped it to the physical left (the wrong side of the RTL
    header) instead of just reordering the two words inside it. */
 .brand-text { direction: ltr; }
-.brand-badge { display: flex; align-items: center; }
-.brand-mark { width: 30px; height: 30px; }
-.bm-doc { fill: none; stroke: #1A1A1A; stroke-width: 1.6; stroke-linejoin: round; }
-.bm-fold { fill: #E4E4E4; stroke: #1A1A1A; stroke-width: 1.6; stroke-linejoin: round; }
-.bm-spark { fill: #0E8C8C; }
+/* Solid rounded-square badge (was a bare line-art icon) — same paths,
+   now white-on-brand-teal inside a filled square, the language the
+   reference mockup's own logo badge uses. CSS-only on purpose: the
+   mark's <path> markup is duplicated in every page's header, so
+   restyling it here reaches all of them without touching each page. */
+.brand-badge {
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 10px; background: var(--brand-color, #14B8A6); flex-shrink: 0;
+}
+.brand-mark { width: 19px; height: 19px; }
+.bm-doc { fill: none; stroke: #fff; stroke-width: 1.8; stroke-linejoin: round; }
+.bm-fold { fill: rgba(255, 255, 255, .35); stroke: #fff; stroke-width: 1.8; stroke-linejoin: round; }
+.bm-spark { fill: #fff; }
 .brand-desk { font-weight: 700; }
 .brand-kit { font-weight: 400; color: #0E8C8C; }
 .nav-end-group {

@@ -124,17 +124,19 @@ function dkPcardHtml(item) {
   const product = DK_PCARD_PRODUCT[item.kind] || "site";
   return `
     <div class="dk-pcard" data-dk-product="${product}" data-dk-pcard-kind="${item.kind}" data-dk-pcard-id="${dkProjectsEscape(item.id)}">
-      <div class="dk-pcard-head">
-        <div class="dk-pcard-icon">${DK_PCARD_ICONS[item.kind] || ""}</div>
+      <div class="dk-pcard-thumb">
+        <span class="dk-pcard-thumb-icon">${DK_PCARD_ICONS[item.kind] || ""}</span>
         <button type="button" class="dk-pcard-more" data-dk-pcard-more aria-label="עוד">⋮</button>
       </div>
-      <p class="dk-pcard-name">${dkProjectsEscape(item.name)}</p>
-      <p class="dk-pcard-meta">
-        ${item.sub ? `<span>${dkProjectsEscape(item.sub)}</span>` : ""}
-        ${item.statusLabel ? `<span class="dk-pcard-status ${item.status === "live" ? "live" : "draft"}">${dkProjectsEscape(item.statusLabel)}</span>` : ""}
-      </p>
-      <p class="dk-pcard-date">${dkProjectsTimeAgo(item.updatedAt)}</p>
-      <a href="${item.href}" class="dk-pcard-cta">פתיחה</a>
+      <div class="dk-pcard-body">
+        <p class="dk-pcard-name">${dkProjectsEscape(item.name)}</p>
+        <p class="dk-pcard-meta">
+          ${item.sub ? `<span>${dkProjectsEscape(item.sub)}</span>` : ""}
+          ${item.statusLabel ? `<span class="dk-pcard-status ${item.status === "live" ? "live" : "draft"}">${dkProjectsEscape(item.statusLabel)}</span>` : ""}
+        </p>
+        <p class="dk-pcard-date">${dkProjectsTimeAgo(item.updatedAt)}</p>
+        <a href="${item.href}" class="dk-pcard-cta">פתיחה</a>
+      </div>
     </div>`;
 }
 

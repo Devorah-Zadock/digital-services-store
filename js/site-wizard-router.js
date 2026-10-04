@@ -89,17 +89,19 @@ function dkMySitesCardHtml(row) {
   const isLive = !!row.published_url;
   return `
     <div class="dk-pcard" data-dk-product="site" data-dk-site-id="${row.id}">
-      <div class="dk-pcard-head">
-        <div class="dk-pcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.3 2.5 3.6 5.5 3.6 9s-1.3 6.5-3.6 9c-2.3-2.5-3.6-5.5-3.6-9s1.3-6.5 3.6-9z"/></svg></div>
+      <div class="dk-pcard-thumb">
+        <span class="dk-pcard-thumb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.3 2.5 3.6 5.5 3.6 9s-1.3 6.5-3.6 9c-2.3-2.5-3.6-5.5-3.6-9s1.3-6.5 3.6-9z"/></svg></span>
         <button type="button" class="dk-pcard-more" data-dk-site-more aria-label="עוד">⋮</button>
       </div>
-      <p class="dk-pcard-name">${dkProjectsEscape ? dkProjectsEscape(biz) : biz}</p>
-      <p class="dk-pcard-meta">
-        <span>${tplLabel}</span>
-        <span class="dk-pcard-status ${isLive ? "live" : "draft"}">${isLive ? "מפורסם" : "טיוטה"}</span>
-      </p>
-      <p class="dk-pcard-date">${dkMySitesTimeAgo(row.updated_at || row.created_at)}</p>
-      <a href="sites.html?site=${encodeURIComponent(row.id)}" class="dk-pcard-cta">פתחו ב-Builder</a>
+      <div class="dk-pcard-body">
+        <p class="dk-pcard-name">${dkProjectsEscape ? dkProjectsEscape(biz) : biz}</p>
+        <p class="dk-pcard-meta">
+          <span>${tplLabel}</span>
+          <span class="dk-pcard-status ${isLive ? "live" : "draft"}">${isLive ? "מפורסם" : "טיוטה"}</span>
+        </p>
+        <p class="dk-pcard-date">${dkMySitesTimeAgo(row.updated_at || row.created_at)}</p>
+        <a href="sites.html?site=${encodeURIComponent(row.id)}" class="dk-pcard-cta">פתחו ב-Builder</a>
+      </div>
     </div>`;
 }
 
