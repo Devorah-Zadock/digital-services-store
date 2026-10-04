@@ -117,13 +117,18 @@ const QUOTE_SKIN_CSS = {
 
 function renderQuoteHtml(q) {
   const skin = QUOTE_TEMPLATES[q.template] ? q.template : QUOTE_TEMPLATE_DEFAULT;
-  const validDates = (q.eventDates || []).filter(Boolean);
+  // Keeps each date paired with its REAL index in q.eventDates (not its
+  // position after filtering) — data-q-date-idx has to match the array
+  // index js/quote-builder-shell.js edits, which can differ once any
+  // earlier entry is empty (e.g. eventDates = ["", "20.12.2026"]).
+  const validDateEntries = (q.eventDates || []).map((d, i) => [i, d]).filter(([, d]) => Boolean(d));
+  const validDates = validDateEntries.map(([, d]) => d);
   const isMulti = validDates.length > 1;
 
   const subjectHtml = isMulti
-    ? `<div class="subject">הצעת מחיר ל${escapeHtmlQ(q.eventName)} בתאריכים:</div>
-       <ul class="dates-list">${validDates.map((d) => `<li>${escapeHtmlQ(d)}</li>`).join("")}</ul>`
-    : `<div class="subject">הצעת מחיר ל${escapeHtmlQ(q.eventName)}${validDates.length === 1 ? ` בתאריך ${escapeHtmlQ(validDates[0])}` : ""}</div>`;
+    ? `<div class="subject">הצעת מחיר ל<span data-qkey="eventName">${escapeHtmlQ(q.eventName)}</span> בתאריכים:</div>
+       <ul class="dates-list">${validDateEntries.map(([i, d]) => `<li data-q-date-idx="${i}">${escapeHtmlQ(d)}</li>`).join("")}</ul>`
+    : `<div class="subject">הצעת מחיר ל<span data-qkey="eventName">${escapeHtmlQ(q.eventName)}</span>${validDateEntries.length === 1 ? ` בתאריך <span data-q-date-idx="${validDateEntries[0][0]}">${escapeHtmlQ(validDateEntries[0][1])}</span>` : ""}</div>`;
 
   const priceLabel = isMulti ? "מחיר לכל אירוע" : "מחיר";
   const priceNum = parseILS(q.price);
@@ -135,7 +140,7 @@ function renderQuoteHtml(q) {
   // VAT-inclusive price instead, using the editable VAT-rate field. Never
   // both, never neither.
   const vatLineHtml = hasVatNote
-    ? `<div class="vat-note">${escapeHtmlQ(q.vatNote)}</div>`
+    ? `<div class="vat-note" data-qkey="vatNote">${escapeHtmlQ(q.vatNote)}</div>`
     : (priceNum !== null
         ? `<div class="vat-note">מע"מ: ${vatRatePct}%</div>
            <div class="price-line vat-inclusive">מחיר כולל מע"מ: ${formatILS(priceNum * (1 + vatRatePct / 100))} ₪.</div>`
@@ -154,14 +159,14 @@ function renderQuoteHtml(q) {
     </div>
     <hr>
     <div class="qd-inner">
-      <div class="date-row">${escapeHtmlQ(q.today)}</div>
-      <div class="recipient">לכבוד ${escapeHtmlQ(q.recipient)}</div>
+      <div class="date-row" data-qkey="today">${escapeHtmlQ(q.today)}</div>
+      <div class="recipient">לכבוד <span data-qkey="recipient">${escapeHtmlQ(q.recipient)}</span></div>
       <div class="greeting">שלום רב,</div>
       ${subjectHtml}
-      <div class="description">${escapeHtmlQ(q.description)}</div>
-      <div class="price-line">${priceLabel}: ${escapeHtmlQ(q.price)} ₪.</div>
+      <div class="description" data-qkey="description">${escapeHtmlQ(q.description)}</div>
+      <div class="price-line">${priceLabel}: <span data-qkey="price">${escapeHtmlQ(q.price)}</span> ₪.</div>
       ${vatLineHtml}
-      <div class="police-note">${escapeHtmlQ(q.policeNote)}</div>
+      <div class="police-note" data-qkey="policeNote">${escapeHtmlQ(q.policeNote)}</div>
       <div class="signature">
         בברכה,<br>
         <span class="signer">${escapeHtmlQ(q.signerName)}</span><br>

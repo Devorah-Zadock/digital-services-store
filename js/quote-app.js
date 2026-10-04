@@ -12,6 +12,16 @@ let quoteEventState = null;
 // URL) but the builder can't be shown yet (still creating a profile) —
 // showQuoteBuilder() picks it up once it actually runs.
 let pendingTemplate = null;
+// Mirrors pendingTemplate's reasoning for the Shell (?shell=1): a
+// genuinely fresh visitor with no profile yet still has to fill it in
+// first (a real prerequisite, not a template choice) — set here so the
+// profile form's own submit handler (wireProfileForm) knows to activate
+// the Shell right after, instead of just the old sidebar.
+let quoteWantsShellAfterProfile = false;
+
+function quoteWantsShell() {
+  return new URLSearchParams(location.search).get("shell") === "1";
+}
 
 function todayHebrewQA() {
   const d = new Date();
@@ -155,7 +165,20 @@ function wireProfileForm() {
     const { data, error } = await supabaseClient.from("profiles").upsert(row).select().single();
     if (error) { err.textContent = "השמירה נכשלה, נסו שוב."; return; }
     currentProfile = data;
-    showQuoteBuilder();
+    // This same form is now also reachable from INSIDE an already-open
+    // Shell (quoteBshellPropsHtmlForSettings moves it into Settings) —
+    // quoteEventState being set means a quote is already in progress,
+    // so showQuoteBuilder() (which resets it to a blank
+    // emptyQuoteEventState() when called with no argument) must never
+    // run in that case. Only the genuine first-run path — filling in
+    // the profile BEFORE any quote exists yet — takes it.
+    if (quoteEventState) {
+      renderQuotePreviewQA();
+      if (typeof quoteBshellRenderCanvas === "function" && typeof quoteBshellActiveFlag !== "undefined" && quoteBshellActiveFlag) quoteBshellRenderCanvas();
+    } else {
+      showQuoteBuilder();
+      if (quoteWantsShellAfterProfile && typeof quoteBshellActivate === "function") quoteBshellActivate();
+    }
   });
 }
 
@@ -274,7 +297,14 @@ function goToLoginQA() {
    design catalog first, same as "אתרים" always opens its template
    catalog rather than assuming a design. A specific ?template= (a
    catalog card) or ?quote= (an existing saved quote, which already
-   carries its own template) skips straight past it. */
+   carries its own template) skips straight past it.
+
+   ?shell=1 (the Builder-Shell, js/quote-builder-shell.js) ALSO skips
+   it — same opt-in convention already proved on the CV/site Shells:
+   DeskKit auto-picks QUOTE_TEMPLATE_DEFAULT (emptyQuoteEventState()'s
+   own default) rather than ever showing a "choose a design" screen
+   inside the Builder; a style can still be changed live, from
+   Settings, once inside. */
 function pickedTemplateFromUrl() {
   const t = new URLSearchParams(location.search).get("template");
   return QUOTE_TEMPLATES[t] ? t : null;
@@ -285,7 +315,8 @@ async function routeAfterAuth(user) {
   quoteCurrentUserId = user.id;
   const qid = new URLSearchParams(location.search).get("quote");
   const tpl = pickedTemplateFromUrl();
-  if (!qid && !tpl) { showQuoteCatalog(); return; }
+  const shellMode = quoteWantsShell();
+  if (!qid && !tpl && !shellMode) { showQuoteCatalog(); return; }
   pendingTemplate = tpl;
 
   const { data } = await supabaseClient.from("profiles").select("*").eq("id", user.id).maybeSingle();
@@ -293,10 +324,12 @@ async function routeAfterAuth(user) {
     currentProfile = data;
     const loaded = qid ? await loadQuoteById(qid, user.id) : null;
     showQuoteBuilder(loaded);
+    if (shellMode && typeof quoteBshellActivate === "function") quoteBshellActivate();
   } else {
     currentProfile = null;
     showSection("qa-profile");
     fillProfileForm(null);
+    quoteWantsShellAfterProfile = shellMode;
   }
 }
 
@@ -311,7 +344,7 @@ function routeAsGuest() {
   quoteSavedId = null;
   const qid = new URLSearchParams(location.search).get("quote");
   const tpl = pickedTemplateFromUrl();
-  if (!qid && !tpl) { showQuoteCatalog(); return; }
+  if (!qid && !tpl && !quoteWantsShell()) { showQuoteCatalog(); return; }
   const here = location.pathname.split("/").pop() + location.search;
   window.location.href = "account.html?redirect=" + encodeURIComponent(here);
 }

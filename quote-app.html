@@ -33,6 +33,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&family=Rubik:wght@500;600;700;900&family=Frank+Ruhl+Libre:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=81">
 <link rel="stylesheet" href="css/builder.css?v=15">
+<link rel="stylesheet" href="css/builder-shell.css?v=5">
 <style>
   .qa-err { color: #B23; font-size: 13px; min-height: 18px; margin: 4px 0 8px; }
   .qa-topbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
@@ -149,7 +150,7 @@
       </div>
 
       <div class="qa-err" id="qa-profile-err"></div>
-      <button type="submit" class="btn btn-gold" id="qa-profile-submit" style="width:100%; margin-top:8px;">שמירה והמשך</button>
+      <button type="submit" class="btn btn-gold" id="qa-profile-submit" style="width:100%; margin-top:8px;">שמירת פרטי העסק</button>
     </form>
   </div>
 </div>
@@ -212,6 +213,64 @@
   </div>
 </div>
 
+<div id="qbshell-root" class="bshell no-print">
+  <div class="bshell-top">
+    <span class="bshell-top-name">הצעת מחיר</span>
+    <span class="bshell-top-status" id="qbshell-top-status"></span>
+    <div class="bshell-top-spacer"></div>
+    <button type="button" class="bshell-top-btn" id="qbshell-undo-btn" disabled title="בטל (Ctrl+Z)">↶ בטל</button>
+    <button type="button" class="bshell-top-btn" id="qbshell-redo-btn" disabled title="בצע שוב (Ctrl+Shift+Z)">↷ חזור</button>
+    <button type="button" class="bshell-top-btn" id="qbshell-download-btn">הורדת PDF</button>
+    <button type="button" class="bshell-top-btn bshell-top-btn-primary" id="qbshell-save-btn">שמירה</button>
+    <a href="quote-app.html" class="bshell-exit-link" id="qbshell-exit-link">יציאה</a>
+  </div>
+
+  <div class="bshell-mobile-tabs no-print" style="padding:8px 14px; background:var(--surface); border-bottom:1px solid var(--border);">
+    <button type="button" class="bshell-top-btn" id="qbshell-mobile-hier-btn" style="flex:1;">מבנה</button>
+    <button type="button" class="bshell-top-btn" id="qbshell-mobile-props-btn" style="flex:1;">עיצוב</button>
+  </div>
+
+  <div class="bshell-body">
+    <aside class="bshell-hier" id="qbshell-hier">
+      <div class="bshell-hier-title">מבנה הצעת המחיר</div>
+      <button type="button" class="bshell-settings-btn" id="qbshell-settings-btn">
+        <span class="bshell-settings-icon">⚙</span>
+        <span>עיצוב ופרטי העסק</span>
+      </button>
+      <div id="qbshell-hier-list"></div>
+    </aside>
+
+    <div class="bshell-canvas-wrap">
+      <div class="bshell-canvas-frame-holder">
+        <div class="bshell-canvas-shadow">
+          <iframe class="bshell-canvas-iframe" id="qbshell-canvas-iframe" title="עריכת הצעת המחיר"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <aside class="bshell-props" id="qbshell-props">
+      <div class="bshell-props-empty" id="qbshell-props-empty">בחרו שדה בהצעת המחיר כדי לערוך אותו</div>
+      <div id="qbshell-props-dynamic" style="display:none;"></div>
+      <div id="qbshell-props-settings" style="display:none;">
+        <span class="bshell-props-kind">עיצוב ופרטי העסק</span>
+        <div class="bshell-settings-group">
+          <div class="bshell-settings-group-title">סגנון עיצוב</div>
+          <div class="bshell-align-row" id="qbshell-style-row">
+            <button type="button" class="bshell-align-btn" data-q-style="classic">קלאסי</button>
+            <button type="button" class="bshell-align-btn" data-q-style="modern">מודרני</button>
+            <button type="button" class="bshell-align-btn" data-q-style="elegant">אלגנטי</button>
+            <button type="button" class="bshell-align-btn" data-q-style="noir">יוקרתי כהה</button>
+          </div>
+          <p class="bshell-settings-field-hint">משנה רק את העיצוב — התוכן שלכם נשאר כמו שהוא.</p>
+        </div>
+        <div class="bshell-settings-group" id="qbshell-settings-group-profile">
+          <div class="bshell-settings-group-title">פרטי העסק (משותפים לכל הצעות המחיר)</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
 <footer class="site no-print">
   <div class="container">
     <div class="footer-grid">
@@ -259,7 +318,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/quote-render.js?v=6"></script>
+<script src="js/quote-render.js?v=8"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>
 <script src="js/my-panel.js?v=13"></script>
@@ -269,6 +328,7 @@
 <script src="js/widgets.js?v=10"></script>
 <script src="js/usage-log.js?v=1"></script>
 <script src="js/quote-cloud-save.js?v=2"></script>
-<script src="js/quote-app.js?v=9"></script>
+<script src="js/quote-app.js?v=10"></script>
+<script src="js/quote-builder-shell.js?v=1"></script>
 </body>
 </html>
