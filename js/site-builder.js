@@ -1820,19 +1820,16 @@ document.addEventListener("DOMContentLoaded", () => {
     supabaseClient.auth.getSession().then(({ data }) => {
       if (data.session && data.session.user) {
         if (urlTemplate && SITE_TEMPLATES[urlTemplate]) siteState.template = urlTemplate;
-        // Builder-Shell entry point — BSHELL_SUPPORTED_TEMPLATES is
-        // every migrated Design Starting Point (see js/builder-shell.js's
-        // own header comment), so this now covers all 18. Still gated on
-        // ?shell=1 for the RESUME path specifically (not Phase 6's fresh-
-        // generation path, which already always opens the Shell): the
-        // Shell's Properties Panel only covers content/structure editing
-        // so far (text, services, variants, hide/duplicate/delete) — it
-        // has no UI yet for contact-info fields, the WhatsApp/copyright
-        // toggles, brand color/font, or extra image galleries, all of
-        // which still live only in the old sidebar. Making the Shell the
-        // sole default here would strand every returning project from
-        // reaching those until the Shell grows that surface too.
-        if (params.get("shell") === "1" && typeof bshellActivate === "function" && typeof BSHELL_SUPPORTED_TEMPLATES !== "undefined" && BSHELL_SUPPORTED_TEMPLATES.includes(siteState.template)) {
+        // Builder-Shell entry point — the DEFAULT now for every migrated
+        // Design Starting Point (BSHELL_SUPPORTED_TEMPLATES is literally
+        // SITE_MIGRATED_TEMPLATES, all 18 — see js/builder-shell.js's own
+        // header comment). The Shell now also has its own Settings
+        // surface (contact info, WhatsApp, copyright, brand color/font,
+        // image gallery — see bshellPropsHtmlForSettings), so a returning
+        // project is never stranded from anything the old sidebar used to
+        // be the only way to reach. ?shell=0 stays as an explicit escape
+        // hatch back to the old sidebar, never required to get in.
+        if (typeof bshellActivate === "function" && typeof BSHELL_SUPPORTED_TEMPLATES !== "undefined" && BSHELL_SUPPORTED_TEMPLATES.includes(siteState.template) && params.get("shell") !== "0") {
           bshellActivate();
         } else {
           showWizard();
