@@ -12,12 +12,12 @@
    touched by this pass). */
 
 const DK_CREATE_OPTIONS = [
-  { icon: "🌐", title: "אתר", sub: "אתר מקצועי לעסק או לפרויקט", href: "sites.html?new=1" },
-  { icon: "📄", title: "קורות חיים", sub: "קורות חיים שנראים כמו שאתם רוצים להיראות", href: "builder.html" },
-  { icon: "📊", title: "מצגת", sub: "מצגת מעוצבת ומוכנה להצגה", href: "products.html?type=deck" },
-  { icon: "💼", title: "הצעת מחיר", sub: "הצעת מחיר מקצועית ללקוחות", href: "quote-app.html" },
-  { icon: "🧾", title: "חשבונית", sub: "חשבוניות וקבלות", href: "invoice-app.html" },
-  { icon: "📈", title: "גליון", sub: "גליון עבודה וניהול מידע", href: "products.html?type=xlsx" },
+  { icon: "🌐", product: "site", title: "אתר", sub: "אתר מקצועי לעסק או לפרויקט", href: "sites.html?new=1" },
+  { icon: "📄", product: "cv", title: "קורות חיים", sub: "קורות חיים שנראים כמו שאתם רוצים להיראות", href: "builder.html" },
+  { icon: "📊", product: "deck", title: "מצגת", sub: "מצגת מעוצבת ומוכנה להצגה", href: "products.html?type=deck" },
+  { icon: "💼", product: "quote", title: "הצעת מחיר", sub: "הצעת מחיר מקצועית ללקוחות", href: "quote-app.html" },
+  { icon: "🧾", product: "invoice", title: "חשבונית", sub: "חשבוניות וקבלות", href: "invoice-app.html" },
+  { icon: "📈", product: "xlsx", title: "גליון", sub: "גליון עבודה וניהול מידע", href: "products.html?type=xlsx" },
 ];
 
 /* Very small keyword router for the free-text "אני לא בטוח" box —
@@ -60,7 +60,7 @@ window.openCreateChooser = function openCreateChooser() {
       <h2 id="dk-create-title">מה תרצו ליצור?</h2>
       <div class="dk-create-grid">
         ${DK_CREATE_OPTIONS.map((o, i) => `
-          <button type="button" class="dk-create-opt" data-dk-create-idx="${i}">
+          <button type="button" class="dk-create-opt" data-dk-create-idx="${i}" data-dk-product="${o.product}">
             <span class="dk-create-opt-icon">${o.icon}</span>
             <span>
               <span class="dk-create-opt-title">${o.title}</span>

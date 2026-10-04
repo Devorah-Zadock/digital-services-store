@@ -67,6 +67,72 @@
    bottom nav would just double up with it and eat canvas space. */
 body.dk-has-mobile-nav:has(.bshell.active) .dk-mobile-nav { display: none; }
 
+/* ============ Persistent app-shell sidebar (js/app-sidebar.js) ============
+   Opt-in: a page sets body.dk-has-app-sidebar AND the script confirms a
+   real logged-in session before actually mounting — a visitor never
+   sees it flash in before the auth check resolves. Desktop only, two
+   pages only (Home's logged-in view, Projects) — this is deliberately
+   narrower than the old, removed my-panel.js rail (which mounted
+   everywhere); Builder-Shell pages keep their own full chrome, every
+   other page keeps the plain top header. Reuses the exact fixed
+   position + --header-h + logical-padding technique that rail used
+   (see js/app-sidebar.js's own header-height comment) — proven correct
+   in RTL — under a fresh class name since that whole system was
+   removed, not repurposed. */
+.dk-app-sidebar {
+  position: fixed; top: var(--header-h, 70px); bottom: 0; inset-inline-start: 0;
+  width: 216px; overflow-y: auto; background: var(--surface);
+  border-inline-end: 1px solid var(--border); z-index: 30;
+  display: flex; flex-direction: column; gap: 2px; padding: 18px 12px;
+}
+/* Keyed off .dk-app-sidebar-mounted (added by js/app-sidebar.js only
+   once a real logged-in session is confirmed and the sidebar actually
+   exists in the DOM) — NOT off body.dk-has-app-sidebar, which is just
+   the static per-page opt-in marker the script checks. Keying the
+   layout shift off the static marker would push a logged-OUT
+   visitor's whole page sideways to make room for a sidebar that was
+   never actually shown. */
+body.dk-app-sidebar-mounted { padding-inline-start: 216px; }
+/* header.site is a normal-flow child of body, so the padding above
+   would also narrow/push it — it isn't fixed-position like the
+   sidebar. Counter it so the header still spans the full browser
+   width above the sidebar (same counter-margin technique the old,
+   removed rail used for the exact same reason). */
+body.dk-app-sidebar-mounted header.site { margin-inline-start: -216px; width: calc(100% + 216px); }
+@media (max-width: 900px) {
+  .dk-app-sidebar { display: none; }
+  body.dk-app-sidebar-mounted { padding-inline-start: 0; }
+  body.dk-app-sidebar-mounted header.site { margin-inline-start: 0; width: 100%; }
+}
+.dk-app-sidebar-item {
+  display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 10px;
+  color: var(--text-secondary); text-decoration: none; font-size: 14px; font-weight: 600;
+  transition: background .15s ease, color .15s ease;
+}
+.dk-app-sidebar-item:hover { background: var(--bg); color: var(--text); }
+.dk-app-sidebar-item.active { background: var(--primary-light); color: var(--primary-dark); }
+.dk-app-sidebar-icon {
+  width: 30px; height: 30px; border-radius: 9px; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; background: var(--bg); color: var(--text-secondary);
+}
+.dk-app-sidebar-icon svg { width: 16px; height: 16px; }
+.dk-app-sidebar-divider { height: 1px; background: var(--border); margin: 10px 2px; }
+.dk-app-sidebar-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; padding: 10px 10px 4px; }
+
+/* Per-product accent colors — shared by the sidebar's own create
+   shortcuts, Home's 6 create-cards and the create-chooser modal's
+   icons via data-dk-product, so the same 6 colors mean the same 6
+   things everywhere (reference-image parity: colorful tiles per
+   product, not one monochrome teal repeated six times). Specificity
+   (attribute selector + descendant class) wins over each element's
+   own plain-class default background declared elsewhere. */
+[data-dk-product="site"] .dk-app-sidebar-icon, [data-dk-product="site"] .dk-home-card-icon, [data-dk-product="site"] .dk-create-opt-icon { background: #CCFBF1; color: #0F766E; }
+[data-dk-product="cv"] .dk-app-sidebar-icon, [data-dk-product="cv"] .dk-home-card-icon, [data-dk-product="cv"] .dk-create-opt-icon { background: #EDE9FE; color: #6D28D9; }
+[data-dk-product="quote"] .dk-app-sidebar-icon, [data-dk-product="quote"] .dk-home-card-icon, [data-dk-product="quote"] .dk-create-opt-icon { background: #FEF3C7; color: #B45309; }
+[data-dk-product="invoice"] .dk-app-sidebar-icon, [data-dk-product="invoice"] .dk-home-card-icon, [data-dk-product="invoice"] .dk-create-opt-icon { background: #FFE4E6; color: #BE123C; }
+[data-dk-product="deck"] .dk-app-sidebar-icon, [data-dk-product="deck"] .dk-home-card-icon, [data-dk-product="deck"] .dk-create-opt-icon { background: #DBEAFE; color: #1D4ED8; }
+[data-dk-product="xlsx"] .dk-app-sidebar-icon, [data-dk-product="xlsx"] .dk-home-card-icon, [data-dk-product="xlsx"] .dk-create-opt-icon { background: #DCFCE7; color: #15803D; }
+
 /* ============ Create-chooser modal (js/create-chooser.js) ============ */
 .dk-create-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 18px 0 20px; }
 @media (max-width: 480px) { .dk-create-grid { grid-template-columns: 1fr; } }
@@ -75,8 +141,11 @@ body.dk-has-mobile-nav:has(.bshell.active) .dk-mobile-nav { display: none; }
   border: 1.5px solid var(--border); border-radius: 14px; padding: 14px 16px; cursor: pointer;
   font-family: inherit; color: var(--text); transition: border-color .15s ease, background .15s ease;
 }
-.dk-create-opt:hover { border-color: var(--primary); background: var(--primary-light); }
-.dk-create-opt-icon { font-size: 22px; flex-shrink: 0; }
+.dk-create-opt:hover { border-color: var(--primary); background: var(--surface); box-shadow: var(--shadow); }
+.dk-create-opt-icon {
+  width: 40px; height: 40px; border-radius: 12px; font-size: 19px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; background: var(--primary-light); color: var(--primary-dark);
+}
 .dk-create-opt-title { font-weight: 700; font-size: 14.5px; display: block; }
 .dk-create-opt-sub { font-size: 12px; color: var(--text-secondary); display: block; margin-top: 2px; }
 .dk-create-unsure { border-top: 1px solid var(--border); margin-top: 6px; padding-top: 18px; }
