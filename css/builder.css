@@ -363,6 +363,15 @@
   #builder-wrap-section, #builder-top-section { display: block !important; }
   .bshell.active, .dk-mobile-nav { display: none !important; }
   body, .builder-wrap, .container, .builder-preview, .preview-sticky { all: unset; display: block; }
+  /* body.dk-app-sidebar-mounted (css/deskkit-ui.css) adds a real
+     padding-inline-start to make room for the fixed sidebar on screen
+     — applies in all media (no screen guard), and as a class selector
+     it's MORE specific than the plain `body` reset right above, so it
+     was winning here too and squeezing the printed page by 216px,
+     confirmed live as a CV PDF export splitting across two broken
+     pages. The sidebar itself is already hidden via its own .no-print
+     class; this only needs to cancel the layout room it reserved. */
+  body.dk-app-sidebar-mounted { padding-inline-start: 0 !important; transition: none !important; }
   #preview-doc, #quote-preview { height: auto !important; overflow: visible !important; }
   #preview-doc .cv-doc { box-shadow: none; margin: 0; width: 100% !important; transform: none !important; }
   /* fitQuotePreviewToContainer() (js/quote-render.js) sets an inline
