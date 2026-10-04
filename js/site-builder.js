@@ -1820,10 +1820,18 @@ document.addEventListener("DOMContentLoaded", () => {
     supabaseClient.auth.getSession().then(({ data }) => {
       if (data.session && data.session.user) {
         if (urlTemplate && SITE_TEMPLATES[urlTemplate]) siteState.template = urlTemplate;
-        // Phase 2 prototype entry point — new Builder-Shell, scoped to
-        // one Design Starting Point for now (see js/builder-shell.js's
-        // own header comment). Falls back to the existing wizard for
-        // every other template, same as before this existed.
+        // Builder-Shell entry point — BSHELL_SUPPORTED_TEMPLATES is
+        // every migrated Design Starting Point (see js/builder-shell.js's
+        // own header comment), so this now covers all 18. Still gated on
+        // ?shell=1 for the RESUME path specifically (not Phase 6's fresh-
+        // generation path, which already always opens the Shell): the
+        // Shell's Properties Panel only covers content/structure editing
+        // so far (text, services, variants, hide/duplicate/delete) — it
+        // has no UI yet for contact-info fields, the WhatsApp/copyright
+        // toggles, brand color/font, or extra image galleries, all of
+        // which still live only in the old sidebar. Making the Shell the
+        // sole default here would strand every returning project from
+        // reaching those until the Shell grows that surface too.
         if (params.get("shell") === "1" && typeof bshellActivate === "function" && typeof BSHELL_SUPPORTED_TEMPLATES !== "undefined" && BSHELL_SUPPORTED_TEMPLATES.includes(siteState.template)) {
           bshellActivate();
         } else {

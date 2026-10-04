@@ -1,17 +1,27 @@
 /* ===========================================================
-   Builder-Shell — Phase 2 prototype of DeskKit's new central editing
-   surface (Hierarchy -> Canvas -> Selection -> Properties -> Editing ->
-   Undo -> Responsive -> Preview -> Save). Reachable via
-   sites.html?shell=1&template=local-service (see the branch added in
-   site-builder.js's own DOMContentLoaded handler, right where it would
-   otherwise call showWizard()).
+   Builder-Shell — DeskKit's central editing surface (Hierarchy ->
+   Canvas -> Selection -> Properties -> Editing -> Undo -> Responsive
+   -> Preview -> Save). Reachable via sites.html?shell=1&template=X
+   (see the branch added in site-builder.js's own DOMContentLoaded
+   handler, right where it would otherwise call showWizard()).
 
-   Deliberately scoped to ONE Design Starting Point (local-service) —
-   proving the interaction model first, before generalizing it to the
-   other 17 templates (that's its own later phase: migrating each one
-   onto the Section/Block system, same as local-service already is, is
-   the prerequisite). Every other template keeps using the existing
-   sidebar-form builder untouched.
+   ONE Shell, driven by each template's own Schema — never a per-
+   template copy of this file. Proved first on local-service alone
+   (Phase 2), then generalized here to every migrated template once
+   all 18 were on the Section/Block system (Phase 7): BSHELL_
+   SUPPORTED_TEMPLATES is literally SITE_MIGRATED_TEMPLATES (site-
+   blocks.js's own registry, not a separate list this file keeps in
+   sync by hand), section labels come from SITE_BLOCK_DEFS[template]
+   [type].label, and the anchor a click resolves a whole Section from
+   is computed generically (see bshellAnchorCandidates) rather than
+   hardcoded per template. The ~5 templates whose services-equivalent
+   block renders no heading element at all (catalog/boutique/chaos/
+   bento/freelancer) are the only explicit exceptions, in
+   BSHELL_ANCHOR_RAW_OVERRIDES below — everything else Just Works
+   because every migrated template's sections already go through the
+   same universal heading()/aboutText() helpers with the same textkey
+   scheme. The design never changes to fit the Builder; the Builder
+   reads the design's own Schema.
 
    Operates on the SAME siteState object, the SAME site_projects row,
    and the SAME save/publish/watermark machinery as the existing
@@ -22,21 +32,63 @@
    around them.
    =========================================================== */
 
-const BSHELL_SUPPORTED_TEMPLATES = ["local-service"];
+const BSHELL_SUPPORTED_TEMPLATES = SITE_MIGRATED_TEMPLATES;
 
-// Which data-textkey marks each block's own root element in the
-// rendered HTML — lets a click anywhere inside a block that ISN'T on a
-// more specific target (a text field, a service card) resolve to
-// "this whole Section is selected." Same idea as site-builder.js's own
-// SECTION_PATCH_ANCHOR_OVERRIDES, just inverted (type -> anchor here,
-// not anchor -> override) and scoped to the one template this runs on.
-const BSHELL_SECTION_ANCHORS = {
-  "local-service": { hero: "heading-heroTitle", services: "heading-services", about: "heading-about", contact: "heading-contact" },
+/* Raw CSS-selector anchor overrides for the handful of (template,type)
+   pairs whose block has no heading(d, type, ...) element to anchor on
+   at all — mirrors site-builder.js's own SECTION_PATCH_ANCHOR_OVERRIDES
+   (same underlying fact about these templates, independently needed
+   here since this file resolves a CLICK to a section, that one
+   resolves a TEXT KEY to a section). Every other (template,type) pair
+   needs no entry here: its default candidate chain already finds it. */
+const BSHELL_ANCHOR_RAW_OVERRIDES = {
+  catalog: { services: "#cat-grid" },
+  boutique: { services: "#bq-grid" },
+  chaos: { services: "#oc-hscroll" },
+  bento: { grid: "#bt-grid" },
+  freelancer: { aboutTags: "#fr-services-wrap" },
 };
 
-const BSHELL_SECTION_LABELS = {
-  hero: "Hero", services: "שירותים / מוצרים", about: "אודות", contact: "צור קשר",
-};
+/* The ordered list of candidate anchors to try for one (template,type)
+   pair — first match in the live DOM wins. "hero" is special-cased
+   because every hero calls heading(d,"heroTitle",...), never
+   heading(d,"hero",...). "about" (and any raw-overridden type, which
+   may also legitimately contain the about text, e.g. freelancer's
+   fused aboutTags) falls back to the universal "aboutText" textkey,
+   since several templates' about section never calls heading(d,
+   "about",...) at all, just aboutText(d,dd) with a plain Hebrew
+   caption instead (confirmed per-template, not guessed) — "contact"
+   deliberately has no such fallback: every single contact block
+   verified to always call heading(d,"contact",...), so adding one
+   would only risk silently resolving to the ABOUT section instead on
+   a future bug, never a real template fact to design around. */
+function bshellAnchorCandidates(template, type) {
+  if (type === "hero") return ["heading-heroTitle"];
+  const raw = (BSHELL_ANCHOR_RAW_OVERRIDES[template] || {})[type];
+  const candidates = [];
+  if (raw) candidates.push(raw);
+  candidates.push("heading-" + type);
+  if (type === "about" || raw) candidates.push("aboutText");
+  return candidates;
+}
+
+/* Resolves a candidate chain against any root (a whole document, or a
+   single section element to search WITHIN) — a candidate starting
+   with "#" is a raw CSS selector (an id added to that template's own
+   services wrapper purely as a stable hook), anything else is a
+   data-textkey lookup. Returns the element itself (the anchor), not
+   yet the enclosing Section root — callers that need the whole
+   Section still do their own .closest("body > *") on it. */
+function bshellQueryAnchor(root, candidates) {
+  for (const c of candidates) {
+    const el = c.charAt(0) === "#" ? root.querySelector(c) : root.querySelector(`[data-textkey="${c}"]`);
+    if (el) return el;
+  }
+  return null;
+}
+function bshellFindAnchorEl(doc, template, type) {
+  return bshellQueryAnchor(doc, bshellAnchorCandidates(template, type));
+}
 
 // Content getter/setter per editable text field — the Properties
 // panel's "Text" type reads/writes through this, same underlying
@@ -357,13 +409,19 @@ function bshellRenderHierarchy() {
   const list = document.getElementById("bshell-hier-list");
   const d = siteState.data;
   const template = siteState.template;
-  const types = (typeof activeBlocksForPage === "function") ? activeBlocksForPage(d, template, "index") : [];
+  // The FULL saved order, not activeBlocksForPage()'s filtered list —
+  // a hidden block still needs its own row (dimmed, with a dot) so the
+  // Properties panel's visibility switch can bring it back. Filtering
+  // to only-active here would mean hiding hero/services from the Shell
+  // itself permanently removes the one way to un-hide them again.
+  const types = (typeof ensureBlockOrder === "function") ? (ensureBlockOrder(d, template, "index") || []) : [];
   const dd = (typeof withFallback === "function") ? withFallback(d) : d;
 
   list.innerHTML = types.map((type) => {
     const def = SITE_BLOCK_DEFS[template][type];
+    if (!def) return "";
     const isSelectedSection = bshellSelection && bshellSelection.kind === "section" && bshellSelection.type === type;
-    const hidden = !!(d.hiddenBlocks && d.hiddenBlocks[type]);
+    const hidden = !!(def.active && !def.active(d));
     let itemsHtml = "";
     if (def.hasItems) {
       const services = dd._services || d.services || [];
@@ -374,9 +432,9 @@ function bshellRenderHierarchy() {
     }
     return `
       <details class="bshell-sec"${true ? " open" : ""}>
-        <summary class="bshell-sec-head${isSelectedSection ? " is-selected" : ""}" data-bshell-select-section="${type}">
+        <summary class="bshell-sec-head${isSelectedSection ? " is-selected" : ""}${hidden ? " is-hidden" : ""}" data-bshell-select-section="${type}">
           <span class="bshell-sec-chevron"></span>
-          <span>${escapeHtmlS(BSHELL_SECTION_LABELS[type] || type)}</span>
+          <span>${escapeHtmlS(def.label || type)}</span>
           ${hidden ? '<span class="bshell-sec-hidden-dot" title="מוסתר"></span>' : ""}
         </summary>
         ${itemsHtml ? `<div class="bshell-sec-body">${itemsHtml}</div>` : ""}
@@ -453,9 +511,10 @@ function bshellResolveClickTarget(e, doc) {
 
   const sectionRoot = e.target.closest("body > *");
   if (!sectionRoot) return null;
-  const anchors = BSHELL_SECTION_ANCHORS[siteState.template] || {};
-  for (const type of Object.keys(anchors)) {
-    if (sectionRoot.querySelector(`[data-textkey="${anchors[type]}"]`)) {
+  const template = siteState.template;
+  const types = Object.keys(SITE_BLOCK_DEFS[template] || {});
+  for (const type of types) {
+    if (bshellQueryAnchor(sectionRoot, bshellAnchorCandidates(template, type))) {
       return { kind: "section", type, rootEl: sectionRoot };
     }
   }
@@ -472,12 +531,15 @@ function bshellDeselect() {
 function bshellSelectSection(type) {
   const iframe = document.getElementById("bshell-canvas-iframe");
   const doc = iframe.contentDocument;
-  const anchorKey = (BSHELL_SECTION_ANCHORS[siteState.template] || {})[type];
-  const anchorEl = anchorKey && doc && doc.querySelector(`[data-textkey="${anchorKey}"]`);
+  const anchorEl = doc && bshellFindAnchorEl(doc, siteState.template, type);
   const rootEl = anchorEl ? anchorEl.closest("body > *") : null;
-  if (!rootEl) return;
+  // A HIDDEN section renders nothing in the canvas at all, so there's
+  // no element to anchor on — select it anyway (rootEl: null), purely
+  // so the Properties panel's own visibility switch can still show and
+  // bring it back. bshellApplySelectionVisual() already no-ops safely
+  // without a rootEl; only the scroll+outline step is skipped.
   bshellSelection = { kind: "section", type, rootEl };
-  rootEl.scrollIntoView({ behavior: "smooth", block: "center" });
+  if (rootEl) rootEl.scrollIntoView({ behavior: "smooth", block: "center" });
   bshellApplySelectionVisual();
   bshellRenderProperties();
   bshellRenderHierarchy();
@@ -569,17 +631,7 @@ function bshellToolbarAction(tool) {
   }
   if (tool === "hide" && bshellSelection.kind === "section") {
     bshellSnapshot();
-    const d = siteState.data;
-    const type = bshellSelection.type;
-    if (type === "about" || type === "contact") {
-      // Same real mechanism the old sidebar's "דף נפרד" checkboxes
-      // use — hiding the inline section here is the mirror of turning
-      // that page OFF, not a second, parallel visibility flag.
-      ensurePagesShape(d).pages[type] = !(d.pages && d.pages[type]);
-    } else {
-      d.hiddenBlocks = d.hiddenBlocks || {};
-      d.hiddenBlocks[type] = !d.hiddenBlocks[type];
-    }
+    bshellToggleSectionVisibility(bshellSelection.type);
     bshellDeselect();
     bshellRenderCanvas();
     bshellRenderHierarchy();
@@ -600,17 +652,46 @@ function bshellToolbarAction(tool) {
 /* hiddenBlocks (new, additive) gates hero/services the same way
    def.active() already gates about/contact via d.pages — read here so
    activeBlocksForPage() (js/site-blocks.js) respects it without that
-   shared file needing to know this prototype exists. Called once,
-   patched onto SITE_BLOCK_DEFS at load time below. */
+   shared file needing to know the Shell exists. Patched onto EVERY
+   migrated template's block that doesn't already define its own
+   active() — not just hero/services by name, since some templates'
+   real type keys differ (freelancer's "aboutTags", bento's "grid"),
+   and two templates' "contact" (freelancer, portfolio) genuinely have
+   no d.pages-based gate of their own either (their CTA footer always
+   showed, by original design). _bshellHiddenGate marks exactly which
+   types this patch touched, so the Properties panel below knows
+   whether to write d.hiddenBlocks or d.pages when toggling visibility
+   — never by guessing from the type's name. */
 (function bshellPatchBlockVisibility() {
-  const defs = SITE_BLOCK_DEFS && SITE_BLOCK_DEFS["local-service"];
-  if (!defs) return;
-  ["hero", "services"].forEach((type) => {
-    if (defs[type] && !defs[type].active) {
-      defs[type].active = (d) => !(d.hiddenBlocks && d.hiddenBlocks[type]);
-    }
+  (SITE_MIGRATED_TEMPLATES || []).forEach((template) => {
+    const defs = SITE_BLOCK_DEFS[template];
+    if (!defs) return;
+    Object.keys(defs).forEach((type) => {
+      if (!defs[type].active) {
+        defs[type]._bshellHiddenGate = true;
+        defs[type].active = (d) => !(d.hiddenBlocks && d.hiddenBlocks[type]);
+      }
+    });
   });
 })();
+
+/* The one place that decides HOW a (template,type) pair's visibility
+   is actually stored — toggled from the mini-toolbar's "hide" button
+   and from the Properties panel's switch alike, so the two can never
+   drift out of sync on which flag they write. */
+function bshellToggleSectionVisibility(type) {
+  const d = siteState.data;
+  const def = SITE_BLOCK_DEFS[siteState.template][type];
+  if (def._bshellHiddenGate) {
+    d.hiddenBlocks = d.hiddenBlocks || {};
+    d.hiddenBlocks[type] = !d.hiddenBlocks[type];
+  } else {
+    // Same real mechanism the old sidebar's "דף נפרד" checkboxes use
+    // — hiding the inline section here is the mirror of turning that
+    // page OFF, not a second, parallel visibility flag.
+    ensurePagesShape(d).pages[type] = !(d.pages && d.pages[type]);
+  }
+}
 
 /* ---------- Properties panel ---------- */
 
@@ -686,13 +767,14 @@ function bshellPropsHtmlForService(idx) {
 
 function bshellPropsHtmlForSection(type) {
   const d = siteState.data;
+  const def = SITE_BLOCK_DEFS[siteState.template][type];
   const options = (typeof variantOptionsFor === "function") ? variantOptionsFor(siteState.template, type) : null;
   const current = (d.blockVariants && d.blockVariants[type]) || "default";
-  // about/contact are "visible inline" exactly when that page's own
-  // separate-page toggle is OFF (an ON separate page is what makes the
-  // inline section disappear, same as the rest of the builder already
-  // works) — hero/services use the new additive hiddenBlocks flag.
-  const reallyVisible = (type === "about" || type === "contact") ? !(d.pages && d.pages[type]) : !(d.hiddenBlocks && d.hiddenBlocks[type]);
+  // def.active() IS the ground truth for "visible inline right now,"
+  // whichever flag it actually reads (d.pages[type] for a real
+  // separate-page toggle, d.hiddenBlocks[type] for the Shell's own
+  // additive one — see bshellToggleSectionVisibility for which).
+  const reallyVisible = def.active ? !!def.active(d) : true;
   return `
     <span class="bshell-props-kind">Section</span>
     ${options ? `
@@ -842,8 +924,7 @@ function bshellReanchorSelection() {
   if (bshellSelection.kind === "service") el = doc.querySelector(`[data-svc-idx="${bshellSelection.idx}"]`);
   else if (bshellSelection.kind === "text") el = doc.querySelector(`[data-textkey="${bshellSelection.key}"]`);
   else if (bshellSelection.kind === "section") {
-    const anchorKey = (BSHELL_SECTION_ANCHORS[siteState.template] || {})[bshellSelection.type];
-    const anchorEl = anchorKey && doc.querySelector(`[data-textkey="${anchorKey}"]`);
+    const anchorEl = bshellFindAnchorEl(doc, siteState.template, bshellSelection.type);
     el = anchorEl ? anchorEl.closest("body > *") : null;
   }
   if (el) { bshellSelection.rootEl = el; bshellApplySelectionVisual(); }
@@ -866,9 +947,7 @@ function bshellWireSectionProps(type) {
   if (visibleEl) {
     visibleEl.addEventListener("change", () => {
       bshellSnapshot();
-      const d = siteState.data;
-      if (type === "about" || type === "contact") ensurePagesShape(d).pages[type] = !visibleEl.checked;
-      else { d.hiddenBlocks = d.hiddenBlocks || {}; d.hiddenBlocks[type] = !visibleEl.checked; }
+      bshellToggleSectionVisibility(type);
       bshellRenderCanvas(() => bshellSelectSection(type));
       bshellRenderHierarchy();
       bshellScheduleSave();
