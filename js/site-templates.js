@@ -1239,6 +1239,64 @@ function renderBoldSite(d, page) {
 }
 
 /* ---------- Template 6: elegant split-hero (events / boutique) ---------- */
+/* Section-renderer decomposition (Phase 7 template migration), same
+   guarantee as local-service's own: each function below returns
+   EXACTLY the HTML chunk renderElegantSite's index page already
+   inlined, unchanged. */
+function egHeroSection(d, pal, dd, cta) {
+  const hasPhoto = heroHasImage(d);
+  return `
+      <section class="eg-hero ${hasPhoto ? "" : "eg-hero-noPhoto"}"><div class="container" style="${hasPhoto ? "display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:44px;" : ""}">
+        ${hasPhoto ? `
+          <div class="eg-hero-text">
+            <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "עסק בוטיק"}</span>
+            <h1>${heading(d, "heroTitle", dd.businessName)}</h1>
+            <p>${taglineText(d, dd)}</p>
+            ${ctaHtml(cta, "eg-cta")}
+          </div>
+          <div class="eg-hero-photo-wrap">${heroMediaHtml(d, "")}</div>
+        ` : `
+          <div class="eg-hero-text">
+            <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "עסק בוטיק"}</span>
+            <h1>${heading(d, "heroTitle", dd.businessName)}</h1>
+            <p>${taglineText(d, dd)}</p>
+            ${ctaHtml(cta, "eg-cta")}
+          </div>
+        `}
+      </div></section>`;
+}
+function egServicesSection(d, pal, dd) {
+  const showSearch = dd._services.length >= 3;
+  return `
+      <section class="eg-section site-reveal" style="padding-top:0;"><div class="container">
+        <div class="eg-section-head"><span class="eg-kicker">מה אנחנו מציעים</span><h2>${heading(d, "services", "השירותים שלנו")}</h2>
+        ${showSearch ? searchBoxHtml("#eg-offerings", "חיפוש שירות...") : ""}</div>
+        <div class="eg-offerings" id="eg-offerings">${dd._services.map((s) => `
+          <div class="eg-offer" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}">
+            <div class="eg-offer-main"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}</div>
+            ${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}
+          </div>`).join("")}</div>
+        ${showSearch ? searchScriptHtml() : ""}
+      </div></section>`;
+}
+function egVideoSection(embedSrc) {
+  return embedSrc ? `<div class="container"><div style="padding:0 0 50px;">${videoEmbedHtml(embedSrc)}</div></div>` : "";
+}
+function egAboutSection(d, pal, dd) {
+  return (!d.pages || !d.pages.about) ? `<section class="eg-about site-reveal"><div class="container"><span class="eg-kicker">מי אנחנו</span><blockquote style="margin-top:18px;">${aboutText(d, dd)}</blockquote></div></section>` : "";
+}
+function egContactSection(d, pal, dd, wa) {
+  return (!d.pages || !d.pages.contact) ? `<section class="eg-contact site-reveal"><div class="container">
+        <span class="eg-kicker">נשמח לשמוע מכם</span>
+        <h2 style="font-family:'Frank Ruhl Libre',serif; font-size:30px; margin:12px 0 26px;">${heading(d, "contact", "יצירת קשר")}</h2>
+        ${dd._hasContact ? `
+          ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
+          ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
+          ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
+        ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת.</div>`}
+      </div></section>` : "";
+}
+
 function renderElegantSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#B8860B");
@@ -1312,6 +1370,10 @@ function renderElegantSite(d, page) {
         ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת ליצירת קשר.</div>`}
         ${wa ? `<a class="eg-cta" style="margin-top:16px;" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}
       </div></section>`;
+  } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("elegant")) {
+    main = renderBlocksHtml(d, "elegant", "index", {
+      pal, dd, cta, wa, videoSection: egVideoSection(embedSrc),
+    });
   } else {
     const showSearch = dd._services.length >= 3;
     main = `
