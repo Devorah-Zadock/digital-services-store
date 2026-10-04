@@ -25,6 +25,28 @@ function aiWriterNote(html) {
   note.innerHTML = html;
 }
 
+/* The actual network call + cap/limit handling, shared by the old
+   sidebar's own button (below) and the Builder-Shell's Properties-panel
+   button (js/cv-builder-shell.js's cvbshellImproveSummary) — neither UI
+   duplicates the fetch/error logic, each just supplies its own text
+   field and button chrome around this. Throws on a hard failure
+   (network/auth); returns {improved} or {limitReached, isPro} on a
+   normal response. */
+async function aiRewriteSummaryCore(text, title, lang) {
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const token = sessionData.session && sessionData.session.access_token;
+  if (!token) throw new Error("not signed in");
+
+  const res = await fetch(SUPABASE_URL + "/functions/v1/ai-rewrite", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + token, apikey: SUPABASE_ANON_KEY },
+    body: JSON.stringify({ field: "summary", text, title, lang }),
+  });
+  const data = await res.json();
+  if (!res.ok || data.error) throw new Error(data.error || "שגיאה לא צפויה");
+  return data;
+}
+
 async function aiImproveSummary() {
   const btn = document.getElementById("ai-improve-summary");
   const textarea = document.getElementById("f-summary");
@@ -44,17 +66,7 @@ async function aiImproveSummary() {
   btn.textContent = "משפר...";
 
   try {
-    const { data: sessionData } = await supabaseClient.auth.getSession();
-    const token = sessionData.session && sessionData.session.access_token;
-    if (!token) throw new Error("not signed in");
-
-    const res = await fetch(SUPABASE_URL + "/functions/v1/ai-rewrite", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token, apikey: SUPABASE_ANON_KEY },
-      body: JSON.stringify({ field: "summary", text, title: state.content.title, lang: state.lang }),
-    });
-    const data = await res.json();
-    if (!res.ok || data.error) throw new Error(data.error || "שגיאה לא צפויה");
+    const data = await aiRewriteSummaryCore(text, state.content.title, state.lang);
 
     if (data.limitReached) {
       aiWriterNote(data.isPro

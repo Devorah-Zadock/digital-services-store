@@ -1499,8 +1499,15 @@ body.cookie-notice-active .fab { display: none; }
 }
 
 /* ---------- Domain connection guide popup ---------- */
+/* Shared by domain-guide.js, auth-prompt.js and ats-checker.js's modal.
+   z-index 5500 (not the original 400) so it still shows above a
+   Builder-Shell takeover (css/builder-shell.css's .bshell.active is
+   5000) — confirmed live: ATS's "בדוק התאמה" button was unclickable,
+   covered by the Shell's own fixed-position canvas, before this. Below
+   the site's full-page loading splash (.auth-gate-overlay, 9999), which
+   this should never cover. */
 .domain-guide-overlay {
-  position: fixed; inset: 0; background: rgba(15,51,43,.55); z-index: 400;
+  position: fixed; inset: 0; background: rgba(15,51,43,.55); z-index: 5500;
   display: flex; align-items: center; justify-content: center; padding: 20px;
 }
 .domain-guide-modal {

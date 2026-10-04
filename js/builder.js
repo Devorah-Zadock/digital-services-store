@@ -57,7 +57,15 @@ function renderPreview() {
   const palette = derivePalette(document.getElementById("color-picker").value);
   const font = (FONT_OPTIONS.find((f) => f.id === state.fontId) || FONT_OPTIONS[0]).css;
   const textColor = document.getElementById("text-color-picker").value.replace("#", "");
-  const html = renderCVHtml({ layout: tpl.layout, font, palette, content: state.content, lang: state.lang, textColor, isPro: state.isPro });
+  // content.layoutOverride lets a style switch (js/cv-builder-shell.js's
+  // Settings panel) swap which of the 3 renderers draws this SAME
+  // content, independent of which CV_TEMPLATES slug was originally
+  // chosen — it rides along inside `content` itself (not a separate
+  // `state` field) so it round-trips through save/local-save/undo for
+  // free, and is naturally cleared whenever loadTemplate() replaces
+  // content wholesale (switching template or language is a fresh start).
+  const layout = (state.content && state.content.layoutOverride) || tpl.layout;
+  const html = renderCVHtml({ layout, font, palette, content: state.content, lang: state.lang, textColor, isPro: state.isPro });
   document.getElementById("preview-doc").innerHTML = html;
   fitPreviewToContainer();
   if (typeof saveCvLocalState === "function") saveCvLocalState();

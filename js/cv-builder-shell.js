@@ -59,7 +59,18 @@ const CVBSHELL_MULTILINE_TEXT_KEYS = ["summary"];
 
 function cvbshellActivate() {
   cvbshellActiveFlag = true;
+  // The Shell's position:fixed takeover only visually COVERS the old
+  // sidebar/preview — without this, #tpl-select (and everything else
+  // in the old form) stays live underneath: still in the tab order,
+  // still reachable by a screen reader, same class of bug the website
+  // Shell's own bshellActivate() already avoids by hiding its old
+  // sections explicitly rather than relying on stacking alone.
+  const oldTop = document.getElementById("builder-top-section");
+  const oldWrap = document.getElementById("builder-wrap-section");
+  if (oldTop) oldTop.style.display = "none";
+  if (oldWrap) oldWrap.style.display = "none";
   cvbshellMoveSettingsFields();
+  cvbshellWireStyleSwitcher();
   document.getElementById("cvbshell-root").classList.add("active");
   const exitLink = document.getElementById("cvbshell-exit-link");
   if (exitLink) exitLink.href = `builder.html?shell=0&template=${encodeURIComponent(state.slug)}&lang=${state.lang}`;
@@ -69,22 +80,66 @@ function cvbshellActivate() {
   cvbshellSyncUndoButtons();
 }
 
-/* Reparents the EXISTING template/font/color/photo controls (and their
-   labels, still wired by js/builder.js's own wireStaticInputs()) into
-   the Shell's Settings panel instead of recreating them — guarantees
-   this file can never drift from what those listeners actually do. */
+/* Reparents the EXISTING font/color/photo controls (and their labels,
+   still wired by js/builder.js's own wireStaticInputs()) into the
+   Shell's Settings panel instead of recreating them — guarantees this
+   file can never drift from what those listeners actually do.
+   #tpl-select is deliberately NOT moved here: it's a raw catalog of
+   CV_TEMPLATES slugs (by industry/profession, e.g. "תכנות — סיידבר
+   כהה") — showing that picker inside the Builder would be exactly the
+   "choose a template" screen the product explicitly never shows.
+   Design/style control inside the Shell goes through
+   cvbshellWireStyleSwitcher() instead, which changes only the layout,
+   never the content or the underlying slug. */
 function cvbshellMoveSettingsFields() {
   const group1 = document.getElementById("cvbshell-settings-group-design");
   const group2 = document.getElementById("cvbshell-settings-group-photo");
   if (!group1 || group1.dataset.moved) return;
   group1.dataset.moved = "1";
-  ["tpl-select", "font-select", "color-picker", "text-color-picker"].forEach((id) => {
+  ["font-select", "color-picker", "text-color-picker"].forEach((id) => {
     const input = document.getElementById(id);
     const field = input && input.closest(".field");
     if (field) group1.appendChild(field);
   });
   const photoField = document.getElementById("f-photo").closest(".field");
   if (photoField) group2.appendChild(photoField);
+}
+
+/* The Shell's own "סגנון עיצוב" control — 3 generic, layout-descriptive
+   buttons (never a template name or an industry/profession label).
+   Changes content.layoutOverride only: the SAME content renders
+   through whichever of cv-render.js's 3 layouts is picked, nothing
+   else touched. It rides inside `content` (not a separate top-level
+   `state` field) so it survives save/local-save/undo for free via the
+   exact same snapshot/restore paths that already move `content`
+   wholesale, and is naturally cleared whenever loadTemplate() resets
+   content (switching template or language is a fresh start). */
+function cvbshellWireStyleSwitcher() {
+  const row = document.getElementById("cvbshell-style-row");
+  if (!row || row.dataset.wired) return;
+  row.dataset.wired = "1";
+  row.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-cv-style]");
+    if (!btn) return;
+    const tpl = CV_TEMPLATES[state.slug];
+    const current = (state.content && state.content.layoutOverride) || tpl.layout;
+    if (btn.dataset.cvStyle === current) return;
+    cvbshellSnapshot();
+    state.content.layoutOverride = btn.dataset.cvStyle;
+    renderForm();
+    renderPreview();
+    cvbshellRenderCanvas(cvbshellReanchorSelection);
+    cvbshellSyncStyleButtons();
+  });
+}
+function cvbshellSyncStyleButtons() {
+  const row = document.getElementById("cvbshell-style-row");
+  if (!row) return;
+  const tpl = CV_TEMPLATES[state.slug];
+  const current = (state.content && state.content.layoutOverride) || tpl.layout;
+  row.querySelectorAll("[data-cv-style]").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.cvStyle === current);
+  });
 }
 
 /* ---------- Undo / Redo — snapshots `state` PLUS the color/text-color
@@ -189,6 +244,14 @@ function cvbshellWireTopBar() {
 
   document.getElementById("cvbshell-download-btn").addEventListener("click", () => {
     document.getElementById("download-btn").click();
+  });
+
+  // openAtsChecker() (js/ats-checker.js) is already a self-contained
+  // global modal, appended straight to document.body and reading only
+  // state.content/state.lang — not tied to the old sidebar's layout at
+  // all, so calling it directly here needs no Shell-specific version.
+  document.getElementById("cvbshell-ats-btn").addEventListener("click", () => {
+    if (typeof openAtsChecker === "function") openAtsChecker();
   });
 
   document.getElementById("cvbshell-save-btn").addEventListener("click", async () => {
@@ -325,7 +388,8 @@ function cvbshellBuildCanvasHtml() {
   const palette = derivePalette(document.getElementById("color-picker").value);
   const font = (FONT_OPTIONS.find((f) => f.id === state.fontId) || FONT_OPTIONS[0]).css;
   const textColor = document.getElementById("text-color-picker").value.replace("#", "");
-  const body = renderCVHtml({ layout: tpl.layout, font, palette, content: state.content, lang: state.lang, textColor, isPro: state.isPro });
+  const layout = (state.content && state.content.layoutOverride) || tpl.layout;
+  const body = renderCVHtml({ layout, font, palette, content: state.content, lang: state.lang, textColor, isPro: state.isPro });
   const fontsLink = document.querySelector('link[href*="fonts.googleapis.com/css2"]');
   const dir = state.lang === "en" ? "ltr" : "rtl";
   return `<!doctype html><html lang="${state.lang}" dir="${dir}"><head><meta charset="UTF-8">
@@ -577,6 +641,7 @@ function cvbshellRenderProperties() {
     dyn.style.display = "none";
     dyn.innerHTML = "";
     settingsView.style.display = "";
+    cvbshellSyncStyleButtons();
     return;
   }
   settingsView.style.display = "none";
@@ -594,11 +659,17 @@ function cvbshellPropsHtmlForText(key) {
   const inputTag = CVBSHELL_MULTILINE_TEXT_KEYS.includes(key)
     ? `<textarea id="cvbshell-prop-content" rows="4">${escapeHtml(value)}</textarea>`
     : `<input type="text" id="cvbshell-prop-content" value="${escapeHtml(value).replace(/"/g, "&quot;")}">`;
+  // "✨ שפר עם AI" only makes sense next to the summary — same single
+  // field the old sidebar's own button sat beside (js/ai-writer.js).
+  const aiTools = key === "summary"
+    ? `<button type="button" class="btn-mini ai-improve-btn" id="cvbshell-ai-improve-btn" style="margin-top:8px;">✨ שפר עם AI</button><div id="cvbshell-ai-note" class="ai-limit-note"></div>`
+    : "";
   return `
     <span class="bshell-props-kind">טקסט</span>
     <div class="bshell-props-field">
       <label class="bshell-props-label">${escapeHtml(label)}</label>
       ${inputTag}
+      ${aiTools}
     </div>`;
 }
 
@@ -661,6 +732,58 @@ function cvbshellWireTextProps(key) {
     renderPreview();
     cvbshellPatchTextContent(key, el.value);
   });
+
+  if (key === "summary") {
+    const aiBtn = document.getElementById("cvbshell-ai-improve-btn");
+    if (aiBtn) aiBtn.addEventListener("click", cvbshellImproveSummary);
+  }
+}
+
+/* Shell-native "✨ שפר עם AI" — calls the SAME aiRewriteSummaryCore()
+   network call the old sidebar's own button uses (js/ai-writer.js),
+   just reading/writing this Properties-panel field instead of
+   #f-summary/#ai-improve-summary. Not a proxy click on the old button:
+   that one is hidden behind the Shell and reads a field this view
+   never shows, so the Shell needs its own trigger around the shared
+   core, same split already used for Save/Undo elsewhere in this file. */
+function cvbshellAiNote(html) {
+  const note = document.getElementById("cvbshell-ai-note");
+  if (note) note.innerHTML = html;
+}
+
+async function cvbshellImproveSummary() {
+  const btn = document.getElementById("cvbshell-ai-improve-btn");
+  const input = document.getElementById("cvbshell-prop-content");
+  if (!btn || !input) return;
+  const text = input.value.trim();
+  if (!text) {
+    cvbshellAiNote("צריך לכתוב קודם טיוטה של תקציר — אז AI יעזור לשפר אותה.");
+    return;
+  }
+  cvbshellAiNote("");
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "משפר...";
+  try {
+    const data = await aiRewriteSummaryCore(text, state.content.title, state.lang);
+    if (data.limitReached) {
+      cvbshellAiNote(data.isPro
+        ? "הגעת למכסת השימוש ההוגן היומית (50 שיפורים). אפשר להמשיך מחר."
+        : `${AI_UPGRADE_MESSAGE} <a href="#">שדרוג ל-Pro</a>`);
+      return;
+    }
+    cvbshellSnapshot();
+    input.value = data.improved;
+    state.content.summary = data.improved;
+    renderForm();
+    renderPreview();
+    cvbshellPatchTextContent("summary", data.improved);
+  } catch (err) {
+    cvbshellAiNote("משהו השתבש בשיפור התקציר. אפשר לנסות שוב בעוד רגע. (" + escapeHtml(err.message || String(err)) + ")");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
 }
 
 function cvbshellPatchTextContent(key, value) {
@@ -683,6 +806,7 @@ function cvbshellPatchTextContent(key, value) {
 
 function cvbshellReanchorSelection() {
   if (!cvbshellSelection) return;
+  if (cvbshellSelection.kind === "settings") return; // no canvas anchor to re-point at
   const doc = document.getElementById("cvbshell-canvas-iframe").contentDocument;
   if (!doc) return;
   let el = null;

@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700&family=Rubik:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@400;500;700&family=Noto+Serif+Hebrew:wght@400;500;600;700&family=David+Libre:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=80">
+<link rel="stylesheet" href="css/style.css?v=81">
 <link rel="stylesheet" href="css/builder.css?v=15">
 <link rel="stylesheet" href="css/builder-shell.css?v=5">
 </head>
@@ -62,7 +62,7 @@
   </nav>
 </header>
 
-<section class="builder-top no-print">
+<section class="builder-top no-print" id="builder-top-section">
   <div class="container builder-top-row">
     <div>
       <div class="breadcrumb"><a href="products.html?type=cv">קורות חיים</a> / בילדר קורות חיים</div>
@@ -79,7 +79,7 @@
   </div>
 </section>
 
-<div class="container builder-wrap">
+<div class="container builder-wrap" id="builder-wrap-section">
   <aside class="builder-form no-print">
     <div class="field">
       <label for="tpl-select">בחרו תבנית</label>
@@ -171,6 +171,7 @@
     </div>
     <button type="button" class="bshell-top-btn" id="cvbshell-undo-btn" disabled title="בטל (Ctrl+Z)">↶ בטל</button>
     <button type="button" class="bshell-top-btn" id="cvbshell-redo-btn" disabled title="בצע שוב (Ctrl+Shift+Z)">↷ חזור</button>
+    <button type="button" class="bshell-top-btn" id="cvbshell-ats-btn">🎯 בדיקת ATS</button>
     <button type="button" class="bshell-top-btn" id="cvbshell-download-btn">הורדת PDF</button>
     <button type="button" class="bshell-top-btn bshell-top-btn-primary" id="cvbshell-save-btn">שמירה</button>
     <a href="builder.html?shell=0" class="bshell-exit-link" id="cvbshell-exit-link">יציאה</a>
@@ -204,6 +205,15 @@
       <div id="cvbshell-props-dynamic" style="display:none;"></div>
       <div id="cvbshell-props-settings" style="display:none;">
         <span class="bshell-props-kind">עיצוב והגדרות</span>
+        <div class="bshell-settings-group">
+          <div class="bshell-settings-group-title">סגנון עיצוב</div>
+          <div class="bshell-align-row" id="cvbshell-style-row">
+            <button type="button" class="bshell-align-btn" data-cv-style="sidebar">עם סרגל צד</button>
+            <button type="button" class="bshell-align-btn" data-cv-style="bold">נועז ובולט</button>
+            <button type="button" class="bshell-align-btn" data-cv-style="classic-mono">מינימליסטי ושקט</button>
+          </div>
+          <p class="bshell-settings-field-hint">משנה רק את העיצוב — התוכן שלכם נשאר כמו שהוא.</p>
+        </div>
         <div class="bshell-settings-group" id="cvbshell-settings-group-design"></div>
         <div class="bshell-settings-group" id="cvbshell-settings-group-photo"></div>
       </div>
@@ -259,8 +269,8 @@
 
 <script src="js/cv-content.js"></script>
 <script src="js/color-utils.js"></script>
-<script src="js/cv-render.js?v=1"></script>
-<script src="js/builder.js?v=4"></script>
+<script src="js/cv-render.js?v=2"></script>
+<script src="js/builder.js?v=5"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>
@@ -270,9 +280,9 @@
 <script src="js/auth-prompt.js?v=1"></script>
 <script src="js/usage-log.js?v=1"></script>
 <script src="js/builder-cloud-save.js?v=5"></script>
-<script src="js/cv-builder-shell.js?v=1"></script>
 <script src="js/ats-checker.js?v=3"></script>
-<script src="js/ai-writer.js?v=1"></script>
+<script src="js/ai-writer.js?v=2"></script>
+<script src="js/cv-builder-shell.js?v=3"></script>
 <script src="js/main.js?v=2"></script>
 <script src="js/widgets.js?v=10"></script>
 <script src="js/effects.js"></script>
