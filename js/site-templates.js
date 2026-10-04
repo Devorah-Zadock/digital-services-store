@@ -930,6 +930,48 @@ function renderCatalogSite(d, page) {
 }
 
 /* ---------- Template 4: modern gallery / editorial ---------- */
+/* Section-renderer decomposition (Phase 7 template migration), same
+   guarantee as local-service's own: each function below returns
+   EXACTLY the HTML chunk renderGallerySite's index page already
+   inlined, unchanged. */
+function glHeroSection(d, pal, dd, cta) {
+  const hasPhoto = heroHasImage(d);
+  return `
+      <section class="gl-hero ${hasPhoto ? "has-photo" : "no-photo"}">${hasPhoto ? heroMediaHtml(d, "gl-hero-media") : ""}<div class="container gl-hero-inner">
+        <span class="gl-eyebrow">${dd.tagline ? "ברוכים הבאים" : "עסק מקצועי"}</span>
+        <h1 class="gl-title">${heading(d, "heroTitle", dd.businessName)}</h1>
+        <p class="gl-tagline">${taglineText(d, dd)}</p>
+        ${ctaHtml(cta, "gl-cta")}
+      </div></section>`;
+}
+function glServicesSection(d, pal, dd) {
+  const showSearch = dd._services.length >= 3;
+  return `
+      <section class="gl-section site-reveal"><div class="container">
+        <div class="gl-section-head"><div><span class="gl-kicker">מה אנחנו מציעים</span><h2>${heading(d, "services", "השירותים שלנו")}</h2></div>
+        ${showSearch ? searchBoxHtml("#gl-bento", "חיפוש שירות...") : ""}</div>
+        <div class="gl-bento" id="gl-bento">${dd._services.map((s) => `
+          <div class="gl-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
+        ${showSearch ? searchScriptHtml() : ""}
+      </div></section>`;
+}
+function glVideoSection(embedSrc) {
+  return embedSrc ? `<div class="container"><div style="padding:0 0 40px;">${videoEmbedHtml(embedSrc)}</div></div>` : "";
+}
+function glAboutSection(d, pal, dd) {
+  return (!d.pages || !d.pages.about) ? `<section class="gl-about site-reveal"><div class="container"><blockquote>${aboutText(d, dd)}</blockquote><cite>${bizName(d, dd)}</cite></div></section>` : "";
+}
+function glContactSection(d, pal, dd, wa) {
+  return (!d.pages || !d.pages.contact) ? `<section class="gl-contact site-reveal"><div class="container">
+        <h2>${heading(d, "contact", "יצירת קשר")}</h2>
+        ${dd._hasContact ? `
+          ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
+          ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
+          ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
+        ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת.</div>`}
+      </div></section>` : "";
+}
+
 function renderGallerySite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#BE185D");
@@ -1015,6 +1057,10 @@ function renderGallerySite(d, page) {
         ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת ליצירת קשר.</div>`}
         ${wa ? `<a class="gl-cta" style="margin-top:14px;" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}
       </div></section>`;
+  } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("gallery")) {
+    main = renderBlocksHtml(d, "gallery", "index", {
+      pal, dd, cta, wa, videoSection: glVideoSection(embedSrc),
+    });
   } else {
     const showSearch = dd._services.length >= 3;
     main = `
