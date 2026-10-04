@@ -703,7 +703,7 @@ function frServicesSection(d, pal, dd) {
   return `
       <div class="fr-body" id="fr-services-wrap">
         <p class="fr-about">${aboutText(d, dd)}</p>
-        <div class="fr-tags">${dd._services.map((s) => `<span class="fr-tag">${escapeHtmlS(s.name)}</span>`).join("")}</div>
+        <div class="fr-tags">${dd._services.map((s, i) => `<span class="fr-tag" data-svc-idx="${i}">${escapeHtmlS(s.name)}</span>`).join("")}</div>
       </div>`;
 }
 function frContactSection(d, pal, dd, wa) {
@@ -830,8 +830,8 @@ function catServicesSection(d, pal, dd) {
   return `
       <div class="container">
         ${showSearch ? searchBoxHtml("#cat-grid", "חיפוש מוצר או שירות...") : ""}
-        <div class="cat-grid" id="cat-grid">${services.map((s) => `
-          <div class="cat-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><div class="swatch-bar"></div><div class="body">
+        <div class="cat-grid" id="cat-grid">${services.map((s, i) => `
+          <div class="cat-card" data-svc-idx="${i}" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><div class="swatch-bar"></div><div class="body">
             <h3>${escapeHtmlS(s.name)}</h3>
             ${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}
             ${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}
@@ -950,8 +950,8 @@ function glServicesSection(d, pal, dd) {
       <section class="gl-section site-reveal"><div class="container">
         <div class="gl-section-head"><div><span class="gl-kicker">מה אנחנו מציעים</span><h2>${heading(d, "services", "השירותים שלנו")}</h2></div>
         ${showSearch ? searchBoxHtml("#gl-bento", "חיפוש שירות...") : ""}</div>
-        <div class="gl-bento" id="gl-bento">${dd._services.map((s) => `
-          <div class="gl-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
+        <div class="gl-bento" id="gl-bento">${dd._services.map((s, i) => `
+          <div class="gl-card" data-svc-idx="${i}" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
         ${showSearch ? searchScriptHtml() : ""}
       </div></section>`;
 }
@@ -1073,8 +1073,8 @@ function renderGallerySite(d, page) {
       <section class="gl-section site-reveal"><div class="container">
         <div class="gl-section-head"><div><span class="gl-kicker">מה אנחנו מציעים</span><h2>${heading(d, "services", "השירותים שלנו")}</h2></div>
         ${showSearch ? searchBoxHtml("#gl-bento", "חיפוש שירות...") : ""}</div>
-        <div class="gl-bento" id="gl-bento">${dd._services.map((s) => `
-          <div class="gl-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
+        <div class="gl-bento" id="gl-bento">${dd._services.map((s, i) => `
+          <div class="gl-card" data-svc-idx="${i}" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
         ${showSearch ? searchScriptHtml() : ""}
       </div></section>
       ${embedSrc ? `<div class="container"><div style="padding:0 0 40px;">${videoEmbedHtml(embedSrc)}</div></div>` : ""}
@@ -1114,8 +1114,8 @@ function nbServicesSection(d, pal, dd) {
       <section class="nb-section site-reveal"><div class="container">
         <div class="nb-section-head"><span class="nb-tag">מה אנחנו מציעים</span><h2>${heading(d, "services", "השירותים שלנו")}</h2>
         ${showSearch ? searchBoxHtml("#nb-grid", "חיפוש שירות...") : ""}</div>
-        <div class="nb-grid" id="nb-grid">${dd._services.map((s) => `
-          <div class="nb-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
+        <div class="nb-grid" id="nb-grid">${dd._services.map((s, i) => `
+          <div class="nb-card" data-svc-idx="${i}" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
         ${showSearch ? searchScriptHtml() : ""}
       </div></section>`;
 }
@@ -1219,8 +1219,8 @@ function renderBoldSite(d, page) {
       <section class="nb-section site-reveal"><div class="container">
         <div class="nb-section-head"><span class="nb-tag">מה אנחנו מציעים</span><h2>${heading(d, "services", "השירותים שלנו")}</h2>
         ${showSearch ? searchBoxHtml("#nb-grid", "חיפוש שירות...") : ""}</div>
-        <div class="nb-grid" id="nb-grid">${dd._services.map((s) => `
-          <div class="nb-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
+        <div class="nb-grid" id="nb-grid">${dd._services.map((s, i) => `
+          <div class="nb-card" data-svc-idx="${i}" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
         ${showSearch ? searchScriptHtml() : ""}
       </div></section>
       ${embedSrc ? `<section class="nb-section site-reveal"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : ""}
@@ -1271,8 +1271,8 @@ function egServicesSection(d, pal, dd) {
       <section class="eg-section site-reveal" style="padding-top:0;"><div class="container">
         <div class="eg-section-head"><span class="eg-kicker">מה אנחנו מציעים</span><h2>${heading(d, "services", "השירותים שלנו")}</h2>
         ${showSearch ? searchBoxHtml("#eg-offerings", "חיפוש שירות...") : ""}</div>
-        <div class="eg-offerings" id="eg-offerings">${dd._services.map((s) => `
-          <div class="eg-offer" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}">
+        <div class="eg-offerings" id="eg-offerings">${dd._services.map((s, i) => `
+          <div class="eg-offer" data-svc-idx="${i}" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}">
             <div class="eg-offer-main"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}</div>
             ${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}
           </div>`).join("")}</div>
@@ -1398,8 +1398,8 @@ function renderElegantSite(d, page) {
       <section class="eg-section site-reveal" style="padding-top:0;"><div class="container">
         <div class="eg-section-head"><span class="eg-kicker">מה אנחנו מציעים</span><h2>${heading(d, "services", "השירותים שלנו")}</h2>
         ${showSearch ? searchBoxHtml("#eg-offerings", "חיפוש שירות...") : ""}</div>
-        <div class="eg-offerings" id="eg-offerings">${dd._services.map((s) => `
-          <div class="eg-offer" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}">
+        <div class="eg-offerings" id="eg-offerings">${dd._services.map((s, i) => `
+          <div class="eg-offer" data-svc-idx="${i}" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}">
             <div class="eg-offer-main"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}</div>
             ${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}
           </div>`).join("")}</div>
@@ -1444,7 +1444,7 @@ function prServicesSection(d, pal, dd) {
         <div class="pr-steps-head"><span class="eyebrow">התהליך שלנו</span><h2>${heading(d, "services", "שלב אחר שלב")}</h2>
         ${showSearch ? searchBoxHtml("#pr-timeline", "חיפוש...") : ""}</div>
         <div class="pr-timeline" id="pr-timeline">${dd._services.map((s, i) => `
-          <div class="pr-step" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}">
+          <div class="pr-step" data-svc-idx="${i}" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}">
             <div class="circle">${i + 1}</div>
             <h3>${escapeHtmlS(s.name)}</h3>
             ${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}
@@ -1560,7 +1560,7 @@ function renderProcessSite(d, page) {
         <div class="pr-steps-head"><span class="eyebrow">התהליך שלנו</span><h2>${heading(d, "services", "שלב אחר שלב")}</h2>
         ${showSearch ? searchBoxHtml("#pr-timeline", "חיפוש...") : ""}</div>
         <div class="pr-timeline" id="pr-timeline">${dd._services.map((s, i) => `
-          <div class="pr-step" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}">
+          <div class="pr-step" data-svc-idx="${i}" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}">
             <div class="circle">${i + 1}</div>
             <h3>${escapeHtmlS(s.name)}</h3>
             ${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}
@@ -1610,7 +1610,7 @@ function poServicesSection(d, pal, dd) {
       <section class="po-work site-reveal"><div class="container">
         <div class="po-work-head"><span class="kicker">מה אני עושה</span><h2>${heading(d, "services", "עבודות ושירותים")}</h2></div>
         ${services.map((s, i) => `
-          <div class="po-work-row">
+          <div class="po-work-row" data-svc-idx="${i}">
             <div class="po-work-idx">${String(i + 1).padStart(2, "0")}</div>
             <div class="po-work-main"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}</div>
             ${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}
@@ -1715,7 +1715,7 @@ function renderPortfolioSite(d, page) {
       <section class="po-work site-reveal"><div class="container">
         <div class="po-work-head"><span class="kicker">מה אני עושה</span><h2>${heading(d, "services", "עבודות ושירותים")}</h2></div>
         ${services.map((s, i) => `
-          <div class="po-work-row">
+          <div class="po-work-row" data-svc-idx="${i}">
             <div class="po-work-idx">${String(i + 1).padStart(2, "0")}</div>
             <div class="po-work-main"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}</div>
             ${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}
@@ -1761,7 +1761,7 @@ function bqServicesSection(d, pal, dd) {
   const showSearch = rest.length >= 3;
   return `
       <div class="container">
-        <section class="bq-featured site-reveal"><div class="bq-featured-card">
+        <section class="bq-featured site-reveal"><div class="bq-featured-card" data-svc-idx="0">
           <div class="bq-featured-price">${featured.price ? escapeHtmlS(featured.price) : ""}</div>
           <div>
             <span class="bq-featured-tag">המומלץ שלנו</span>
@@ -1772,7 +1772,7 @@ function bqServicesSection(d, pal, dd) {
         ${rest.length ? `
           ${showSearch ? searchBoxHtml("#bq-grid", "חיפוש מוצר או שירות...") : ""}
           <div class="bq-grid" id="bq-grid">${rest.map((s, i) => `
-            <div class="bq-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}">
+            <div class="bq-card" data-svc-idx="${i + 1}" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}">
               <div class="num">${String(i + 2).padStart(2, "0")}</div>
               <h3>${escapeHtmlS(s.name)}</h3>
               ${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}
@@ -1876,7 +1876,7 @@ function renderBoutiqueSite(d, page) {
         </div>
       </section>
       <div class="container">
-        <section class="bq-featured site-reveal"><div class="bq-featured-card">
+        <section class="bq-featured site-reveal"><div class="bq-featured-card" data-svc-idx="0">
           <div class="bq-featured-price">${featured.price ? escapeHtmlS(featured.price) : ""}</div>
           <div>
             <span class="bq-featured-tag">המומלץ שלנו</span>
@@ -1887,7 +1887,7 @@ function renderBoutiqueSite(d, page) {
         ${rest.length ? `
           ${showSearch ? searchBoxHtml("#bq-grid", "חיפוש מוצר או שירות...") : ""}
           <div class="bq-grid" id="bq-grid">${rest.map((s, i) => `
-            <div class="bq-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}">
+            <div class="bq-card" data-svc-idx="${i + 1}" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}">
               <div class="num">${String(i + 2).padStart(2, "0")}</div>
               <h3>${escapeHtmlS(s.name)}</h3>
               ${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}
@@ -1925,8 +1925,8 @@ function nrServicesSection(d, pal, dd) {
   return `
       <section class="nr-menu site-reveal"><div class="container">
         <div class="nr-menu-head"><span class="nr-kicker">מה אנחנו מציעים</span><h2>${heading(d, "services", "השירותים שלנו")}</h2></div>
-        <div class="nr-menu-list">${dd._services.map((s) => `
-          <div class="nr-menu-row"><span class="name">${escapeHtmlS(s.name)}</span><span class="leader"></span>${s.price ? `<span class="price">${escapeHtmlS(s.price)}</span>` : ""}</div>
+        <div class="nr-menu-list">${dd._services.map((s, i) => `
+          <div class="nr-menu-row" data-svc-idx="${i}"><span class="name">${escapeHtmlS(s.name)}</span><span class="leader"></span>${s.price ? `<span class="price">${escapeHtmlS(s.price)}</span>` : ""}</div>
           ${s.desc ? `<div class="nr-menu-desc">${escapeHtmlS(s.desc)}</div>` : ""}`).join("")}</div>
       </div></section>`;
 }
@@ -2029,8 +2029,8 @@ function renderNoirSite(d, page) {
       </section>
       <section class="nr-menu site-reveal"><div class="container">
         <div class="nr-menu-head"><span class="nr-kicker">מה אנחנו מציעים</span><h2>${heading(d, "services", "השירותים שלנו")}</h2></div>
-        <div class="nr-menu-list">${dd._services.map((s) => `
-          <div class="nr-menu-row"><span class="name">${escapeHtmlS(s.name)}</span><span class="leader"></span>${s.price ? `<span class="price">${escapeHtmlS(s.price)}</span>` : ""}</div>
+        <div class="nr-menu-list">${dd._services.map((s, i) => `
+          <div class="nr-menu-row" data-svc-idx="${i}"><span class="name">${escapeHtmlS(s.name)}</span><span class="leader"></span>${s.price ? `<span class="price">${escapeHtmlS(s.price)}</span>` : ""}</div>
           ${s.desc ? `<div class="nr-menu-desc">${escapeHtmlS(s.desc)}</div>` : ""}`).join("")}</div>
       </div></section>
       ${embedSrc ? `<div class="container"><div style="padding:0 0 50px;">${videoEmbedHtml(embedSrc)}</div></div>` : ""}
@@ -2117,8 +2117,8 @@ function agServicesSection(d, pal, dd) {
       <section class="ag-section" id="ag-services" style="border-top:none;"><div class="container site-reveal">
         <span class="ag-kicker">זה מה שהעסק שלך מקבל</span>
         <h2>${heading(d, "services", "השירותים שלנו")}</h2>
-        <div class="ag-grid">${services.map((s) => `
-          <div class="ag-cell"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<span class="price">${escapeHtmlS(s.price)}</span>` : ""}</div>`).join("")}</div>
+        <div class="ag-grid">${services.map((s, i) => `
+          <div class="ag-cell" data-svc-idx="${i}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<span class="price">${escapeHtmlS(s.price)}</span>` : ""}</div>`).join("")}</div>
       </div></section>`;
 }
 function agVideoSection(embedSrc) {
@@ -2244,8 +2244,8 @@ function renderStudioSite(d, page) {
       <section class="ag-section" id="ag-services" style="border-top:none;"><div class="container site-reveal">
         <span class="ag-kicker">זה מה שהעסק שלך מקבל</span>
         <h2>${heading(d, "services", "השירותים שלנו")}</h2>
-        <div class="ag-grid">${services.map((s) => `
-          <div class="ag-cell"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<span class="price">${escapeHtmlS(s.price)}</span>` : ""}</div>`).join("")}</div>
+        <div class="ag-grid">${services.map((s, i) => `
+          <div class="ag-cell" data-svc-idx="${i}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<span class="price">${escapeHtmlS(s.price)}</span>` : ""}</div>`).join("")}</div>
       </div></section>
       ${embedSrc ? `<section class="ag-section"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : ""}
       ${(!d.pages || !d.pages.about) ? `
@@ -2312,8 +2312,8 @@ function btGridSection(d, pal, dd, wa, embedSrc) {
   if (embedSrc) {
     cellsList.push(`<div class="bt-cell bt-cell-video bt-span-2x1"><iframe src="${embedSrc}" title="סרטון" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`);
   }
-  dd._services.forEach((s) => {
-    cellsList.push(`<div class="bt-cell"><div class="bt-cell-label">שירות</div><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`);
+  dd._services.forEach((s, i) => {
+    cellsList.push(`<div class="bt-cell" data-svc-idx="${i}"><div class="bt-cell-label">שירות</div><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`);
   });
   if (!d.pages || !d.pages.contact) {
     cellsList.push(`<div class="bt-cell bt-span-2x2 bt-cell-dark"><div class="bt-cell-label">יצירת קשר</div>${dd._hasContact ? `${d.phone ? `<span class="line">טלפון: ${escapeHtmlS(d.phone)}</span>` : ""}${d.email ? `<span class="line">מייל: ${escapeHtmlS(d.email)}</span>` : ""}${d.address ? `<span class="line">כתובת: ${escapeHtmlS(d.address)}</span>` : ""}` : `<span class="line">פרטו כאן טלפון, מייל וכתובת.</span>`}${wa ? `<a class="bt-cta-mini" href="${wa}" target="_blank" rel="noopener">וואטסאפ</a>` : ""}</div>`);
@@ -2498,8 +2498,8 @@ function cdServicesSection(d, pal, dd) {
       <section class="cd-section site-reveal"><div class="container">
         <div class="cd-section-head"><span class="cd-kicker">מה אנחנו מציעים</span><h2>${heading(d, "services", "השירותים שלנו")}</h2>
         ${showSearch ? searchBoxHtml("#cd-grid", "חיפוש שירות...") : ""}</div>
-        <div class="cd-grid" id="cd-grid">${dd._services.map((s) => `
-          <div class="cd-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
+        <div class="cd-grid" id="cd-grid">${dd._services.map((s, i) => `
+          <div class="cd-card" data-svc-idx="${i}" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
         ${showSearch ? searchScriptHtml() : ""}
       </div></section>`;
 }
@@ -2629,8 +2629,8 @@ function renderCinematicSite(d, page) {
       <section class="cd-section site-reveal"><div class="container">
         <div class="cd-section-head"><span class="cd-kicker">מה אנחנו מציעים</span><h2>${heading(d, "services", "השירותים שלנו")}</h2>
         ${showSearch ? searchBoxHtml("#cd-grid", "חיפוש שירות...") : ""}</div>
-        <div class="cd-grid" id="cd-grid">${dd._services.map((s) => `
-          <div class="cd-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
+        <div class="cd-grid" id="cd-grid">${dd._services.map((s, i) => `
+          <div class="cd-card" data-svc-idx="${i}" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
         ${showSearch ? searchScriptHtml() : ""}
       </div></section>
       ${embedSrc ? `<section class="cd-section site-reveal" style="padding-top:0;"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : ""}
@@ -2670,8 +2670,8 @@ function brServicesSection(d, pal, dd) {
       <section class="br-section site-reveal"><div class="container">
         <div class="br-section-head"><span class="br-tag">מה אנחנו מציעים</span><h2>${heading(d, "services", "השירותים שלנו")}</h2>
         ${showSearch ? searchBoxHtml("#br-grid", "חיפוש שירות...") : ""}</div>
-        <div class="br-grid" id="br-grid">${dd._services.map((s) => `
-          <div class="br-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
+        <div class="br-grid" id="br-grid">${dd._services.map((s, i) => `
+          <div class="br-card" data-svc-idx="${i}" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
         ${showSearch ? searchScriptHtml() : ""}
       </div></section>`;
 }
@@ -2785,8 +2785,8 @@ function renderBrutalSite(d, page) {
       <section class="br-section site-reveal"><div class="container">
         <div class="br-section-head"><span class="br-tag">מה אנחנו מציעים</span><h2>${heading(d, "services", "השירותים שלנו")}</h2>
         ${showSearch ? searchBoxHtml("#br-grid", "חיפוש שירות...") : ""}</div>
-        <div class="br-grid" id="br-grid">${dd._services.map((s) => `
-          <div class="br-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
+        <div class="br-grid" id="br-grid">${dd._services.map((s, i) => `
+          <div class="br-card" data-svc-idx="${i}" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
         ${showSearch ? searchScriptHtml() : ""}
       </div></section>
       ${embedSrc ? `<section class="br-section site-reveal"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : ""}
@@ -2828,8 +2828,8 @@ function nfServicesSection(d, pal, dd) {
       <section class="nf-section site-reveal"><div class="container">
         <div class="nf-section-head"><span class="nf-kicker">מה אנחנו מציעים</span><h2 class="nf-split">${heading(d, "services", "השירותים שלנו")}</h2>
         ${showSearch ? searchBoxHtml("#nf-grid", "חיפוש שירות...") : ""}</div>
-        <div class="nf-grid" id="nf-grid">${dd._services.map((s) => `
-          <div class="nf-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
+        <div class="nf-grid" id="nf-grid">${dd._services.map((s, i) => `
+          <div class="nf-card" data-svc-idx="${i}" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
         ${showSearch ? searchScriptHtml() : ""}
       </div></section>`;
 }
@@ -3032,8 +3032,8 @@ function renderNeonSite(d, page) {
       <section class="nf-section site-reveal"><div class="container">
         <div class="nf-section-head"><span class="nf-kicker">מה אנחנו מציעים</span><h2 class="nf-split">${heading(d, "services", "השירותים שלנו")}</h2>
         ${showSearch ? searchBoxHtml("#nf-grid", "חיפוש שירות...") : ""}</div>
-        <div class="nf-grid" id="nf-grid">${dd._services.map((s) => `
-          <div class="nf-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
+        <div class="nf-grid" id="nf-grid">${dd._services.map((s, i) => `
+          <div class="nf-card" data-svc-idx="${i}" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
         ${showSearch ? searchScriptHtml() : ""}
       </div></section>
       ${embedSrc ? `<section class="nf-section site-reveal" style="padding-top:0;"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : ""}
@@ -3077,7 +3077,7 @@ function ocHeroSection(d, pal, dd, cta, tickerText) {
 function ocServicesSection(d, pal, dd) {
   return `
       <div class="oc-hscroll-wrap" id="oc-hscroll"><div class="oc-hscroll-sticky"><div class="oc-hscroll-track" id="oc-hscroll-track">
-        ${dd._services.map((s) => `<div class="oc-hcard"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}
+        ${dd._services.map((s, i) => `<div class="oc-hcard" data-svc-idx="${i}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}
       </div></div></div>`;
 }
 function ocVideoSection(embedSrc) {
@@ -3240,7 +3240,7 @@ function renderChaosSite(d, page) {
       </div></section>
       <div class="oc-marquee"><div class="oc-marquee-track">${Array(6).fill(`<span class="oc-marquee-item">${escapeHtmlS(tickerText)}</span>`).join("")}</div></div>
       <div class="oc-hscroll-wrap" id="oc-hscroll"><div class="oc-hscroll-sticky"><div class="oc-hscroll-track" id="oc-hscroll-track">
-        ${dd._services.map((s) => `<div class="oc-hcard"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}
+        ${dd._services.map((s, i) => `<div class="oc-hcard" data-svc-idx="${i}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}
       </div></div></div>
       ${embedSrc ? `<section class="oc-section site-reveal"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : ""}
       ${(!d.pages || !d.pages.about) ? `<section class="oc-section oc-about site-reveal"><div class="container"><p>${aboutText(d, dd)}</p></div></section>` : ""}
@@ -3294,8 +3294,8 @@ function lxServicesSection(d, pal, dd) {
       <section class="lx-section site-reveal"><div class="container">
         <div class="lx-section-head"><span class="lx-kicker2">מה אנחנו מציעים</span><h2>${heading(d, "services", "השירותים שלנו")}</h2>
         ${showSearch ? searchBoxHtml("#lx-grid", "חיפוש שירות...") : ""}</div>
-        <div class="lx-grid" id="lx-grid">${dd._services.map((s) => `
-          <div class="lx-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
+        <div class="lx-grid" id="lx-grid">${dd._services.map((s, i) => `
+          <div class="lx-card" data-svc-idx="${i}" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
         ${showSearch ? searchScriptHtml() : ""}
       </div></section>`;
 }
@@ -3447,8 +3447,8 @@ function renderLuxurySite(d, page) {
       <section class="lx-section site-reveal"><div class="container">
         <div class="lx-section-head"><span class="lx-kicker2">מה אנחנו מציעים</span><h2>${heading(d, "services", "השירותים שלנו")}</h2>
         ${showSearch ? searchBoxHtml("#lx-grid", "חיפוש שירות...") : ""}</div>
-        <div class="lx-grid" id="lx-grid">${dd._services.map((s) => `
-          <div class="lx-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
+        <div class="lx-grid" id="lx-grid">${dd._services.map((s, i) => `
+          <div class="lx-card" data-svc-idx="${i}" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
         ${showSearch ? searchScriptHtml() : ""}
       </div></section>
       ${embedSrc ? `<section class="lx-section site-reveal" style="padding-top:0;"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : ""}
