@@ -188,20 +188,81 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* ---------- Publish-readiness checklist: intercepts the Shell's
      existing publish button in the capture phase (runs before
-     builder-shell.js's own bubble-phase listener), shows the checklist,
-     and on confirm re-dispatches the same click with a one-time bypass
-     flag so the real, existing publish flow runs completely unchanged. ---------- */
+     builder-shell.js's own bubble-phase listener — e.stopPropagation()
+     stops that original listener from ever firing again), shows the
+     checklist, and on confirm opens the new Publish modal directly
+     instead of letting the original handler run. That original handler
+     (bshellSaveNow().then(() => { deactivate Shell; showWizard(); }))
+     is what used to dump a person back into the old, pre-Shell sidebar
+     the instant they clicked "פרסום" — confirmed live as a jarring,
+     unexplained "why am I back in the old builder" moment. Left in
+     place (dead code, unreachable through normal use) rather than
+     edited, since builder-shell.js is shared by 18 templates and the
+     Shell's own ?shell=0 escape hatch still needs a working publish
+     path in the old sidebar it falls back to. ---------- */
   const publishBtn = document.getElementById("bshell-publish-btn");
   if (publishBtn) {
-    let bypass = false;
     publishBtn.addEventListener("click", (e) => {
-      if (bypass) { bypass = false; return; }
       e.preventDefault();
       e.stopPropagation();
-      dkShowPublishChecklist(() => { bypass = true; publishBtn.click(); });
+      dkShowPublishChecklist(() => dkOpenPublishModal());
     }, { capture: true });
   }
 });
+
+/* ---------- Publish modal: reparents the real #export-panel (finish-
+   gate/unlock-done — the existing, untouched Gumroad/license/watermark
+   logic) into an on-brand modal, so publishing stays inside the
+   Builder-Shell's own context instead of exiting to the old sidebar.
+   #export-panel's ORIGINAL spot (inside .preview-sticky, used by the
+   ?shell=0 escape hatch) is remembered once and restored on close. ---------- */
+let dkExportPanelHome = null; // { parent, nextSibling } — captured once, first open
+function dkRememberExportPanelHome(panel) {
+  if (dkExportPanelHome) return;
+  dkExportPanelHome = { parent: panel.parentElement, nextSibling: panel.nextSibling };
+}
+function dkRestoreExportPanelHome(panel) {
+  if (!dkExportPanelHome) return;
+  if (dkExportPanelHome.nextSibling) dkExportPanelHome.parent.insertBefore(panel, dkExportPanelHome.nextSibling);
+  else dkExportPanelHome.parent.appendChild(panel);
+}
+
+function dkOpenPublishModal() {
+  const panel = document.getElementById("export-panel");
+  if (!panel || document.getElementById("dk-publish-overlay")) return;
+  dkRememberExportPanelHome(panel);
+
+  // Collapses the Shell's own "סיימתי לערוך" confirmation into this
+  // same checklist-confirm action instead of asking twice — the real
+  // #finish-btn click handler (financeGateOpened=true; refreshUnlockUI();
+  // saveSiteNow()) still runs exactly as before, untouched.
+  const finishBtn = document.getElementById("finish-btn");
+  const alreadyPastGate = document.getElementById("unlock-done").style.display !== "none";
+  if (finishBtn && !alreadyPastGate) finishBtn.click();
+  else if (typeof bshellSaveNow === "function") bshellSaveNow();
+
+  const overlay = document.createElement("div");
+  overlay.id = "dk-publish-overlay";
+  overlay.className = "dk-publish-overlay";
+  overlay.innerHTML = `
+    <div class="dk-publish-modal" role="dialog" aria-modal="true" aria-labelledby="dk-publish-modal-title">
+      <button type="button" class="domain-guide-close" id="dk-publish-modal-close" aria-label="סגירה">✕</button>
+      <h2 id="dk-publish-modal-title">פרסום האתר</h2>
+      <div id="dk-publish-modal-slot"></div>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById("dk-publish-modal-slot").appendChild(panel);
+
+  const close = () => {
+    dkRestoreExportPanelHome(panel);
+    overlay.remove();
+  };
+  document.getElementById("dk-publish-modal-close").addEventListener("click", close);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+  document.addEventListener("keydown", function esc(e) {
+    if (e.key === "Escape") { close(); document.removeEventListener("keydown", esc); }
+  });
+}
 
 function dkChecklistRow(ok, label, warnLabel) {
   return `<div class="dk-checklist-item"><span class="${ok ? "ok" : "warn"}">${ok ? "✓" : "⚠️"}</span> ${ok ? label : (warnLabel || label)}</div>`;

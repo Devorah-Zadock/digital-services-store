@@ -1853,16 +1853,27 @@ document.addEventListener("DOMContentLoaded", () => {
             ensurePagesShape(siteState.data);
           }
         }
-        // Builder-Shell entry point — the DEFAULT now for every migrated
-        // Design Starting Point (BSHELL_SUPPORTED_TEMPLATES is literally
-        // SITE_MIGRATED_TEMPLATES, all 18 — see js/builder-shell.js's own
-        // header comment). The Shell now also has its own Settings
-        // surface (contact info, WhatsApp, copyright, brand color/font,
-        // image gallery — see bshellPropsHtmlForSettings), so a returning
-        // project is never stranded from anything the old sidebar used to
-        // be the only way to reach. ?shell=0 stays as an explicit escape
-        // hatch back to the old sidebar, never required to get in.
-        if (typeof bshellActivate === "function" && typeof BSHELL_SUPPORTED_TEMPLATES !== "undefined" && BSHELL_SUPPORTED_TEMPLATES.includes(siteState.template) && params.get("shell") !== "0") {
+        // A "תצוגה מקדימה" tab (?fullpreview=1, opened by the Shell's own
+        // preview button) must show the real, static, read-only rendered
+        // site — never any editor. Confirmed live as a real bug: with the
+        // Shell default-on, this branch used to go on to call
+        // bshellActivate() in that new tab too, covering the supposedly
+        // "clean" preview with the full editable canvas again. Rendering
+        // the static frame directly here and skipping Shell/wizard
+        // activation entirely fixes that at the source.
+        if (isFullPreview) {
+          const frame = document.getElementById("site-preview-frame");
+          if (frame && typeof currentSiteHtml === "function") frame.srcdoc = currentSiteHtml("index");
+        } else if (typeof bshellActivate === "function" && typeof BSHELL_SUPPORTED_TEMPLATES !== "undefined" && BSHELL_SUPPORTED_TEMPLATES.includes(siteState.template) && params.get("shell") !== "0") {
+          // Builder-Shell entry point — the DEFAULT now for every migrated
+          // Design Starting Point (BSHELL_SUPPORTED_TEMPLATES is literally
+          // SITE_MIGRATED_TEMPLATES, all 18 — see js/builder-shell.js's own
+          // header comment). The Shell now also has its own Settings
+          // surface (contact info, WhatsApp, copyright, brand color/font,
+          // image gallery — see bshellPropsHtmlForSettings), so a returning
+          // project is never stranded from anything the old sidebar used to
+          // be the only way to reach. ?shell=0 stays as an explicit escape
+          // hatch back to the old sidebar, never required to get in.
           bshellActivate();
         } else {
           showWizard();

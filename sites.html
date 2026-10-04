@@ -31,23 +31,23 @@
 <link rel="stylesheet" href="css/style.css?v=81">
 <link rel="stylesheet" href="css/builder.css?v=17">
 <link rel="stylesheet" href="css/builder-shell.css?v=5">
-<link rel="stylesheet" href="css/deskkit-ui.css?v=1">
+<link rel="stylesheet" href="css/deskkit-ui.css?v=2">
 <style>
   .services-item { border: 1px solid #EDEFEE; border-radius: 8px; padding: 12px; margin-bottom: 12px; display: grid; gap: 8px; }
   .services-item-head { display: flex; justify-content: space-between; align-items: center; }
   .services-item input { min-width: 0; }
   #site-preview-frame { width: 100%; height: 78vh; min-height: 520px; border: 1px solid #EAEDEC; border-radius: var(--radius); box-shadow: var(--shadow); background: #fff; }
-  .unlock-box { border-top: 1px solid #E2DCC8; margin-top: 16px; padding-top: 16px; }
+  .unlock-box { border-top: 1px solid var(--border); margin-top: 16px; padding-top: 16px; }
   .unlock-box input[type="text"] {
-    width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 8px; border: 1px solid #DADFDD;
+    width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
     font-family: inherit; font-size: 14px; margin-bottom: 10px; text-align: center;
   }
-  .unlock-note { font-size: 12.5px; color: var(--grey); min-height: 16px; margin-bottom: 8px; }
-  .unlock-note.err { color: #B23; }
-  .unlock-note.ok { color: var(--ink); font-weight: 600; }
-  .go-live-box { background: #fff; border: 1px solid #EAEDEC; border-radius: 10px; padding: 16px; margin-top: 14px; font-size: 13px; color: var(--grey); line-height: 1.7; }
-  .go-live-box b { color: var(--ink-dark); }
-  .host-info-box { background: var(--ice); border-radius: 10px; padding: 14px 16px; margin-top: 14px; font-size: 12.5px; color: var(--dark); line-height: 1.6; }
+  .unlock-note { font-size: 12.5px; color: var(--text-secondary); min-height: 16px; margin-bottom: 8px; }
+  .unlock-note.err { color: var(--error); }
+  .unlock-note.ok { color: var(--success); font-weight: 600; }
+  .go-live-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-top: 8px; font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
+  .go-live-box b { color: var(--text); }
+  .host-info-box { background: var(--primary-light); border-radius: 10px; padding: 14px 16px; margin-top: 8px; font-size: 12.5px; color: var(--text); line-height: 1.6; }
   .host-info-box b { color: var(--ink-dark); }
   .host-info-box ul { margin: 8px 0 0; padding-inline-start: 18px; }
   .host-info-box li { margin-bottom: 6px; }
@@ -95,6 +95,14 @@
   body.preview-focus .chat-panel,
   body.preview-focus .fab-feedback,
   body.preview-focus .fab-a11y,
+  /* Defense-in-depth: js/site-builder.js's DOMContentLoaded handler no
+     longer activates the Shell at all for ?fullpreview=1 (confirmed-live
+     bug fix — it used to, covering this exact "clean preview" with the
+     full editable canvas), but this still guarantees a genuinely static
+     preview even if some other future entry path reaches this tab with
+     the Shell already active. */
+  body.preview-focus #bshell-root,
+  body.preview-focus .dk-mobile-nav,
   body.preview-focus .cookie-notice { display: none !important; }
   /* body.has-sites-rail reserves its 220px via padding-inline-start (see
      style.css), not margin — so zeroing only the margin above still left
@@ -449,23 +457,34 @@
   <main class="builder-preview">
     <div class="preview-sticky">
       <iframe id="site-preview-frame" title="תצוגה מקדימה של האתר"></iframe>
-      <button type="button" class="btn btn-outline-dark full-preview-btn no-print" id="full-preview-btn">תצוגה מלאה במסך חדש ⤢</button>
+      <button type="button" class="dk-btn dk-btn-ghost full-preview-btn no-print" id="full-preview-btn">תצוגה מלאה במסך חדש ⤢</button>
 
-      <div class="export-panel no-print" style="margin-top:20px;">
+      <!-- Reparented wholesale (never duplicated) into the new Publish
+           modal (js/site-wizard-router.js: dkOpenPublishModal) when
+           publishing from inside the Builder-Shell — this stays its
+           home location only for the legacy/escape-hatch ?shell=0
+           sidebar, where it's shown in place exactly as before. Every id
+           below is read/written by js/site-builder.js's existing
+           finish/publish/verify-license logic untouched; only the
+           classes and the details/summary wrapping around purely-
+           informational boxes changed here, for a calmer default view. -->
+      <div class="export-panel no-print" id="export-panel" style="margin-top:20px;">
         <div id="finish-gate">
-          <button type="button" class="btn btn-gold" id="finish-btn" style="width:100%;">סיימתי לערוך, רוצה לפרסם את האתר</button>
-          <p class="finish-gate-note">לפני שממשיכים: עריכת התוכן, הצבע והתמונות תישאר <b>חינמית וללא הגבלה לתמיד</b>. אפשר לפרסם את האתר בחינם עם תגית "נבנה ב-DeskKit" קטנה, ולהסיר אותה בתשלום חד-פעמי בכל שלב שתרצו.</p>
-          <div class="host-info-box">
-            <b>💡 איך האתר שלכם עולה לאוויר?</b>
-            <ul>
-              <li><b>אחסון וקישור:</b> חינם לתמיד! האתר שלכם יעלה לרשת באופן מיידי ותקבלו קישור ייחודי (בסיומת <bdi>sites.deskkit.co.il</bdi>).</li>
-              <li><b>כתובת פרטית משלכם:</b> אם תרצו בעתיד לחבר דומיין אישי (כמו <bdi>www.yourname.co.il</bdi>), תוכלו לרכוש אותו מכל ספק ולחבר בקלות לפי המדריך שנציג לכם בסיום.</li>
-            </ul>
-          </div>
+          <button type="button" class="dk-btn dk-btn-primary" id="finish-btn" style="width:100%;">סיימתי לערוך, רוצה לפרסם את האתר</button>
+          <p class="finish-gate-note">עריכת התוכן, הצבע והתמונות נשארת <b>חינמית לתמיד</b>. פרסום עם תגית "נבנה ב-DeskKit" קטנה הוא בחינם; אפשר להסיר אותה בתשלום חד-פעמי בכל שלב.</p>
+          <details class="dk-details">
+            <summary>💡 איך האתר שלכם עולה לאוויר?</summary>
+            <div class="host-info-box">
+              <ul>
+                <li><b>אחסון וקישור:</b> חינם לתמיד! האתר שלכם יעלה לרשת באופן מיידי ותקבלו קישור ייחודי (בסיומת <bdi>sites.deskkit.co.il</bdi>).</li>
+                <li><b>כתובת פרטית משלכם:</b> אם תרצו בעתיד לחבר דומיין אישי (כמו <bdi>www.yourname.co.il</bdi>), תוכלו לרכוש אותו מכל ספק ולחבר בקלות לפי המדריך שנציג לכם בסיום.</li>
+              </ul>
+            </div>
+          </details>
         </div>
         <div id="unlock-done" style="display:none;">
-          <p id="unlock-done-heading" style="margin:0 0 12px; font-size:15px; font-weight:700; color:var(--ink-dark);">האתר שלכם מוכן לעריכה ולפרסום.</p>
-          <button type="button" class="btn btn-gold" id="publish-site-btn" style="width:100%;">פרסום — קבלת קישור חי</button>
+          <p id="unlock-done-heading" style="margin:0 0 14px; font-size:15px; font-weight:700; color:var(--text);">האתר שלכם מוכן לפרסום.</p>
+          <button type="button" class="dk-btn dk-btn-primary" id="publish-site-btn" style="width:100%;">פרסום — קבלת קישור חי</button>
           <p class="finish-gate-note" id="publish-remaining"></p>
           <p class="finish-gate-note" id="publish-note"></p>
 
@@ -475,33 +494,36 @@
                buy-link/license-input elements as before, just no longer
                a gate in front of publishing itself. -->
           <div id="watermark-upsell" class="unlock-box" style="margin-top:18px;">
-            <p style="margin:0 0 10px; font-size:13px; font-weight:600; color:var(--dark);">🏷️ האתר שלכם מתפרסם עם תגית קטנה "נבנה ב-DeskKit". רוצים להסיר אותה?</p>
+            <p style="margin:0 0 10px; font-size:13px; font-weight:600; color:var(--text);">🏷️ האתר שלכם מתפרסם עם תגית קטנה "נבנה ב-DeskKit". רוצים להסיר אותה?</p>
             <div id="buy-new-block">
-              <p class="finish-gate-note">התוכנה פועלת באופן אוטומטי לחלוטין וללא תמיכה אנושית/טלפונית — המחיר הנמוך והחד-פעמי מתאפשר הודות לשירות עצמי מלא (Self-Service).</p>
-              <div class="host-info-box" style="margin-bottom:14px;">
-                <b>💳 מה בדיוק קונים, וממי?</b><br>
-                הסרת תגית DeskKit, חד-פעמית, לאתר שבניתם כרגע — <b>199 ₪, תשלום חד-פעמי, ללא מנוי</b>. המוכר: דבורה צדוק (DeskKit), עוסק פטור. התשלום עצמו מעובד באופן מאובטח דרך Gumroad, ותקבלו קבלה למייל.
-              </div>
-              <a href="#" id="buy-link" target="_blank" rel="noopener" class="btn btn-gold" style="width:100%; box-sizing:border-box; text-align:center; display:block; margin-bottom:14px;">רכישת הסרת התגית</a>
+              <a href="#" id="buy-link" target="_blank" rel="noopener" class="dk-btn dk-btn-primary" style="width:100%; box-sizing:border-box; text-align:center; display:block; margin-bottom:10px;">הסרת התגית — 199 ₪ חד-פעמי</a>
+              <details class="dk-details">
+                <summary>מה בדיוק קונים, וממי?</summary>
+                <div class="host-info-box">
+                  הסרת תגית DeskKit, חד-פעמית, לאתר שבניתם כרגע — <b>199 ₪, תשלום חד-פעמי, ללא מנוי</b>. המוכר: דבורה צדוק (DeskKit), עוסק פטור. התשלום עצמו מעובד באופן מאובטח דרך Gumroad, ותקבלו קבלה למייל. התוכנה פועלת באופן אוטומטי לחלוטין וללא תמיכה אנושית/טלפונית — המחיר הנמוך מתאפשר הודות לשירות עצמי מלא (Self-Service).
+                </div>
+              </details>
             </div>
             <div id="hosting-paused" style="display:none;">
-              <div class="host-info-box" style="margin-bottom:14px; background:#FDF0DC; color:#8A5A1A;">
+              <div class="host-info-box" style="margin-bottom:14px; background:#FFF6E8; color:#8A5A1A;">
                 <b>⏸️ רכישת שדרוגים סגורה זמנית</b><br>
-                עקב עומס זמני אצל ספק האחסון שלנו, אפשרות הרכישה סגורה זמנית. אנו מתנצלים על אי הנוחות — נעדכן כאן ברגע שזה חוזר לפעול. יש לכם כבר קוד רישוי ממייל קודם? אפשר להזין אותו למטה כרגיל.
+                עקב עומס זמני אצל ספק האחסון שלנו, אפשרות הרכישה סגורה זמנית. אנו מתנצלים על אי הנוחות. יש לכם כבר קוד רישוי ממייל קודם? אפשר להזין אותו למטה כרגיל.
               </div>
             </div>
             <input type="text" id="license-input" placeholder="קוד רישוי (מהמייל של הרכישה)" dir="ltr">
             <div class="unlock-note" id="license-note"></div>
-            <button type="button" class="btn btn-teal" id="verify-btn" style="width:100%;">אימות והסרת התגית</button>
+            <button type="button" class="dk-btn dk-btn-ghost" id="verify-btn" style="width:100%;">אימות והסרת התגית</button>
           </div>
-          <div id="watermark-removed" class="unlock-box" style="display:none; margin-top:18px; text-align:center; color:var(--ink-dark); font-weight:700;">
+          <div id="watermark-removed" class="unlock-box" style="display:none; margin-top:18px; text-align:center; color:var(--success); font-weight:700;">
             ✓ האתר שלכם מתפרסם בלי תגית DeskKit
           </div>
 
-          <div class="go-live-box">
-            <b>איך אנשים ימצאו את האתר בגוגל, לא רק מי שיש לו קישור?</b><br>
-            שני דברים עוזרים הכי הרבה: לרשום את העסק בחינם ב־<a href="https://www.google.com/business/" target="_blank" rel="noopener">Google עסקים שלי</a> — זה מה שמשפיע הכי הרבה על עסק מקומי/קטן, ולחבר דומיין משלכם (כ-60–150 ₪ לשנה) — עושה רושם הרבה יותר מקצועי.
-          </div>
+          <details class="dk-details" style="margin-top:14px;">
+            <summary>איך אנשים ימצאו את האתר בגוגל?</summary>
+            <div class="go-live-box">
+              שני דברים עוזרים הכי הרבה: לרשום את העסק בחינם ב־<a href="https://www.google.com/business/" target="_blank" rel="noopener">Google עסקים שלי</a>, ולחבר דומיין משלכם (כ-60–150 ₪ לשנה) — עושה רושם הרבה יותר מקצועי.
+            </div>
+          </details>
         </div>
       </div>
     </div>
@@ -627,7 +649,7 @@
 <script src="js/color-utils.js"></script>
 <script src="js/site-templates.js?v=31"></script>
 <script src="js/site-blocks.js?v=2"></script>
-<script src="js/site-builder.js?v=55"></script>
+<script src="js/site-builder.js?v=56"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>
@@ -643,7 +665,7 @@
 <script src="js/site-ai-generate.js?v=4"></script>
 <script src="js/site-ai-field-edit.js?v=1"></script>
 <script src="js/site-ai-command.js?v=1"></script>
-<script src="js/site-wizard-router.js?v=1"></script>
+<script src="js/site-wizard-router.js?v=2"></script>
 <script src="js/main.js?v=2"></script>
 <script src="js/widgets.js?v=10"></script>
 </body>
