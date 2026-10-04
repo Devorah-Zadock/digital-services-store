@@ -3262,6 +3262,59 @@ function renderChaosSite(d, page) {
 }
 
 /* ---------- Template 17: 3D minimalist luxury (architects / real estate) ---------- */
+/* Section-renderer decomposition (Phase 7 template migration), same
+   guarantee as local-service's own: each function below returns
+   EXACTLY the HTML chunk renderLuxurySite's index page already
+   inlined, unchanged. The decorative parallax strip (hasPhoto image +
+   about-excerpt headline) is fused into lxHeroSection, same idea as
+   chaos's marquee: it's unconditional chrome that always sits right
+   after the hero, never its own reorderable section. parallaxScript
+   stays appended last by renderLuxurySite itself, exactly like
+   chaos's interactionScript — same original position, after even
+   about/contact, and it only needs the #lx-parallax element to exist
+   earlier in the DOM (which it always does, as part of the hero). */
+function lxHeroSection(d, pal, dd, cta) {
+  const hasPhoto = heroHasImage(d);
+  const aboutExcerptRaw = dd.about.length > 90 ? dd.about.slice(0, 90) + "…" : dd.about;
+  return `
+      <section class="lx-hero"><div class="lx-hero-bg"></div><div class="container lx-hero-inner">
+        <span class="lx-kicker">${dd.tagline ? "ברוכים הבאים" : "עיצוב ללא פשרות"}</span>
+        <h1>${heading(d, "heroTitle", dd.businessName)}</h1>
+        <p>${taglineText(d, dd)}</p>
+        ${ctaHtml(cta, "lx-cta")}
+      </div></section>
+      <div class="lx-parallax" id="lx-parallax">
+        <div class="lx-parallax-layer lx-parallax-bg">${hasPhoto ? heroMediaHtml(d, "lx-parallax-img") : ""}</div>
+        <div class="lx-parallax-layer lx-parallax-mid"><h2>${escapeHtmlS(aboutExcerptRaw)}</h2></div>
+      </div>`;
+}
+function lxServicesSection(d, pal, dd) {
+  const showSearch = dd._services.length >= 3;
+  return `
+      <section class="lx-section site-reveal"><div class="container">
+        <div class="lx-section-head"><span class="lx-kicker2">מה אנחנו מציעים</span><h2>${heading(d, "services", "השירותים שלנו")}</h2>
+        ${showSearch ? searchBoxHtml("#lx-grid", "חיפוש שירות...") : ""}</div>
+        <div class="lx-grid" id="lx-grid">${dd._services.map((s) => `
+          <div class="lx-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
+        ${showSearch ? searchScriptHtml() : ""}
+      </div></section>`;
+}
+function lxVideoSection(embedSrc) {
+  return embedSrc ? `<section class="lx-section site-reveal" style="padding-top:0;"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : "";
+}
+function lxAboutSection(d, pal, dd) {
+  return (!d.pages || !d.pages.about) ? `<section class="lx-section lx-about site-reveal"><div class="container"><span class="lx-kicker2">מי אנחנו</span><h2 style="font-family:'Frank Ruhl Libre',serif; font-weight:500; font-size:30px; margin:12px 0 26px; color:#2A2620;">${heading(d, "about", "קצת עלינו")}</h2><div class="lx-panel"><p>${aboutText(d, dd)}</p></div></div></section>` : "";
+}
+function lxContactSection(d, pal, dd, wa) {
+  return (!d.pages || !d.pages.contact) ? `<section class="lx-section lx-contact site-reveal"><div class="container"><span class="lx-kicker2">נשמח לשמוע מכם</span><h2 style="font-family:'Frank Ruhl Libre',serif; font-weight:500; font-size:30px; margin:12px 0 26px; color:#2A2620;">${heading(d, "contact", "יצירת קשר")}</h2><div class="lx-panel">
+        ${dd._hasContact ? `
+          ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
+          ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
+          ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
+        ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת.</div>`}
+      </div></div></section>` : "";
+}
+
 function renderLuxurySite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#B08D57");
@@ -3374,6 +3427,10 @@ function renderLuxurySite(d, page) {
           ${wa ? `<a class="lx-cta" style="margin-top:18px; display:inline-block;" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}
         </div>
       </div></section>`;
+  } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("luxury3d")) {
+    main = renderBlocksHtml(d, "luxury3d", "index", {
+      pal, dd, cta, wa, videoSection: lxVideoSection(embedSrc),
+    }) + parallaxScript + " ";
   } else {
     const showSearch = dd._services.length >= 3;
     main = `

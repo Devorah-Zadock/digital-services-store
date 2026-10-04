@@ -170,6 +170,12 @@ const SITE_BLOCK_DEFS = {
     about: { label: "אודות", render: (d, pal, dd) => ocAboutSection(d, pal, dd), active: (d) => !d.pages || !d.pages.about },
     contact: { label: "צור קשר", render: (d, pal, dd, ctx) => ocContactSection(d, pal, dd, ctx.wa), active: (d) => !d.pages || !d.pages.contact },
   },
+  "luxury3d": {
+    hero: { label: "Hero", render: (d, pal, dd, ctx) => lxHeroSection(d, pal, dd, ctx.cta) },
+    services: { label: "שירותים / מוצרים", hasItems: true, render: (d, pal, dd) => lxServicesSection(d, pal, dd) },
+    about: { label: "אודות", render: (d, pal, dd) => lxAboutSection(d, pal, dd), active: (d) => !d.pages || !d.pages.about },
+    contact: { label: "צור קשר", render: (d, pal, dd, ctx) => lxContactSection(d, pal, dd, ctx.wa), active: (d) => !d.pages || !d.pages.contact },
+  },
 };
 
 // "blank" (Phase 3) delegates its actual rendering to local-service's
