@@ -100,6 +100,12 @@ const SITE_BLOCK_DEFS = {
     about: { label: "אודות", render: (d, pal, dd) => egAboutSection(d, pal, dd), active: (d) => !d.pages || !d.pages.about },
     contact: { label: "צור קשר", render: (d, pal, dd, ctx) => egContactSection(d, pal, dd, ctx.wa), active: (d) => !d.pages || !d.pages.contact },
   },
+  "process": {
+    hero: { label: "Hero", render: (d, pal, dd, ctx) => prHeroSection(d, pal, dd, ctx.cta) },
+    services: { label: "שלבי התהליך", hasItems: true, render: (d, pal, dd) => prServicesSection(d, pal, dd) },
+    about: { label: "אודות", render: (d, pal, dd) => prAboutSection(d, pal, dd), active: (d) => !d.pages || !d.pages.about },
+    contact: { label: "צור קשר", render: (d, pal, dd, ctx) => prContactSection(d, pal, dd, ctx.wa), active: (d) => !d.pages || !d.pages.contact },
+  },
 };
 
 // "blank" (Phase 3) delegates its actual rendering to local-service's

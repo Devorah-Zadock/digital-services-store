@@ -1423,6 +1423,53 @@ function renderElegantSite(d, page) {
 }
 
 /* ---------- Template 7: process / how-we-work ---------- */
+/* Section-renderer decomposition (Phase 7 template migration), same
+   guarantee as local-service's own: each function below returns
+   EXACTLY the HTML chunk renderProcessSite's index page already
+   inlined, unchanged. */
+function prHeroSection(d, pal, dd, cta) {
+  return `
+      <section class="pr-hero"><div class="container">
+        <span class="eyebrow">איך אנחנו עובדים</span>
+        <h1>${heading(d, "heroTitle", dd.businessName)}</h1>
+        <p>${taglineText(d, dd)}</p>
+        ${ctaHtml(cta, "pr-cta")}
+        ${heroMediaHtml(d, "site-hero-photo")}
+      </div></section>`;
+}
+function prServicesSection(d, pal, dd) {
+  const showSearch = dd._services.length >= 4;
+  return `
+      <section class="pr-steps site-reveal"><div class="container">
+        <div class="pr-steps-head"><span class="eyebrow">התהליך שלנו</span><h2>${heading(d, "services", "שלב אחר שלב")}</h2>
+        ${showSearch ? searchBoxHtml("#pr-timeline", "חיפוש...") : ""}</div>
+        <div class="pr-timeline" id="pr-timeline">${dd._services.map((s, i) => `
+          <div class="pr-step" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}">
+            <div class="circle">${i + 1}</div>
+            <h3>${escapeHtmlS(s.name)}</h3>
+            ${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}
+            ${s.price ? `<span class="price">${escapeHtmlS(s.price)}</span>` : ""}
+          </div>`).join("")}</div>
+        ${showSearch ? searchScriptHtml() : ""}
+      </div></section>`;
+}
+function prVideoSection(embedSrc) {
+  return embedSrc ? `<div class="container"><div style="padding:0 0 50px;">${videoEmbedHtml(embedSrc)}</div></div>` : "";
+}
+function prAboutSection(d, pal, dd) {
+  return (!d.pages || !d.pages.about) ? `<section class="pr-about site-reveal"><div class="container"><span class="eyebrow">מי אנחנו</span><p>${aboutText(d, dd)}</p></div></section>` : "";
+}
+function prContactSection(d, pal, dd, wa) {
+  return (!d.pages || !d.pages.contact) ? `<section class="pr-contact site-reveal"><div class="container">
+        <h2>${heading(d, "contact", "יצירת קשר")}</h2>
+        ${dd._hasContact ? `
+          ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
+          ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
+          ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
+        ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת.</div>`}
+      </div></section>` : "";
+}
+
 function renderProcessSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#15803D");
@@ -1495,6 +1542,10 @@ function renderProcessSite(d, page) {
         ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת ליצירת קשר.</div>`}
         ${wa ? `<a class="pr-cta" style="margin-top:14px;" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}
       </div></section>`;
+  } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("process")) {
+    main = renderBlocksHtml(d, "process", "index", {
+      pal, dd, cta, wa, videoSection: prVideoSection(embedSrc),
+    });
   } else {
     const showSearch = dd._services.length >= 4;
     main = `
