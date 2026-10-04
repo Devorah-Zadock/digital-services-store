@@ -236,8 +236,20 @@ async function siteWizardSubmit() {
     saveSiteState();
 
     overlay.remove();
-    history.replaceState(null, "", "sites.html?template=" + encodeURIComponent(site.template));
-    showWizard();
+    // A Design Starting Point the new Builder-Shell already supports
+    // opens straight into it — the user never sees "Template X", only
+    // the result and an editor. Every other template still falls back
+    // to the existing sidebar wizard unchanged. `shell=1` is carried
+    // into the URL (not just called in-memory) so a page reload while
+    // resuming this same project lands back in the Shell too, same
+    // check js/site-builder.js's own load path already makes.
+    const opensInShell = typeof bshellActivate === "function" && typeof BSHELL_SUPPORTED_TEMPLATES !== "undefined" && BSHELL_SUPPORTED_TEMPLATES.includes(site.template);
+    history.replaceState(null, "", "sites.html?template=" + encodeURIComponent(site.template) + (opensInShell ? "&shell=1" : ""));
+    if (opensInShell) {
+      bshellActivate();
+    } else {
+      showWizard();
+    }
     if (typeof refreshUnlockUI === "function") refreshUnlockUI();
   } catch (err) {
     body.innerHTML = `<div class="ats-error">משהו השתבש ביצירת האתר. אפשר לנסות שוב בעוד רגע. (${escapeHtmlS(err.message || String(err))})</div>`;
