@@ -73,8 +73,8 @@
 <link rel="preload" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700;800&family=Secular+One&family=Space+Grotesk:wght@500;600;700&display=optional" as="style">
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700;800&family=Secular+One&family=Space+Grotesk:wght@500;600;700&display=optional" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700;800&family=Secular+One&family=Space+Grotesk:wght@500;600;700&display=optional" rel="stylesheet"></noscript>
-<link rel="stylesheet" href="css/style.css?v=86">
-<link rel="stylesheet" href="css/deskkit-ui.css?v=9">
+<link rel="stylesheet" href="css/style.css?v=87">
+<link rel="stylesheet" href="css/deskkit-ui.css?v=10">
 </head>
 <body class="dk-home dk-has-app-sidebar">
 <header class="site">
@@ -105,42 +105,33 @@
   <div class="container dk-home-hero-inner">
     <div class="dk-home-hero-text">
       <span class="dk-pill">✨ מקום אחד לכל התוצרים המקצועיים שלכם</span>
-      <h1>כל מה שעסק או פרילנסר<br>צריך — במקום אחד</h1>
+      <!-- Single swap point for the headline — change the text inside
+           this h1 only; everything else in the hero is unaffected. -->
+      <h1 id="dk-home-hero-headline">כל הכלים שהעסק שלך<br>צריך — במקום אחד.</h1>
       <p>בונים אתר מקצועי, יוצרים קורות חיים, מציעים הצעות מחיר ומפיקים חשבוניות ומצגות — הכול בקלות ובמהירות, בלי להתחיל מאפס.</p>
-      <div class="dk-home-hero-icons">
-        <a href="sites.html?new=1" class="dk-home-hero-icon" data-dk-product="site"><span class="dk-home-hero-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.3 2.5 3.6 5.5 3.6 9s-1.3 6.5-3.6 9c-2.3-2.5-3.6-5.5-3.6-9s1.3-6.5 3.6-9z"/></svg></span>אתר</a>
-        <a href="builder.html" class="dk-home-hero-icon" data-dk-product="cv"><span class="dk-home-hero-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M9.5 13h5M9.5 16.5h5"/></svg></span>קורות חיים</a>
-        <a href="quote-app.html" class="dk-home-hero-icon" data-dk-product="quote"><span class="dk-home-hero-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span>הצעת מחיר</a>
-        <a href="invoice-app.html" class="dk-home-hero-icon" data-dk-product="invoice"><span class="dk-home-hero-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>חשבונית</a>
-        <a href="products.html?type=deck" class="dk-home-hero-icon" data-dk-product="deck"><span class="dk-home-hero-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M10 9v5l4-2.5z" fill="currentColor" stroke="none"/><path d="M8 21h8M12 17v4"/></svg></span>מצגת</a>
-        <a href="products.html?type=xlsx" class="dk-home-hero-icon" data-dk-product="xlsx"><span class="dk-home-hero-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M4 15h16M10 4v16M15 4v16"/></svg></span>גליון</a>
-      </div>
       <div class="dk-home-hero-ctas">
         <a href="account.html?redirect=index.html" class="dk-btn dk-btn-primary dk-btn-lg">התחילו עכשיו — בחינם</a>
         <a href="#how" class="dk-home-hero-watch"><span class="dk-home-hero-play">▶</span>צפו איך זה עובד</a>
       </div>
     </div>
-    <div class="dk-home-hero-visual" aria-hidden="true">
-      <div class="dk-home-hero-browser">
-        <div class="dk-home-hero-browser-bar"><span></span><span></span><span></span></div>
-        <div class="dk-home-hero-browser-screen">
-          <div class="dk-home-hero-screen-top">
-            <span class="dk-home-hero-screen-avatar"></span>
-            <span class="dk-home-hero-screen-greet">שלום 👋</span>
-          </div>
-          <div class="dk-home-hero-screen-tiles">
-            <span data-dk-product="site"></span>
-            <span data-dk-product="cv"></span>
-            <span data-dk-product="quote"></span>
-            <span data-dk-product="invoice"></span>
-          </div>
-          <div class="dk-home-hero-screen-card">
-            <span class="dk-home-hero-screen-card-thumb" data-dk-product="site"></span>
-            <span class="dk-home-hero-screen-card-lines"><b></b><i></i></span>
-          </div>
-          <div class="dk-home-hero-screen-card">
-            <span class="dk-home-hero-screen-card-thumb" data-dk-product="cv"></span>
-            <span class="dk-home-hero-screen-card-lines"><b></b><i></i></span>
+    <div class="dk-home-hero-side">
+      <div class="dk-home-hero-tools" aria-label="מה אפשר ליצור ב-DeskKit">
+        <a href="sites.html?new=1" class="dk-home-hero-tool" data-dk-product="site"><span class="dk-home-hero-tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.3 2.5 3.6 5.5 3.6 9s-1.3 6.5-3.6 9c-2.3-2.5-3.6-5.5-3.6-9s1.3-6.5 3.6-9z"/></svg></span>אתר</a>
+        <a href="builder.html" class="dk-home-hero-tool" data-dk-product="cv"><span class="dk-home-hero-tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M9.5 13h5M9.5 16.5h5"/></svg></span>קורות חיים</a>
+        <a href="quote-app.html" class="dk-home-hero-tool" data-dk-product="quote"><span class="dk-home-hero-tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span>הצעת מחיר</a>
+        <a href="invoice-app.html" class="dk-home-hero-tool" data-dk-product="invoice"><span class="dk-home-hero-tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>חשבונית</a>
+        <a href="products.html?type=deck" class="dk-home-hero-tool" data-dk-product="deck"><span class="dk-home-hero-tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M10 9v5l4-2.5z" fill="currentColor" stroke="none"/><path d="M8 21h8M12 17v4"/></svg></span>מצגת</a>
+        <a href="products.html?type=xlsx" class="dk-home-hero-tool" data-dk-product="xlsx"><span class="dk-home-hero-tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M4 15h16M10 4v16M15 4v16"/></svg></span>גליון</a>
+      </div>
+      <div class="dk-home-hero-visual" aria-hidden="true">
+        <div class="dk-home-hero-browser">
+          <div class="dk-home-hero-browser-bar"><span></span><span></span><span></span></div>
+          <div class="dk-home-hero-browser-screen">
+            <div class="dk-home-hero-screen-hero">
+              <span class="dk-home-hero-screen-eyebrow">ברוכים הבאים</span>
+              <strong>הופכים רעיונות<br>לפרויקטים</strong>
+              <span class="dk-home-hero-screen-cta">להתחלה מהירה</span>
+            </div>
           </div>
         </div>
       </div>
@@ -285,21 +276,26 @@
 </section>
 </div>
 
-<!-- Logged-in Home variant -->
+<!-- Logged-in Home variant (the Dashboard) — same container width and
+     card language as the logged-out hero/Projects page, per the
+     reference mockup: greeting, colorful tool-cards, recent projects. -->
 <div id="dk-home-in" hidden>
-  <div class="dk-home-greet">
-    <h1 id="dk-home-greet-name">שלום 👋</h1>
-    <p>מה ניצור היום?</p>
-    <div class="dk-home-quickrow">
-      <a href="sites.html?new=1" class="dk-home-quick-btn">🌐 אתר חדש</a>
-      <a href="builder.html" class="dk-home-quick-btn">📄 קורות חיים</a>
-      <a href="products.html?type=deck" class="dk-home-quick-btn">📊 מצגת</a>
-      <a href="quote-app.html" class="dk-home-quick-btn">💼 הצעת מחיר</a>
-      <a href="invoice-app.html" class="dk-home-quick-btn">🧾 חשבונית</a>
+  <div class="dk-home-dash">
+    <div class="dk-home-dash-greet">
+      <h1 id="dk-home-greet-name">שלום 👋</h1>
+      <p>מה ניצור היום?</p>
+    </div>
+    <div class="dk-home-dash-tools">
+      <a href="sites.html?new=1" class="dk-home-dash-tool" data-dk-product="site"><span class="dk-home-dash-tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.3 2.5 3.6 5.5 3.6 9s-1.3 6.5-3.6 9c-2.3-2.5-3.6-5.5-3.6-9s1.3-6.5 3.6-9z"/></svg></span>אתר</a>
+      <a href="builder.html" class="dk-home-dash-tool" data-dk-product="cv"><span class="dk-home-dash-tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M9.5 13h5M9.5 16.5h5"/></svg></span>קורות חיים</a>
+      <a href="quote-app.html" class="dk-home-dash-tool" data-dk-product="quote"><span class="dk-home-dash-tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span>הצעת מחיר</a>
+      <a href="invoice-app.html" class="dk-home-dash-tool" data-dk-product="invoice"><span class="dk-home-dash-tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>חשבונית</a>
+      <a href="products.html?type=deck" class="dk-home-dash-tool" data-dk-product="deck"><span class="dk-home-dash-tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M10 9v5l4-2.5z" fill="currentColor" stroke="none"/><path d="M8 21h8M12 17v4"/></svg></span>מצגת</a>
+      <a href="products.html?type=xlsx" class="dk-home-dash-tool" data-dk-product="xlsx"><span class="dk-home-dash-tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M4 15h16M10 4v16M15 4v16"/></svg></span>גליון</a>
     </div>
     <div class="dk-home-recent-head">
-      <h2>הפרויקטים שלך</h2>
-      <a href="projects.html">כל הפרויקטים ←</a>
+      <h2>הפרויקטים האחרונים שלך</h2>
+      <a href="projects.html">הצג הכל ←</a>
     </div>
     <div class="dk-pcard-grid" id="dk-home-recent-grid"></div>
   </div>

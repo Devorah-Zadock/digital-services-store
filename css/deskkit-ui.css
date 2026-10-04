@@ -153,12 +153,12 @@ body.dk-app-sidebar-mounted .bshell.active {
    product, not one monochrome teal repeated six times). Specificity
    (attribute selector + descendant class) wins over each element's
    own plain-class default background declared elsewhere. */
-[data-dk-product="site"] .dk-app-sidebar-icon, [data-dk-product="site"] .dk-home-card-icon, [data-dk-product="site"] .dk-create-opt-icon { background: #CCFBF1; color: #0F766E; }
-[data-dk-product="cv"] .dk-app-sidebar-icon, [data-dk-product="cv"] .dk-home-card-icon, [data-dk-product="cv"] .dk-create-opt-icon { background: #EDE9FE; color: #6D28D9; }
-[data-dk-product="quote"] .dk-app-sidebar-icon, [data-dk-product="quote"] .dk-home-card-icon, [data-dk-product="quote"] .dk-create-opt-icon { background: #FEF3C7; color: #B45309; }
-[data-dk-product="invoice"] .dk-app-sidebar-icon, [data-dk-product="invoice"] .dk-home-card-icon, [data-dk-product="invoice"] .dk-create-opt-icon { background: #FFE4E6; color: #BE123C; }
-[data-dk-product="deck"] .dk-app-sidebar-icon, [data-dk-product="deck"] .dk-home-card-icon, [data-dk-product="deck"] .dk-create-opt-icon { background: #DBEAFE; color: #1D4ED8; }
-[data-dk-product="xlsx"] .dk-app-sidebar-icon, [data-dk-product="xlsx"] .dk-home-card-icon, [data-dk-product="xlsx"] .dk-create-opt-icon { background: #DCFCE7; color: #15803D; }
+[data-dk-product="site"] .dk-app-sidebar-icon, [data-dk-product="site"] .dk-home-card-icon, [data-dk-product="site"] .dk-create-opt-icon, [data-dk-product="site"] .dk-home-hero-tool-icon, [data-dk-product="site"] .dk-home-dash-tool-icon { background: #CCFBF1; color: #0F766E; }
+[data-dk-product="cv"] .dk-app-sidebar-icon, [data-dk-product="cv"] .dk-home-card-icon, [data-dk-product="cv"] .dk-create-opt-icon, [data-dk-product="cv"] .dk-home-hero-tool-icon, [data-dk-product="cv"] .dk-home-dash-tool-icon { background: #EDE9FE; color: #6D28D9; }
+[data-dk-product="quote"] .dk-app-sidebar-icon, [data-dk-product="quote"] .dk-home-card-icon, [data-dk-product="quote"] .dk-create-opt-icon, [data-dk-product="quote"] .dk-home-hero-tool-icon, [data-dk-product="quote"] .dk-home-dash-tool-icon { background: #FEF3C7; color: #B45309; }
+[data-dk-product="invoice"] .dk-app-sidebar-icon, [data-dk-product="invoice"] .dk-home-card-icon, [data-dk-product="invoice"] .dk-create-opt-icon, [data-dk-product="invoice"] .dk-home-hero-tool-icon, [data-dk-product="invoice"] .dk-home-dash-tool-icon { background: #FFE4E6; color: #BE123C; }
+[data-dk-product="deck"] .dk-app-sidebar-icon, [data-dk-product="deck"] .dk-home-card-icon, [data-dk-product="deck"] .dk-create-opt-icon, [data-dk-product="deck"] .dk-home-hero-tool-icon, [data-dk-product="deck"] .dk-home-dash-tool-icon { background: #DBEAFE; color: #1D4ED8; }
+[data-dk-product="xlsx"] .dk-app-sidebar-icon, [data-dk-product="xlsx"] .dk-home-card-icon, [data-dk-product="xlsx"] .dk-create-opt-icon, [data-dk-product="xlsx"] .dk-home-hero-tool-icon, [data-dk-product="xlsx"] .dk-home-dash-tool-icon { background: #DCFCE7; color: #15803D; }
 
 /* Project-card thumbnail strip: same per-product color, as a soft
    gradient wash with a large faint watermark icon — a real preview of
@@ -247,22 +247,14 @@ body.dk-home { background: var(--bg-main); }
    width the navbar now uses — not the sitewide .container's 1120px,
    so this doesn't also reflow every other page. */
 .dk-home-hero .container { max-width: var(--max-wide); }
+/* Two zones: text (dominant, reading-start side) + a side column
+   holding the tool-card grid above the product-preview mockup. DOM
+   order is text-first so primary content reads first regardless of
+   viewport; the flex order below is desktop's visual arrangement. */
 .dk-home-hero-inner { display: flex; align-items: center; gap: 48px; }
 .dk-home-hero-text { flex: 1; min-width: 0; }
 .dk-home-hero-text h1 { font-size: 46px; font-weight: 700; line-height: 1.3; margin: 18px 0 16px; color: var(--text-main); font-family: Heebo, Arial, sans-serif; }
 .dk-home-hero-text p { font-size: 17.5px; color: #475569; line-height: 1.6; max-width: 480px; margin: 0 0 24px; }
-.dk-home-hero-icons { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 26px; }
-.dk-home-hero-icon {
-  display: inline-flex; align-items: center; gap: 7px; background: #f1f5f9; border: 1px solid transparent;
-  border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 700; color: var(--text-main);
-  text-decoration: none; transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease, background .15s ease;
-}
-.dk-home-hero-icon:hover { border-color: var(--brand-color); box-shadow: var(--shadow-md); transform: translateY(-1px); background: var(--bg-card); }
-.dk-home-hero-icon-badge {
-  width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  background: var(--primary-light); color: var(--primary-dark);
-}
-.dk-home-hero-icon-badge svg { width: 13px; height: 13px; }
 .dk-home-hero-ctas { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
 .dk-home-hero-watch {
   display: inline-flex; align-items: center; gap: 9px; color: var(--text-main); font-weight: 700; font-size: 14.5px; text-decoration: none;
@@ -273,11 +265,27 @@ body.dk-home { background: var(--bg-main); }
   display: flex; align-items: center; justify-content: center; font-size: 11px; transition: background .15s ease, color .15s ease;
 }
 
-/* Visual: a browser-chrome frame around a small, purely CSS mockup of
-   the actual product (dashboard header + colorful create-tiles +
-   project rows) — a real preview of DeskKit itself rather than
-   unlicensed stock photography standing in for one. */
-.dk-home-hero-visual { flex: 0 0 44%; max-width: 480px; }
+.dk-home-hero-side { flex: 0 0 46%; max-width: 480px; display: flex; flex-direction: column; gap: 18px; }
+/* Tool-card grid — real cards (shadow, rounded corners, colorful icon
+   square), not compact inline pills: these are "the tool cards" the
+   reference mockup shows beside the hero copy, not a decorative list. */
+.dk-home-hero-tools { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.dk-home-hero-tool {
+  display: flex; align-items: center; gap: 10px; background: var(--bg-card); border: 1px solid var(--border-color);
+  border-radius: var(--radius-md); padding: 12px 14px; text-decoration: none; color: var(--text-main);
+  font-size: 13.5px; font-weight: 700; box-shadow: var(--shadow-sm);
+  transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease;
+}
+.dk-home-hero-tool:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--brand-color); }
+.dk-home-hero-tool-icon {
+  width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  background: var(--primary-light); color: var(--primary-dark);
+}
+.dk-home-hero-tool-icon svg { width: 18px; height: 18px; }
+
+/* Visual: a browser-chrome frame around a small, purely CSS marketing
+   panel (gradient + headline + CTA) — a stand-in for a product
+   screenshot that doesn't rely on unlicensed stock photography. */
 .dk-home-hero-browser {
   background: linear-gradient(160deg, #ffffff, #f8fafc); border-radius: var(--radius-lg); overflow: hidden;
   border: 1px solid var(--border-color);
@@ -288,30 +296,26 @@ body.dk-home { background: var(--bg-main); }
 }
 .dk-home-hero-browser-bar { display: flex; gap: 6px; padding: 12px 16px; border-bottom: 1px solid var(--border-color); }
 .dk-home-hero-browser-bar span { width: 9px; height: 9px; border-radius: 50%; background: var(--border-color); }
-.dk-home-hero-browser-screen { padding: 22px 22px 26px; background: linear-gradient(165deg, var(--bg-main), var(--bg-card)); }
-.dk-home-hero-screen-top { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
-.dk-home-hero-screen-avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--brand-color); flex-shrink: 0; }
-.dk-home-hero-screen-greet { font-size: 13.5px; font-weight: 700; color: var(--text-main); }
-.dk-home-hero-screen-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
-.dk-home-hero-screen-tiles span {
-  display: block; aspect-ratio: 1; border-radius: 10px; background: var(--primary-light);
+.dk-home-hero-browser-screen { padding: 14px; }
+.dk-home-hero-screen-hero {
+  position: relative; min-height: 210px; border-radius: 14px; overflow: hidden;
+  background: linear-gradient(135deg, var(--brand-color), var(--brand-dark));
+  display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; padding: 22px;
 }
-.dk-home-hero-screen-tiles span[data-dk-product="cv"] { background: #EDE9FE; }
-.dk-home-hero-screen-tiles span[data-dk-product="quote"] { background: #FEF3C7; }
-.dk-home-hero-screen-tiles span[data-dk-product="invoice"] { background: #FFE4E6; }
-.dk-home-hero-screen-card {
-  display: flex; align-items: center; gap: 10px; background: var(--bg-card); border: 1px solid var(--border-color);
-  border-radius: 10px; padding: 10px; margin-bottom: 8px; box-shadow: var(--shadow-sm);
+.dk-home-hero-screen-hero::before {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(circle at 75% 15%, rgba(255, 255, 255, .28), transparent 60%);
 }
-.dk-home-hero-screen-card-thumb { width: 26px; height: 26px; border-radius: 7px; background: var(--primary-light); flex-shrink: 0; }
-.dk-home-hero-screen-card-thumb[data-dk-product="cv"] { background: #EDE9FE; }
-.dk-home-hero-screen-card-lines { flex: 1; display: flex; flex-direction: column; gap: 6px; }
-.dk-home-hero-screen-card-lines b { display: block; width: 58%; height: 7px; border-radius: 4px; background: var(--border-color); }
-.dk-home-hero-screen-card-lines i { display: block; width: 32%; height: 6px; border-radius: 4px; background: var(--border-color); opacity: .6; }
+.dk-home-hero-screen-eyebrow { position: relative; font-size: 11.5px; font-weight: 700; color: rgba(255, 255, 255, .85); text-transform: uppercase; letter-spacing: .04em; }
+.dk-home-hero-screen-hero strong { position: relative; font-size: 23px; font-weight: 800; color: #fff; line-height: 1.25; }
+.dk-home-hero-screen-cta {
+  position: relative; align-self: flex-start; margin-top: 4px; background: #fff; color: var(--brand-dark);
+  font-size: 12.5px; font-weight: 700; padding: 8px 16px; border-radius: 999px;
+}
 
 @media (max-width: 860px) {
   .dk-home-hero-inner { flex-direction: column; }
-  .dk-home-hero-visual { max-width: 420px; width: 100%; }
+  .dk-home-hero-side { max-width: 420px; width: 100%; }
 }
 @media (max-width: 680px) {
   .dk-home-hero { padding: 40px 0 36px; }
@@ -400,17 +404,27 @@ body.dk-home { background: var(--bg-main); }
 @media (prefers-reduced-motion: reduce) { .dk-home-wow-node { animation: none; } }
 @media (max-width: 760px) { .dk-home-wow-pipe { flex-direction: column; } .dk-home-wow-arrow { transform: rotate(90deg); } }
 
-/* Logged-in home variant */
-.dk-home-greet { max-width: 1120px; margin: 0 auto; padding: 48px 20px 10px; }
-.dk-home-greet h1 { font-size: 32px; margin: 0 0 6px; }
-.dk-home-greet p { font-size: 16px; color: var(--text-secondary); margin: 0 0 26px; }
-.dk-home-quickrow { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 44px; }
-.dk-home-quick-btn {
-  display: inline-flex; align-items: center; gap: 8px; background: var(--surface); border: 1.5px solid var(--border);
-  border-radius: 999px; padding: 10px 18px; font-size: 14px; font-weight: 700; color: var(--text); text-decoration: none;
-  transition: border-color .15s ease, color .15s ease;
+/* Logged-in home variant (the Dashboard) — same contained width
+   (--max-wide) and card language (shadow-sm, radius-md, per-product
+   icon colors) the Home hero and Projects page already use, so this
+   doesn't read as a separate, lower-effort screen bolted onto the
+   same product. */
+.dk-home-dash { max-width: var(--max-wide); margin: 0 auto; padding: 48px 32px 64px; }
+.dk-home-dash-greet h1 { font-size: 32px; font-weight: 800; margin: 0 0 6px; color: var(--text-main); }
+.dk-home-dash-greet p { font-size: 16px; color: #475569; margin: 0 0 32px; }
+.dk-home-dash-tools { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 48px; }
+.dk-home-dash-tool {
+  display: flex; flex-direction: column; align-items: center; gap: 10px; width: 108px; box-sizing: border-box;
+  background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);
+  padding: 18px 10px; text-decoration: none; color: var(--text-main); font-size: 13px; font-weight: 700;
+  box-shadow: var(--shadow-sm); transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease;
 }
-.dk-home-quick-btn:hover { border-color: var(--primary); color: var(--primary-dark); }
+.dk-home-dash-tool:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--brand-color); }
+.dk-home-dash-tool-icon {
+  width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  background: var(--primary-light); color: var(--primary-dark);
+}
+.dk-home-dash-tool-icon svg { width: 22px; height: 22px; }
 .dk-home-recent-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 .dk-home-recent-head h2 { font-size: 21px; margin: 0; }
 .dk-home-recent-head a { font-size: 13.5px; font-weight: 700; color: var(--primary-dark); text-decoration: none; }

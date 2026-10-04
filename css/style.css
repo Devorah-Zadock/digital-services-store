@@ -225,6 +225,14 @@ body.has-sites-rail header.site {
      regardless of whether .burger is shown. */
   display: flex; align-items: center;
   padding: 16px 32px; max-width: var(--max-wide); margin: 0 auto;
+  /* Logo-left / nav-center / login+CTA-right (desktop only) — the
+     user's own reference mockup uses this order regardless of the
+     page's RTL text direction; DOM order stays brand-first (so mobile,
+     where .brand goes back to position:absolute, is untouched), this
+     just repaints the VISUAL order via flex `order`. order:1 sits at
+     the flex-start edge (the right, under RTL) and order:3 at
+     flex-end (the left) — so nav-end-group(1) lands top-right,
+     nav-links(2) stays centered, brand(3) lands top-left. */
   /* The home page sets its own page-wide font-family ('Assistant', for
      its own hero/body copy — body.home-neo below) — without pinning the
      header back to the site's base font here, that cascaded into the
@@ -272,6 +280,11 @@ body.has-sites-rail header.site {
 .brand-desk { font-weight: 700; }
 .brand-kit { font-weight: 400; color: #0E8C8C; }
 .nav-end-group { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+@media (min-width: 861px) {
+  .brand { order: 3; }
+  .nav-links { order: 2; }
+  .nav-end-group { order: 1; }
+}
 /* js/header.js injects a ~126px CTA button into .nav-end-group for
    logged-out visitors, on top of the login widget + lang toggle — on
    a narrow phone viewport that group alone can run ~290px wide. On
