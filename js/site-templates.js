@@ -2650,6 +2650,48 @@ function renderCinematicSite(d, page) {
 }
 
 /* ---------- Template 14: neo-brutalism (bold color blocks, arcade press) ---------- */
+/* Section-renderer decomposition (Phase 7 template migration), same
+   guarantee as local-service's own: each function below returns
+   EXACTLY the HTML chunk renderBrutalSite's index page already
+   inlined, unchanged. */
+function brHeroSection(d, pal, dd, cta) {
+  return `
+      <section class="br-hero"><div class="container">
+        <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "עסק שמעז לבלוט"}</span>
+        <h1>${heading(d, "heroTitle", dd.businessName)}</h1>
+        <p>${taglineText(d, dd)}</p>
+        ${ctaHtml(cta, "br-btn")}
+        ${heroMediaHtml(d, "br-hero-photo")}
+      </div></section>`;
+}
+function brServicesSection(d, pal, dd) {
+  const showSearch = dd._services.length >= 3;
+  return `
+      <section class="br-section site-reveal"><div class="container">
+        <div class="br-section-head"><span class="br-tag">מה אנחנו מציעים</span><h2>${heading(d, "services", "השירותים שלנו")}</h2>
+        ${showSearch ? searchBoxHtml("#br-grid", "חיפוש שירות...") : ""}</div>
+        <div class="br-grid" id="br-grid">${dd._services.map((s) => `
+          <div class="br-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
+        ${showSearch ? searchScriptHtml() : ""}
+      </div></section>`;
+}
+function brVideoSection(embedSrc) {
+  return embedSrc ? `<section class="br-section site-reveal"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : "";
+}
+function brAboutSection(d, pal, dd) {
+  return (!d.pages || !d.pages.about) ? `<section class="br-section br-about site-reveal"><div class="container"><p>${aboutText(d, dd)}</p></div></section>` : "";
+}
+function brContactSection(d, pal, dd, wa) {
+  return (!d.pages || !d.pages.contact) ? `<section class="br-section br-contact site-reveal last"><div class="container">
+        <div class="br-section-head"><span class="br-tag">נשמח לשמוע מכם</span><h2>${heading(d, "contact", "יצירת קשר")}</h2></div>
+        ${dd._hasContact ? `
+          ${d.phone ? `<span class="line">טלפון: ${escapeHtmlS(d.phone)}</span>` : ""}
+          ${d.email ? `<span class="line">מייל: ${escapeHtmlS(d.email)}</span>` : ""}
+          ${d.address ? `<span class="line">כתובת: ${escapeHtmlS(d.address)}</span>` : ""}
+        ` : `<p style="font-weight:700;">פרטו כאן טלפון, מייל וכתובת.</p>`}
+      </div></section>` : "";
+}
+
 function renderBrutalSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#FFC800");
@@ -2726,6 +2768,10 @@ function renderBrutalSite(d, page) {
         ` : `<p style="font-weight:700;">פרטו כאן טלפון, מייל וכתובת ליצירת קשר.</p>`}
         <div style="margin-top:22px;">${wa ? `<a class="br-btn" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}</div>
       </div></section>`;
+  } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("brutal")) {
+    main = renderBlocksHtml(d, "brutal", "index", {
+      pal, dd, cta, wa, videoSection: brVideoSection(embedSrc),
+    });
   } else {
     const showSearch = dd._services.length >= 3;
     main = `
