@@ -1736,6 +1736,59 @@ function renderPortfolioSite(d, page) {
 }
 
 /* ---------- Template 9: boutique shop with a featured item (shop) ---------- */
+/* Section-renderer decomposition (Phase 7 template migration), same
+   guarantee as local-service's own: each function below returns
+   EXACTLY the HTML chunk renderBoutiqueSite's index page already
+   inlined, unchanged. No "contact" entry below -- same as catalog,
+   this template genuinely has no inline contact section on its index
+   page (contact details only ever lived on the separate contact.html
+   page, shown via the nav's WhatsApp link + footer line). */
+function bqHeroSection(d, pal, dd) {
+  return `
+      <section class="bq-banner ${heroHasImage(d) ? "" : "bq-banner-noimg"}">
+        ${heroMediaHtml(d, "")}
+        <div class="bq-banner-inner">
+          <span class="eyebrow">חנות בוטיק</span>
+          <h1>${heading(d, "heroTitle", dd.businessName)}</h1>
+          <p>${taglineText(d, dd)}</p>
+        </div>
+      </section>`;
+}
+function bqServicesSection(d, pal, dd) {
+  const services = dd._services;
+  const featured = services[0];
+  const rest = services.slice(1);
+  const showSearch = rest.length >= 3;
+  return `
+      <div class="container">
+        <section class="bq-featured site-reveal"><div class="bq-featured-card">
+          <div class="bq-featured-price">${featured.price ? escapeHtmlS(featured.price) : ""}</div>
+          <div>
+            <span class="bq-featured-tag">המומלץ שלנו</span>
+            <h3>${escapeHtmlS(featured.name)}</h3>
+            ${featured.desc ? `<p>${escapeHtmlS(featured.desc)}</p>` : ""}
+          </div>
+        </div></section>
+        ${rest.length ? `
+          ${showSearch ? searchBoxHtml("#bq-grid", "חיפוש מוצר או שירות...") : ""}
+          <div class="bq-grid" id="bq-grid">${rest.map((s, i) => `
+            <div class="bq-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}">
+              <div class="num">${String(i + 2).padStart(2, "0")}</div>
+              <h3>${escapeHtmlS(s.name)}</h3>
+              ${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}
+              ${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}
+            </div>`).join("")}</div>
+          ${showSearch ? searchScriptHtml() : ""}
+        ` : ""}
+      </div>`;
+}
+function bqVideoSection(embedSrc) {
+  return embedSrc ? `<div class="container"><div style="padding:36px 0;">${videoEmbedHtml(embedSrc)}</div></div>` : "";
+}
+function bqAboutSection(d, pal, dd) {
+  return (!d.pages || !d.pages.about) ? `<div class="bq-about">${aboutText(d, dd)}</div>` : "";
+}
+
 function renderBoutiqueSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#C2410C");
@@ -1804,6 +1857,10 @@ function renderBoutiqueSite(d, page) {
         ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת ליצירת קשר.</div>`}
         ${wa ? `<a class="wa-link" style="display:inline-block; margin-top:10px;" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}
       </div></section>`;
+  } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("boutique")) {
+    main = renderBlocksHtml(d, "boutique", "index", {
+      pal, dd, videoSection: bqVideoSection(embedSrc),
+    });
   } else {
     const services = dd._services;
     const featured = services[0];

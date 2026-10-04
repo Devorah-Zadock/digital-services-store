@@ -116,6 +116,13 @@ const SITE_BLOCK_DEFS = {
     about: { label: "אודות", render: (d, pal, dd) => poAboutSection(d, pal, dd), active: (d) => !d.pages || !d.pages.about },
     contact: { label: "קריאה לפעולה", render: (d, pal, dd, ctx) => poContactSection(d, pal, dd, ctx.wa) },
   },
+  // No "contact" entry — same reasoning as catalog: boutique genuinely
+  // has no inline contact section on its index page.
+  "boutique": {
+    hero: { label: "Hero", render: (d, pal, dd) => bqHeroSection(d, pal, dd) },
+    services: { label: "מוצרים (כולל המומלץ)", hasItems: true, render: (d, pal, dd) => bqServicesSection(d, pal, dd) },
+    about: { label: "אודות", render: (d, pal, dd) => bqAboutSection(d, pal, dd), active: (d) => !d.pages || !d.pages.about },
+  },
 };
 
 // "blank" (Phase 3) delegates its actual rendering to local-service's
