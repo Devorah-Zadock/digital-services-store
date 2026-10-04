@@ -30,6 +30,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=80">
 <link rel="stylesheet" href="css/builder.css?v=17">
+<link rel="stylesheet" href="css/builder-shell.css?v=2">
 <style>
   .services-item { border: 1px solid #EDEFEE; border-radius: 8px; padding: 12px; margin-bottom: 12px; display: grid; gap: 8px; }
   .services-item-head { display: flex; justify-content: space-between; align-items: center; }
@@ -479,6 +480,56 @@
 </div>
 </div>
 
+<div id="bshell-root" class="bshell no-print">
+  <div class="bshell-top">
+    <span class="bshell-top-name" id="bshell-top-name"></span>
+    <span class="bshell-top-status" id="bshell-top-status"></span>
+    <div class="bshell-top-spacer"></div>
+    <div class="bshell-device-row" id="bshell-device-row">
+      <button type="button" class="bshell-device-btn active" data-device="desktop" title="Desktop" aria-label="Desktop">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      </button>
+      <button type="button" class="bshell-device-btn" data-device="tablet" title="Tablet" aria-label="Tablet">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M11 18h2"/></svg>
+      </button>
+      <button type="button" class="bshell-device-btn" data-device="mobile" title="Mobile" aria-label="Mobile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>
+      </button>
+    </div>
+    <button type="button" class="bshell-top-btn" id="bshell-undo-btn" disabled title="בטל (Ctrl+Z)">↶ בטל</button>
+    <button type="button" class="bshell-top-btn" id="bshell-redo-btn" disabled title="בצע שוב (Ctrl+Shift+Z)">↷ חזור</button>
+    <button type="button" class="bshell-top-btn" id="bshell-preview-btn">תצוגה מקדימה ⤢</button>
+    <button type="button" class="bshell-top-btn" id="bshell-save-btn">שמירה</button>
+    <button type="button" class="bshell-top-btn bshell-top-btn-primary" id="bshell-publish-btn">פרסום</button>
+    <a href="sites.html?browse=1" class="bshell-exit-link">יציאה</a>
+  </div>
+
+  <div class="bshell-mobile-tabs no-print" style="padding:8px 14px; background:var(--surface); border-bottom:1px solid var(--border);">
+    <button type="button" class="bshell-top-btn" id="bshell-mobile-hier-btn" style="flex:1;">מבנה</button>
+    <button type="button" class="bshell-top-btn" id="bshell-mobile-props-btn" style="flex:1;">עיצוב</button>
+  </div>
+
+  <div class="bshell-body">
+    <aside class="bshell-hier" id="bshell-hier">
+      <div class="bshell-hier-title">מבנה האתר</div>
+      <div id="bshell-hier-list"></div>
+    </aside>
+
+    <div class="bshell-canvas-wrap">
+      <div class="bshell-canvas-frame-holder" id="bshell-canvas-holder">
+        <div class="bshell-canvas-shadow">
+          <iframe class="bshell-canvas-iframe" id="bshell-canvas-iframe" title="עריכת האתר"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <aside class="bshell-props" id="bshell-props">
+      <div class="bshell-props-empty" id="bshell-props-empty">בחרו אלמנט באתר כדי לערוך אותו</div>
+      <div id="bshell-props-body" style="display:none;"></div>
+    </aside>
+  </div>
+</div>
+
 <footer class="site no-print">
   <div class="container">
     <div class="footer-grid">
@@ -534,6 +585,7 @@
 <script src="js/my-panel.js?v=13"></script>
 <script src="js/domain-guide.js?v=3"></script>
 <script src="js/site-cloud-save.js?v=7"></script>
+<script src="js/builder-shell.js?v=1"></script>
 <script src="js/site-ai-review.js?v=1"></script>
 <script src="js/site-wizard-questions.js?v=1"></script>
 <script src="js/site-ai-generate.js?v=2"></script>

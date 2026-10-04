@@ -1816,7 +1816,15 @@ document.addEventListener("DOMContentLoaded", () => {
     supabaseClient.auth.getSession().then(({ data }) => {
       if (data.session && data.session.user) {
         if (urlTemplate && SITE_TEMPLATES[urlTemplate]) siteState.template = urlTemplate;
-        showWizard();
+        // Phase 2 prototype entry point — new Builder-Shell, scoped to
+        // one Design Starting Point for now (see js/builder-shell.js's
+        // own header comment). Falls back to the existing wizard for
+        // every other template, same as before this existed.
+        if (params.get("shell") === "1" && typeof bshellActivate === "function" && typeof BSHELL_SUPPORTED_TEMPLATES !== "undefined" && BSHELL_SUPPORTED_TEMPLATES.includes(siteState.template)) {
+          bshellActivate();
+        } else {
+          showWizard();
+        }
         // Confirmed live: this check and site-cloud-save.js's own account
         // check are two independent async calls with no guaranteed order.
         // Removing the overlay right here, the moment THIS faster one
