@@ -61,8 +61,8 @@ function chipHtml(text, chipBg, chipColor, chipFont) {
 }
 function projectsList(projects, primaryHex) {
   if (!projects || !projects.length) return "";
-  return projects.map((p) => `
-    <div style="margin-bottom:12px;">
+  return projects.map((p, i) => `
+    <div style="margin-bottom:12px;" data-cv-project-idx="${i}">
       <div class="cv-jobtitle" style="font-size:13px;">${escapeHtml(p.title)}${p.link ? ` <span class="cv-link" style="color:#${primaryHex};">(${escapeHtml(p.link)})</span>` : ""}</div>
       <ul style="margin-top:4px;">${bulletsToLis(p.bullets)}</ul>
     </div>`).join("");
@@ -76,7 +76,7 @@ function renderSidebar({ font, palette, content, lang, textColor }) {
   const contactLines = splitParts(content.contact);
   const skillChips = splitParts(content.skills).map((s) => chipHtml(s, "rgba(255,255,255,.14)", "#fff")).join("");
   const jobsHtml = content.jobs.map((j, i) => `
-    <div class="tl-item" style="padding-bottom:${i === content.jobs.length - 1 ? 0 : 20}px;">
+    <div class="tl-item" style="padding-bottom:${i === content.jobs.length - 1 ? 0 : 20}px;" data-cv-job-idx="${i}">
       <div class="tl-dot" style="background:#${palette.primary};"></div>
       <div class="cv-jobtitle" style="font-size:13.5px; color:#${tc};">${escapeHtml(j.title)}</div>
       <div style="font-size:12px; color:#${palette.primary}; font-weight:600; margin-top:1px;">${escapeHtml(j.place)}</div>
@@ -116,21 +116,21 @@ function renderSidebar({ font, palette, content, lang, textColor }) {
     <div class="cv-sidebar-wrap">
       <aside class="cv-side">
         ${content.photo ? `<div class="avatar avatar-photo">${photoCircleHtml(content.photo, 78)}</div>` : `<div class="avatar">${escapeHtml(initialsOf(content.name))}</div>`}
-        <h1>${escapeHtml(content.name)}</h1>
-        <div class="role">${escapeHtml(content.title)}</div>
+        <h1 data-cvkey="name">${escapeHtml(content.name)}</h1>
+        <div class="role" data-cvkey="title">${escapeHtml(content.title)}</div>
         <div class="sec-label">${L.contact}</div>
-        ${contactLines.map((c) => `<div class="contact-line">${escapeHtml(c)}</div>`).join("")}
+        <div data-cvkey="contact">${contactLines.map((c) => `<div class="contact-line">${escapeHtml(c)}</div>`).join("")}</div>
         <div class="sec-label">${L.skills}</div>
-        <div class="chips">${skillChips}</div>
+        <div class="chips" data-cvkey="skills">${skillChips}</div>
       </aside>
       <main class="cv-main">
         <h2>${L.summary}</h2>
-        <p class="cv-summary">${escapeHtml(content.summary)}</p>
+        <p class="cv-summary" data-cvkey="summary">${escapeHtml(content.summary)}</p>
         <h2>${L.experience}</h2>
-        <div class="tl-wrap">${jobsHtml}</div>
-        ${content.projects && content.projects.length ? `<h2>${L.projects}</h2>${projectsList(content.projects, palette.primary)}` : ""}
+        <div class="tl-wrap" data-cvsection="experience">${jobsHtml}</div>
+        ${content.projects && content.projects.length ? `<h2>${L.projects}</h2><div data-cvsection="projects">${projectsList(content.projects, palette.primary)}</div>` : ""}
         <h2>${L.education}</h2>
-        <p class="cv-summary">${escapeHtml(content.education)}</p>
+        <p class="cv-summary" data-cvkey="education">${escapeHtml(content.education)}</p>
       </main>
     </div>
   </div>`;
@@ -144,8 +144,8 @@ function renderBold({ font, palette, content, lang, textColor }) {
   const skillChips = splitParts(content.skills).map((s) => chipHtml(s, "#" + palette.ice, "#" + palette.primaryDark)).join("");
   let n = 0;
   const badge = () => { n += 1; return String(n).padStart(2, "0"); };
-  const jobsHtml = content.jobs.map((j) => `
-    <div style="margin-bottom:16px;">
+  const jobsHtml = content.jobs.map((j, i) => `
+    <div style="margin-bottom:16px;" data-cv-job-idx="${i}">
       <div style="display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;">
         <span style="width:6px; height:6px; border-radius:50%; background:#${palette.primary}; display:inline-block;"></span>
         <span class="cv-jobtitle" style="font-size:14px;">${escapeHtml(j.title)}</span>
@@ -172,21 +172,21 @@ function renderBold({ font, palette, content, lang, textColor }) {
     <div class="cv-bold-head">
       ${content.photo ? `<div style="position:absolute; z-index:2; top:28px; inset-inline-end:32px; box-shadow:0 8px 20px rgba(0,0,0,.15); border-radius:50%;">${photoCircleHtml(content.photo, 72)}</div>` : ""}
       <div class="inner">
-        <h1>${escapeHtml(content.name)}</h1>
-        <span class="role-badge">${escapeHtml(content.title)}</span>
-        <div class="contact">${escapeHtml(content.contact)}</div>
+        <h1 data-cvkey="name">${escapeHtml(content.name)}</h1>
+        <span class="role-badge" data-cvkey="title">${escapeHtml(content.title)}</span>
+        <div class="contact" data-cvkey="contact">${escapeHtml(content.contact)}</div>
       </div>
     </div>
     <div class="cv-bold-body">
       <h2><span class="n">${badge()}</span> ${L.summary}</h2>
-      <p class="cv-summary">${escapeHtml(content.summary)}</p>
+      <p class="cv-summary" data-cvkey="summary">${escapeHtml(content.summary)}</p>
       <h2><span class="n">${badge()}</span> ${L.experience}</h2>
-      ${jobsHtml}
-      ${content.projects && content.projects.length ? `<h2><span class="n">${badge()}</span> ${L.projects}</h2>${projectsList(content.projects, palette.primary)}` : ""}
+      <div data-cvsection="experience">${jobsHtml}</div>
+      ${content.projects && content.projects.length ? `<h2><span class="n">${badge()}</span> ${L.projects}</h2><div data-cvsection="projects">${projectsList(content.projects, palette.primary)}</div>` : ""}
       <h2><span class="n">${badge()}</span> ${L.education}</h2>
-      <p class="cv-summary">${escapeHtml(content.education)}</p>
+      <p class="cv-summary" data-cvkey="education">${escapeHtml(content.education)}</p>
       <h2><span class="n">${badge()}</span> ${L.skills}</h2>
-      <div>${skillChips}</div>
+      <div data-cvkey="skills">${skillChips}</div>
     </div>
   </div>`;
 }
@@ -198,8 +198,8 @@ function renderClassicMono({ font, palette, content, lang, textColor }) {
   const dir = lang === "en" ? "ltr" : "rtl";
   let n = 0;
   const badge = () => { n += 1; return String(n).padStart(2, "0"); };
-  const jobsHtml = content.jobs.map((j) => `
-    <div style="margin-bottom:14px;">
+  const jobsHtml = content.jobs.map((j, i) => `
+    <div style="margin-bottom:14px;" data-cv-job-idx="${i}">
       <div class="cv-row" style="font-size:13.5px;"><span class="cv-jobtitle">${escapeHtml(j.title)} — ${escapeHtml(j.place)}</span></div>
       <div class="cv-dates" style="color:#${CV_GREY}; margin:1px 0 6px;">${escapeHtml(j.dates)}</div>
       <ul>${bulletsToLis(j.bullets)}</ul>
@@ -219,20 +219,20 @@ function renderClassicMono({ font, palette, content, lang, textColor }) {
   <div class="cv-doc" dir="${dir}">
     <div class="cv-cm-head">
       ${content.photo ? `<div style="margin:0 auto 14px; box-shadow:0 4px 14px rgba(0,0,0,.12); border-radius:50%; display:inline-block;">${photoCircleHtml(content.photo, 64)}</div>` : ""}
-      <h1>${escapeHtml(content.name)}</h1>
-      <div class="role">${escapeHtml(content.title)}</div>
-      <div class="contact">${escapeHtml(content.contact)}</div>
+      <h1 data-cvkey="name">${escapeHtml(content.name)}</h1>
+      <div class="role" data-cvkey="title">${escapeHtml(content.title)}</div>
+      <div class="contact" data-cvkey="contact">${escapeHtml(content.contact)}</div>
     </div>
     <div class="cv-cm-body">
       <h2><span class="n">${badge()}</span> ${L.summary}</h2>
-      <p class="cv-summary">${escapeHtml(content.summary)}</p>
+      <p class="cv-summary" data-cvkey="summary">${escapeHtml(content.summary)}</p>
       <h2><span class="n">${badge()}</span> ${L.experience}</h2>
-      ${jobsHtml}
-      ${content.projects && content.projects.length ? `<h2><span class="n">${badge()}</span> ${L.projects}</h2>${projectsList(content.projects, palette.primary)}` : ""}
+      <div data-cvsection="experience">${jobsHtml}</div>
+      ${content.projects && content.projects.length ? `<h2><span class="n">${badge()}</span> ${L.projects}</h2><div data-cvsection="projects">${projectsList(content.projects, palette.primary)}</div>` : ""}
       <h2><span class="n">${badge()}</span> ${L.education}</h2>
-      <p class="cv-summary">${escapeHtml(content.education)}</p>
+      <p class="cv-summary" data-cvkey="education">${escapeHtml(content.education)}</p>
       <h2><span class="n">${badge()}</span> ${L.skills}</h2>
-      <p class="cv-summary">${escapeHtml(content.skills)}</p>
+      <p class="cv-summary" data-cvkey="skills">${escapeHtml(content.skills)}</p>
     </div>
   </div>`;
 }

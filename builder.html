@@ -14,6 +14,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700&family=Rubik:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@400;500;700&family=Noto+Serif+Hebrew:wght@400;500;600;700&family=David+Libre:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=80">
 <link rel="stylesheet" href="css/builder.css?v=15">
+<link rel="stylesheet" href="css/builder-shell.css?v=5">
 </head>
 <body>
 <script>
@@ -159,6 +160,57 @@
   </main>
 </div>
 
+<div id="cvbshell-root" class="bshell no-print">
+  <div class="bshell-top">
+    <span class="bshell-top-name">קורות חיים</span>
+    <span class="bshell-top-status" id="cvbshell-top-status"></span>
+    <div class="bshell-top-spacer"></div>
+    <div class="lang-switch-big" id="cvbshell-lang-switch" role="radiogroup" aria-label="שפת קורות החיים">
+      <button type="button" class="lang-big" data-lang="he"><span class="dot"></span>עברית</button>
+      <button type="button" class="lang-big" data-lang="en"><span class="dot"></span>English</button>
+    </div>
+    <button type="button" class="bshell-top-btn" id="cvbshell-undo-btn" disabled title="בטל (Ctrl+Z)">↶ בטל</button>
+    <button type="button" class="bshell-top-btn" id="cvbshell-redo-btn" disabled title="בצע שוב (Ctrl+Shift+Z)">↷ חזור</button>
+    <button type="button" class="bshell-top-btn" id="cvbshell-download-btn">הורדת PDF</button>
+    <button type="button" class="bshell-top-btn bshell-top-btn-primary" id="cvbshell-save-btn">שמירה</button>
+    <a href="builder.html?shell=0" class="bshell-exit-link" id="cvbshell-exit-link">יציאה</a>
+  </div>
+
+  <div class="bshell-mobile-tabs no-print" style="padding:8px 14px; background:var(--surface); border-bottom:1px solid var(--border);">
+    <button type="button" class="bshell-top-btn" id="cvbshell-mobile-hier-btn" style="flex:1;">מבנה</button>
+    <button type="button" class="bshell-top-btn" id="cvbshell-mobile-props-btn" style="flex:1;">עיצוב</button>
+  </div>
+
+  <div class="bshell-body">
+    <aside class="bshell-hier" id="cvbshell-hier">
+      <div class="bshell-hier-title">מבנה קורות החיים</div>
+      <button type="button" class="bshell-settings-btn" id="cvbshell-settings-btn">
+        <span class="bshell-settings-icon">⚙</span>
+        <span>עיצוב והגדרות</span>
+      </button>
+      <div id="cvbshell-hier-list"></div>
+    </aside>
+
+    <div class="bshell-canvas-wrap">
+      <div class="bshell-canvas-frame-holder">
+        <div class="bshell-canvas-shadow">
+          <iframe class="bshell-canvas-iframe" id="cvbshell-canvas-iframe" title="עריכת קורות החיים"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <aside class="bshell-props" id="cvbshell-props">
+      <div class="bshell-props-empty" id="cvbshell-props-empty">בחרו שדה בקורות החיים כדי לערוך אותו</div>
+      <div id="cvbshell-props-dynamic" style="display:none;"></div>
+      <div id="cvbshell-props-settings" style="display:none;">
+        <span class="bshell-props-kind">עיצוב והגדרות</span>
+        <div class="bshell-settings-group" id="cvbshell-settings-group-design"></div>
+        <div class="bshell-settings-group" id="cvbshell-settings-group-photo"></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
 <footer class="site no-print">
   <div class="container">
     <div class="footer-grid">
@@ -218,6 +270,7 @@
 <script src="js/auth-prompt.js?v=1"></script>
 <script src="js/usage-log.js?v=1"></script>
 <script src="js/builder-cloud-save.js?v=5"></script>
+<script src="js/cv-builder-shell.js?v=1"></script>
 <script src="js/ats-checker.js?v=3"></script>
 <script src="js/ai-writer.js?v=1"></script>
 <script src="js/main.js?v=2"></script>

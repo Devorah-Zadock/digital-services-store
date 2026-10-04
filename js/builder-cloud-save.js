@@ -72,6 +72,11 @@ function applyCvSnapshot(snap) {
   document.querySelectorAll(".lang-big").forEach((b) => b.classList.toggle("active", b.dataset.lang === state.lang));
   renderForm();
   renderPreview();
+  // The CV Shell (js/cv-builder-shell.js) may already be active and
+  // showing stale content by the time this resolves — its own
+  // DOMContentLoaded activation runs synchronously, before this
+  // function's async auth/cloud-save check below gets a chance to.
+  if (typeof cvbshellRefreshIfActive === "function") cvbshellRefreshIfActive();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
