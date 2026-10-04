@@ -34,7 +34,7 @@
 <link rel="stylesheet" href="css/style.css?v=81">
 <link rel="stylesheet" href="css/deskkit-ui.css?v=2">
 <link rel="stylesheet" href="css/builder.css?v=18">
-<link rel="stylesheet" href="css/builder-shell.css?v=6">
+<link rel="stylesheet" href="css/builder-shell.css?v=7">
 <style>
   .ia-err { color: #B23; font-size: 13px; min-height: 18px; margin: 4px 0 8px; }
   .ia-topbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
@@ -246,6 +246,13 @@
       <div id="ibshell-props-dynamic" style="display:none;"></div>
       <div id="ibshell-props-settings" style="display:none;">
         <span class="bshell-props-kind">פרטי העסק</span>
+        <div class="bshell-settings-group" id="ibshell-ai-draft-group">
+          <div class="bshell-settings-group-title">✨ יצירת טיוטה אוטומטית</div>
+          <p class="bshell-settings-field-hint">תארו בקצרה מה מחויב, ו-AI ימלא עבורכם שורות טיוטה ראשוניות — אפשר לערוך הכל אחר כך. זמין רק למסמכי טיוטה (לפני הפקה).</p>
+          <textarea id="ibshell-ai-draft-input" class="bshell-ai-draft-textarea" rows="3" placeholder="לדוגמה: ייעוץ עסקי חודשי + הקמת דף נחיתה"></textarea>
+          <button type="button" class="btn-mini ai-improve-btn" id="ibshell-ai-draft-btn">✨ צור טיוטה אוטומטית</button>
+          <div id="ibshell-ai-draft-note" class="ai-limit-note"></div>
+        </div>
         <div class="bshell-settings-group" id="ibshell-settings-group-profile">
           <div class="bshell-settings-group-title">פרטי העסק (משותפים לכל המסמכים)</div>
         </div>
@@ -314,6 +321,6 @@
 <script src="js/usage-log.js?v=1"></script>
 <script src="js/invoice-cloud-save.js?v=1"></script>
 <script src="js/invoice-app.js?v=4"></script>
-<script src="js/invoice-builder-shell.js?v=2"></script>
+<script src="js/invoice-builder-shell.js?v=3"></script>
 </body>
 </html>

@@ -92,6 +92,7 @@ function invoiceBshellActivate() {
   invoiceBshellWireProfileLiveUpdate();
   invoiceBshellWireLogoLiveUpdate();
   invoiceBshellWireFinalizeWatcher();
+  invoiceBshellWireAiDraft();
   document.getElementById("ibshell-root").classList.add("active");
   invoiceBshellWireTopBar();
   invoiceBshellSyncLockUI();
@@ -303,9 +304,87 @@ function invoiceBshellSyncLockUI() {
   document.getElementById("ibshell-finalize-btn").style.display = locked ? "none" : "";
   document.getElementById("ibshell-credit-btn").style.display = locked ? "" : "none";
   document.getElementById("ibshell-locked-note").style.display = locked ? "block" : "none";
+  const aiDraftGroup = document.getElementById("ibshell-ai-draft-group");
+  if (aiDraftGroup) aiDraftGroup.style.display = locked ? "none" : "";
   const name = (invoiceEventState && INVOICE_DOC_LABEL[invoiceEventState.docType]) || "מסמך חדש";
   document.getElementById("ibshell-top-name").textContent = name;
   invoiceBshellSyncUndoButtons();
+}
+
+const INVOICEBSHELL_AI_UPGRADE_MESSAGE = "הגעת למכסת הניסיונות החינמיים ביצירת טיוטה אוטומטית. רוצה להמשיך ללא הגבלה? שדרג לגרסת Pro בתשלום חד-פעמי!";
+
+/* "✨ יצירת טיוטה אוטומטית" — a brand-new control (no old-UI
+   equivalent to move/reuse), mirroring quote-builder-shell.js's own
+   version at invoice scale. Only ever drafts invoiceEventState.items
+   — never recipientName/recipientId/recipientAddress, which name a
+   real third party the AI has no way to know (see
+   supabase/functions/generate-invoice's own header comment). Hidden
+   entirely once the document is locked (invoiceBshellSyncLockUI
+   above) — a issued invoice's items can never change through any
+   path in this Shell, AI draft included. */
+function invoiceBshellWireAiDraft() {
+  const btn = document.getElementById("ibshell-ai-draft-btn");
+  if (!btn || btn.dataset.wired) return;
+  btn.dataset.wired = "1";
+  btn.addEventListener("click", invoiceBshellGenerateDraft);
+}
+
+function invoiceBshellAiDraftNote(html) {
+  const note = document.getElementById("ibshell-ai-draft-note");
+  if (note) note.innerHTML = html;
+}
+
+async function invoiceBshellGenerateDraft() {
+  if (invoiceBshellLocked()) return;
+  const btn = document.getElementById("ibshell-ai-draft-btn");
+  const input = document.getElementById("ibshell-ai-draft-input");
+  if (!btn || !input) return;
+  const description = input.value.trim();
+  if (!description) {
+    invoiceBshellAiDraftNote("תארו קודם בקצרה מה מחויב — אז AI יכין שורות טיוטה ראשוניות.");
+    return;
+  }
+  invoiceBshellAiDraftNote("");
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "יוצר טיוטה...";
+  try {
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const token = sessionData.session && sessionData.session.access_token;
+    if (!token) { location.href = "account.html?redirect=" + encodeURIComponent("invoice-app.html"); return; }
+    const res = await fetch(SUPABASE_URL + "/functions/v1/generate-invoice", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token, apikey: SUPABASE_ANON_KEY },
+      body: JSON.stringify({ description, businessName: currentInvoiceProfile && currentInvoiceProfile.business_name }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      invoiceBshellAiDraftNote(data.error || "יצירת הטיוטה נכשלה, נסו שוב.");
+      return;
+    }
+    if (data.limitReached) {
+      invoiceBshellAiDraftNote(data.isPro ? "הגעתם למכסת השימוש ההוגן היומית. אפשר להמשיך מחר." : `${INVOICEBSHELL_AI_UPGRADE_MESSAGE} <a href="#">שדרוג ל-Pro</a>`);
+      return;
+    }
+    if (invoiceBshellLocked()) return; // locked while the request was in flight
+    const items = (data.invoice && Array.isArray(data.invoice.items)) ? data.invoice.items : [];
+    if (!items.length) {
+      invoiceBshellAiDraftNote("ה-AI לא הצליח להציע שורות מהתיאור הזה — נסו לתאר בפירוט רב יותר.");
+      return;
+    }
+    invoiceBshellSnapshot();
+    invoiceEventState.items = items;
+    renderInvoiceFormIA();
+    renderInvoicePreviewIA();
+    invoiceBshellRenderCanvas(invoiceBshellReanchorSelection);
+    invoiceBshellRenderHierarchy();
+    invoiceBshellSyncUndoButtons();
+  } catch (err) {
+    invoiceBshellAiDraftNote("יצירת הטיוטה נכשלה, נסו שוב.");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
 }
 
 async function invoiceBshellSaveNow() {

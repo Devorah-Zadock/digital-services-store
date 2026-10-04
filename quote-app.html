@@ -34,7 +34,7 @@
 <link rel="stylesheet" href="css/style.css?v=81">
 <link rel="stylesheet" href="css/deskkit-ui.css?v=2">
 <link rel="stylesheet" href="css/builder.css?v=18">
-<link rel="stylesheet" href="css/builder-shell.css?v=6">
+<link rel="stylesheet" href="css/builder-shell.css?v=7">
 <style>
   .qa-err { color: #B23; font-size: 13px; min-height: 18px; margin: 4px 0 8px; }
   .qa-topbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
@@ -231,6 +231,13 @@
       <div id="qbshell-props-settings" style="display:none;">
         <span class="bshell-props-kind">עיצוב ופרטי העסק</span>
         <div class="bshell-settings-group">
+          <div class="bshell-settings-group-title">✨ יצירת טיוטה אוטומטית</div>
+          <p class="bshell-settings-field-hint">תארו בקצרה את השירות או העבודה, ו-AI ימלא עבורכם טיוטה ראשונית של ההצעה — אפשר לערוך הכל אחר כך.</p>
+          <textarea id="qbshell-ai-draft-input" class="bshell-ai-draft-textarea" rows="3" placeholder="לדוגמה: אספקת והגשת קייטרינג לחתונה ל-150 אורחים, כולל מנה ראשונה, עיקרית וקינוח"></textarea>
+          <button type="button" class="btn-mini ai-improve-btn" id="qbshell-ai-draft-btn">✨ צור טיוטה אוטומטית</button>
+          <div id="qbshell-ai-draft-note" class="ai-limit-note"></div>
+        </div>
+        <div class="bshell-settings-group">
           <div class="bshell-settings-group-title">סגנון עיצוב</div>
           <div class="bshell-align-row" id="qbshell-style-row">
             <button type="button" class="bshell-align-btn" data-q-style="classic">קלאסי</button>
@@ -309,6 +316,6 @@
 <script src="js/usage-log.js?v=1"></script>
 <script src="js/quote-cloud-save.js?v=2"></script>
 <script src="js/quote-app.js?v=11"></script>
-<script src="js/quote-builder-shell.js?v=2"></script>
+<script src="js/quote-builder-shell.js?v=3"></script>
 </body>
 </html>

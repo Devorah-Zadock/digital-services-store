@@ -69,6 +69,7 @@ function quoteBshellActivate() {
   quoteBshellWireStyleSwitcher();
   quoteBshellWireProfileLiveUpdate();
   quoteBshellWireLogoLiveUpdate();
+  quoteBshellWireAiDraft();
   document.getElementById("qbshell-root").classList.add("active");
   quoteBshellWireTopBar();
   quoteBshellRenderHierarchy();
@@ -131,6 +132,80 @@ function quoteBshellWireLogoLiveUpdate() {
     currentProfile.logo_url = pendingLogoUrl;
     quoteBshellRenderCanvas(quoteBshellReanchorSelection);
   }).observe(preview, { childList: true });
+}
+
+const QUOTEBSHELL_AI_UPGRADE_MESSAGE = "הגעת למכסת הניסיונות החינמיים ביצירת טיוטה אוטומטית. רוצה להמשיך ללא הגבלה? שדרג לגרסת Pro בתשלום חד-פעמי!";
+
+/* "✨ יצירת טיוטה אוטומטית" — a brand-new control (no old-UI
+   equivalent to move/reuse), mirroring js/site-ai-generate.js's
+   pattern at quote scale: one short free-text description -> one AI
+   call -> a few structured quoteEventState fields merged in through
+   the SAME renderQuoteFormQA()/renderQuotePreviewQA() pipeline every
+   manually-typed field already uses. Deliberately never touches
+   `recipient` or `eventDates` — those name a real third party / real
+   logistics the AI has no way to know, so they stay exactly what the
+   user already typed (see supabase/functions/generate-quote's own
+   header comment for the same rule server-side). */
+function quoteBshellWireAiDraft() {
+  const btn = document.getElementById("qbshell-ai-draft-btn");
+  if (!btn || btn.dataset.wired) return;
+  btn.dataset.wired = "1";
+  btn.addEventListener("click", quoteBshellGenerateDraft);
+}
+
+function quoteBshellAiDraftNote(html) {
+  const note = document.getElementById("qbshell-ai-draft-note");
+  if (note) note.innerHTML = html;
+}
+
+async function quoteBshellGenerateDraft() {
+  const btn = document.getElementById("qbshell-ai-draft-btn");
+  const input = document.getElementById("qbshell-ai-draft-input");
+  if (!btn || !input) return;
+  const description = input.value.trim();
+  if (!description) {
+    quoteBshellAiDraftNote("תארו קודם בקצרה את השירות או העבודה — אז AI יכין טיוטה ראשונית.");
+    return;
+  }
+  quoteBshellAiDraftNote("");
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "יוצר טיוטה...";
+  try {
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const token = sessionData.session && sessionData.session.access_token;
+    if (!token) { location.href = "account.html?redirect=" + encodeURIComponent("quote-app.html"); return; }
+    const res = await fetch(SUPABASE_URL + "/functions/v1/generate-quote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token, apikey: SUPABASE_ANON_KEY },
+      body: JSON.stringify({ description, businessName: currentProfile && currentProfile.business_name }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      quoteBshellAiDraftNote(data.error || "יצירת הטיוטה נכשלה, נסו שוב.");
+      return;
+    }
+    if (data.limitReached) {
+      quoteBshellAiDraftNote(data.isPro ? "הגעתם למכסת השימוש ההוגן היומית. אפשר להמשיך מחר." : `${QUOTEBSHELL_AI_UPGRADE_MESSAGE} <a href="#">שדרוג ל-Pro</a>`);
+      return;
+    }
+    quoteBshellSnapshot();
+    const q = data.quote || {};
+    if (q.eventName) quoteEventState.eventName = q.eventName;
+    if (q.description) quoteEventState.description = q.description;
+    if (q.price) quoteEventState.price = q.price;
+    if (q.vatNote) quoteEventState.vatNote = q.vatNote;
+    renderQuoteFormQA();
+    renderQuotePreviewQA();
+    quoteBshellRenderCanvas(quoteBshellReanchorSelection);
+    quoteBshellRenderHierarchy();
+    quoteBshellSyncUndoButtons();
+  } catch (err) {
+    quoteBshellAiDraftNote("יצירת הטיוטה נכשלה, נסו שוב.");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
 }
 
 /* The Shell's own "סגנון עיצוב" control — reuses QUOTE_TEMPLATES'
