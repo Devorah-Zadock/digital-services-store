@@ -33,6 +33,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&family=Rubik:wght@500;600;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=81">
 <link rel="stylesheet" href="css/builder.css?v=15">
+<link rel="stylesheet" href="css/builder-shell.css?v=5">
 <style>
   .ia-err { color: #B23; font-size: 13px; min-height: 18px; margin: 4px 0 8px; }
   .ia-topbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
@@ -218,6 +219,58 @@
   </div>
 </div>
 
+<div id="ibshell-root" class="bshell no-print">
+  <div class="bshell-top">
+    <span class="bshell-top-name" id="ibshell-top-name">מסמך חדש</span>
+    <span class="bshell-top-status" id="ibshell-top-status"></span>
+    <div class="bshell-top-spacer"></div>
+    <button type="button" class="bshell-top-btn" id="ibshell-undo-btn" disabled title="בטל (Ctrl+Z)">↶ בטל</button>
+    <button type="button" class="bshell-top-btn" id="ibshell-redo-btn" disabled title="בצע שוב (Ctrl+Shift+Z)">↷ חזור</button>
+    <button type="button" class="bshell-top-btn" id="ibshell-download-btn">הורדת PDF</button>
+    <button type="button" class="bshell-top-btn bshell-top-btn-primary" id="ibshell-save-btn">שמירת טיוטה</button>
+    <button type="button" class="bshell-top-btn bshell-top-btn-primary" id="ibshell-finalize-btn">הפקה סופית ומספור</button>
+    <button type="button" class="bshell-top-btn" id="ibshell-credit-btn" style="display:none;">יצירת חשבונית זיכוי</button>
+    <a href="invoice-app.html" class="bshell-exit-link" id="ibshell-exit-link">יציאה</a>
+  </div>
+
+  <div class="ia-locked-note" id="ibshell-locked-note" style="display:none; margin:8px 14px 0;">המסמך הזה כבר הופק ומספר — אי אפשר לערוך אותו יותר. לתיקון, הפיקו חשבונית זיכוי.</div>
+
+  <div class="bshell-mobile-tabs no-print" style="padding:8px 14px; background:var(--surface); border-bottom:1px solid var(--border);">
+    <button type="button" class="bshell-top-btn" id="ibshell-mobile-hier-btn" style="flex:1;">מבנה</button>
+    <button type="button" class="bshell-top-btn" id="ibshell-mobile-props-btn" style="flex:1;">עיצוב</button>
+  </div>
+
+  <div class="bshell-body">
+    <aside class="bshell-hier" id="ibshell-hier">
+      <div class="bshell-hier-title">מבנה המסמך</div>
+      <button type="button" class="bshell-settings-btn" id="ibshell-settings-btn">
+        <span class="bshell-settings-icon">⚙</span>
+        <span>פרטי העסק</span>
+      </button>
+      <div id="ibshell-hier-list"></div>
+    </aside>
+
+    <div class="bshell-canvas-wrap">
+      <div class="bshell-canvas-frame-holder">
+        <div class="bshell-canvas-shadow">
+          <iframe class="bshell-canvas-iframe" id="ibshell-canvas-iframe" title="עריכת המסמך"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <aside class="bshell-props" id="ibshell-props">
+      <div class="bshell-props-empty" id="ibshell-props-empty">בחרו שדה במסמך כדי לערוך אותו</div>
+      <div id="ibshell-props-dynamic" style="display:none;"></div>
+      <div id="ibshell-props-settings" style="display:none;">
+        <span class="bshell-props-kind">פרטי העסק</span>
+        <div class="bshell-settings-group" id="ibshell-settings-group-profile">
+          <div class="bshell-settings-group-title">פרטי העסק (משותפים לכל המסמכים)</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
 <footer class="site no-print">
   <div class="container">
     <div class="footer-grid">
@@ -266,7 +319,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/invoice-render.js?v=2"></script>
+<script src="js/invoice-render.js?v=3"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>
 <script src="js/my-panel.js?v=13"></script>
@@ -274,6 +327,7 @@
 <script src="js/widgets.js?v=10"></script>
 <script src="js/usage-log.js?v=1"></script>
 <script src="js/invoice-cloud-save.js?v=1"></script>
-<script src="js/invoice-app.js?v=2"></script>
+<script src="js/invoice-app.js?v=3"></script>
+<script src="js/invoice-builder-shell.js?v=1"></script>
 </body>
 </html>

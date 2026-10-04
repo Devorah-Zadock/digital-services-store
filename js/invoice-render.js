@@ -105,8 +105,8 @@ function renderInvoiceHtml(inv, liveProfile) {
   const sign = inv.docType === "credit_note" ? -1 : 1;
   const fmt = (n) => (sign < 0 ? `(${formatILSI(Math.abs(n))})` : formatILSI(n));
 
-  const rowsHtml = items.map((it) => `
-    <tr>
+  const rowsHtml = items.map((it, i) => `
+    <tr data-i-item-idx="${i}">
       <td>${escapeHtmlI(it.desc)}</td>
       <td class="num">${it.qty}</td>
       <td class="num">${formatILSI(it.unitPrice)} ₪</td>
@@ -135,12 +135,12 @@ function renderInvoiceHtml(inv, liveProfile) {
       </div>
     </div>
     <div class="id-meta-row">
-      <div><div class="lbl">תאריך</div><div class="val">${escapeHtmlI(inv.date)}</div></div>
+      <div><div class="lbl">תאריך</div><div class="val" data-ikey="date">${escapeHtmlI(inv.date)}</div></div>
       <div style="text-align:end;">
         <div class="lbl">לכבוד</div>
-        <div class="val">${escapeHtmlI(inv.recipientName)}</div>
-        ${inv.recipientId ? `<div style="font-size:12px; color:#6B6B6B;">${escapeHtmlI(inv.recipientId)}</div>` : ""}
-        ${inv.recipientAddress ? `<div style="font-size:12px; color:#6B6B6B;">${escapeHtmlI(inv.recipientAddress)}</div>` : ""}
+        <div class="val" data-ikey="recipientName">${escapeHtmlI(inv.recipientName)}</div>
+        ${inv.recipientId ? `<div style="font-size:12px; color:#6B6B6B;" data-ikey="recipientId">${escapeHtmlI(inv.recipientId)}</div>` : ""}
+        ${inv.recipientAddress ? `<div style="font-size:12px; color:#6B6B6B;" data-ikey="recipientAddress">${escapeHtmlI(inv.recipientAddress)}</div>` : ""}
       </div>
     </div>
     <div class="id-inner">
@@ -156,8 +156,8 @@ function renderInvoiceHtml(inv, liveProfile) {
         <div class="id-totals-row grand"><span>${inv.docType === "credit_note" ? 'סה"כ לזיכוי' : 'סה"כ לתשלום'}</span><span>${fmt(total)} ₪</span></div>
       </div>
       ${!licensed ? `<div class="id-exempt-note">"עוסק פטור" — פטור מגביית מע"מ לפי סעיף 31(2) לחוק מס ערך מוסף.</div>` : ""}
-      ${paymentLabel ? `<div class="id-payment">אופן תשלום: ${escapeHtmlI(paymentLabel)}</div>` : ""}
-      ${inv.notes ? `<div class="id-notes">${escapeHtmlI(inv.notes)}</div>` : ""}
+      ${paymentLabel ? `<div class="id-payment">אופן תשלום: <span data-ikey="paymentMethod">${escapeHtmlI(paymentLabel)}</span></div>` : ""}
+      ${inv.notes ? `<div class="id-notes" data-ikey="notes">${escapeHtmlI(inv.notes)}</div>` : ""}
       <div class="id-signature">${escapeHtmlI(letterhead.businessName)}</div>
     </div>
   </div>`;

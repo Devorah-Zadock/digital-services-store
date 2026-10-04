@@ -11,6 +11,11 @@ let invoiceUser = null;
 let currentInvoiceProfile = null;
 let invoiceEventState = null;
 let pendingInvoiceDocType = null; // set when arriving to start a specific new document type
+// Mirrors quote-app.js's quoteWantsShellAfterProfile: a genuinely fresh
+// visitor with no profile yet still has to fill it in first (a real
+// prerequisite, not a template choice) — set here so the profile
+// form's own submit handler knows to activate the Shell right after.
+let invoiceWantsShellAfterProfile = false;
 
 function todayHebrewI() {
   const d = new Date();
@@ -109,7 +114,19 @@ function wireInvoiceProfileForm() {
     const { data, error } = await supabaseClient.from("profiles").upsert(row).select().single();
     if (error) { err.textContent = "השמירה נכשלה, נסו שוב."; return; }
     currentInvoiceProfile = data;
-    showInvoiceBuilder();
+    // This same form is now also reachable from INSIDE an already-open
+    // Shell (js/invoice-builder-shell.js moves it into Settings) —
+    // invoiceEventState being set means a document is already in
+    // progress, so showInvoiceBuilder() (which resets it to a blank
+    // emptyInvoiceEventState() when called with no argument) must
+    // never run in that case, same fix as quote-app.js's profile form.
+    if (invoiceEventState) {
+      renderInvoicePreviewIA();
+      if (typeof invoiceBshellRenderCanvas === "function" && typeof invoiceBshellActiveFlag !== "undefined" && invoiceBshellActiveFlag) invoiceBshellRenderCanvas();
+    } else {
+      showInvoiceBuilder();
+      if (invoiceWantsShellAfterProfile && typeof invoiceBshellActivate === "function") invoiceBshellActivate();
+    }
   });
 }
 
@@ -268,16 +285,19 @@ async function routeAfterInvoiceAuth(user) {
   invoiceUser = user;
   invoiceCurrentUserId = user.id;
   const iid = new URLSearchParams(location.search).get("invoice");
+  const shellMode = new URLSearchParams(location.search).get("shell") === "1";
 
   const { data } = await supabaseClient.from("profiles").select("*").eq("id", user.id).maybeSingle();
   if (data) {
     currentInvoiceProfile = data;
     const loaded = iid ? await loadInvoiceById(iid, user.id) : null;
     showInvoiceBuilder(loaded);
+    if (shellMode && typeof invoiceBshellActivate === "function") invoiceBshellActivate();
   } else {
     currentInvoiceProfile = null;
     showInvoiceSection("ia-profile");
     fillInvoiceProfileForm(null);
+    invoiceWantsShellAfterProfile = shellMode;
   }
 }
 
