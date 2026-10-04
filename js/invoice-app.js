@@ -285,7 +285,10 @@ async function routeAfterInvoiceAuth(user) {
   invoiceUser = user;
   invoiceCurrentUserId = user.id;
   const iid = new URLSearchParams(location.search).get("invoice");
-  const shellMode = new URLSearchParams(location.search).get("shell") === "1";
+  // The Shell is now the default entry point — ?shell=0 is an
+  // explicit, internal escape hatch back to the old sidebar
+  // (debugging/rollback only), never something any real link shows.
+  const shellMode = new URLSearchParams(location.search).get("shell") !== "0";
 
   const { data } = await supabaseClient.from("profiles").select("*").eq("id", user.id).maybeSingle();
   if (data) {

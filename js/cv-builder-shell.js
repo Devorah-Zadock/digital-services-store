@@ -1,9 +1,10 @@
 /* ===========================================================
    CV Builder-Shell — the same central editing pattern proved on
-   websites (js/builder-shell.js), applied to the CV builder. Reachable
-   via builder.html?shell=1 (same opt-in convention site-builder.js
-   used before its own Shell became the default for every migrated
-   template — see BSHELL_SUPPORTED_TEMPLATES there).
+   websites (js/builder-shell.js), applied to the CV builder. Now the
+   DEFAULT entry point for every visit to builder.html, same as
+   site-builder.js's own Shell — ?shell=0 is an explicit, internal
+   escape hatch back to the old sidebar (debugging/rollback only),
+   never something any real link in the product constructs.
 
    ONE Shell (reuses css/builder-shell.css's chrome as-is — the exact
    same .bshell/.bshell-top/.bshell-hier/.bshell-canvas-wrap/.bshell-props
@@ -72,8 +73,6 @@ function cvbshellActivate() {
   cvbshellMoveSettingsFields();
   cvbshellWireStyleSwitcher();
   document.getElementById("cvbshell-root").classList.add("active");
-  const exitLink = document.getElementById("cvbshell-exit-link");
-  if (exitLink) exitLink.href = `builder.html?shell=0&template=${encodeURIComponent(state.slug)}&lang=${state.lang}`;
   cvbshellWireTopBar();
   cvbshellRenderHierarchy();
   cvbshellRenderCanvas();
@@ -885,7 +884,11 @@ function cvbshellRefreshIfActive() {
   cvbshellRenderProperties();
 }
 
+// The Shell is now the default entry point for every visit to
+// builder.html — ?shell=0 stays as an explicit, internal escape hatch
+// back to the old sidebar (debugging/rollback only), never something
+// any real link in the product constructs or shows.
 document.addEventListener("DOMContentLoaded", () => {
-  if (new URLSearchParams(location.search).get("shell") !== "1") return;
+  if (new URLSearchParams(location.search).get("shell") === "0") return;
   cvbshellActivate();
 });

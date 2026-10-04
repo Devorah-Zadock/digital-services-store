@@ -12,15 +12,22 @@ let quoteEventState = null;
 // URL) but the builder can't be shown yet (still creating a profile) —
 // showQuoteBuilder() picks it up once it actually runs.
 let pendingTemplate = null;
-// Mirrors pendingTemplate's reasoning for the Shell (?shell=1): a
-// genuinely fresh visitor with no profile yet still has to fill it in
-// first (a real prerequisite, not a template choice) — set here so the
-// profile form's own submit handler (wireProfileForm) knows to activate
-// the Shell right after, instead of just the old sidebar.
+// Mirrors pendingTemplate's reasoning for the Shell (the default now —
+// see quoteWantsShell()): a genuinely fresh visitor with no profile yet
+// still has to fill it in first (a real prerequisite, not a template
+// choice) — set here so the profile form's own submit handler
+// (wireProfileForm) knows to activate the Shell right after.
 let quoteWantsShellAfterProfile = false;
 
+// The Shell is now the default entry point — ?shell=0 is an explicit,
+// internal escape hatch back to the old catalog+sidebar flow
+// (debugging/rollback only), never something any real link in the
+// product constructs or shows. Flipping this one comparison is also
+// what keeps qa-catalog out of the normal flow: every branch below
+// that used to gate "show the catalog" on quoteWantsShell() now only
+// does so when shell=0 was explicitly passed.
 function quoteWantsShell() {
-  return new URLSearchParams(location.search).get("shell") === "1";
+  return new URLSearchParams(location.search).get("shell") !== "0";
 }
 
 function todayHebrewQA() {
@@ -292,19 +299,15 @@ function goToLoginQA() {
 
 /* ---------- Boot / auth state routing ---------- */
 
-/* No ?quote= and no ?template= in the URL means a genuinely fresh visit
-   (the nav link, or the rail's empty-state "ליצירה" link) — show the
-   design catalog first, same as "אתרים" always opens its template
-   catalog rather than assuming a design. A specific ?template= (a
-   catalog card) or ?quote= (an existing saved quote, which already
-   carries its own template) skips straight past it.
-
-   ?shell=1 (the Builder-Shell, js/quote-builder-shell.js) ALSO skips
-   it — same opt-in convention already proved on the CV/site Shells:
-   DeskKit auto-picks QUOTE_TEMPLATE_DEFAULT (emptyQuoteEventState()'s
-   own default) rather than ever showing a "choose a design" screen
-   inside the Builder; a style can still be changed live, from
-   Settings, once inside. */
+/* The design catalog (qa-catalog) is no longer part of the normal
+   flow at all — the Shell (js/quote-builder-shell.js) is the default
+   now, same as CV/sites, and it auto-picks QUOTE_TEMPLATE_DEFAULT
+   (emptyQuoteEventState()'s own default) rather than ever showing a
+   "choose a design" screen; a style can still be changed live, from
+   Settings, once inside. The catalog only still shows when someone
+   explicitly passes ?shell=0 (the internal escape hatch) AND has no
+   ?quote=/?template= either — i.e. only on the old, opted-out flow,
+   never on a real link the product itself shows. */
 function pickedTemplateFromUrl() {
   const t = new URLSearchParams(location.search).get("template");
   return QUOTE_TEMPLATES[t] ? t : null;
