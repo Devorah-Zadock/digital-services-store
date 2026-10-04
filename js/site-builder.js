@@ -1369,17 +1369,18 @@ function removeServiceItem(idx) {
 // already-paid account as a value-add (the same files they already got
 // a live link for, portable to host anywhere themselves).
 //
-// This is a feature gate, not a content-security boundary: the HTML
-// this generates is produced client-side from siteState, the exact
-// same data already fully in the browser's memory to render the live
-// preview regardless of payment status — there is no secret here a
-// server could meaningfully withhold. The localStorage unlock-flag
-// check below (and refreshUnlockUI()'s matching show/hide of the
-// button) keeps a free account from stumbling into a confusing raw-
-// files flow, which is the actual, real reason this exists; it is not
-// trying to stop a technical free user from using devtools to call this
-// function directly, the same way nothing stops them from just saving
-// the live preview's rendered HTML by hand today.
+// The HTML this generates is produced client-side from siteState, the
+// exact same data already fully in the browser's memory to render the
+// live preview regardless of payment status — there is no FILE
+// CONTENT here a server could meaningfully withhold (nothing stops a
+// technical free user from saving the live preview's rendered HTML by
+// hand today, paid or not). What the check in downloadSiteZip() below
+// actually gates is the ACTION of producing a clean, ready-to-host
+// bundle in one click — and that check is a real server round-trip
+// (siteExportAuthorized(), reading site_projects.status fresh from
+// Supabase) rather than a client-only flag, specifically so hiding the
+// button or faking the localStorage unlock flag in devtools is not
+// enough to reach it.
 function publishGuideText(pages) {
   const fileList = pages.map((p) => `${p}.html`).concat("site-data.json").map((f) => `  • ${f}`).join("\n");
   return `קובצי האתר שלכם
@@ -1401,8 +1402,41 @@ ${fileList}
 `;
 }
 
+/* Real server round-trip, not the localStorage unlock flag: re-reads
+   site_projects.status fresh from Supabase (RLS-scoped to this same
+   signed-in user's own row) instead of trusting a client-side cache of
+   an earlier successful check. Closes the "hide the locked note / set
+   the localStorage flag by hand in devtools" bypass — reaching
+   downloadSiteZip() now requires the DATABASE to actually say this
+   site is finalized, not just the page.
+   NOTE (pre-existing, not introduced by this check): site_projects'
+   own UPDATE policy (supabase/sql/core_tables_rls_verify.sql) is
+   ownership-scoped only, not column-restricted — the same account
+   could in principle call supabaseClient.from("site_projects")
+   .update({status:"finalized"}) directly and satisfy this exact
+   check. That gap already exists today for watermark removal
+   (finalizeSiteProject() in js/site-cloud-save.js performs that same
+   write from the client, not from a trusted server path) and is not
+   something this pass touches — fixing it properly means moving that
+   write into the redeem-license Edge Function's own service-role
+   connection and revoking client UPDATE on status/finalized_at/
+   gumroad_license_key, a real payments-system change outside this
+   export-specific pass's scope. */
+async function siteExportAuthorized() {
+  if (!siteProjectId || !siteCurrentUserId) return false;
+  try {
+    const { data, error } = await supabaseClient
+      .from("site_projects").select("status").eq("id", siteProjectId).eq("user_id", siteCurrentUserId).maybeSingle();
+    if (error || !data) return false;
+    return data.status === "finalized";
+  } catch (err) {
+    return false;
+  }
+}
+
 async function downloadSiteZip() {
-  if (localStorage.getItem(currentUnlockKey()) !== "1") return; // see the comment above this function
+  if (localStorage.getItem(currentUnlockKey()) !== "1") return; // fast client-side pre-check, see the comment above this function
+  if (!(await siteExportAuthorized())) return; // the real, server-verified check
   const btn = document.getElementById("export-site-btn");
   if (btn) btn.disabled = true;
   try {
