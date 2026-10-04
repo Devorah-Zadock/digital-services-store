@@ -129,6 +129,12 @@ const SITE_BLOCK_DEFS = {
     about: { label: "אודות", render: (d, pal, dd) => nrAboutSection(d, pal, dd), active: (d) => !d.pages || !d.pages.about },
     contact: { label: "צור קשר", render: (d, pal, dd, ctx) => nrContactSection(d, pal, dd, ctx.wa), active: (d) => !d.pages || !d.pages.contact },
   },
+  "studio": {
+    hero: { label: "Hero", render: (d, pal, dd, ctx) => agHeroSection(d, pal, dd, ctx.heroCta, ctx.inPageRail) },
+    services: { label: "שירותים / מוצרים", hasItems: true, render: (d, pal, dd) => agServicesSection(d, pal, dd) },
+    about: { label: "אודות", render: (d, pal, dd) => agAboutSection(d, pal, dd), active: (d) => !d.pages || !d.pages.about },
+    contact: { label: "צור קשר", render: (d, pal, dd, ctx) => agContactSection(d, pal, dd, ctx.wa), active: (d) => !d.pages || !d.pages.contact },
+  },
 };
 
 // "blank" (Phase 3) delegates its actual rendering to local-service's

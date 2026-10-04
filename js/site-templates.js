@@ -2073,6 +2073,69 @@ function scrollRevealScript() {
 }
 
 /* ---------- Template 11: creative studio (asymmetric split hero, dark) ---------- */
+/* Section-renderer decomposition (Phase 7 template migration), same
+   guarantee as local-service's own: each function below returns
+   EXACTLY the HTML chunk renderStudioSite's index page already
+   inlined, unchanged. agContactBlockHtml is the shared contact-block
+   builder the original kept as a local closure (reused by both the
+   standalone contact.html page and the inline index section) — lifted
+   to a top-level function so agContactSection can call it too,
+   without changing what either call site renders. */
+function agContactBlockHtml(d, dd, wa, headingHtml) {
+  return `
+      <section class="ag-section" id="ag-contact"><div class="container site-reveal">
+        <span class="ag-kicker">נשמח לשמוע מכם</span>
+        <h2>${headingHtml}</h2>
+        <div class="ag-contact-lines">
+          ${dd._hasContact ? `
+            ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
+            ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
+            ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
+          ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת ליצירת קשר.</div>`}
+        </div>
+        ${wa ? `<a class="ag-cta" style="margin-top:20px;" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}
+      </div></section>`;
+}
+function agHeroSection(d, pal, dd, heroCta, inPageRail) {
+  return `
+      <section class="ag-hero">
+        <div class="ag-hero-art">
+          ${heroHasImage(d) ? heroMediaHtml(d, "ag-hero-media") : `<div class="ag-blob"></div>`}
+        </div>
+        <div class="ag-hero-text">
+          ${heroHasImage(d) ? `<div class="ag-avatar">${heroMediaHtml(d, "")}</div>` : ""}
+          <span class="kicker">${dd.tagline ? "ברוכים הבאים" : "סטודיו יצירתי"}</span>
+          <h1>${heading(d, "heroTitle", dd.businessName)}</h1>
+          <p>${taglineText(d, dd)}</p>
+          <a class="ag-cta" href="${escapeHtmlS(heroCta ? heroCta.href : (inPageRail ? "#ag-contact" : "#"))}"${heroCta && heroCta.external ? ' target="_blank" rel="noopener"' : ""}${heroCta && heroCta.page ? ' data-site-nav data-page="contact"' : ""}>רוצה להכיר יותר? ‹</a>
+        </div>
+      </section>`;
+}
+function agServicesSection(d, pal, dd) {
+  const services = dd._services;
+  return `
+      <section class="ag-section" id="ag-services" style="border-top:none;"><div class="container site-reveal">
+        <span class="ag-kicker">זה מה שהעסק שלך מקבל</span>
+        <h2>${heading(d, "services", "השירותים שלנו")}</h2>
+        <div class="ag-grid">${services.map((s) => `
+          <div class="ag-cell"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<span class="price">${escapeHtmlS(s.price)}</span>` : ""}</div>`).join("")}</div>
+      </div></section>`;
+}
+function agVideoSection(embedSrc) {
+  return embedSrc ? `<section class="ag-section"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : "";
+}
+function agAboutSection(d, pal, dd) {
+  return (!d.pages || !d.pages.about) ? `
+      <section class="ag-section" id="ag-about"><div class="container site-reveal">
+        <span class="ag-kicker">נעים להכיר</span>
+        <h2>${heading(d, "about", dd.businessName)}</h2>
+        <p class="ag-about-body">${aboutText(d, dd)}</p>
+      </div></section>` : "";
+}
+function agContactSection(d, pal, dd, wa) {
+  return (!d.pages || !d.pages.contact) ? agContactBlockHtml(d, dd, wa, heading(d, "contact", "יצירת קשר")) : "";
+}
+
 function renderStudioSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#BE185D");
@@ -2145,20 +2208,8 @@ function renderStudioSite(d, page) {
   // mode is exactly when those in-page anchors exist).
   const footer = `<div class="ag-footer">${copyrightLineHtml(d, dd)}</div>${waFabHtml(d)}${(navLinksHtml || inPageRail) ? previewNavScript() : ""}`;
 
-  function contactBlock(heading) {
-    return `
-      <section class="ag-section" id="ag-contact"><div class="container site-reveal">
-        <span class="ag-kicker">נשמח לשמוע מכם</span>
-        <h2>${heading}</h2>
-        <div class="ag-contact-lines">
-          ${dd._hasContact ? `
-            ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
-            ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
-            ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
-          ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת ליצירת קשר.</div>`}
-        </div>
-        ${wa ? `<a class="ag-cta" style="margin-top:20px;" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}
-      </div></section>`;
+  function contactBlock(headingHtml) {
+    return agContactBlockHtml(d, dd, wa, headingHtml);
   }
 
   let main;
@@ -2171,6 +2222,10 @@ function renderStudioSite(d, page) {
       </div></section>`;
   } else if (page === "contact") {
     main = contactBlock(heading(d, "contact", "יצירת קשר")).replace('style="border-top:none;', 'style="border-top:none; padding-top:64px;');
+  } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("studio")) {
+    main = renderBlocksHtml(d, "studio", "index", {
+      pal, dd, wa, heroCta, inPageRail, videoSection: agVideoSection(embedSrc),
+    });
   } else {
     const services = dd._services;
     main = `
