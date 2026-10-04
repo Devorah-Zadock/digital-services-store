@@ -1585,6 +1585,54 @@ function renderProcessSite(d, page) {
 }
 
 /* ---------- Template 8: creative portfolio (personal) ---------- */
+/* Section-renderer decomposition (Phase 7 template migration), same
+   guarantee as local-service's own: each function below returns
+   EXACTLY the HTML chunk renderPortfolioSite's index page already
+   inlined, unchanged. poContactSection has no active() gate, matching
+   the original: this template's CTA footer always shows on the
+   homepage even once a separate Contact page exists (same as
+   freelancer's own contact block). */
+function poHeroSection(d, pal, dd, cta) {
+  return `
+      <section class="po-hero"><div class="container" style="display:grid; grid-template-columns:${heroHasImage(d) ? "1fr auto" : "1fr"}; align-items:center; gap:36px;">
+        <div>
+          <span class="eyebrow">${dd.tagline ? "ברוכים הבאים" : "תיק עבודות"}</span>
+          <h1>${heading(d, "heroTitle", dd.businessName)}</h1>
+          <p>${taglineText(d, dd)}</p>
+          ${ctaHtml(cta, "po-work-idx")}
+        </div>
+        ${heroMediaHtml(d, "po-hero-photo")}
+      </div></section>`;
+}
+function poServicesSection(d, pal, dd) {
+  const services = dd._services;
+  return `
+      <section class="po-work site-reveal"><div class="container">
+        <div class="po-work-head"><span class="kicker">מה אני עושה</span><h2>${heading(d, "services", "עבודות ושירותים")}</h2></div>
+        ${services.map((s, i) => `
+          <div class="po-work-row">
+            <div class="po-work-idx">${String(i + 1).padStart(2, "0")}</div>
+            <div class="po-work-main"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}</div>
+            ${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}
+          </div>`).join("")}
+      </div></section>`;
+}
+function poVideoSection(embedSrc) {
+  return embedSrc ? `<div class="container"><div style="padding:0 0 50px;">${videoEmbedHtml(embedSrc)}</div></div>` : "";
+}
+function poAboutSection(d, pal, dd) {
+  return (!d.pages || !d.pages.about) ? `<section class="po-work site-reveal" style="padding-top:0;"><div class="container" style="max-width:680px;"><div class="po-work-head"><span class="kicker">מי אני</span><h2>${heading(d, "about", "עליי")}</h2></div><p style="font-size:15.5px; line-height:1.85; color:#333;">${aboutText(d, dd)}</p></div></section>` : "";
+}
+function poContactSection(d, pal, dd, wa) {
+  return `
+      <section class="po-cta site-reveal">
+        <h2>${heading(d, "contact", "בואו נדבר")}</h2>
+        ${wa ? `<a class="btn" href="${wa}" target="_blank" rel="noopener">וואטסאפ</a>` : ""}
+        ${d.email ? `<a class="btn" href="mailto:${escapeHtmlS(d.email)}">שליחת מייל</a>` : ""}
+        ${d.phone ? `<a class="btn" href="tel:${escapeHtmlS(d.phone)}">התקשרות</a>` : ""}
+      </section>`;
+}
+
 function renderPortfolioSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#DC2626");
@@ -1648,6 +1696,10 @@ function renderPortfolioSite(d, page) {
         ${d.phone ? `<a class="btn" href="tel:${escapeHtmlS(d.phone)}">התקשרות</a>` : ""}
         ${!wa && !d.email && !d.phone ? `<p style="opacity:.85;">פרטו כאן דרכי יצירת קשר.</p>` : ""}
       </section>`;
+  } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("portfolio")) {
+    main = renderBlocksHtml(d, "portfolio", "index", {
+      pal, dd, cta, wa, videoSection: poVideoSection(embedSrc),
+    });
   } else {
     const services = dd._services;
     main = `

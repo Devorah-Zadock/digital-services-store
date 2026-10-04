@@ -106,6 +106,16 @@ const SITE_BLOCK_DEFS = {
     about: { label: "אודות", render: (d, pal, dd) => prAboutSection(d, pal, dd), active: (d) => !d.pages || !d.pages.about },
     contact: { label: "צור קשר", render: (d, pal, dd, ctx) => prContactSection(d, pal, dd, ctx.wa), active: (d) => !d.pages || !d.pages.contact },
   },
+  // No active() gate on "contact" here — portfolio's CTA footer always
+  // shows on the homepage even once a separate Contact page exists,
+  // matching the original unconditional render exactly (same as
+  // freelancer's own contact block).
+  "portfolio": {
+    hero: { label: "Hero", render: (d, pal, dd, ctx) => poHeroSection(d, pal, dd, ctx.cta) },
+    services: { label: "עבודות ושירותים", hasItems: true, render: (d, pal, dd) => poServicesSection(d, pal, dd) },
+    about: { label: "אודות", render: (d, pal, dd) => poAboutSection(d, pal, dd), active: (d) => !d.pages || !d.pages.about },
+    contact: { label: "קריאה לפעולה", render: (d, pal, dd, ctx) => poContactSection(d, pal, dd, ctx.wa) },
+  },
 };
 
 // "blank" (Phase 3) delegates its actual rendering to local-service's
