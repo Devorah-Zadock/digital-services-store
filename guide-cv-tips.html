@@ -37,24 +37,6 @@
 </script>
 </head>
 <body>
-<script>
-  try {
-    for (var i = 0; i < localStorage.length; i++) {
-      var k = localStorage.key(i);
-      if (k && k.indexOf("sb-") === 0 && k.indexOf("-auth-token") !== -1 && localStorage.getItem(k)) {
-        document.body.classList.add("has-sites-rail");
-        break;
-      }
-    }
-    var rw = localStorage.getItem("deskkit_rail_w");
-    if (rw) document.documentElement.style.setProperty("--rail-w", rw + "px");
-    if (localStorage.getItem("deskkit_rail_collapsed") === "1") {
-      document.documentElement.style.setProperty("--rail-w", "0px");
-      document.body.classList.add("rail-collapsed");
-    }
-  } catch (e) {}
-</script>
-
 <header class="site">
   <nav class="nav">
     <a href="index.html" class="brand"><span class="brand-badge"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path class="bm-doc" d="M7,4 H14 L18,8 V20 H7 Z"/><path class="bm-fold" d="M14,4 L14,8 L18,8 Z"/><path class="bm-spark" d="M15,14.3 C15.3,16 16,16.7 17.7,17 C16,17.3 15.3,18 15,19.7 C14.7,18 14,17.3 12.3,17 C14,16.7 14.7,16 15,14.3 Z"/></svg></span><span class="brand-text"><span class="brand-desk">Desk</span><span class="brand-kit">Kit</span></span></a>
@@ -171,7 +153,6 @@
 <script src="js/header.js?v=1"></script>
 <script src="js/create-chooser.js?v=1"></script>
 <script src="js/mobile-nav.js?v=1"></script>
-<script src="js/my-panel.js?v=13"></script>
 <script src="js/main.js?v=2"></script>
 <script src="js/widgets.js?v=10"></script>
 <script src="js/effects.js"></script>
