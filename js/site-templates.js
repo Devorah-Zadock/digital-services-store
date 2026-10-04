@@ -2806,6 +2806,49 @@ function renderBrutalSite(d, page) {
 }
 
 /* ---------- Template 15: neon future (cyberpunk agency) ---------- */
+/* Section-renderer decomposition (Phase 7 template migration), same
+   guarantee as local-service's own: each function below returns
+   EXACTLY the HTML chunk renderNeonSite's index page already
+   inlined, unchanged. The mesh/cursor/split-reveal scripts stay in
+   renderNeonSite itself (page-wide chrome, not tied to any one block,
+   same as every other template's header/footer). */
+function nfHeroSection(d, pal, dd, cta) {
+  return `
+      <section class="nf-hero"><div class="container">
+        ${heroMediaHtml(d, "nf-hero-photo")}
+        <span class="nf-kicker">${dd.tagline ? "ברוכים הבאים" : "סוכנות דיגיטל מהעתיד"}</span>
+        <h1 class="nf-split">${heading(d, "heroTitle", dd.businessName)}</h1>
+        <p>${taglineText(d, dd)}</p>
+        ${ctaHtml(cta, "nf-cta")}
+      </div></section>`;
+}
+function nfServicesSection(d, pal, dd) {
+  const showSearch = dd._services.length >= 3;
+  return `
+      <section class="nf-section site-reveal"><div class="container">
+        <div class="nf-section-head"><span class="nf-kicker">מה אנחנו מציעים</span><h2 class="nf-split">${heading(d, "services", "השירותים שלנו")}</h2>
+        ${showSearch ? searchBoxHtml("#nf-grid", "חיפוש שירות...") : ""}</div>
+        <div class="nf-grid" id="nf-grid">${dd._services.map((s) => `
+          <div class="nf-card" data-search="${escapeHtmlS((s.name || "") + " " + (s.desc || ""))}"><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`).join("")}</div>
+        ${showSearch ? searchScriptHtml() : ""}
+      </div></section>`;
+}
+function nfVideoSection(embedSrc) {
+  return embedSrc ? `<section class="nf-section site-reveal" style="padding-top:0;"><div class="container">${videoEmbedHtml(embedSrc)}</div></section>` : "";
+}
+function nfAboutSection(d, pal, dd) {
+  return (!d.pages || !d.pages.about) ? `<section class="nf-section site-reveal" style="text-align:center;"><div class="container"><span class="nf-kicker">מי אנחנו</span><h2 class="nf-split" style="font-size:28px; font-weight:800; color:#fff; margin:10px 0 26px;">${heading(d, "about", "קצת עלינו")}</h2><div class="nf-panel"><p>${aboutText(d, dd)}</p></div></div></section>` : "";
+}
+function nfContactSection(d, pal, dd, wa) {
+  return (!d.pages || !d.pages.contact) ? `<section class="nf-section site-reveal" style="text-align:center;"><div class="container"><span class="nf-kicker">נשמח לשמוע מכם</span><h2 class="nf-split" style="font-size:28px; font-weight:800; color:#fff; margin:10px 0 26px;">${heading(d, "contact", "יצירת קשר")}</h2><div class="nf-panel">
+        ${dd._hasContact ? `
+          ${d.phone ? `<div class="line">טלפון: ${escapeHtmlS(d.phone)}</div>` : ""}
+          ${d.email ? `<div class="line">מייל: ${escapeHtmlS(d.email)}</div>` : ""}
+          ${d.address ? `<div class="line">כתובת: ${escapeHtmlS(d.address)}</div>` : ""}
+        ` : `<div class="line">פרטו כאן טלפון, מייל וכתובת.</div>`}
+      </div></div></section>` : "";
+}
+
 function renderNeonSite(d, page) {
   page = page || "index";
   const pal = derivePalette(d.primaryColor || "#A855F7");
@@ -2972,6 +3015,10 @@ function renderNeonSite(d, page) {
           ${wa ? `<a class="nf-cta" style="margin-top:18px;" href="${wa}" target="_blank" rel="noopener">שליחת הודעה בוואטסאפ</a>` : ""}
         </div>
       </div></section>`;
+  } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("neon")) {
+    main = renderBlocksHtml(d, "neon", "index", {
+      pal, dd, cta, wa, videoSection: nfVideoSection(embedSrc),
+    });
   } else {
     const showSearch = dd._services.length >= 3;
     main = `

@@ -158,6 +158,12 @@ const SITE_BLOCK_DEFS = {
     about: { label: "אודות", render: (d, pal, dd) => brAboutSection(d, pal, dd), active: (d) => !d.pages || !d.pages.about },
     contact: { label: "צור קשר", render: (d, pal, dd, ctx) => brContactSection(d, pal, dd, ctx.wa), active: (d) => !d.pages || !d.pages.contact },
   },
+  "neon": {
+    hero: { label: "Hero", render: (d, pal, dd, ctx) => nfHeroSection(d, pal, dd, ctx.cta) },
+    services: { label: "שירותים / מוצרים", hasItems: true, render: (d, pal, dd) => nfServicesSection(d, pal, dd) },
+    about: { label: "אודות", render: (d, pal, dd) => nfAboutSection(d, pal, dd), active: (d) => !d.pages || !d.pages.about },
+    contact: { label: "צור קשר", render: (d, pal, dd, ctx) => nfContactSection(d, pal, dd, ctx.wa), active: (d) => !d.pages || !d.pages.contact },
+  },
 };
 
 // "blank" (Phase 3) delegates its actual rendering to local-service's
