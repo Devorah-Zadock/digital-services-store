@@ -1357,21 +1357,85 @@ function removeServiceItem(idx) {
   commitSectionPatch("heading-services");
 }
 
-// ZIP download (publishGuideText/downloadSiteZip) was removed per
-// explicit product decision: non-technical customers don't know what to
-// do with raw HTML files — it only confused and worried people, and
-// DeskKit's actual deliverable is a live link, not a file. Was already
-// a safe removal: its only two documented fallback uses (reaching the
-// Netlify publish-count limit, a Netlify outage) both live in
-// publish-site/index.ts's own unreachable old-hosting path (self-hosted
-// publishing genuinely has no limit and doesn't depend on Netlify at
-// all) — neither could actually fire anymore. If a real export need
-// ever comes up again, git history has the previous implementation.
+// ZIP download (publishGuideText/downloadSiteZip) was removed once
+// before per explicit product decision: non-technical customers don't
+// know what to do with raw HTML files — it only confused and worried
+// people, and DeskKit's actual deliverable is a live link, not a file
+// (see git history, commit b7a7d15). Reintroduced here under a
+// DIFFERENT, narrower product decision that doesn't reopen that one: a
+// free account never sees this at all (same reasoning as before stays
+// true for them), it lives under "אפשרויות נוספות" — never competing
+// with "פרסום" as the primary action — and it's offered only to an
+// already-paid account as a value-add (the same files they already got
+// a live link for, portable to host anywhere themselves).
+//
+// This is a feature gate, not a content-security boundary: the HTML
+// this generates is produced client-side from siteState, the exact
+// same data already fully in the browser's memory to render the live
+// preview regardless of payment status — there is no secret here a
+// server could meaningfully withhold. The localStorage unlock-flag
+// check below (and refreshUnlockUI()'s matching show/hide of the
+// button) keeps a free account from stumbling into a confusing raw-
+// files flow, which is the actual, real reason this exists; it is not
+// trying to stop a technical free user from using devtools to call this
+// function directly, the same way nothing stops them from just saving
+// the live preview's rendered HTML by hand today.
+function publishGuideText(pages) {
+  const fileList = pages.map((p) => `${p}.html`).concat("site-data.json").map((f) => `  • ${f}`).join("\n");
+  return `קובצי האתר שלכם
+==================
+
+מה יש בתיקייה הזו:
+${fileList}
+
+הקבצים האלה הם האתר המלא שלכם, בלי תגית DeskKit — אפשר להעלות אותם
+לכל שירות אחסון שתבחרו (Netlify, Vercel, GitHub Pages, חברת אחסון
+ישראלית וכו').
+
+רוצים לערוך שוב בעתיד (גם ממחשב אחר)?
+פשוט מתחברים לחשבון שלכם בעמוד בניית האתר ב-DeskKit — הפרטים נשמרים שם
+אוטומטית וחוזרים בדיוק כמו שהיו. site-data.json נשאר כאן רק כגיבוי
+גולמי לנתונים, למי שרוצה.
+
+שאלות? digital.dz.studio@gmail.com
+`;
+}
+
+async function downloadSiteZip() {
+  if (localStorage.getItem(currentUnlockKey()) !== "1") return; // see the comment above this function
+  const btn = document.getElementById("export-site-btn");
+  if (btn) btn.disabled = true;
+  try {
+    const zip = new JSZip();
+    const pages = enabledSitePages();
+    pages.forEach((page) => { zip.file(`${page}.html`, currentSiteHtml(page)); });
+    // Lets the customer restore their exact form data later — even from
+    // a different device — without us needing any separate export
+    // system beyond this same button.
+    zip.file("site-data.json", JSON.stringify(siteState, null, 2));
+    zip.file("קרא-אותי.txt", publishGuideText(pages));
+    const blob = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    // Plain-ASCII filename on purpose: a Hebrew business name in the
+    // `download` attribute isn't handled consistently across every
+    // browser/OS combination, so keep this generic and safe everywhere.
+    a.download = "website-files.zip";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
 
 /* One click to a live URL, via the publish-site Edge Function (see
    supabase/functions/publish-site) — no ZIP, no dragging files to
-   Netlify Drop by hand. The download button above stays too: the
-   customer still gets to keep their own copy of the files either way. */
+   Netlify Drop by hand. "ייצוא קובצי האתר" above (paid accounts only,
+   under "אפשרויות נוספות") stays as a secondary way to keep a portable
+   copy — publishing itself is still the one primary action. */
 async function publishSite() {
   const btn = document.getElementById("publish-site-btn");
   const note = document.getElementById("publish-note");
@@ -1664,6 +1728,11 @@ function refreshUnlockUI() {
   const removed = document.getElementById("watermark-removed");
   if (upsell) upsell.style.display = unlocked ? "none" : "";
   if (removed) removed.style.display = unlocked ? "" : "none";
+
+  const exportLocked = document.getElementById("export-site-locked");
+  const exportUnlocked = document.getElementById("export-site-unlocked");
+  if (exportLocked) exportLocked.style.display = unlocked ? "none" : "";
+  if (exportUnlocked) exportUnlocked.style.display = unlocked ? "" : "none";
   // Inside watermark-upsell: hide only the "buy a new code" block during
   // the outage (see SITE_HOSTING_PAUSED above), never the license-key
   // redemption box below it — someone who already paid before the outage
@@ -1942,6 +2011,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("verify-btn").addEventListener("click", verifySiteLicense);
   document.getElementById("publish-site-btn").addEventListener("click", publishSite);
+  const exportBtn = document.getElementById("export-site-btn");
+  if (exportBtn) exportBtn.addEventListener("click", downloadSiteZip);
 
   // The preview iframe's nav links can't really navigate (see
   // previewNavScript in site-templates.js — a relative href inside srcdoc

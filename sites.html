@@ -524,6 +524,22 @@
               שני דברים עוזרים הכי הרבה: לרשום את העסק בחינם ב־<a href="https://www.google.com/business/" target="_blank" rel="noopener">Google עסקים שלי</a>, ולחבר דומיין משלכם (כ-60–150 ₪ לשנה) — עושה רושם הרבה יותר מקצועי.
             </div>
           </details>
+
+          <!-- Export is a secondary, "more options" action — publishing
+               (above) stays the one primary action. Paid-only: a free
+               account sees the locked explanation, never the real
+               button; see refreshUnlockUI()/downloadSiteZip() in
+               js/site-builder.js. -->
+          <details class="dk-details" style="margin-top:14px;">
+            <summary>אפשרויות נוספות</summary>
+            <div id="export-site-locked" class="host-info-box" style="display:none;">
+              🔒 ייצוא קובצי האתר (HTML/CSS) זמין במסלול בתשלום — אותו מסלול שמסיר את תגית DeskKit.
+            </div>
+            <div id="export-site-unlocked" style="display:none;">
+              <p class="finish-gate-note" style="margin-top:0;">מורידים את כל קובצי האתר שלכם כקובץ אחד — אפשר לארח אותם בכל שירות שתרצו.</p>
+              <button type="button" class="dk-btn dk-btn-ghost" id="export-site-btn" style="width:100%;">ייצוא קובצי האתר</button>
+            </div>
+          </details>
         </div>
       </div>
     </div>
@@ -649,7 +665,10 @@
 <script src="js/color-utils.js"></script>
 <script src="js/site-templates.js?v=31"></script>
 <script src="js/site-blocks.js?v=2"></script>
-<script src="js/site-builder.js?v=56"></script>
+<!-- Only for downloadSiteZip() in js/site-builder.js — the paid-only
+     "ייצוא קובצי האתר" action under "אפשרויות נוספות". -->
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="js/site-builder.js?v=57"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>
