@@ -65,15 +65,15 @@ function siteAiCommandUndo() {
   siteAiCommandNote("השינוי בוטל.");
 }
 
-/* Applies a VALIDATED result (already checked server-side against this
-   exact project's own availableTypes/activeTypes/variantOptions) using
-   the same functions the hierarchy panel's own ▲▼✕ buttons and variant
-   picker already call — never a bespoke mutation path. */
-function siteAiCommandApply(result) {
-  const template = siteState.template;
-  const d = ensurePagesShape(siteState.data);
-  siteAiCommandPushUndo();
-
+/* Pure mutation, no rendering/undo-bookkeeping of its own — shared by
+   BOTH the old sidebar builder (below) and the new Builder-Shell
+   (js/builder-shell.js's bshellApplyAiOp), so an AI-driven change
+   produces the exact same data mutation regardless of which editing
+   surface issued it, using the same functions the hierarchy panel's
+   own ▲▼✕ buttons and variant picker already call — never a bespoke
+   mutation path. Returns false (nothing applied) for an op the server
+   validated as real but this function doesn't recognize. */
+function applySiteAiOp(d, template, result) {
   if (result.op === "reorder") {
     const order = ensureBlockOrder(d, template, "index");
     const inactiveTail = order.filter((t) => result.order.indexOf(t) === -1);
@@ -88,10 +88,19 @@ function siteAiCommandApply(result) {
     if (!d.blockVariants || typeof d.blockVariants !== "object") d.blockVariants = {};
     d.blockVariants[result.type] = result.variant;
   } else {
+    return false;
+  }
+  return true;
+}
+
+function siteAiCommandApply(result) {
+  const template = siteState.template;
+  const d = ensurePagesShape(siteState.data);
+  siteAiCommandPushUndo();
+  if (!applySiteAiOp(d, template, result)) {
     siteAiCommandUndoStack.pop(); // nothing was actually applied
     return;
   }
-
   renderSitePreview();
   if (typeof renderHierarchyPanel === "function") renderHierarchyPanel();
   siteAiCommandNote(`בוצע: ${escapeHtmlS(result.explanation || "")}`);

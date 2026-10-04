@@ -204,6 +204,136 @@ function bshellWireTopBar() {
     document.getElementById("bshell-hier").classList.remove("bshell-drawer-open");
     document.getElementById("bshell-props").classList.toggle("bshell-drawer-open");
   });
+
+  bshellWireAiPanel();
+}
+
+/* ---------- AI help popover — reuses the exact same validated-op
+   pipeline as the old sidebar's AI command bar (site-ai-command.js):
+   free text + real structural context -> site-ai-command Edge
+   Function -> ONE validated op -> confirm -> apply. applySiteAiOp()
+   is the shared pure-mutation function; this file only adds the
+   Shell-specific bookkeeping (its own unified Undo/Redo + canvas +
+   hierarchy + autosave) around it, so an AI-driven change in the
+   Shell is captured by the same Undo button as a manual edit. */
+
+let bshellAiPending = null;
+
+function bshellApplyAiOp(result) {
+  const template = siteState.template;
+  const d = ensurePagesShape(siteState.data);
+  bshellSnapshot();
+  if (!applySiteAiOp(d, template, result)) {
+    bshellUndoStack.pop(); // nothing was actually applied
+    bshellSyncUndoButtons();
+    return;
+  }
+  bshellRenderCanvas();
+  bshellRenderHierarchy();
+  bshellScheduleSave();
+  bshellAiNote(`בוצע: ${escapeHtmlS(result.explanation || "")}`);
+}
+
+function bshellAiNote(html) {
+  const note = document.getElementById("bshell-ai-note");
+  if (note) note.innerHTML = html;
+}
+
+function bshellWireAiPanel() {
+  const btn = document.getElementById("bshell-ai-btn");
+  const panel = document.getElementById("bshell-ai-panel");
+  const input = document.getElementById("bshell-ai-input");
+  const submitBtn = document.getElementById("bshell-ai-submit");
+
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const willOpen = panel.hasAttribute("hidden");
+    panel.toggleAttribute("hidden", !willOpen);
+    btn.setAttribute("aria-expanded", String(willOpen));
+    if (willOpen) input.focus();
+  });
+  document.addEventListener("click", (e) => {
+    if (panel.hasAttribute("hidden")) return;
+    if (e.target === btn || panel.contains(e.target)) return;
+    panel.setAttribute("hidden", "");
+    btn.setAttribute("aria-expanded", "false");
+  });
+
+  document.querySelectorAll("#bshell-ai-wrap [data-ai-example]").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      input.value = chip.dataset.aiExample;
+      input.focus();
+    });
+  });
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); bshellAiSubmit(); }
+  });
+  submitBtn.addEventListener("click", bshellAiSubmit);
+}
+
+async function bshellAiSubmit() {
+  const input = document.getElementById("bshell-ai-input");
+  const btn = document.getElementById("bshell-ai-submit");
+  const command = (input.value || "").trim();
+  if (!command) return;
+
+  bshellAiPending = null;
+  bshellAiNote("ה-AI מעבד את הפקודה…");
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "מעבד...";
+
+  try {
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const token = sessionData.session && sessionData.session.access_token;
+    if (!token) throw new Error("not signed in");
+
+    const ctx = siteAiCommandContext();
+    const res = await fetch(SUPABASE_URL + "/functions/v1/site-ai-command", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token, apikey: SUPABASE_ANON_KEY },
+      body: JSON.stringify({ command, availableTypes: ctx.availableTypes, activeTypes: ctx.activeTypes, variantOptions: ctx.variantOptions }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || "שגיאה לא צפויה");
+
+    if (data.limitReached) {
+      bshellAiNote(data.isPro
+        ? "הגעת למכסת השימוש ההוגן היומית לפקודות AI. אפשר להמשיך מחר."
+        : "הגעת למכסת הניסיונות החינמיים לפקודות AI. רוצה להמשיך? שדרג לגרסת Pro בתשלום חד-פעמי!");
+      return;
+    }
+
+    const result = data.result;
+    if (!result || result.op === "unsupported") {
+      bshellAiNote(escapeHtmlS((result && result.explanation) || "לא הצלחתי לבצע את הפעולה הזו."));
+      return;
+    }
+
+    bshellAiPending = result;
+    bshellAiNote(`
+      <div>${escapeHtmlS(result.explanation || "לבצע את השינוי?")}</div>
+      <div class="bshell-ai-confirm-row">
+        <button type="button" class="bshell-ai-confirm-yes" id="bshell-ai-confirm">אישור</button>
+        <button type="button" id="bshell-ai-cancel">ביטול</button>
+      </div>
+    `);
+    document.getElementById("bshell-ai-confirm").addEventListener("click", () => {
+      if (bshellAiPending) bshellApplyAiOp(bshellAiPending);
+      bshellAiPending = null;
+      input.value = "";
+    });
+    document.getElementById("bshell-ai-cancel").addEventListener("click", () => {
+      bshellAiPending = null;
+      bshellAiNote("בוטל.");
+    });
+  } catch (err) {
+    bshellAiNote("משהו השתבש. אפשר לנסות שוב בעוד רגע. (" + escapeHtmlS(err.message || String(err)) + ")");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
 }
 
 async function bshellSaveNow() {

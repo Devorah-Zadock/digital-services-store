@@ -30,7 +30,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=80">
 <link rel="stylesheet" href="css/builder.css?v=17">
-<link rel="stylesheet" href="css/builder-shell.css?v=2">
+<link rel="stylesheet" href="css/builder-shell.css?v=3">
 <style>
   .services-item { border: 1px solid #EDEFEE; border-radius: 8px; padding: 12px; margin-bottom: 12px; display: grid; gap: 8px; }
   .services-item-head { display: flex; justify-content: space-between; align-items: center; }
@@ -496,6 +496,19 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>
       </button>
     </div>
+    <div class="bshell-ai-wrap" id="bshell-ai-wrap">
+      <button type="button" class="bshell-top-btn" id="bshell-ai-btn" aria-expanded="false">✨ עזרה מ-DeskKit</button>
+      <div class="bshell-ai-panel" id="bshell-ai-panel" hidden>
+        <input type="text" id="bshell-ai-input" placeholder="מה תרצו לשנות?" maxlength="200">
+        <div class="bshell-ai-examples">
+          <button type="button" data-ai-example="עשה את העיצוב יותר יוקרתי">עשה את העיצוב יותר יוקרתי</button>
+          <button type="button" data-ai-example="הפוך את העיצוב למינימליסטי">הפוך את העיצוב למינימליסטי</button>
+          <button type="button" data-ai-example="הזז את השירותים לפני האודות">הזז את השירותים לפני האודות</button>
+        </div>
+        <button type="button" class="bshell-top-btn bshell-top-btn-primary" id="bshell-ai-submit" style="width:100%;">שליחה</button>
+        <div class="bshell-ai-note" id="bshell-ai-note"></div>
+      </div>
+    </div>
     <button type="button" class="bshell-top-btn" id="bshell-undo-btn" disabled title="בטל (Ctrl+Z)">↶ בטל</button>
     <button type="button" class="bshell-top-btn" id="bshell-redo-btn" disabled title="בצע שוב (Ctrl+Shift+Z)">↷ חזור</button>
     <button type="button" class="bshell-top-btn" id="bshell-preview-btn">תצוגה מקדימה ⤢</button>
@@ -585,7 +598,7 @@
 <script src="js/my-panel.js?v=13"></script>
 <script src="js/domain-guide.js?v=3"></script>
 <script src="js/site-cloud-save.js?v=7"></script>
-<script src="js/builder-shell.js?v=1"></script>
+<script src="js/builder-shell.js?v=2"></script>
 <script src="js/site-ai-review.js?v=1"></script>
 <script src="js/site-wizard-questions.js?v=1"></script>
 <script src="js/site-ai-generate.js?v=2"></script>
