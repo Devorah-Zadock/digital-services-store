@@ -102,6 +102,45 @@ function cvbshellMoveSettingsFields() {
   });
   const photoField = document.getElementById("f-photo").closest(".field");
   if (photoField) group2.appendChild(photoField);
+  cvbshellWireSettingsLiveUpdate();
+}
+
+/* These fields' only existing listeners (js/builder.js's wireStaticInputs)
+   call renderPreview() — which updates #preview-doc, the OLD sidebar's
+   own hidden preview, never the Shell's own visible canvas iframe. That
+   was harmless before the Shell existed; now it means moving the color
+   picker inside Settings visibly does nothing, confirmed live ("שיניתי
+   לירוק ולא השתנה") — same class of bug js/quote-builder-shell.js's
+   quoteBshellWireProfileLiveUpdate() already exists to fix for the
+   profile form, just never ported over for these design fields. Adds a
+   second listener alongside the original (never replaces it — the OLD
+   preview must still track state correctly for ?shell=0/print/PDF) that
+   refreshes the Shell's canvas too. */
+function cvbshellWireSettingsLiveUpdate() {
+  [["color-picker", "input"], ["text-color-picker", "input"], ["font-select", "change"]].forEach(([id, evt]) => {
+    const el = document.getElementById(id);
+    if (!el || el.dataset.cvbshellLiveWired) return;
+    el.dataset.cvbshellLiveWired = "1";
+    el.addEventListener("focus", () => cvbshellBeginEdit(el));
+    el.addEventListener("blur", () => cvbshellEndEdit(el));
+    el.addEventListener(evt, () => cvbshellRenderCanvas(cvbshellReanchorSelection));
+  });
+  const photoInput = document.getElementById("f-photo");
+  if (photoInput && !photoInput.dataset.cvbshellLiveWired) {
+    photoInput.dataset.cvbshellLiveWired = "1";
+    // The upload itself is async (FileReader) and already fully handled
+    // by js/builder.js's own #f-photo listener, which ends by calling
+    // renderPreview() — observing THAT element's own DOM update is what
+    // actually tells us the read settled, same pattern as the Quote
+    // Shell's logo-upload observer.
+    const preview = document.getElementById("photo-preview");
+    if (preview) new MutationObserver(() => cvbshellRenderCanvas(cvbshellReanchorSelection)).observe(preview, { childList: true, subtree: true });
+  }
+  const photoRemove = document.getElementById("photo-remove");
+  if (photoRemove && !photoRemove.dataset.cvbshellLiveWired) {
+    photoRemove.dataset.cvbshellLiveWired = "1";
+    photoRemove.addEventListener("click", () => cvbshellRenderCanvas(cvbshellReanchorSelection));
+  }
 }
 
 /* The Shell's own "סגנון עיצוב" control — 3 generic, layout-descriptive
@@ -447,6 +486,37 @@ function cvbshellWireCanvasClicks() {
     cvbshellRenderProperties();
     cvbshellRenderHierarchy();
   }, true);
+  cvbshellWireCanvasHover(doc);
+}
+
+/* Hover affordance for the canvas — without this, nothing on screen
+   ever suggested a piece of text was clickable at all (confirmed live:
+   "רק כשלוחצים על החלק המתאים בעמודה בצד אפשר לערוך", i.e. editing felt
+   possible only from the hierarchy list, never by clicking the canvas
+   itself, even though the click handler above always supported it).
+   Reuses cvbshellResolveClickTarget's exact same priority resolution via
+   delegation so the hover highlight always lands on the identical
+   element a click there would select — never a larger/smaller mismatch. */
+function cvbshellWireCanvasHover(doc) {
+  if (!doc.getElementById("cvbshell-hover-style")) {
+    const style = doc.createElement("style");
+    style.id = "cvbshell-hover-style";
+    style.textContent = `.bshell-hover-target{outline:1.5px dashed rgba(20,184,166,.65) !important; outline-offset:2px !important; cursor:pointer;}`;
+    doc.head.appendChild(style);
+  }
+  let hovered = null;
+  doc.addEventListener("mouseover", (e) => {
+    if (e.target.closest("#cvbshell-mini-toolbar")) return;
+    const resolved = cvbshellResolveClickTarget(e);
+    const el = resolved ? resolved.rootEl : null;
+    if (el === hovered) return;
+    if (hovered) hovered.classList.remove("bshell-hover-target");
+    hovered = el;
+    if (hovered && hovered !== (cvbshellSelection && cvbshellSelection.rootEl)) hovered.classList.add("bshell-hover-target");
+  });
+  doc.addEventListener("mouseout", (e) => {
+    if (hovered && !e.relatedTarget) { hovered.classList.remove("bshell-hover-target"); hovered = null; }
+  });
 }
 
 function cvbshellResolveClickTarget(e) {

@@ -200,27 +200,34 @@ window.addEventListener("resize", () => {
 
 /* Same html2canvas+jsPDF direct-download approach as quote-render.js's
    downloadQuotePdf — see that function's comment for why (no browser
-   print dialog). */
+   print dialog) and why this renders into a fresh, self-contained,
+   off-screen element rather than #invoice-preview itself: with the
+   Builder-Shell now the default editor, #invoice-preview is never
+   populated (only the old pre-Shell sidebar's renderInvoicePreviewIA
+   does that) and its ancestor (#ia-app) is display:none while the
+   Shell is active either way — confirmed live as "הכפתור של הורדת PDF
+   לא עובד". renderInvoiceHtml() returns a fully self-contained
+   fragment with its own embedded <style>, so a plain freshly-appended
+   div needs nothing else on the page to be visible. */
 async function downloadInvoicePdf(filenameHint) {
-  const wrap = document.getElementById("invoice-preview");
-  const doc = wrap && wrap.querySelector(".invoice-doc");
-  if (!doc) return;
   if (!window.html2canvas || !(window.jspdf && window.jspdf.jsPDF)) {
+    if (typeof renderInvoicePreviewIA === "function") renderInvoicePreviewIA();
     window.print();
     return;
   }
-  const prevTransform = doc.style.transform;
-  const prevTransition = doc.style.transition;
-  doc.style.transition = "none";
-  doc.style.transform = "none";
+  const temp = document.createElement("div");
+  temp.style.cssText = "position:fixed; top:0; inset-inline-start:-99999px; width:794px; pointer-events:none;";
+  temp.innerHTML = renderInvoiceHtml(invoiceEventState, currentInvoiceProfile);
+  document.body.appendChild(temp);
+  const doc = temp.querySelector(".invoice-doc");
+  if (!doc) { temp.remove(); return; }
   await new Promise((resolve) => requestAnimationFrame(resolve));
 
   let canvas;
   try {
     canvas = await window.html2canvas(doc, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
   } finally {
-    doc.style.transform = prevTransform;
-    doc.style.transition = prevTransition;
+    temp.remove();
   }
 
   const { jsPDF } = window.jspdf;

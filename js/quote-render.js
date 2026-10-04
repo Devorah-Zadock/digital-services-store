@@ -245,29 +245,42 @@ window.addEventListener("resize", () => {
    to load (e.g. the CDN request was blocked), so the button never just
    does nothing. */
 async function downloadQuotePdf() {
-  const wrap = document.getElementById("quote-preview");
-  const doc = wrap && wrap.querySelector(".quote-doc");
-  if (!doc) return;
   if (!window.html2canvas || !(window.jspdf && window.jspdf.jsPDF)) {
+    // Old fallback path — still needs real content in #quote-preview,
+    // same reasoning as the temp-element approach below.
+    if (typeof renderQuotePreviewQA === "function") renderQuotePreviewQA();
     window.print();
     return;
   }
 
-  // .quote-doc is scaled down (see fitQuotePreviewToContainer) to fit the
-  // on-screen preview pane — reset that before capturing so the PDF is
-  // rendered from the document's real, full-size layout.
-  const prevTransform = doc.style.transform;
-  const prevTransition = doc.style.transition;
-  doc.style.transition = "none";
-  doc.style.transform = "none";
+  // Rendered into a fresh, self-contained off-screen element — never
+  // #quote-preview itself — on purpose. #quote-preview only gets
+  // populated by the OLD pre-Shell sidebar's own render call
+  // (renderQuotePreviewQA, called from showQuoteBuilder/profile-submit);
+  // with the Builder-Shell now the default editor, that container was
+  // confirmed live to stay permanently empty, so this silently found no
+  // .quote-doc and returned — "לוחצת על הורדת PDF ולא קורה כלום". Even
+  // calling renderQuotePreviewQA() here wouldn't be enough on its own:
+  // #quote-preview's ancestor (#qa-app) is display:none while the Shell
+  // is active, which collapses it to zero layout size regardless of its
+  // own innerHTML, and html2canvas needs a real, laid-out element to
+  // capture. renderQuoteHtml() returns a fully self-contained fragment
+  // with its own embedded <style> (quote-render.js's own template), so
+  // rendering it straight into a plain, freshly-appended div needs
+  // nothing else on the page to be visible at all.
+  const temp = document.createElement("div");
+  temp.style.cssText = "position:fixed; top:0; inset-inline-start:-99999px; width:794px; pointer-events:none;";
+  temp.innerHTML = renderQuoteHtml(mergedQuoteState());
+  document.body.appendChild(temp);
+  const doc = temp.querySelector(".quote-doc");
+  if (!doc) { temp.remove(); return; }
   await new Promise((resolve) => requestAnimationFrame(resolve));
 
   let canvas;
   try {
     canvas = await window.html2canvas(doc, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
   } finally {
-    doc.style.transform = prevTransform;
-    doc.style.transition = prevTransition;
+    temp.remove();
   }
 
   const { jsPDF } = window.jspdf;

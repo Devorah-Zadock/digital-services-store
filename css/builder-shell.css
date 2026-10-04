@@ -137,7 +137,13 @@
   width: 100%; box-sizing: border-box; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--border);
   font-family: inherit; font-size: 13.5px; color: var(--text); background: var(--surface);
 }
-.bshell-props-field textarea { resize: vertical; min-height: 60px; }
+/* 60px (~rows=4's natural height) read as genuinely cramped for actual
+   paragraph-length content (a CV summary, an about section) — confirmed
+   live: the panel itself has plenty of room below a single field, so
+   there's no reason the text box forcing its own internal scrollbar
+   should be the thing using that space instead. Still freely resizable
+   beyond this for anyone who wants more. */
+.bshell-props-field textarea { resize: vertical; min-height: 150px; }
 .bshell-props-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .bshell-props-field input[type="number"] { width: 100%; box-sizing: border-box; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13.5px; }
 .bshell-props-field input[type="color"] { width: 100%; height: 36px; border: 1px solid var(--border); border-radius: 8px; padding: 2px; cursor: pointer; background: var(--surface); }

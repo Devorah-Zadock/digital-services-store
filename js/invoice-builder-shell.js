@@ -432,6 +432,39 @@ function invoiceBshellWireCanvasClicks() {
     invoiceBshellRenderProperties();
     invoiceBshellRenderHierarchy();
   }, true);
+  invoiceBshellWireCanvasHover(doc);
+}
+
+/* Hover affordance for the canvas — see js/cv-builder-shell.js's
+   cvbshellWireCanvasHover for why: without any on-screen cue, editing
+   read as possible only from the hierarchy list, never by clicking the
+   canvas directly, even though the click handler above always
+   supported it (clicking still opens Properties even on a locked/issued
+   document — see invoiceBshellWirePropertiesPanel for where the real
+   lock check lives — so the hover cue itself needs no lock special-case
+   here). Reuses invoiceBshellResolveClickTarget's exact priority
+   resolution via delegation so the hover highlight always lands on the
+   identical element a click there would select. */
+function invoiceBshellWireCanvasHover(doc) {
+  if (!doc.getElementById("ibshell-hover-style")) {
+    const style = doc.createElement("style");
+    style.id = "ibshell-hover-style";
+    style.textContent = `.bshell-hover-target{outline:1.5px dashed rgba(20,184,166,.65) !important; outline-offset:2px !important; cursor:pointer;}`;
+    doc.head.appendChild(style);
+  }
+  let hovered = null;
+  doc.addEventListener("mouseover", (e) => {
+    if (e.target.closest("#ibshell-mini-toolbar")) return;
+    const resolved = invoiceBshellResolveClickTarget(e);
+    const el = resolved ? resolved.rootEl : null;
+    if (el === hovered) return;
+    if (hovered) hovered.classList.remove("bshell-hover-target");
+    hovered = el;
+    if (hovered && hovered !== (invoiceBshellSelection && invoiceBshellSelection.rootEl)) hovered.classList.add("bshell-hover-target");
+  });
+  doc.addEventListener("mouseout", (e) => {
+    if (hovered && !e.relatedTarget) { hovered.classList.remove("bshell-hover-target"); hovered = null; }
+  });
 }
 
 function invoiceBshellResolveClickTarget(e) {

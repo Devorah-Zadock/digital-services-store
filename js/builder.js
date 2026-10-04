@@ -296,6 +296,16 @@ document.addEventListener("DOMContentLoaded", () => {
       if (typeof openAuthPrompt === "function") openAuthPrompt();
       return;
     }
+    // #preview-doc only ever gets populated by this file's own
+    // renderPreview() — with the Builder-Shell now the default editor,
+    // that container was confirmed live to still be empty (the Shell
+    // renders into its own iframe instead), and its ancestor
+    // (#builder-wrap-section) is also display:none while the Shell is
+    // active. Both are forced back for the print pass itself (see
+    // css/builder.css's @media print rules) — this just guarantees
+    // #preview-doc actually holds the CURRENT content when that happens,
+    // instead of printing a blank page.
+    renderPreview();
     window.print();
     if (window.showUpsellBanner) {
       showUpsellBanner("מעבר לקורות החיים המרשימים שבניתם, הגיע הזמן שגם לעסק שלכם יהיה אתר תדמית יפהפה.", "רוצה להיראות עוד יותר מקצועי?");
