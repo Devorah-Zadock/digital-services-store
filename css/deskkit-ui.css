@@ -330,60 +330,55 @@ body.dk-home { background: var(--bg-main); }
 }
 .dk-home-hero-tool-icon svg { width: 16px; height: 16px; }
 
-/* Visual: an actual laptop-device illustration (dark bezel + angled
-   keyboard deck), its own fixed-width column — never sized off of
-   another column's width — and an explicit max-height so its 3D tilt
-   can never grow tall enough to spill past the hero band and get
-   clipped by the section below it (the previous "max-width:100%"
-   bug). */
-.dk-home-hero-visual { flex: 0 0 340px; max-width: 340px; max-height: 350px; perspective: 1400px; }
-/* filter: drop-shadow (not box-shadow) on the whole composite — it
-   follows the laptop's actual rendered silhouette (screen + hinge +
-   splayed keyboard together) instead of just the screen rectangle's
-   own box, which is what made the old shadow read as flat/pasted-on
-   rather than a real object casting a shadow. Per the user's own
-   explicit ask for this exact technique. */
-.dk-home-hero-laptop {
-  transform: rotateY(-14deg) rotateX(3deg); transform-style: preserve-3d;
+/* Visual: a real photographed laptop mockup (images/laptop-hero.jpg,
+   2000x1125, 3/4-angle studio photo with a blank screen), its own
+   fixed-width column — never sized off of another column's width. A
+   fixed frame + an inner "native" layer sized to the photo's actual
+   pixel dimensions (then scaled down as one unit via transform:scale)
+   keeps the perspective math below exact regardless of the frame's
+   own responsive width — no separate recomputation needed per
+   breakpoint, only the frame size + its matching scale factor. */
+.dk-home-hero-visual { flex: 0 0 340px; max-width: 340px; display: flex; justify-content: center; }
+.dk-home-hero-laptop-frame {
+  width: 340px; height: 191.25px; overflow: hidden; position: relative;
+  /* Follows the photo's own silhouette once scaled down — a real
+     contact shadow, not a value guessed for a hand-drawn shape. */
   filter: drop-shadow(0 25px 35px rgba(0, 0, 0, .12)) drop-shadow(0 8px 10px rgba(0, 0, 0, .08));
 }
-.dk-home-hero-laptop-screen {
-  position: relative; background: linear-gradient(155deg, #1e293b 0%, #0a0f1a 70%);
-  border-radius: 16px 16px 5px 5px; padding: 10px 10px 6px;
+/* Physical `left`/`top` (not inset-inline-start) and position:absolute
+   on purpose — this 2000px-wide layer is far wider than its 340px
+   frame, and under RTL a normal-flow block that wide right-aligns
+   itself (overflowing off-screen to the left) instead of anchoring
+   its top-left corner where the matrix math below assumes it sits;
+   confirmed live via getBoundingClientRect showing the whole layer
+   rendered off past the frame's left edge before this fix. */
+.dk-home-hero-laptop-native {
+  width: 2000px; height: 1125px; position: absolute; left: 0; top: 0;
+  transform-origin: 0 0; transform: scale(0.17);
 }
-/* A faint diagonal glass highlight across the bezel — the detail that
-   reads as "a real glossy screen", not a flat-colored div. */
-.dk-home-hero-laptop-screen::after {
-  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
-  background: linear-gradient(115deg, rgba(255, 255, 255, .07) 0%, rgba(255, 255, 255, 0) 30%);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06);
+.dk-home-hero-laptop-img { display: block; width: 2000px; height: 1125px; max-width: none; }
+/* The screen "mount": a CSS matrix3d perspective transform computed
+   from this exact photo's own screen corners (found by thresholding
+   the blank white screen region and reading its quadrilateral: TL
+   760,193 — TR 1616,152 — BR 1531,834 — BL 652,784, all in the
+   photo's native 2000x1125 pixel space) — so the dashboard preview
+   sits inside the glass at the photo's real angle, pixel-accurate,
+   instead of a separately-guessed CSS rotate. */
+.dk-home-hero-screen-mount {
+  position: absolute; left: 652px; top: 152px; width: 964px; height: 682px;
+  transform-origin: 0 0;
+  transform: matrix3d(0.757380, -0.042531, 0, -0.000135, -0.158358, 0.830619, 0, -0.000057, 0, 0, 1, 0, 108, 41, 0, 1);
+  overflow: hidden;
 }
-.dk-home-hero-laptop-hinge { height: 4px; margin: 0 4px; background: linear-gradient(180deg, #27344a, #070a10); }
-/* Angled "keyboard deck": a trapezoid, wider than the screen above it
-   and shaded top-to-bottom like brushed aluminum catching light, with
-   a small trackpad notch — enough to read as a real laptop base
-   instead of a bare rectangular card. */
-.dk-home-hero-laptop-keyboard {
-  height: 17px; margin: 0 -20px; position: relative;
-  background: linear-gradient(180deg, #f3f6f9 0%, #d3dae2 50%, #aeb6c2 100%);
-  clip-path: polygon(3% 0, 97% 0, 100% 100%, 0 100%);
-}
-.dk-home-hero-laptop-keyboard::before {
-  content: ""; position: absolute; inset: 0; clip-path: inherit;
-  background: linear-gradient(115deg, rgba(255, 255, 255, .5) 0%, rgba(255, 255, 255, 0) 25%);
-}
-.dk-home-hero-laptop-keyboard::after {
-  content: ""; position: absolute; top: 2px; inset-inline-start: 50%; transform: translateX(-50%);
-  width: 52px; height: 5px; background: #9aa4b2; border-radius: 0 0 6px 6px;
-}
-/* The "screen" now shows a light, clean mock of the real DeskKit
-   dashboard (a topbar + product-colored tool tiles) instead of a
-   dark marketing-copy panel — reads as an actual look at the
-   product, matching the user's explicit "bright screenshot of the
-   real interface" ask. */
+/* The "screen" content is designed at its own small, easy-to-edit
+   pixel size (342x242 — same 964:682 aspect as the mount above) and
+   scaled up as one block to fill it — a light, clean mock of the
+   real DeskKit dashboard (topbar + product-colored tool tiles)
+   instead of a dark marketing-copy panel, reading as an actual look
+   at the product rather than an ad for it. */
 .dk-home-hero-screen-hero {
-  height: 210px; border-radius: 6px; overflow: hidden; background: #f1f5f9;
-  display: flex; flex-direction: column;
+  width: 342px; height: 242px; transform-origin: 0 0; transform: scale(2.819);
+  background: #f1f5f9; display: flex; flex-direction: column;
 }
 .dk-home-hero-screen-topbar {
   height: 30px; flex: none; display: flex; align-items: center; gap: 7px; padding: 0 12px;
@@ -401,7 +396,12 @@ body.dk-home { background: var(--bg-main); }
 @media (max-width: 860px) {
   .dk-home-hero-inner { flex-direction: column; }
   .dk-home-hero-text, .dk-home-hero-visual, .dk-home-hero-tools { flex: none; width: 100%; max-width: 420px; }
-  .dk-home-hero-laptop { transform: none; }
+  /* Same frame, smaller fixed size — the scale factor is just the
+     frame's own width divided by the photo's native 2000px width;
+     the matrix3d above stays untouched since it lives inside the
+     scaled layer, not the frame. */
+  .dk-home-hero-laptop-frame { width: 260px; height: 146.25px; }
+  .dk-home-hero-laptop-native { transform: scale(0.13); }
 }
 @media (max-width: 680px) {
   .dk-home-hero { padding: 40px 0 36px; }

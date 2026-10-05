@@ -74,7 +74,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700;800&family=Secular+One&family=Space+Grotesk:wght@500;600;700&display=optional" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700;800&family=Secular+One&family=Space+Grotesk:wght@500;600;700&display=optional" rel="stylesheet"></noscript>
 <link rel="stylesheet" href="css/style.css?v=91">
-<link rel="stylesheet" href="css/deskkit-ui.css?v=19">
+<link rel="stylesheet" href="css/deskkit-ui.css?v=20">
 </head>
 <body class="dk-home dk-has-app-sidebar">
 <header class="site">
@@ -120,28 +120,39 @@
       </div>
     </div>
     <div class="dk-home-hero-visual" aria-hidden="true">
-      <div class="dk-home-hero-laptop">
-        <div class="dk-home-hero-laptop-screen">
-          <!-- A light, clean mock of the real DeskKit dashboard
-               (topbar + tool tiles in the same product colors used
-               everywhere else on the site) instead of a dark
-               marketing-copy panel — reads as an actual screenshot
-               of the product, not an ad for it. -->
-          <div class="dk-home-hero-screen-hero">
-            <div class="dk-home-hero-screen-topbar">
-              <span class="dk-home-hero-screen-brand-badge"></span>
-              <span class="dk-home-hero-screen-brand-name">DeskKit</span>
-            </div>
-            <div class="dk-home-hero-screen-body">
-              <div class="dk-home-hero-screen-tile" data-dk-product="site"><span class="dk-home-hero-screen-tile-icon"></span></div>
-              <div class="dk-home-hero-screen-tile" data-dk-product="cv"><span class="dk-home-hero-screen-tile-icon"></span></div>
-              <div class="dk-home-hero-screen-tile" data-dk-product="quote"><span class="dk-home-hero-screen-tile-icon"></span></div>
-              <div class="dk-home-hero-screen-tile" data-dk-product="invoice"><span class="dk-home-hero-screen-tile-icon"></span></div>
+      <!-- Real photographed laptop mockup (images/laptop-hero.jpg),
+           not a hand-drawn CSS shape. The dashboard preview below is
+           corner-pinned with a CSS matrix3d perspective transform
+           computed from this exact photo's own screen corners (found
+           by thresholding the blank white screen and reading its
+           quadrilateral), so it sits inside the glass at the photo's
+           real angle instead of a guessed CSS rotate. -->
+      <div class="dk-home-hero-laptop-frame">
+        <div class="dk-home-hero-laptop-native">
+          <img src="images/laptop-hero.jpg" width="2000" height="1125" alt="" class="dk-home-hero-laptop-img">
+          <div class="dk-home-hero-screen-mount">
+            <!-- A light, clean mock of the real DeskKit dashboard
+                 (topbar + tool tiles in the same product colors used
+                 everywhere else on the site) instead of a dark
+                 marketing-copy panel — reads as an actual screenshot
+                 of the product, not an ad for it. Its own small
+                 design-pixel box, scaled up to fill the screen mount
+                 above — the topbar/tile CSS below is untouched from
+                 before this photo swap. -->
+            <div class="dk-home-hero-screen-hero">
+              <div class="dk-home-hero-screen-topbar">
+                <span class="dk-home-hero-screen-brand-badge"></span>
+                <span class="dk-home-hero-screen-brand-name">DeskKit</span>
+              </div>
+              <div class="dk-home-hero-screen-body">
+                <div class="dk-home-hero-screen-tile" data-dk-product="site"><span class="dk-home-hero-screen-tile-icon"></span></div>
+                <div class="dk-home-hero-screen-tile" data-dk-product="cv"><span class="dk-home-hero-screen-tile-icon"></span></div>
+                <div class="dk-home-hero-screen-tile" data-dk-product="quote"><span class="dk-home-hero-screen-tile-icon"></span></div>
+                <div class="dk-home-hero-screen-tile" data-dk-product="invoice"><span class="dk-home-hero-screen-tile-icon"></span></div>
+              </div>
             </div>
           </div>
         </div>
-        <div class="dk-home-hero-laptop-hinge"></div>
-        <div class="dk-home-hero-laptop-keyboard"></div>
       </div>
     </div>
     <div class="dk-home-hero-tools" aria-label="מה אפשר ליצור ב-DeskKit">
