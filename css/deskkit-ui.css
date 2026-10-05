@@ -341,9 +341,9 @@ body.dk-home { background: var(--bg-main); }
    its own to clash with the page. Pulled up to tuck under the text
    block so the two read as one integrated composition instead of
    two stacked blocks with a gap, matching the reference mockup. */
-.dk-home-hero-visual { width: 100%; max-width: 560px; margin-top: -92px; }
+.dk-home-hero-visual { width: 100%; max-width: 640px; margin-top: -156px; }
 .dk-home-hero-laptop-img {
-  width: 100%; display: block; transform: translateX(-28px);
+  width: 100%; display: block; transform: translateX(-74px);
   filter: drop-shadow(0 25px 35px rgba(0, 0, 0, .12)) drop-shadow(0 8px 10px rgba(0, 0, 0, .08));
   /* Decorative only (aria-hidden on its wrapper) — without this, the
      image's full rectangular box (transparent PNG areas included)
@@ -358,6 +358,11 @@ body.dk-home { background: var(--bg-main); }
   .dk-home-hero-inner { flex-direction: column; align-items: center; }
   .dk-home-hero-stage { width: 100%; }
   .dk-home-hero-tools { flex: none; width: 100%; max-width: 420px; }
+  /* The -74px leftward pull is tuned for the stage sitting beside the
+     tools column at desktop widths; once the layout stacks to a single
+     centered column here, that same offset instead pushes the laptop
+     off the left edge of the viewport. */
+  .dk-home-hero-laptop-img { transform: translateX(-20px); }
 }
 @media (max-width: 680px) {
   .dk-home-hero { padding: 40px 0 36px; }
