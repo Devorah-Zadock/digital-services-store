@@ -254,9 +254,10 @@ body.dk-home { background: var(--bg-main); }
    reference mockup's "at first you only see the hero" framing. */
 .dk-home-hero {
   padding: 64px 0 56px; overflow: hidden;
-  /* Soft teal-to-white wash instead of a flat gray fill — matches the
-     reference mockup's background depth. */
-  background: linear-gradient(180deg, #e8f7f5 0%, #f1fbfa 45%, var(--bg-main) 100%);
+  /* Soft blue-cyan-to-white wash instead of a flat gray fill — a
+     cooler, less saturated tone than teal to match the reference
+     mockup's own background exactly. */
+  background: linear-gradient(180deg, #e3f3f6 0%, #eef8f9 45%, var(--bg-main) 100%);
 }
 /* min-height (desktop only) keeps the hero filling close to the first
    viewport, so "why DeskKit" below only appears once the visitor
@@ -281,6 +282,16 @@ body.dk-home { background: var(--bg-main); }
 .dk-home-hero-text h1 { font-size: 46px; font-weight: 700; line-height: 1.3; margin: 18px 0 16px; color: var(--text-main); font-family: Heebo, Arial, sans-serif; }
 .dk-home-hero-text p { font-size: 17.5px; color: #475569; line-height: 1.6; max-width: 480px; margin: 0 0 24px; }
 .dk-home-hero-ctas { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+/* Richer gradient fill + its own soft shadow for the hero's primary
+   CTA specifically — .dk-btn-primary's flat fill stays the sitewide
+   default everywhere else; this scoped override matches the
+   reference mockup's own button without changing every other button
+   on the site. */
+.dk-home-hero-ctas .dk-btn-primary {
+  background: linear-gradient(135deg, var(--brand-color), var(--brand-dark)); border: none;
+  box-shadow: 0 8px 16px -4px rgba(15, 118, 110, .35);
+}
+.dk-home-hero-ctas .dk-btn-primary:hover { background: linear-gradient(135deg, var(--brand-dark), var(--brand-dark)); }
 .dk-home-hero-watch {
   display: inline-flex; align-items: center; gap: 9px; color: var(--text-main); font-weight: 700; font-size: 14.5px; text-decoration: none;
 }
@@ -308,31 +319,33 @@ body.dk-home { background: var(--bg-main); }
 }
 .dk-home-hero-tool-icon svg { width: 18px; height: 18px; }
 
-/* Visual: a browser-chrome frame around a small, purely CSS marketing
-   panel (gradient + headline + CTA) — a stand-in for a product
-   screenshot that doesn't rely on unlicensed stock photography. */
-.dk-home-hero-browser {
-  background: linear-gradient(160deg, #ffffff, #f8fafc); border-radius: var(--radius-lg); overflow: hidden;
-  border: 1px solid var(--border-color);
-  /* Deliberately deep + soft (two stacked shadows, wide spread, low
-     opacity) so the mockup visibly lifts off the page instead of
-     reading as flat — the user's own exact values. */
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.03);
+/* Visual: an actual laptop-device illustration (dark screen bezel +
+   angled keyboard deck with a trackpad notch), not a flat "browser
+   window" card — matching the reference mockup's own computer
+   exactly. The app content (gradient marketing panel) fills the
+   screen edge-to-edge, the way a real device mockup shows it, instead
+   of sitting inside a second nested browser-chrome rectangle. */
+.dk-home-hero-laptop-screen {
+  background: #0f172a; border-radius: 16px 16px 4px 4px; padding: 14px 14px 8px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.12), 0 10px 10px -5px rgba(0, 0, 0, 0.08);
 }
-.dk-home-hero-browser-bar { display: flex; align-items: center; gap: 6px; padding: 12px 16px; border-bottom: 1px solid var(--border-color); }
-.dk-home-hero-browser-dot { width: 9px; height: 9px; flex-shrink: 0; border-radius: 50%; background: var(--border-color); }
-.dk-home-hero-browser-brand { margin-inline-start: auto; font-size: 12px; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
-.dk-home-hero-browser-screen { padding: 14px; }
-/* A simple trapezoid "keyboard deck" beneath the screen — enough to
-   read as an actual laptop silhouette instead of a bare rectangular
-   card, per the reference mockup. */
-.dk-home-hero-laptop-base {
-  height: 16px; margin: 0 -18px; background: linear-gradient(180deg, #e4e9ef, #b8c2cc);
-  clip-path: polygon(5% 0, 95% 0, 100% 100%, 0 100%);
-  box-shadow: 0 8px 14px -6px rgba(15, 23, 42, .3);
+.dk-home-hero-laptop-hinge { height: 5px; margin: 0 6px; background: linear-gradient(180deg, #1e293b, #0a0f1a); }
+/* Angled "keyboard deck": a trapezoid, wider than the screen above it
+   and shaded top-to-bottom like brushed aluminum catching light, with
+   a small trackpad notch — enough to read as a real laptop base
+   instead of a bare rectangular card. */
+.dk-home-hero-laptop-keyboard {
+  height: 20px; margin: 0 -22px; position: relative;
+  background: linear-gradient(180deg, #eef2f6 0%, #cbd3dc 55%, #aab3bf 100%);
+  clip-path: polygon(4% 0, 96% 0, 100% 100%, 0 100%);
+  box-shadow: 0 12px 18px -8px rgba(15, 23, 42, .4);
+}
+.dk-home-hero-laptop-keyboard::after {
+  content: ""; position: absolute; top: 3px; inset-inline-start: 50%; transform: translateX(-50%);
+  width: 64px; height: 6px; background: #9aa4b2; border-radius: 0 0 7px 7px;
 }
 .dk-home-hero-screen-hero {
-  position: relative; min-height: 210px; border-radius: 14px; overflow: hidden;
+  position: relative; min-height: 220px; border-radius: 6px; overflow: hidden;
   background: linear-gradient(135deg, var(--brand-color), var(--brand-dark));
   display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; padding: 22px;
 }
@@ -340,6 +353,11 @@ body.dk-home { background: var(--bg-main); }
   content: ""; position: absolute; inset: 0;
   background: radial-gradient(circle at 75% 15%, rgba(255, 255, 255, .28), transparent 60%);
 }
+.dk-home-hero-screen-brand {
+  position: absolute; top: 16px; inset-inline-start: 18px; display: flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 700; color: rgba(255, 255, 255, .9);
+}
+.dk-home-hero-screen-brand-badge { width: 16px; height: 16px; border-radius: 5px; background: rgba(255, 255, 255, .25); flex-shrink: 0; }
 .dk-home-hero-screen-eyebrow { position: relative; font-size: 11.5px; font-weight: 700; color: rgba(255, 255, 255, .85); text-transform: uppercase; letter-spacing: .04em; }
 .dk-home-hero-screen-hero strong { position: relative; font-size: 23px; font-weight: 800; color: #fff; line-height: 1.25; }
 .dk-home-hero-screen-cta {
