@@ -266,14 +266,15 @@ body.dk-home { background: var(--bg-main); }
      the previous cyan-at-top wash. */
   background: linear-gradient(180deg, #ffffff 0%, #eaf8fb 35%, #c9ecf4 100%);
 }
-/* min-height (desktop only) keeps the hero filling close to the first
-   viewport, so "why DeskKit" below only appears once the visitor
-   scrolls — matching the reference mockup's "at first you only see
-   the hero" framing instead of both sections being visible at once on
-   a typical laptop screen. Skipped on mobile, where forcing near-full-
-   height just adds empty space above the fold instead of removing it. */
+/* Sized to its own content (text+laptop+tools), not forced to fill the
+   viewport — a min-height tied to 100vh read fine on a typical laptop
+   screen, where the content's natural height happened to be close to
+   the viewport height, but on a taller monitor the gap between content
+   and viewport bottom showed up as a long stretch of empty gradient
+   below the laptop before "why DeskKit" appeared — confirmed live and
+   reported as the cyan area being "too long" on scroll. */
 @media (min-width: 681px) {
-  .dk-home-hero { min-height: calc(100vh - var(--header-h, 70px)); display: flex; align-items: center; padding: 40px 0; }
+  .dk-home-hero { padding: 56px 0 64px; }
   .dk-home-hero .container { width: 100%; }
 }
 /* Contained + centered at 1280px (the user's own explicit ask), same
@@ -341,9 +342,9 @@ body.dk-home { background: var(--bg-main); }
    its own to clash with the page. Pulled up to tuck under the text
    block so the two read as one integrated composition instead of
    two stacked blocks with a gap, matching the reference mockup. */
-.dk-home-hero-visual { width: 100%; max-width: 640px; margin-top: -210px; }
+.dk-home-hero-visual { width: 100%; max-width: 640px; margin-top: -230px; }
 .dk-home-hero-laptop-img {
-  width: 100%; display: block; transform: translateX(-20px);
+  width: 100%; display: block; transform: translateX(-50px);
   filter: drop-shadow(0 25px 35px rgba(0, 0, 0, .12)) drop-shadow(0 8px 10px rgba(0, 0, 0, .08));
   /* Decorative only (aria-hidden on its wrapper) — without this, the
      image's full rectangular box (transparent PNG areas included)
