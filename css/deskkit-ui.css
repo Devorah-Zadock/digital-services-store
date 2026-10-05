@@ -310,11 +310,13 @@ body.dk-home { background: var(--bg-main); }
    mockup exactly), real cards with shadow/rounded corners/colorful
    icon square, not a 2-column grid or compact inline pills. Its own
    narrow column, to the laptop's side — not stacked above it. */
-.dk-home-hero-tools { flex: 0 0 200px; display: flex; flex-direction: column; gap: 10px; }
+.dk-home-hero-tools { flex: 0 0 200px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .dk-home-hero-tool {
-  display: flex; align-items: center; gap: 10px; background: var(--bg-card); border: 1px solid var(--border-color);
-  border-radius: var(--radius-md); padding: 12px 14px; text-decoration: none; color: var(--text-main);
-  font-size: 13.5px; font-weight: 700; box-shadow: var(--shadow-sm);
+  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; max-width: 200px;
+  background: var(--bg-card); border: 1px solid var(--border-color);
+  border-radius: var(--radius-md); padding: 10px 14px; text-decoration: none; color: var(--text-main);
+  font-size: 13.5px; font-weight: 700;
+  box-shadow: 0 10px 25px -5px rgba(148, 163, 184, 0.08), 0 8px 10px -6px rgba(148, 163, 184, 0.04);
   transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease;
 }
 .dk-home-hero-tool:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--brand-color); }
@@ -486,7 +488,8 @@ body.dk-home { background: var(--bg-main); }
   display: flex; flex-direction: column; align-items: center; gap: 10px; width: 108px; box-sizing: border-box;
   background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);
   padding: 18px 10px; text-decoration: none; color: var(--text-main); font-size: 13px; font-weight: 700;
-  box-shadow: var(--shadow-sm); transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease;
+  box-shadow: 0 10px 25px -5px rgba(148, 163, 184, 0.08), 0 8px 10px -6px rgba(148, 163, 184, 0.04);
+  transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease;
 }
 .dk-home-dash-tool:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--brand-color); }
 .dk-home-dash-tool-icon {
@@ -507,7 +510,8 @@ body.dk-home { background: var(--bg-main); }
 .dk-pcard {
   background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);
   overflow: hidden; display: flex; flex-direction: column; position: relative;
-  box-shadow: var(--shadow-md); transition: box-shadow .15s ease, transform .15s ease;
+  box-shadow: 0 10px 25px -5px rgba(148, 163, 184, 0.08), 0 8px 10px -6px rgba(148, 163, 184, 0.04);
+  transition: box-shadow .15s ease, transform .15s ease;
 }
 .dk-pcard:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
 .dk-pcard-thumb { position: relative; height: 108px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
@@ -521,11 +525,18 @@ body.dk-home { background: var(--bg-main); }
 .dk-pcard-status.live::before { background: var(--success); }
 .dk-pcard-status.draft::before { background: var(--warning); }
 .dk-pcard-date { font-size: 12px; color: var(--text-muted); margin: 0 0 18px; }
+/* Small, pill-shaped, sized to its own text — pinned to the card's
+   bottom-left corner (align-self: flex-end resolves to inline-end,
+   the visual left edge under RTL) instead of stretching the full
+   card width, per the user's explicit "too wide, make it a small
+   elegant corner button" correction. */
 .dk-pcard-cta {
-  margin-top: auto; text-align: center; padding: 11px 10px; border-radius: var(--radius-sm); background: var(--brand-color);
-  color: #fff; font-size: 13.5px; font-weight: 700; text-decoration: none; transition: background .15s ease;
+  margin-top: auto; align-self: flex-end; display: inline-flex; align-items: center; justify-content: center;
+  padding: 8px 18px; border-radius: 999px; background: var(--brand-color);
+  color: #fff; font-size: 12.5px; font-weight: 700; text-decoration: none;
+  transition: background .15s ease, transform .15s ease;
 }
-.dk-pcard-cta:hover { background: var(--brand-dark); }
+.dk-pcard-cta:hover { background: var(--brand-dark); transform: translateY(-1px); }
 .dk-pcard-more {
   position: absolute; top: 10px; inset-inline-end: 10px; width: 30px; height: 30px; border-radius: 8px; border: none;
   background: rgba(255, 255, 255, .82); cursor: pointer; color: var(--text-main); font-size: 17px; line-height: 1;
