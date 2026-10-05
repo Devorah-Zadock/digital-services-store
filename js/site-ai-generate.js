@@ -472,6 +472,29 @@ function dkEnterBuilderFromPreview(overlay, opts) {
   if (window.refreshMyPanel) window.refreshMyPanel();
 }
 
+/* Mirrors supabase/functions/generate-site/index.ts's own free-attempt
+   check (FREE_ATTEMPT_LIMIT = 3, tool "generate-site"), reading the same
+   ai_usage row directly client-side (its RLS policy already lets a
+   signed-in user read their own usage row — same pattern as
+   siteAiFetchIsPro()/js/site-ai-review.js's upfront check for the AI
+   Director). Lets the limit message show BEFORE the multi-step wizard
+   opens instead of only after a person fills in every question and
+   submits — confirmed live as a real complaint: filling the whole form
+   just to be told afterward it was already maxed out. Best-effort: any
+   failure here just falls through to opening the wizard as before, same
+   as the AI Director's own check — the server still enforces the real
+   cap either way. */
+async function siteAiGenerateLimitReached() {
+  try {
+    const isPro = await siteAiFetchIsPro();
+    if (isPro) return false; // server still enforces the Pro daily cap
+    const { data } = await supabaseClient.from("ai_usage").select("count").eq("tool", "generate-site").maybeSingle();
+    return (data ? data.count : 0) >= 3;
+  } catch (e) {
+    return false;
+  }
+}
+
 async function openSiteAiGenerate() {
   const { data: sessionData } = await supabaseClient.auth.getSession();
   if (!sessionData.session || !sessionData.session.user) {
@@ -480,6 +503,28 @@ async function openSiteAiGenerate() {
   }
 
   if (document.getElementById("site-ai-generate-overlay")) return;
+
+  if (await siteAiGenerateLimitReached()) {
+    const overlay = document.createElement("div");
+    overlay.id = "site-ai-generate-overlay";
+    overlay.className = "domain-guide-overlay";
+    overlay.innerHTML = `
+      <div class="domain-guide-modal ats-modal" role="dialog" aria-modal="true" aria-labelledby="site-ai-generate-title">
+        <button type="button" class="domain-guide-close" id="site-ai-generate-close" aria-label="סגירה">✕</button>
+        <h2 id="site-ai-generate-title" style="margin-bottom:4px;">בניית אתר</h2>
+        <div class="ats-modal-body"><div class="ats-upgrade-card"><p>הגעת למכסת הניסיונות החינמיים ליצירת אתר. רוצה להמשיך? שדרג לגרסת Pro בתשלום חד-פעמי!</p><a href="#" class="btn btn-gold ats-upgrade-btn">שדרוג ל-Pro</a></div></div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    document.getElementById("site-ai-generate-close").addEventListener("click", close);
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+    document.addEventListener("keydown", function esc(e) {
+      if (e.key === "Escape") { close(); document.removeEventListener("keydown", esc); }
+    });
+    return;
+  }
+
   siteWizardAnswers = {};
   siteWizardStepIndex = 0;
   siteWizardOtherDrafts = {};

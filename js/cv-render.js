@@ -251,3 +251,72 @@ function renderCVHtml({ layout, font, palette, content, lang, textColor, isPro }
   const credit = isPro ? "" : `<div class="cv-pdf-credit">Created with DeskKit.co.il</div>`;
   return `<style>.cv-doc{--cv-font:${font};}</style>` + html + credit;
 }
+
+/* Same html2canvas+jsPDF off-screen-snapshot approach as quote-render.js's
+   downloadQuotePdf / invoice-render.js's downloadInvoicePdf. This REPLACES
+   the old window.print()-based export: @media print (css/builder.css) had
+   to force #preview-doc's wrapper back to visible and reset the inline
+   transform/height fitPreviewToContainer() applies for the on-screen
+   scaled-down view, but even with that fixed, the print pass's own
+   `width: 100% !important` resolved against the now-unconstrained page
+   body (over 1400px on a real monitor) instead of .cv-doc's natural
+   794px design width — confirmed live. A resume laid out ~1.8x wider
+   than true A4 reflows into far fewer lines than it actually needs at
+   real print width, so the page-count looked fine in isolated checks but
+   broke in the real, width-dependent browser print pipeline — matching
+   the repeated "2 pages, ugly" reports that survived multiple print-CSS
+   fixes. Rendering into a fixed 794px-wide off-screen element and
+   screenshotting it removes the dependency on @media print / page layout
+   entirely, same as quote/invoice already do, and the shrink-to-fit math
+   below guarantees a single page regardless of content length. */
+async function downloadCvPdf() {
+  if (!window.html2canvas || !(window.jspdf && window.jspdf.jsPDF)) {
+    renderPreview();
+    window.print();
+    return;
+  }
+  const tpl = CV_TEMPLATES[state.slug];
+  const palette = derivePalette(document.getElementById("color-picker").value);
+  const font = (FONT_OPTIONS.find((f) => f.id === state.fontId) || FONT_OPTIONS[0]).css;
+  const textColor = document.getElementById("text-color-picker").value.replace("#", "");
+  const layout = (state.content && state.content.layoutOverride) || tpl.layout;
+  const html = renderCVHtml({ layout, font, palette, content: state.content, lang: state.lang, textColor, isPro: state.isPro });
+
+  const temp = document.createElement("div");
+  temp.style.cssText = "position:fixed; top:0; inset-inline-start:-99999px; width:794px; pointer-events:none;";
+  temp.innerHTML = html;
+  document.body.appendChild(temp);
+  const doc = temp.querySelector(".cv-doc");
+  if (!doc) { temp.remove(); return; }
+  // The credit line is a sibling of .cv-doc (not nested inside it) and
+  // is display:none outside @media print — move it inside and make it
+  // visible as a normal trailing line so html2canvas (which only
+  // captures .cv-doc) picks it up, instead of silently dropping it.
+  const credit = temp.querySelector(".cv-pdf-credit");
+  if (credit) {
+    credit.style.cssText = "display:block; margin-top:14px; padding:0 24px 18px; font-family:Arial, sans-serif; font-size:8.5pt; color:#A0A0A0; text-align:end;";
+    doc.appendChild(credit);
+  }
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+
+  let canvas;
+  try {
+    canvas = await window.html2canvas(doc, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+  } finally {
+    temp.remove();
+  }
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ unit: "mm", format: "a4" });
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
+  let imgW = pageW;
+  let imgH = (canvas.height / canvas.width) * imgW;
+  if (imgH > pageH) {
+    imgW = imgW * (pageH / imgH);
+    imgH = pageH;
+  }
+  const x = (pageW - imgW) / 2;
+  pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", x, 0, imgW, imgH);
+  pdf.save(`${(state.content && state.content.name) || "קורות-חיים"}.pdf`);
+}

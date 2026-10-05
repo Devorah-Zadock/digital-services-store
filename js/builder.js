@@ -297,7 +297,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("font-select").innerHTML = FONT_OPTIONS.map((f) => `<option value="${f.id}">${f.label}</option>`).join("");
 
   wireStaticInputs();
-  document.getElementById("download-btn").addEventListener("click", () => {
+  document.getElementById("download-btn").addEventListener("click", async () => {
     // Free to edit, free to preview — an account is only asked for at
     // the actual moment of keeping something (download or cloud save),
     // same reasoning and same popup as #cv-save-btn in
@@ -308,17 +308,13 @@ document.addEventListener("DOMContentLoaded", () => {
       if (typeof openAuthPrompt === "function") openAuthPrompt();
       return;
     }
-    // #preview-doc only ever gets populated by this file's own
-    // renderPreview() — with the Builder-Shell now the default editor,
-    // that container was confirmed live to still be empty (the Shell
-    // renders into its own iframe instead), and its ancestor
-    // (#builder-wrap-section) is also display:none while the Shell is
-    // active. Both are forced back for the print pass itself (see
-    // css/builder.css's @media print rules) — this just guarantees
-    // #preview-doc actually holds the CURRENT content when that happens,
-    // instead of printing a blank page.
-    renderPreview();
-    window.print();
+    // downloadCvPdf() (js/cv-render.js) renders straight from `state`
+    // into an off-screen 794px element and screenshots it — same
+    // approach as Quote/Invoice's own PDF export — instead of the old
+    // window.print()/@media print path, which kept producing a 2-page,
+    // UI-bleeding export in real browsers (see that function's own
+    // comment for the full root cause).
+    await downloadCvPdf();
     if (window.showUpsellBanner) {
       showUpsellBanner("מעבר לקורות החיים המרשימים שבניתם, הגיע הזמן שגם לעסק שלכם יהיה אתר תדמית יפהפה.", "רוצה להיראות עוד יותר מקצועי?");
     }

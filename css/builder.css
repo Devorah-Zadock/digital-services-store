@@ -382,15 +382,31 @@
      class; this only needs to cancel the layout room it reserved. */
   body.dk-app-sidebar-mounted { padding-inline-start: 0 !important; transition: none !important; }
   #preview-doc, #quote-preview { height: auto !important; overflow: visible !important; }
-  #preview-doc .cv-doc { box-shadow: none; margin: 0; width: 100% !important; transform: none !important; }
+  /* width here used to be 100% !important, which resolves against this
+     page's own (now-unconstrained by the `body` reset above) width —
+     over 1400px on a real monitor — instead of .cv-doc's natural 794px
+     A4-equivalent design width. That stretched the whole resume far
+     wider than true print width, so it reflowed into noticeably fewer
+     lines than it actually needs at real size: individual checks that
+     only counted PDF pages still passed, but the real exported file
+     kept coming back wrong — confirmed as the root cause behind
+     "2 pages, ugly" surviving multiple earlier attempts at this rule.
+     This print path is now only a fallback for when html2canvas/jsPDF
+     fail to load at all (js/cv-render.js's downloadCvPdf(), which is
+     the normal path, renders at this same native 794px off-screen and
+     never hits @media print), but it should still be correct. */
+  #preview-doc .cv-doc { box-shadow: none; margin: 0; width: 794px !important; transform: none !important; }
   /* fitQuotePreviewToContainer() (js/quote-render.js) sets an inline
      transform:translateX()scale() on .quote-doc to shrink the fixed
      794px-wide document into whatever the on-screen preview pane's
      width happens to be. That inline style survives into print/PDF
      unless explicitly cleared here — otherwise the printed page is a
      shrunk copy of the doc sitting inside the full A4 box, which reads
-     as the content being cut off / not reaching the page's edges. */
-  #quote-preview .quote-doc { box-shadow: none; margin: 0; width: 100% !important; transform: none !important; }
+     as the content being cut off / not reaching the page's edges. Same
+     100%-vs-794px reasoning as #preview-doc .cv-doc above — this path
+     is likewise only the fallback for when html2canvas/jsPDF fail to
+     load (downloadQuotePdf()'s normal path never reaches @media print). */
+  #quote-preview .quote-doc { box-shadow: none; margin: 0; width: 794px !important; transform: none !important; }
   @page { size: A4; margin: 0; }
   .cv-pdf-credit {
     display: block; position: fixed; bottom: 12px; inset-inline-end: 20px;

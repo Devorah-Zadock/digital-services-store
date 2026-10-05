@@ -153,8 +153,15 @@ function escapeHtml(s) {
 function chatMatch(text) {
   const q = String(text || "").trim().toLowerCase();
   if (!q) return null;
+  // Guide pages (guide-*.html) shouldn't surface a CRM link — the CRM
+  // product (crm-product.html) isn't a fully supported, promoted tool
+  // the way CV/sites/quote/invoice are, and routing a guide-page reader
+  // into it from the floating chatbot was reported live as exactly the
+  // kind of stray cross-promo link guide pages shouldn't carry.
+  const onGuidePage = /\/?guide-[^/]*\.html/.test(location.pathname);
+  const faq = onGuidePage ? CHAT_FAQ.filter((item) => !item.link || item.link.href !== "crm-product.html") : CHAT_FAQ;
   let best = null, bestScore = 0;
-  CHAT_FAQ.forEach((item) => {
+  faq.forEach((item) => {
     const score = item.kw.filter((k) => q.includes(k.toLowerCase())).length;
     if (score > bestScore) { bestScore = score; best = item; }
   });
