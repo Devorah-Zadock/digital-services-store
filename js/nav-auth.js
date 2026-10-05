@@ -18,25 +18,40 @@ function escapeHtmlNav(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+// Which element opened the currently-open dropdown — originally always
+// #nav-login-link, now also js/app-sidebar.js's own account row at the
+// bottom of the sidebar. Tracked here (not re-queried by a hardcoded
+// id) so a second click on WHICHEVER trigger opened it toggles it
+// closed instead of the outside-click listener treating that trigger
+// as "outside" and closing it, only to have the trigger's own handler
+// reopen it a tick later.
+let navDropdownTrigger = null;
+
 function closeNavDropdown() {
   const dd = document.getElementById("nav-account-dropdown");
   if (dd) dd.remove();
   document.removeEventListener("click", onNavOutsideClick, true);
+  navDropdownTrigger = null;
 }
 
 function onNavOutsideClick(e) {
   const dd = document.getElementById("nav-account-dropdown");
-  const link = document.getElementById("nav-login-link");
-  if (dd && !dd.contains(e.target) && e.target !== link && !link.contains(e.target)) {
+  const trigger = navDropdownTrigger;
+  if (dd && !dd.contains(e.target) && (!trigger || (e.target !== trigger && !trigger.contains(e.target)))) {
     closeNavDropdown();
   }
 }
 
-function openNavDropdown(wrap, email) {
+function openNavDropdown(wrap, email, trigger, dropup) {
   closeNavDropdown();
+  navDropdownTrigger = trigger || wrap;
   const dd = document.createElement("div");
   dd.id = "nav-account-dropdown";
-  dd.className = "nav-account-dropdown";
+  // dropup: the trigger sits at the bottom of the app-shell sidebar
+  // (js/app-sidebar.js), where opening downward would run off the
+  // bottom of the viewport — same upward variant the old, removed
+  // my-panel.js rail used for the exact same reason.
+  dd.className = "nav-account-dropdown" + (dropup ? " dropup" : "");
   dd.innerHTML = `
     <div class="nav-account-email">${escapeHtmlNav(email)}</div>
     <a href="account-settings.html" class="nav-account-settings">החשבון שלי</a>
@@ -93,7 +108,7 @@ function applyNavAuthState(session) {
     link.onclick = (e) => {
       e.preventDefault();
       if (document.getElementById("nav-account-dropdown")) closeNavDropdown();
-      else openNavDropdown(wrap, session.user.email);
+      else openNavDropdown(wrap, session.user.email, link);
     };
   } else {
     // pathname.split("/").pop() is "" for the bare root ("/" or the

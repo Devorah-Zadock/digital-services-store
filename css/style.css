@@ -207,12 +207,14 @@ body.has-sites-rail header.site {
    padding-inline-* reserve room on both sides so links never run under
    either pinned group. */
 .nav {
-  /* Was: .brand/.nav-end-group pinned via position:absolute to the true
-     viewport edges (24px in), with only .nav-links centered inside a
-     capped box — meaning the logo and login sat flush against the
-     screen edge on any wide monitor regardless of --max-wide. The user
-     explicitly asked for logo+links+login to all sit together inside
-     one contained, centered row instead.
+  /* Full-bleed bar (NOT contained to --max-wide): the reference mockup
+     shows the logo sitting flush near the true viewport edge on any
+     screen width, not centered inside a 1280px box with visible outer
+     margin on a wider monitor — confirmed live that containing .nav
+     itself left the logo looking "stuck in the middle" instead.
+     --max-wide still applies to the HERO's own .container below this,
+     for the "nice wide side margins" ask on that content; the nav bar
+     itself is simply full width with small fixed edge padding.
      NOT justify-content:space-between — header.site's markup has a
      4th flex child after .nav-end-group (.burger, just display:none on
      desktop), and space-between spaces ALL flex items evenly rather
@@ -224,7 +226,7 @@ body.has-sites-rail header.site {
      and [.nav-end-group, .burger] packed together at the end edge,
      regardless of whether .burger is shown. */
   display: flex; align-items: center;
-  padding: 16px 32px; max-width: var(--max-wide); margin: 0 auto;
+  padding: 16px 28px;
   /* Logo-left / nav-center / login+CTA-right (desktop only) — the
      user's own reference mockup uses this order regardless of the
      page's RTL text direction; DOM order stays brand-first (so mobile,

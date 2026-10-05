@@ -146,6 +146,26 @@ body.dk-app-sidebar-mounted .bshell.active {
 .dk-app-sidebar-divider { height: 1px; background: var(--border); margin: 10px 2px; }
 .dk-app-sidebar-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; padding: 10px 10px 4px; }
 
+/* Account row — pinned to the bottom of the sidebar (margin-top:auto
+   in a flex column) per the user's explicit ask, instead of living in
+   the top header the way it used to. The header's own copy
+   (js/nav-auth.js's #nav-login-link) is hidden below once this is
+   mounted, so the account only ever shows in one place at a time. */
+.dk-app-sidebar-account { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--border-color); position: relative; }
+.dk-app-sidebar-account-toggle {
+  display: flex; align-items: center; gap: 10px; width: 100%; box-sizing: border-box;
+  background: none; border: none; cursor: pointer; padding: 9px 10px; border-radius: 10px;
+  font-family: inherit; color: var(--text-secondary); transition: background .15s ease, color .15s ease;
+}
+.dk-app-sidebar-account-toggle:hover { background: var(--bg); color: var(--text); }
+.dk-app-sidebar-account-email { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; direction: ltr; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body.dk-app-sidebar-collapsed .dk-app-sidebar-account-email { display: none; }
+body.dk-app-sidebar-collapsed .dk-app-sidebar-account-toggle { justify-content: center; padding-inline: 0; }
+/* The header's own account widget (js/nav-auth.js) moves into the
+   sidebar once one is mounted — same reasoning and same technique the
+   old, removed my-panel.js rail used for body.has-sites-rail. */
+body.dk-app-sidebar-mounted .nav-account-wrap { display: none; }
+
 /* Per-product accent colors — shared by the sidebar's own create
    shortcuts, Home's 6 create-cards and the create-chooser modal's
    icons via data-dk-product, so the same 6 colors mean the same 6
@@ -232,7 +252,12 @@ body.dk-home { background: var(--bg-main); }
    Both sit above the fold together — the "why DeskKit" section below
    only shows once the visitor scrolls past this, matching the
    reference mockup's "at first you only see the hero" framing. */
-.dk-home-hero { padding: 64px 0 56px; overflow: hidden; }
+.dk-home-hero {
+  padding: 64px 0 56px; overflow: hidden;
+  /* Soft teal-to-white wash instead of a flat gray fill — matches the
+     reference mockup's background depth. */
+  background: linear-gradient(180deg, #e8f7f5 0%, #f1fbfa 45%, var(--bg-main) 100%);
+}
 /* min-height (desktop only) keeps the hero filling close to the first
    viewport, so "why DeskKit" below only appears once the visitor
    scrolls — matching the reference mockup's "at first you only see
@@ -266,10 +291,10 @@ body.dk-home { background: var(--bg-main); }
 }
 
 .dk-home-hero-side { flex: 0 0 46%; max-width: 480px; display: flex; flex-direction: column; gap: 18px; }
-/* Tool-card grid — real cards (shadow, rounded corners, colorful icon
-   square), not compact inline pills: these are "the tool cards" the
-   reference mockup shows beside the hero copy, not a decorative list. */
-.dk-home-hero-tools { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+/* Tool cards — a single vertical column (matching the reference
+   mockup exactly), real cards with shadow/rounded corners/colorful
+   icon square, not a 2-column grid or compact inline pills. */
+.dk-home-hero-tools { display: flex; flex-direction: column; gap: 10px; }
 .dk-home-hero-tool {
   display: flex; align-items: center; gap: 10px; background: var(--bg-card); border: 1px solid var(--border-color);
   border-radius: var(--radius-md); padding: 12px 14px; text-decoration: none; color: var(--text-main);
@@ -294,9 +319,18 @@ body.dk-home { background: var(--bg-main); }
      reading as flat — the user's own exact values. */
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.03);
 }
-.dk-home-hero-browser-bar { display: flex; gap: 6px; padding: 12px 16px; border-bottom: 1px solid var(--border-color); }
-.dk-home-hero-browser-bar span { width: 9px; height: 9px; border-radius: 50%; background: var(--border-color); }
+.dk-home-hero-browser-bar { display: flex; align-items: center; gap: 6px; padding: 12px 16px; border-bottom: 1px solid var(--border-color); }
+.dk-home-hero-browser-dot { width: 9px; height: 9px; flex-shrink: 0; border-radius: 50%; background: var(--border-color); }
+.dk-home-hero-browser-brand { margin-inline-start: auto; font-size: 12px; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
 .dk-home-hero-browser-screen { padding: 14px; }
+/* A simple trapezoid "keyboard deck" beneath the screen — enough to
+   read as an actual laptop silhouette instead of a bare rectangular
+   card, per the reference mockup. */
+.dk-home-hero-laptop-base {
+  height: 16px; margin: 0 -18px; background: linear-gradient(180deg, #e4e9ef, #b8c2cc);
+  clip-path: polygon(5% 0, 95% 0, 100% 100%, 0 100%);
+  box-shadow: 0 8px 14px -6px rgba(15, 23, 42, .3);
+}
 .dk-home-hero-screen-hero {
   position: relative; min-height: 210px; border-radius: 14px; overflow: hidden;
   background: linear-gradient(135deg, var(--brand-color), var(--brand-dark));

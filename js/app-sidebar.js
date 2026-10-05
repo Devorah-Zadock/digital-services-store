@@ -70,7 +70,24 @@ function dkToggleAppSidebar() {
   try { localStorage.setItem("dk_sidebar_collapsed", collapsed ? "1" : "0"); } catch (e) {}
 }
 
-function dkMountAppSidebar() {
+function dkSidebarAccountIcon() {
+  return '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="flex:none;"><path d="M12 12c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0 2c-3.33 0-10 1.67-10 5v3h20v-3c0-3.33-6.67-5-10-5z"/></svg>';
+}
+
+// Same account menu as the header's own (js/nav-auth.js), opened
+// upward since this trigger sits at the very bottom of the sidebar —
+// the same proven pattern the old, removed my-panel.js rail used for
+// its own bottom-anchored account row.
+function dkAppSidebarAccountHtml(email) {
+  const safeEmail = String(email || "").replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  return `<div class="dk-app-sidebar-account">
+    <button type="button" class="dk-app-sidebar-account-toggle" id="dk-app-sidebar-account-toggle">
+      ${dkSidebarAccountIcon()}<span class="dk-app-sidebar-account-email">${safeEmail}</span>
+    </button>
+  </div>`;
+}
+
+function dkMountAppSidebar(email) {
   if (document.getElementById("dk-app-sidebar")) return;
   const header = document.querySelector("header.site");
   if (header) document.documentElement.style.setProperty("--header-h", header.offsetHeight + "px");
@@ -80,11 +97,21 @@ function dkMountAppSidebar() {
   aside.id = "dk-app-sidebar";
   aside.className = "dk-app-sidebar no-print";
   const toggleBtn = '<button type="button" class="dk-app-sidebar-toggle" id="dk-app-sidebar-toggle" aria-label="כיווץ או הרחבת סרגל הצד">‹</button>';
-  aside.innerHTML = toggleBtn + DK_SIDEBAR_ITEMS.map((it) => dkAppSidebarItemHtml(it, here)).join("");
+  aside.innerHTML = toggleBtn + DK_SIDEBAR_ITEMS.map((it) => dkAppSidebarItemHtml(it, here)).join("") + dkAppSidebarAccountHtml(email);
   document.body.appendChild(aside);
   document.body.classList.add("dk-app-sidebar-mounted");
   if (dkSidebarCollapsedPref()) document.body.classList.add("dk-app-sidebar-collapsed");
   document.getElementById("dk-app-sidebar-toggle").addEventListener("click", dkToggleAppSidebar);
+
+  const acctToggle = document.getElementById("dk-app-sidebar-account-toggle");
+  if (acctToggle && typeof openNavDropdown === "function") {
+    acctToggle.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const wrap = aside.querySelector(".dk-app-sidebar-account");
+      if (wrap.querySelector(".nav-account-dropdown")) { closeNavDropdown(); return; }
+      openNavDropdown(wrap, email || "", acctToggle, true);
+    });
+  }
 }
 
 function dkUnmountAppSidebar() {
@@ -97,9 +124,9 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!document.body.classList.contains("dk-has-app-sidebar")) return;
   if (typeof supabaseClient === "undefined") return;
   supabaseClient.auth.onAuthStateChange((_event, session) => {
-    if (session && session.user) dkMountAppSidebar(); else dkUnmountAppSidebar();
+    if (session && session.user) dkMountAppSidebar(session.user.email); else dkUnmountAppSidebar();
   });
   supabaseClient.auth.getSession().then(({ data }) => {
-    if (data.session && data.session.user) dkMountAppSidebar();
+    if (data.session && data.session.user) dkMountAppSidebar(data.session.user.email);
   });
 });
