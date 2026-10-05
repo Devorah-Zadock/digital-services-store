@@ -73,8 +73,8 @@
 <link rel="preload" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700;800&family=Secular+One&family=Space+Grotesk:wght@500;600;700&display=optional" as="style">
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700;800&family=Secular+One&family=Space+Grotesk:wght@500;600;700&display=optional" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700;800&family=Secular+One&family=Space+Grotesk:wght@500;600;700&display=optional" rel="stylesheet"></noscript>
-<link rel="stylesheet" href="css/style.css?v=90">
-<link rel="stylesheet" href="css/deskkit-ui.css?v=17">
+<link rel="stylesheet" href="css/style.css?v=91">
+<link rel="stylesheet" href="css/deskkit-ui.css?v=18">
 </head>
 <body class="dk-home dk-has-app-sidebar">
 <header class="site">
@@ -103,45 +103,45 @@
 <div id="dk-home-out">
 <section class="dk-home-hero">
   <div class="container dk-home-hero-inner">
-    <!-- Text (compact, sits above the laptop) + the laptop itself,
-         grouped as one "stage" so the laptop can be large/centered
-         and tilted, with the tool cards as their own narrow column
-         to its side — per the user's explicit layout correction. -->
-    <div class="dk-home-hero-stage">
-      <div class="dk-home-hero-text">
-        <span class="dk-pill">✨ מקום אחד לכל התוצרים המקצועיים שלכם</span>
-        <!-- Single swap point for the headline — change the text inside
-             this h1 only; everything else in the hero is unaffected. -->
-        <h1 id="dk-home-hero-headline">כל הכלים שהעסק שלך<br>צריך — במקום אחד.</h1>
-        <p>בונים אתר מקצועי, יוצרים קורות חיים, מציעים הצעות מחיר ומפיקים חשבוניות ומצגות — הכול בקלות ובמהירות, בלי להתחיל מאפס.</p>
-        <div class="dk-home-hero-ctas">
-          <a href="account.html?redirect=index.html" class="dk-btn dk-btn-primary dk-btn-lg">התחילו עכשיו — בחינם</a>
-          <a href="#how" class="dk-home-hero-watch"><span class="dk-home-hero-play">▶</span>צפו איך זה עובד</a>
-        </div>
+    <!-- Three flat, balanced columns (right: text, center: laptop,
+         left: tool shortcuts) — each a direct sibling with its own
+         fixed share of the row, per the user's explicit "split the
+         Hero into 3 clean columns" correction. No shared wrapper
+         sizing the laptop off of the text block anymore. -->
+    <div class="dk-home-hero-text">
+      <span class="dk-pill">✨ מקום אחד לכל התוצרים המקצועיים שלכם</span>
+      <!-- Single swap point for the headline — change the text inside
+           this h1 only; everything else in the hero is unaffected. -->
+      <h1 id="dk-home-hero-headline">כל הכלים שהעסק שלך<br>צריך — במקום אחד.</h1>
+      <p>בונים אתר מקצועי, יוצרים קורות חיים, מציעים הצעות מחיר ומפיקים חשבוניות ומצגות — הכול בקלות ובמהירות, בלי להתחיל מאפס.</p>
+      <div class="dk-home-hero-ctas">
+        <a href="account.html?redirect=index.html" class="dk-btn dk-btn-primary dk-btn-lg">התחילו עכשיו — בחינם</a>
+        <a href="#how" class="dk-home-hero-watch"><span class="dk-home-hero-play">▶</span>צפו איך זה עובד</a>
       </div>
-      <div class="dk-home-hero-visual" aria-hidden="true">
-        <div class="dk-home-hero-laptop">
-          <div class="dk-home-hero-laptop-screen">
-            <div class="dk-home-hero-screen-hero">
-              <span class="dk-home-hero-screen-plants" aria-hidden="true">
-                <svg viewBox="0 0 220 220" preserveAspectRatio="xMidYMax slice">
-                  <path d="M40 220 L40 150 Q40 110 70 95 Q55 70 65 40 Q90 55 92 85 Q100 55 130 45 Q135 80 115 100 Q145 100 165 80 Q160 115 125 125 Q140 145 135 175 Q110 165 100 140 L95 220 Z" fill="#2f6b4f"/>
-                  <ellipse cx="68" cy="205" rx="42" ry="18" fill="#3a2a22"/>
-                </svg>
-                <svg viewBox="0 0 220 220" preserveAspectRatio="xMaxYMax slice">
-                  <path d="M190 220 L190 165 Q188 130 212 115 Q200 95 208 70 Q228 82 228 108 Q238 85 258 80 Q258 108 240 120 Q260 122 272 108 Q266 135 240 140 Q250 158 244 180 Q222 172 215 150 L212 220 Z" fill="#265c45"/>
-                  <ellipse cx="205" cy="205" rx="38" ry="16" fill="#3a2a22"/>
-                </svg>
-              </span>
-              <span class="dk-home-hero-screen-brand"><span class="dk-home-hero-screen-brand-badge"></span>DeskKit</span>
-              <span class="dk-home-hero-screen-eyebrow">ברוכים הבאים</span>
-              <strong>הופכים רעיונות<br>לפרויקטים</strong>
-              <span class="dk-home-hero-screen-cta">להתחלה מהירה</span>
+    </div>
+    <div class="dk-home-hero-visual" aria-hidden="true">
+      <div class="dk-home-hero-laptop">
+        <div class="dk-home-hero-laptop-screen">
+          <!-- A light, clean mock of the real DeskKit dashboard
+               (topbar + tool tiles in the same product colors used
+               everywhere else on the site) instead of a dark
+               marketing-copy panel — reads as an actual screenshot
+               of the product, not an ad for it. -->
+          <div class="dk-home-hero-screen-hero">
+            <div class="dk-home-hero-screen-topbar">
+              <span class="dk-home-hero-screen-brand-badge"></span>
+              <span class="dk-home-hero-screen-brand-name">DeskKit</span>
+            </div>
+            <div class="dk-home-hero-screen-body">
+              <div class="dk-home-hero-screen-tile" data-dk-product="site"><span class="dk-home-hero-screen-tile-icon"></span></div>
+              <div class="dk-home-hero-screen-tile" data-dk-product="cv"><span class="dk-home-hero-screen-tile-icon"></span></div>
+              <div class="dk-home-hero-screen-tile" data-dk-product="quote"><span class="dk-home-hero-screen-tile-icon"></span></div>
+              <div class="dk-home-hero-screen-tile" data-dk-product="invoice"><span class="dk-home-hero-screen-tile-icon"></span></div>
             </div>
           </div>
-          <div class="dk-home-hero-laptop-hinge"></div>
-          <div class="dk-home-hero-laptop-keyboard"></div>
         </div>
+        <div class="dk-home-hero-laptop-hinge"></div>
+        <div class="dk-home-hero-laptop-keyboard"></div>
       </div>
     </div>
     <div class="dk-home-hero-tools" aria-label="מה אפשר ליצור ב-DeskKit">

@@ -130,14 +130,19 @@ body.dk-app-sidebar-mounted .bshell.active {
   body.dk-app-sidebar-mounted header.site { margin-inline-start: 0; width: 100%; }
   body.dk-app-sidebar-mounted .bshell.active { inset-inline-start: 0; }
 }
-.dk-app-sidebar-item {
-  display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 10px;
+/* .dk-sidebar-item is the same component under its shorter, globally
+   documented name (the user's own requested classname) — icon and
+   label sit flush together, both aligned to the same side under RTL
+   (flex row + gap, no separate positioning for each), with a subtle
+   background-only hover instead of a heavier border/shadow effect. */
+.dk-app-sidebar-item, .dk-sidebar-item {
+  display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 10px;
   color: var(--text-secondary); text-decoration: none; font-size: 14px; font-weight: 600;
   transition: background .15s ease, color .15s ease;
 }
 .dk-app-sidebar-item-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dk-app-sidebar-item:hover { background: var(--bg); color: var(--text); }
-.dk-app-sidebar-item.active { background: var(--primary-light); color: var(--primary-dark); }
+.dk-app-sidebar-item:hover, .dk-sidebar-item:hover { background: var(--bg); color: var(--text); }
+.dk-app-sidebar-item.active, .dk-sidebar-item.active { background: var(--primary-light); color: var(--primary-dark); }
 .dk-app-sidebar-icon {
   width: 30px; height: 30px; border-radius: 9px; display: flex; align-items: center; justify-content: center;
   flex-shrink: 0; background: var(--bg); color: var(--text-secondary);
@@ -173,12 +178,12 @@ body.dk-app-sidebar-mounted .nav-account-wrap { display: none; }
    product, not one monochrome teal repeated six times). Specificity
    (attribute selector + descendant class) wins over each element's
    own plain-class default background declared elsewhere. */
-[data-dk-product="site"] .dk-app-sidebar-icon, [data-dk-product="site"] .dk-home-card-icon, [data-dk-product="site"] .dk-create-opt-icon, [data-dk-product="site"] .dk-home-hero-tool-icon, [data-dk-product="site"] .dk-home-dash-tool-icon { background: #CCFBF1; color: #0F766E; }
-[data-dk-product="cv"] .dk-app-sidebar-icon, [data-dk-product="cv"] .dk-home-card-icon, [data-dk-product="cv"] .dk-create-opt-icon, [data-dk-product="cv"] .dk-home-hero-tool-icon, [data-dk-product="cv"] .dk-home-dash-tool-icon { background: #EDE9FE; color: #6D28D9; }
-[data-dk-product="quote"] .dk-app-sidebar-icon, [data-dk-product="quote"] .dk-home-card-icon, [data-dk-product="quote"] .dk-create-opt-icon, [data-dk-product="quote"] .dk-home-hero-tool-icon, [data-dk-product="quote"] .dk-home-dash-tool-icon { background: #FEF3C7; color: #B45309; }
-[data-dk-product="invoice"] .dk-app-sidebar-icon, [data-dk-product="invoice"] .dk-home-card-icon, [data-dk-product="invoice"] .dk-create-opt-icon, [data-dk-product="invoice"] .dk-home-hero-tool-icon, [data-dk-product="invoice"] .dk-home-dash-tool-icon { background: #FFE4E6; color: #BE123C; }
-[data-dk-product="deck"] .dk-app-sidebar-icon, [data-dk-product="deck"] .dk-home-card-icon, [data-dk-product="deck"] .dk-create-opt-icon, [data-dk-product="deck"] .dk-home-hero-tool-icon, [data-dk-product="deck"] .dk-home-dash-tool-icon { background: #DBEAFE; color: #1D4ED8; }
-[data-dk-product="xlsx"] .dk-app-sidebar-icon, [data-dk-product="xlsx"] .dk-home-card-icon, [data-dk-product="xlsx"] .dk-create-opt-icon, [data-dk-product="xlsx"] .dk-home-hero-tool-icon, [data-dk-product="xlsx"] .dk-home-dash-tool-icon { background: #DCFCE7; color: #15803D; }
+[data-dk-product="site"] .dk-app-sidebar-icon, [data-dk-product="site"] .dk-home-card-icon, [data-dk-product="site"] .dk-create-opt-icon, [data-dk-product="site"] .dk-home-hero-tool-icon, [data-dk-product="site"] .dk-home-dash-tool-icon, [data-dk-product="site"] .dk-home-hero-screen-tile-icon { background: #CCFBF1; color: #0F766E; }
+[data-dk-product="cv"] .dk-app-sidebar-icon, [data-dk-product="cv"] .dk-home-card-icon, [data-dk-product="cv"] .dk-create-opt-icon, [data-dk-product="cv"] .dk-home-hero-tool-icon, [data-dk-product="cv"] .dk-home-dash-tool-icon, [data-dk-product="cv"] .dk-home-hero-screen-tile-icon { background: #EDE9FE; color: #6D28D9; }
+[data-dk-product="quote"] .dk-app-sidebar-icon, [data-dk-product="quote"] .dk-home-card-icon, [data-dk-product="quote"] .dk-create-opt-icon, [data-dk-product="quote"] .dk-home-hero-tool-icon, [data-dk-product="quote"] .dk-home-dash-tool-icon, [data-dk-product="quote"] .dk-home-hero-screen-tile-icon { background: #FEF3C7; color: #B45309; }
+[data-dk-product="invoice"] .dk-app-sidebar-icon, [data-dk-product="invoice"] .dk-home-card-icon, [data-dk-product="invoice"] .dk-create-opt-icon, [data-dk-product="invoice"] .dk-home-hero-tool-icon, [data-dk-product="invoice"] .dk-home-dash-tool-icon, [data-dk-product="invoice"] .dk-home-hero-screen-tile-icon { background: #FFE4E6; color: #BE123C; }
+[data-dk-product="deck"] .dk-app-sidebar-icon, [data-dk-product="deck"] .dk-home-card-icon, [data-dk-product="deck"] .dk-create-opt-icon, [data-dk-product="deck"] .dk-home-hero-tool-icon, [data-dk-product="deck"] .dk-home-dash-tool-icon, [data-dk-product="deck"] .dk-home-hero-screen-tile-icon { background: #DBEAFE; color: #1D4ED8; }
+[data-dk-product="xlsx"] .dk-app-sidebar-icon, [data-dk-product="xlsx"] .dk-home-card-icon, [data-dk-product="xlsx"] .dk-create-opt-icon, [data-dk-product="xlsx"] .dk-home-hero-tool-icon, [data-dk-product="xlsx"] .dk-home-dash-tool-icon, [data-dk-product="xlsx"] .dk-home-hero-screen-tile-icon { background: #DCFCE7; color: #15803D; }
 
 /* Project-card thumbnail strip: same per-product color, as a soft
    gradient wash with a large faint watermark icon — a real preview of
@@ -273,19 +278,19 @@ body.dk-home { background: var(--bg-main); }
    width the navbar now uses — not the sitewide .container's 1120px,
    so this doesn't also reflow every other page. */
 .dk-home-hero .container { max-width: var(--max-wide); }
-/* Two zones: the "stage" (text sitting compact above the laptop,
-   both grouped so the laptop reads as large/centered under its own
-   headline) + the tool-card column beside it. DOM order is
-   stage-first so primary content reads first regardless of viewport;
-   the flex order below is desktop's visual arrangement — stage on
-   the reading-start side (right, in RTL), tools on the far side
-   (left), per the user's own explicit correction: tools/buttons to
-   the laptop's left, laptop centered under its own headline. */
-.dk-home-hero-inner { display: flex; align-items: center; gap: 40px; }
-.dk-home-hero-stage { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 28px; }
-.dk-home-hero-text { align-self: flex-start; max-width: 560px; width: 100%; }
-.dk-home-hero-text h1 { font-size: 42px; font-weight: 700; line-height: 1.3; margin: 18px 0 16px; color: var(--text-main); font-family: Heebo, Arial, sans-serif; }
-.dk-home-hero-text p { font-size: 16.5px; color: #475569; line-height: 1.6; max-width: 480px; margin: 0 0 24px; }
+/* Three flat columns — text / laptop / tool shortcuts — each a
+   direct flex child of .dk-home-hero-inner with its own fixed share
+   of the row, per the user's explicit "split the Hero into 3 clean,
+   balanced columns" correction (previously the laptop shared a
+   column with the text block, which is what let it balloon to fill
+   whatever width the text column had). DOM order is text, laptop,
+   tools — under RTL's default flex flow that alone puts text at the
+   reading-start side (right), laptop centered, tools at the far
+   side (left), no order overrides needed. */
+.dk-home-hero-inner { display: flex; align-items: center; gap: 48px; }
+.dk-home-hero-text { flex: 1 1 380px; min-width: 260px; }
+.dk-home-hero-text h1 { font-size: 38px; font-weight: 700; line-height: 1.3; margin: 18px 0 16px; color: var(--text-main); font-family: Heebo, Arial, sans-serif; }
+.dk-home-hero-text p { font-size: 16px; color: #475569; line-height: 1.6; max-width: 440px; margin: 0 0 24px; }
 .dk-home-hero-ctas { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
 /* Richer gradient fill + its own soft shadow for the hero's primary
    CTA specifically — .dk-btn-primary's flat fill stays the sitewide
@@ -306,87 +311,77 @@ body.dk-home { background: var(--bg-main); }
   display: flex; align-items: center; justify-content: center; font-size: 11px; transition: background .15s ease, color .15s ease;
 }
 
-/* Tool cards — a compact 2-column grid (not a tall single-column
-   list), real cards with shadow/rounded corners/colorful icon
-   square. Its own column, to the laptop's side — not stacked above
-   it. Per the user's explicit correction: a 2x3 grid reads as the
-   modern, compact block the reference mockup uses, not a long list. */
-.dk-home-hero-tools { flex: 0 0 416px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+/* Tool cards — its own compact, narrow column to the laptop's left,
+   kept deliberately small (a 2-col grid of small tiles) so it never
+   competes with the laptop at the center for attention. */
+.dk-home-hero-tools { flex: 0 0 300px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-content: start; }
 .dk-home-hero-tool {
-  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%;
   background: var(--bg-card); border: 1px solid var(--border-color);
-  border-radius: var(--radius-md); padding: 10px 14px; text-decoration: none; color: var(--text-main);
-  font-size: 13.5px; font-weight: 700;
+  border-radius: var(--radius-md); padding: 10px 10px; text-decoration: none; color: var(--text-main);
+  font-size: 12.5px; font-weight: 700;
   box-shadow: var(--shadow-card);
   transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease;
 }
 .dk-home-hero-tool:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--brand-color); }
 .dk-home-hero-tool-icon {
-  width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
   background: var(--primary-light); color: var(--primary-dark);
 }
-.dk-home-hero-tool-icon svg { width: 18px; height: 18px; }
+.dk-home-hero-tool-icon svg { width: 16px; height: 16px; }
 
-/* Visual: an actual laptop-device illustration (dark screen bezel +
-   angled keyboard deck with a trackpad notch), not a flat "browser
-   window" card — matching the reference mockup's own computer
-   exactly. The app content (gradient marketing panel) fills the
-   screen edge-to-edge, the way a real device mockup shows it, instead
-   of sitting inside a second nested browser-chrome rectangle. Tilted
-   in 3D (perspective + rotate) per the user's own explicit ask —
-   "turned to the side" — instead of sitting perfectly front-on. */
-.dk-home-hero-visual { width: 100%; max-width: 100%; perspective: 1400px; }
+/* Visual: an actual laptop-device illustration (dark bezel + angled
+   keyboard deck), its own fixed-width column — never sized off of
+   another column's width — and an explicit max-height so its 3D tilt
+   can never grow tall enough to spill past the hero band and get
+   clipped by the section below it (the previous "max-width:100%"
+   bug). */
+.dk-home-hero-visual { flex: 0 0 340px; max-width: 340px; max-height: 350px; perspective: 1400px; }
 .dk-home-hero-laptop { transform: rotateY(-14deg) rotateX(3deg); transform-style: preserve-3d; }
 .dk-home-hero-laptop-screen {
-  background: #0f172a; border-radius: 16px 16px 4px 4px; padding: 14px 14px 8px;
-  box-shadow: 18px 26px 32px -10px rgba(15, 23, 42, 0.28);
+  background: #0f172a; border-radius: 14px 14px 4px 4px; padding: 10px 10px 6px;
+  box-shadow: 14px 20px 26px -10px rgba(15, 23, 42, 0.28);
 }
-.dk-home-hero-laptop-hinge { height: 5px; margin: 0 6px; background: linear-gradient(180deg, #1e293b, #0a0f1a); }
+.dk-home-hero-laptop-hinge { height: 4px; margin: 0 5px; background: linear-gradient(180deg, #1e293b, #0a0f1a); }
 /* Angled "keyboard deck": a trapezoid, wider than the screen above it
    and shaded top-to-bottom like brushed aluminum catching light, with
    a small trackpad notch — enough to read as a real laptop base
    instead of a bare rectangular card. */
 .dk-home-hero-laptop-keyboard {
-  height: 20px; margin: 0 -22px; position: relative;
+  height: 16px; margin: 0 -18px; position: relative;
   background: linear-gradient(180deg, #eef2f6 0%, #cbd3dc 55%, #aab3bf 100%);
   clip-path: polygon(4% 0, 96% 0, 100% 100%, 0 100%);
-  box-shadow: 0 12px 18px -8px rgba(15, 23, 42, .4);
+  box-shadow: 0 10px 14px -8px rgba(15, 23, 42, .4);
 }
 .dk-home-hero-laptop-keyboard::after {
-  content: ""; position: absolute; top: 3px; inset-inline-start: 50%; transform: translateX(-50%);
-  width: 64px; height: 6px; background: #9aa4b2; border-radius: 0 0 7px 7px;
+  content: ""; position: absolute; top: 2px; inset-inline-start: 50%; transform: translateX(-50%);
+  width: 52px; height: 5px; background: #9aa4b2; border-radius: 0 0 6px 6px;
 }
+/* The "screen" now shows a light, clean mock of the real DeskKit
+   dashboard (a topbar + product-colored tool tiles) instead of a
+   dark marketing-copy panel — reads as an actual look at the
+   product, matching the user's explicit "bright screenshot of the
+   real interface" ask. */
 .dk-home-hero-screen-hero {
-  position: relative; min-height: 240px; border-radius: 6px; overflow: hidden;
-  background: linear-gradient(135deg, var(--brand-color), var(--brand-dark));
-  display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; padding: 22px;
+  height: 210px; border-radius: 6px; overflow: hidden; background: #f1f5f9;
+  display: flex; flex-direction: column;
 }
-/* A small illustrated potted-plant scene, not a licensed photo — sits
-   as a background layer behind the text/CTA, with the dark overlay
-   below keeping the white text readable over it either way. */
-.dk-home-hero-screen-plants { position: absolute; inset: 0; display: flex; justify-content: space-between; opacity: .9; }
-.dk-home-hero-screen-plants svg { height: 100%; width: 46%; }
-.dk-home-hero-screen-hero::before {
-  content: ""; position: absolute; inset: 0;
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0) 35%, rgba(15, 23, 42, .55) 100%),
-              radial-gradient(circle at 75% 15%, rgba(255, 255, 255, .22), transparent 60%);
+.dk-home-hero-screen-topbar {
+  height: 30px; flex: none; display: flex; align-items: center; gap: 7px; padding: 0 12px;
+  background: #fff; border-bottom: 1px solid #e5e7eb;
 }
-.dk-home-hero-screen-brand {
-  position: absolute; top: 16px; inset-inline-start: 18px; display: flex; align-items: center; gap: 6px;
-  font-size: 12px; font-weight: 700; color: rgba(255, 255, 255, .9); z-index: 1;
+.dk-home-hero-screen-brand-badge { width: 14px; height: 14px; border-radius: 4px; background: var(--brand-color); flex-shrink: 0; }
+.dk-home-hero-screen-brand-name { font-size: 10.5px; font-weight: 800; color: #0f172a; }
+.dk-home-hero-screen-body { flex: 1; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 12px; }
+.dk-home-hero-screen-tile {
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 9px; box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+  display: flex; align-items: center; justify-content: center;
 }
-.dk-home-hero-screen-brand-badge { width: 16px; height: 16px; border-radius: 5px; background: rgba(255, 255, 255, .25); flex-shrink: 0; }
-.dk-home-hero-screen-eyebrow { position: relative; z-index: 1; font-size: 11.5px; font-weight: 700; color: rgba(255, 255, 255, .85); text-transform: uppercase; letter-spacing: .04em; }
-.dk-home-hero-screen-hero strong { position: relative; z-index: 1; font-size: 23px; font-weight: 800; color: #fff; line-height: 1.25; }
-.dk-home-hero-screen-cta {
-  position: relative; z-index: 1; align-self: flex-start; margin-top: 4px; background: #fff; color: var(--brand-dark);
-  font-size: 12.5px; font-weight: 700; padding: 8px 16px; border-radius: 999px;
-}
+.dk-home-hero-screen-tile-icon { width: 20px; height: 20px; border-radius: 6px; }
 
 @media (max-width: 860px) {
   .dk-home-hero-inner { flex-direction: column; }
-  .dk-home-hero-stage { width: 100%; }
-  .dk-home-hero-tools { flex: none; width: 100%; max-width: 420px; }
+  .dk-home-hero-text, .dk-home-hero-visual, .dk-home-hero-tools { flex: none; width: 100%; max-width: 420px; }
   .dk-home-hero-laptop { transform: none; }
 }
 @media (max-width: 680px) {
