@@ -306,17 +306,18 @@ body.dk-home { background: var(--bg-main); }
   display: flex; align-items: center; justify-content: center; font-size: 11px; transition: background .15s ease, color .15s ease;
 }
 
-/* Tool cards — a single vertical column (matching the reference
-   mockup exactly), real cards with shadow/rounded corners/colorful
-   icon square, not a 2-column grid or compact inline pills. Its own
-   narrow column, to the laptop's side — not stacked above it. */
-.dk-home-hero-tools { flex: 0 0 200px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+/* Tool cards — a compact 2-column grid (not a tall single-column
+   list), real cards with shadow/rounded corners/colorful icon
+   square. Its own column, to the laptop's side — not stacked above
+   it. Per the user's explicit correction: a 2x3 grid reads as the
+   modern, compact block the reference mockup uses, not a long list. */
+.dk-home-hero-tools { flex: 0 0 416px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
 .dk-home-hero-tool {
-  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; max-width: 200px;
+  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
   background: var(--bg-card); border: 1px solid var(--border-color);
   border-radius: var(--radius-md); padding: 10px 14px; text-decoration: none; color: var(--text-main);
   font-size: 13.5px; font-weight: 700;
-  box-shadow: 0 10px 25px -5px rgba(148, 163, 184, 0.08), 0 8px 10px -6px rgba(148, 163, 184, 0.04);
+  box-shadow: var(--shadow-card);
   transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease;
 }
 .dk-home-hero-tool:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--brand-color); }
@@ -334,7 +335,7 @@ body.dk-home { background: var(--bg-main); }
    of sitting inside a second nested browser-chrome rectangle. Tilted
    in 3D (perspective + rotate) per the user's own explicit ask —
    "turned to the side" — instead of sitting perfectly front-on. */
-.dk-home-hero-visual { width: 100%; max-width: 440px; perspective: 1400px; }
+.dk-home-hero-visual { width: 100%; max-width: 100%; perspective: 1400px; }
 .dk-home-hero-laptop { transform: rotateY(-14deg) rotateX(3deg); transform-style: preserve-3d; }
 .dk-home-hero-laptop-screen {
   background: #0f172a; border-radius: 16px 16px 4px 4px; padding: 14px 14px 8px;
@@ -488,7 +489,7 @@ body.dk-home { background: var(--bg-main); }
   display: flex; flex-direction: column; align-items: center; gap: 10px; width: 108px; box-sizing: border-box;
   background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);
   padding: 18px 10px; text-decoration: none; color: var(--text-main); font-size: 13px; font-weight: 700;
-  box-shadow: 0 10px 25px -5px rgba(148, 163, 184, 0.08), 0 8px 10px -6px rgba(148, 163, 184, 0.04);
+  box-shadow: var(--shadow-card);
   transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease;
 }
 .dk-home-dash-tool:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--brand-color); }
@@ -510,7 +511,7 @@ body.dk-home { background: var(--bg-main); }
 .dk-pcard {
   background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);
   overflow: hidden; display: flex; flex-direction: column; position: relative;
-  box-shadow: 0 10px 25px -5px rgba(148, 163, 184, 0.08), 0 8px 10px -6px rgba(148, 163, 184, 0.04);
+  box-shadow: var(--shadow-card);
   transition: box-shadow .15s ease, transform .15s ease;
 }
 .dk-pcard:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }

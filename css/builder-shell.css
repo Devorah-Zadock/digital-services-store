@@ -136,7 +136,7 @@
 .bshell-canvas-frame-holder { width: 100%; max-width: 1440px; transition: max-width .2s ease; }
 .bshell-canvas-frame-holder.device-tablet { max-width: 768px; }
 .bshell-canvas-frame-holder.device-mobile { max-width: 390px; }
-.bshell-canvas-shadow { background: var(--bg-card, var(--surface)); border-radius: var(--radius-lg, 14px); box-shadow: var(--shadow-md, var(--shadow-lg, 0 24px 60px rgba(16,24,40,.14))); overflow: hidden; }
+.bshell-canvas-shadow { background: var(--bg-card, var(--surface)); border-radius: var(--radius-md, 16px); box-shadow: var(--shadow-card, var(--shadow-md, 0 24px 60px rgba(16,24,40,.14))); overflow: hidden; }
 .bshell-canvas-iframe { width: 100%; height: calc(100vh - 64px - 56px); border: none; display: block; background: #fff; }
 
 /* ---------- Right: contextual Properties panel (~300px) ---------- */
