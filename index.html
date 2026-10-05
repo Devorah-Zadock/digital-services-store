@@ -74,7 +74,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700;800&family=Secular+One&family=Space+Grotesk:wght@500;600;700&display=optional" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700;800&family=Secular+One&family=Space+Grotesk:wght@500;600;700&display=optional" rel="stylesheet"></noscript>
 <link rel="stylesheet" href="css/style.css?v=91">
-<link rel="stylesheet" href="css/deskkit-ui.css?v=21">
+<link rel="stylesheet" href="css/deskkit-ui.css?v=22">
 </head>
 <body class="dk-home dk-has-app-sidebar">
 <header class="site">
@@ -127,40 +127,16 @@
         <a href="#how" class="dk-home-hero-watch"><span class="dk-home-hero-play">▶</span>צפו איך זה עובד</a>
       </div>
       <div class="dk-home-hero-visual" aria-hidden="true">
-        <!-- Back to a hand-built CSS/SVG laptop (no photo) — the
-             real photo's own studio backdrop showed as an ugly gray
-             box against the page's own background; a drawn shape has
-             no backdrop of its own to clash, and this is the
-             technique the reference mockup itself actually uses (a
-             clean illustration, not a photograph). -->
-        <div class="dk-home-hero-laptop">
-          <div class="dk-home-hero-laptop-screen">
-            <div class="dk-home-hero-screen-hero">
-              <div class="dk-home-hero-screen-topbar">
-                <span class="dk-home-hero-screen-brand-badge"></span>
-                <span class="dk-home-hero-screen-brand-name">DeskKit</span>
-                <span class="dk-home-hero-screen-navlinks"><i></i><i></i><i></i></span>
-                <span class="dk-home-hero-screen-navbtn"></span>
-              </div>
-              <div class="dk-home-hero-screen-body">
-                <span class="dk-home-hero-screen-plants" aria-hidden="true">
-                  <svg viewBox="0 0 220 220" preserveAspectRatio="xMidYMax slice">
-                    <path d="M40 220 L40 150 Q40 110 70 95 Q55 70 65 40 Q90 55 92 85 Q100 55 130 45 Q135 80 115 100 Q145 100 165 80 Q160 115 125 125 Q140 145 135 175 Q110 165 100 140 L95 220 Z" fill="#2f6b4f"/>
-                    <ellipse cx="68" cy="205" rx="42" ry="18" fill="#3a2a22"/>
-                  </svg>
-                  <svg viewBox="0 0 220 220" preserveAspectRatio="xMaxYMax slice">
-                    <path d="M190 220 L190 165 Q188 130 212 115 Q200 95 208 70 Q228 82 228 108 Q238 85 258 80 Q258 108 240 120 Q260 122 272 108 Q266 135 240 140 Q250 158 244 180 Q222 172 215 150 L212 220 Z" fill="#265c45"/>
-                    <ellipse cx="205" cy="205" rx="38" ry="16" fill="#3a2a22"/>
-                  </svg>
-                </span>
-                <strong>הופכים רעיונות<br>לפרויקטים</strong>
-                <span class="dk-home-hero-screen-cta">להתחלה מהירה</span>
-              </div>
-            </div>
-          </div>
-          <div class="dk-home-hero-laptop-hinge"></div>
-          <div class="dk-home-hero-laptop-keyboard"></div>
-        </div>
+        <!-- The real laptop photo the user supplied (images/laptop-
+             hero.png), cut out to a transparent PNG — its own studio
+             backdrop (a faint checkerboard baked into the flattened
+             JPEG, confirmed via direct pixel sampling) was removed
+             with a connected-component flood-fill from the image
+             border, so only genuinely background pixels are cut,
+             never the laptop's own light aluminum base. No separate
+             screen overlay needed: the photo's own screen already
+             shows the finished plants/navbar content baked in. -->
+        <img src="images/laptop-hero.png" alt="" class="dk-home-hero-laptop-img">
       </div>
     </div>
     <div class="dk-home-hero-tools" aria-label="מה אפשר ליצור ב-DeskKit">
