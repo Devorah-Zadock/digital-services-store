@@ -337,21 +337,40 @@ body.dk-home { background: var(--bg-main); }
    clipped by the section below it (the previous "max-width:100%"
    bug). */
 .dk-home-hero-visual { flex: 0 0 340px; max-width: 340px; max-height: 350px; perspective: 1400px; }
-.dk-home-hero-laptop { transform: rotateY(-14deg) rotateX(3deg); transform-style: preserve-3d; }
-.dk-home-hero-laptop-screen {
-  background: #0f172a; border-radius: 14px 14px 4px 4px; padding: 10px 10px 6px;
-  box-shadow: 14px 20px 26px -10px rgba(15, 23, 42, 0.28);
+/* filter: drop-shadow (not box-shadow) on the whole composite — it
+   follows the laptop's actual rendered silhouette (screen + hinge +
+   splayed keyboard together) instead of just the screen rectangle's
+   own box, which is what made the old shadow read as flat/pasted-on
+   rather than a real object casting a shadow. Per the user's own
+   explicit ask for this exact technique. */
+.dk-home-hero-laptop {
+  transform: rotateY(-14deg) rotateX(3deg); transform-style: preserve-3d;
+  filter: drop-shadow(0 25px 35px rgba(0, 0, 0, .12)) drop-shadow(0 8px 10px rgba(0, 0, 0, .08));
 }
-.dk-home-hero-laptop-hinge { height: 4px; margin: 0 5px; background: linear-gradient(180deg, #1e293b, #0a0f1a); }
+.dk-home-hero-laptop-screen {
+  position: relative; background: linear-gradient(155deg, #1e293b 0%, #0a0f1a 70%);
+  border-radius: 16px 16px 5px 5px; padding: 10px 10px 6px;
+}
+/* A faint diagonal glass highlight across the bezel — the detail that
+   reads as "a real glossy screen", not a flat-colored div. */
+.dk-home-hero-laptop-screen::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(115deg, rgba(255, 255, 255, .07) 0%, rgba(255, 255, 255, 0) 30%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06);
+}
+.dk-home-hero-laptop-hinge { height: 4px; margin: 0 4px; background: linear-gradient(180deg, #27344a, #070a10); }
 /* Angled "keyboard deck": a trapezoid, wider than the screen above it
    and shaded top-to-bottom like brushed aluminum catching light, with
    a small trackpad notch — enough to read as a real laptop base
    instead of a bare rectangular card. */
 .dk-home-hero-laptop-keyboard {
-  height: 16px; margin: 0 -18px; position: relative;
-  background: linear-gradient(180deg, #eef2f6 0%, #cbd3dc 55%, #aab3bf 100%);
-  clip-path: polygon(4% 0, 96% 0, 100% 100%, 0 100%);
-  box-shadow: 0 10px 14px -8px rgba(15, 23, 42, .4);
+  height: 17px; margin: 0 -20px; position: relative;
+  background: linear-gradient(180deg, #f3f6f9 0%, #d3dae2 50%, #aeb6c2 100%);
+  clip-path: polygon(3% 0, 97% 0, 100% 100%, 0 100%);
+}
+.dk-home-hero-laptop-keyboard::before {
+  content: ""; position: absolute; inset: 0; clip-path: inherit;
+  background: linear-gradient(115deg, rgba(255, 255, 255, .5) 0%, rgba(255, 255, 255, 0) 25%);
 }
 .dk-home-hero-laptop-keyboard::after {
   content: ""; position: absolute; top: 2px; inset-inline-start: 50%; transform: translateX(-50%);
