@@ -278,20 +278,20 @@ body.dk-home { background: var(--bg-main); }
    width the navbar now uses — not the sitewide .container's 1120px,
    so this doesn't also reflow every other page. */
 .dk-home-hero .container { max-width: var(--max-wide); }
-/* Three flat columns — text / laptop / tool shortcuts — each a
-   direct flex child of .dk-home-hero-inner with its own fixed share
-   of the row, per the user's explicit "split the Hero into 3 clean,
-   balanced columns" correction (previously the laptop shared a
-   column with the text block, which is what let it balloon to fill
-   whatever width the text column had). DOM order is text, laptop,
-   tools — under RTL's default flex flow that alone puts text at the
-   reading-start side (right), laptop centered, tools at the far
-   side (left), no order overrides needed. */
-.dk-home-hero-inner { display: flex; align-items: center; gap: 48px; }
-.dk-home-hero-text { flex: 1 1 380px; min-width: 260px; }
-.dk-home-hero-text h1 { font-size: 38px; font-weight: 700; line-height: 1.3; margin: 18px 0 16px; color: var(--text-main); font-family: Heebo, Arial, sans-serif; }
-.dk-home-hero-text p { font-size: 16px; color: #475569; line-height: 1.6; max-width: 440px; margin: 0 0 24px; }
-.dk-home-hero-ctas { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+/* Two zones — a "stage" (text, then a large bottom-weighted laptop
+   below it) on the reading-start side (right, in RTL) + a narrow
+   single-column tool list on the far side (left) — matching the
+   user's reference mockup exactly, characterized from the image
+   itself rather than guessed: NOT 3 equal flat columns, and the
+   sidebar is a single column of six generously-sized cards, not a
+   2-column grid of small tiles. DOM order is stage, tools — RTL's
+   default flex flow alone gives the right visual order. */
+.dk-home-hero-inner { display: flex; align-items: flex-start; gap: 40px; }
+.dk-home-hero-stage { flex: 1; min-width: 0; }
+.dk-home-hero-text { max-width: 480px; }
+.dk-home-hero-text h1 { font-size: 38px; font-weight: 700; line-height: 1.3; margin: 0 0 16px; color: var(--text-main); font-family: Heebo, Arial, sans-serif; }
+.dk-home-hero-text p { font-size: 16px; color: #475569; line-height: 1.6; margin: 0 0 24px; }
+.dk-home-hero-ctas { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; margin-bottom: 14px; }
 /* Richer gradient fill + its own soft shadow for the hero's primary
    CTA specifically — .dk-btn-primary's flat fill stays the sitewide
    default everywhere else; this scoped override matches the
@@ -302,6 +302,8 @@ body.dk-home { background: var(--bg-main); }
   box-shadow: 0 8px 16px -4px rgba(15, 118, 110, .35);
 }
 .dk-home-hero-ctas .dk-btn-primary:hover { background: linear-gradient(135deg, var(--brand-dark), var(--brand-dark)); }
+/* The "watch how it works" link sits on its own row below the CTA
+   button in the reference, not beside it. */
 .dk-home-hero-watch {
   display: inline-flex; align-items: center; gap: 9px; color: var(--text-main); font-weight: 700; font-size: 14.5px; text-decoration: none;
 }
@@ -311,102 +313,102 @@ body.dk-home { background: var(--bg-main); }
   display: flex; align-items: center; justify-content: center; font-size: 11px; transition: background .15s ease, color .15s ease;
 }
 
-/* Tool cards — its own compact, narrow column to the laptop's left,
-   kept deliberately small (a 2-col grid of small tiles) so it never
-   competes with the laptop at the center for attention. */
-.dk-home-hero-tools { flex: 0 0 300px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-content: start; }
+/* Tool cards — a single column of six generously-sized cards (not a
+   2-col grid of small tiles), icon on the physical left / label on
+   the physical right regardless of RTL (row-reverse — the reference
+   itself places them this way), colorful rounded icon square, soft
+   shadow, airy padding. */
+.dk-home-hero-tools { flex: 0 0 260px; display: flex; flex-direction: column; gap: 14px; }
 .dk-home-hero-tool {
-  display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%;
-  background: var(--bg-card); border: 1px solid var(--border-color);
-  border-radius: var(--radius-md); padding: 10px 10px; text-decoration: none; color: var(--text-main);
-  font-size: 12.5px; font-weight: 700;
+  display: flex; flex-direction: row-reverse; align-items: center; gap: 14px;
+  background: var(--bg-card); border-radius: 18px; padding: 16px 18px; text-decoration: none; color: var(--text-main);
+  font-size: 15px; font-weight: 700;
   box-shadow: var(--shadow-card);
-  transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease;
+  transition: box-shadow .15s ease, transform .15s ease;
 }
-.dk-home-hero-tool:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--brand-color); }
+.dk-home-hero-tool:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
 .dk-home-hero-tool-icon {
-  width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
   background: var(--primary-light); color: var(--primary-dark);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, .08);
 }
-.dk-home-hero-tool-icon svg { width: 16px; height: 16px; }
+.dk-home-hero-tool-icon svg { width: 22px; height: 22px; }
 
-/* Visual: a real photographed laptop mockup (images/laptop-hero.jpg,
-   2000x1125, 3/4-angle studio photo with a blank screen), its own
-   fixed-width column — never sized off of another column's width. A
-   fixed frame + an inner "native" layer sized to the photo's actual
-   pixel dimensions (then scaled down as one unit via transform:scale)
-   keeps the perspective math below exact regardless of the frame's
-   own responsive width — no separate recomputation needed per
-   breakpoint, only the frame size + its matching scale factor. */
-.dk-home-hero-visual { flex: 0 0 340px; max-width: 340px; display: flex; justify-content: center; }
-.dk-home-hero-laptop-frame {
-  width: 340px; height: 191.25px; overflow: hidden; position: relative;
-  /* Follows the photo's own silhouette once scaled down — a real
-     contact shadow, not a value guessed for a hand-drawn shape. */
+/* Visual: a large, hand-built CSS/SVG laptop (no photo — a photo
+   carries its own studio backdrop, which read as an ugly box against
+   the page's own background; a drawn shape has no backdrop to clash,
+   and this is what the reference mockup itself actually uses: a
+   clean illustration, not a photograph). Pulled up slightly to tuck
+   under the text block, reading as one large bottom-weighted visual
+   under the CTA row — matching the reference's own composition. */
+.dk-home-hero-visual { width: 100%; max-width: 560px; margin-top: 8px; perspective: 1600px; }
+.dk-home-hero-laptop {
+  transform: rotateY(-14deg) rotateX(3deg); transform-style: preserve-3d;
   filter: drop-shadow(0 25px 35px rgba(0, 0, 0, .12)) drop-shadow(0 8px 10px rgba(0, 0, 0, .08));
 }
-/* Physical `left`/`top` (not inset-inline-start) and position:absolute
-   on purpose — this 2000px-wide layer is far wider than its 340px
-   frame, and under RTL a normal-flow block that wide right-aligns
-   itself (overflowing off-screen to the left) instead of anchoring
-   its top-left corner where the matrix math below assumes it sits;
-   confirmed live via getBoundingClientRect showing the whole layer
-   rendered off past the frame's left edge before this fix. */
-.dk-home-hero-laptop-native {
-  width: 2000px; height: 1125px; position: absolute; left: 0; top: 0;
-  transform-origin: 0 0; transform: scale(0.17);
+.dk-home-hero-laptop-screen {
+  position: relative; background: linear-gradient(155deg, #1e293b 0%, #0a0f1a 70%);
+  border-radius: 16px 16px 5px 5px; padding: 12px 12px 7px;
 }
-.dk-home-hero-laptop-img { display: block; width: 2000px; height: 1125px; max-width: none; }
-/* The screen "mount": a CSS matrix3d perspective transform computed
-   from this exact photo's own screen corners (found by thresholding
-   the blank white screen region and reading its quadrilateral: TL
-   760,193 — TR 1616,152 — BR 1531,834 — BL 652,784, all in the
-   photo's native 2000x1125 pixel space) — so the dashboard preview
-   sits inside the glass at the photo's real angle, pixel-accurate,
-   instead of a separately-guessed CSS rotate. */
-.dk-home-hero-screen-mount {
-  position: absolute; left: 652px; top: 152px; width: 964px; height: 682px;
-  transform-origin: 0 0;
-  transform: matrix3d(0.757380, -0.042531, 0, -0.000135, -0.158358, 0.830619, 0, -0.000057, 0, 0, 1, 0, 108, 41, 0, 1);
-  overflow: hidden;
+.dk-home-hero-laptop-screen::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(115deg, rgba(255, 255, 255, .07) 0%, rgba(255, 255, 255, 0) 30%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06);
 }
-/* The "screen" content is designed at its own small, easy-to-edit
-   pixel size (342x242 — same 964:682 aspect as the mount above) and
-   scaled up as one block to fill it — a light, clean mock of the
-   real DeskKit dashboard (topbar + product-colored tool tiles)
-   instead of a dark marketing-copy panel, reading as an actual look
-   at the product rather than an ad for it. */
+.dk-home-hero-laptop-hinge { height: 5px; margin: 0 5px; background: linear-gradient(180deg, #27344a, #070a10); }
+.dk-home-hero-laptop-keyboard {
+  height: 22px; margin: 0 -26px; position: relative;
+  background: linear-gradient(180deg, #f3f6f9 0%, #d3dae2 50%, #aeb6c2 100%);
+  clip-path: polygon(3% 0, 97% 0, 100% 100%, 0 100%);
+}
+.dk-home-hero-laptop-keyboard::before {
+  content: ""; position: absolute; inset: 0; clip-path: inherit;
+  background: linear-gradient(115deg, rgba(255, 255, 255, .5) 0%, rgba(255, 255, 255, 0) 25%);
+}
+.dk-home-hero-laptop-keyboard::after {
+  content: ""; position: absolute; top: 3px; inset-inline-start: 50%; transform: translateX(-50%);
+  width: 68px; height: 6px; background: #9aa4b2; border-radius: 0 0 7px 7px;
+}
+/* The screen itself: a light "site builder output" preview — a tiny
+   site navbar, then a plants-on-light-interior hero with a headline
+   and CTA — reproducing what the reference mockup's own screen shows
+   (a clean light website, not a dark marketing panel or a dashboard
+   screenshot). */
 .dk-home-hero-screen-hero {
-  width: 342px; height: 242px; transform-origin: 0 0; transform: scale(2.819);
-  background: #f1f5f9; display: flex; flex-direction: column;
+  position: relative; min-height: 260px; border-radius: 6px; overflow: hidden;
+  background: #fff; display: flex; flex-direction: column;
 }
 .dk-home-hero-screen-topbar {
-  height: 30px; flex: none; display: flex; align-items: center; gap: 7px; padding: 0 12px;
-  background: #fff; border-bottom: 1px solid #e5e7eb;
+  height: 24px; flex: none; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  background: #fff; border-bottom: 1px solid #eef2f6;
 }
-.dk-home-hero-screen-brand-badge { width: 14px; height: 14px; border-radius: 4px; background: var(--brand-color); flex-shrink: 0; }
-.dk-home-hero-screen-brand-name { font-size: 10.5px; font-weight: 800; color: #0f172a; }
-.dk-home-hero-screen-body { flex: 1; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 12px; }
-.dk-home-hero-screen-tile {
-  background: #fff; border: 1px solid #e5e7eb; border-radius: 9px; box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
-  display: flex; align-items: center; justify-content: center;
+.dk-home-hero-screen-brand-badge { width: 10px; height: 10px; border-radius: 3px; background: var(--brand-color); flex-shrink: 0; }
+.dk-home-hero-screen-brand-name { font-size: 7.5px; font-weight: 800; color: #0f172a; }
+.dk-home-hero-screen-navlinks { display: flex; align-items: center; gap: 5px; margin-inline-start: auto; }
+.dk-home-hero-screen-navlinks i { width: 11px; height: 2px; border-radius: 1px; background: #cbd5e1; display: block; font-style: normal; }
+.dk-home-hero-screen-navbtn { width: 22px; height: 8px; border-radius: 4px; background: #0f172a; flex-shrink: 0; }
+.dk-home-hero-screen-body {
+  flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px; padding: 18px; text-align: center;
 }
-.dk-home-hero-screen-tile-icon { width: 20px; height: 20px; border-radius: 6px; }
+.dk-home-hero-screen-plants { position: absolute; inset: 0; display: flex; justify-content: space-between; opacity: .85; }
+.dk-home-hero-screen-plants svg { height: 100%; width: 42%; }
+.dk-home-hero-screen-body strong { position: relative; z-index: 1; font-size: 13.5px; font-weight: 800; color: #0f172a; line-height: 1.25; }
+.dk-home-hero-screen-cta {
+  position: relative; z-index: 1; margin-top: 2px; background: var(--brand-dark); color: #fff;
+  font-size: 8.5px; font-weight: 700; padding: 5px 15px; border-radius: 999px;
+}
 
 @media (max-width: 860px) {
-  .dk-home-hero-inner { flex-direction: column; }
-  .dk-home-hero-text, .dk-home-hero-visual, .dk-home-hero-tools { flex: none; width: 100%; max-width: 420px; }
-  /* Same frame, smaller fixed size — the scale factor is just the
-     frame's own width divided by the photo's native 2000px width;
-     the matrix3d above stays untouched since it lives inside the
-     scaled layer, not the frame. */
-  .dk-home-hero-laptop-frame { width: 260px; height: 146.25px; }
-  .dk-home-hero-laptop-native { transform: scale(0.13); }
+  .dk-home-hero-inner { flex-direction: column; align-items: center; }
+  .dk-home-hero-stage { width: 100%; }
+  .dk-home-hero-tools { flex: none; width: 100%; max-width: 420px; }
 }
 @media (max-width: 680px) {
   .dk-home-hero { padding: 40px 0 36px; }
   .dk-home-hero-text h1 { font-size: 30px; }
   .dk-home-hero-text p { font-size: 15.5px; max-width: none; }
+  .dk-home-hero-visual { margin-top: 0; }
 }
 
 /* ============ "Why DeskKit" — first thing visible after the hero on

@@ -74,7 +74,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700;800&family=Secular+One&family=Space+Grotesk:wght@500;600;700&display=optional" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700;800&family=Secular+One&family=Space+Grotesk:wght@500;600;700&display=optional" rel="stylesheet"></noscript>
 <link rel="stylesheet" href="css/style.css?v=91">
-<link rel="stylesheet" href="css/deskkit-ui.css?v=20">
+<link rel="stylesheet" href="css/deskkit-ui.css?v=21">
 </head>
 <body class="dk-home dk-has-app-sidebar">
 <header class="site">
@@ -103,65 +103,73 @@
 <div id="dk-home-out">
 <section class="dk-home-hero">
   <div class="container dk-home-hero-inner">
-    <!-- Three flat, balanced columns (right: text, center: laptop,
-         left: tool shortcuts) — each a direct sibling with its own
-         fixed share of the row, per the user's explicit "split the
-         Hero into 3 clean columns" correction. No shared wrapper
-         sizing the laptop off of the text block anymore. -->
-    <div class="dk-home-hero-text">
-      <span class="dk-pill">✨ מקום אחד לכל התוצרים המקצועיים שלכם</span>
-      <!-- Single swap point for the headline — change the text inside
-           this h1 only; everything else in the hero is unaffected. -->
-      <h1 id="dk-home-hero-headline">כל הכלים שהעסק שלך<br>צריך — במקום אחד.</h1>
-      <p>בונים אתר מקצועי, יוצרים קורות חיים, מציעים הצעות מחיר ומפיקים חשבוניות ומצגות — הכול בקלות ובמהירות, בלי להתחיל מאפס.</p>
-      <div class="dk-home-hero-ctas">
-        <a href="account.html?redirect=index.html" class="dk-btn dk-btn-primary dk-btn-lg">התחילו עכשיו — בחינם</a>
+    <!-- Two zones, matching the user's reference mockup exactly (not
+         3 flat equal columns): a "stage" holding the text block and a
+         large, bottom-anchored laptop that overlaps below it (the
+         laptop is NOT a fixed-height sibling column of its own),
+         then a single-column tool list. DOM order is stage-first
+         (primary content reads first) then tools — under RTL's
+         default flex flow that puts the stage at the reading-start
+         side (right) and the tools at the far side (left), matching
+         the reference without any order override. -->
+    <div class="dk-home-hero-stage">
+      <div class="dk-home-hero-text">
+        <!-- Single swap point for the headline — change the text
+             inside this h1 only; everything else in the hero is
+             unaffected. Kept exactly as-is per the user's explicit
+             "only the headline stays ours" instruction; the eyebrow
+             pill above it is removed — the reference has none. -->
+        <h1 id="dk-home-hero-headline">כל הכלים שהעסק שלך<br>צריך — במקום אחד.</h1>
+        <p>בונים אתר מקצועי, יוצרים קורות חיים, מציעים הצעות מחיר, מפיקים חשבוניות, מצגות וגליונות – הכל בקלות ובמהירות.</p>
+        <div class="dk-home-hero-ctas">
+          <a href="account.html?redirect=index.html" class="dk-btn dk-btn-primary dk-btn-lg">התחל עכשיו – בחינם</a>
+        </div>
         <a href="#how" class="dk-home-hero-watch"><span class="dk-home-hero-play">▶</span>צפו איך זה עובד</a>
       </div>
-    </div>
-    <div class="dk-home-hero-visual" aria-hidden="true">
-      <!-- Real photographed laptop mockup (images/laptop-hero.jpg),
-           not a hand-drawn CSS shape. The dashboard preview below is
-           corner-pinned with a CSS matrix3d perspective transform
-           computed from this exact photo's own screen corners (found
-           by thresholding the blank white screen and reading its
-           quadrilateral), so it sits inside the glass at the photo's
-           real angle instead of a guessed CSS rotate. -->
-      <div class="dk-home-hero-laptop-frame">
-        <div class="dk-home-hero-laptop-native">
-          <img src="images/laptop-hero.jpg" width="2000" height="1125" alt="" class="dk-home-hero-laptop-img">
-          <div class="dk-home-hero-screen-mount">
-            <!-- A light, clean mock of the real DeskKit dashboard
-                 (topbar + tool tiles in the same product colors used
-                 everywhere else on the site) instead of a dark
-                 marketing-copy panel — reads as an actual screenshot
-                 of the product, not an ad for it. Its own small
-                 design-pixel box, scaled up to fill the screen mount
-                 above — the topbar/tile CSS below is untouched from
-                 before this photo swap. -->
+      <div class="dk-home-hero-visual" aria-hidden="true">
+        <!-- Back to a hand-built CSS/SVG laptop (no photo) — the
+             real photo's own studio backdrop showed as an ugly gray
+             box against the page's own background; a drawn shape has
+             no backdrop of its own to clash, and this is the
+             technique the reference mockup itself actually uses (a
+             clean illustration, not a photograph). -->
+        <div class="dk-home-hero-laptop">
+          <div class="dk-home-hero-laptop-screen">
             <div class="dk-home-hero-screen-hero">
               <div class="dk-home-hero-screen-topbar">
                 <span class="dk-home-hero-screen-brand-badge"></span>
                 <span class="dk-home-hero-screen-brand-name">DeskKit</span>
+                <span class="dk-home-hero-screen-navlinks"><i></i><i></i><i></i></span>
+                <span class="dk-home-hero-screen-navbtn"></span>
               </div>
               <div class="dk-home-hero-screen-body">
-                <div class="dk-home-hero-screen-tile" data-dk-product="site"><span class="dk-home-hero-screen-tile-icon"></span></div>
-                <div class="dk-home-hero-screen-tile" data-dk-product="cv"><span class="dk-home-hero-screen-tile-icon"></span></div>
-                <div class="dk-home-hero-screen-tile" data-dk-product="quote"><span class="dk-home-hero-screen-tile-icon"></span></div>
-                <div class="dk-home-hero-screen-tile" data-dk-product="invoice"><span class="dk-home-hero-screen-tile-icon"></span></div>
+                <span class="dk-home-hero-screen-plants" aria-hidden="true">
+                  <svg viewBox="0 0 220 220" preserveAspectRatio="xMidYMax slice">
+                    <path d="M40 220 L40 150 Q40 110 70 95 Q55 70 65 40 Q90 55 92 85 Q100 55 130 45 Q135 80 115 100 Q145 100 165 80 Q160 115 125 125 Q140 145 135 175 Q110 165 100 140 L95 220 Z" fill="#2f6b4f"/>
+                    <ellipse cx="68" cy="205" rx="42" ry="18" fill="#3a2a22"/>
+                  </svg>
+                  <svg viewBox="0 0 220 220" preserveAspectRatio="xMaxYMax slice">
+                    <path d="M190 220 L190 165 Q188 130 212 115 Q200 95 208 70 Q228 82 228 108 Q238 85 258 80 Q258 108 240 120 Q260 122 272 108 Q266 135 240 140 Q250 158 244 180 Q222 172 215 150 L212 220 Z" fill="#265c45"/>
+                    <ellipse cx="205" cy="205" rx="38" ry="16" fill="#3a2a22"/>
+                  </svg>
+                </span>
+                <strong>הופכים רעיונות<br>לפרויקטים</strong>
+                <span class="dk-home-hero-screen-cta">להתחלה מהירה</span>
               </div>
             </div>
           </div>
+          <div class="dk-home-hero-laptop-hinge"></div>
+          <div class="dk-home-hero-laptop-keyboard"></div>
         </div>
       </div>
     </div>
     <div class="dk-home-hero-tools" aria-label="מה אפשר ליצור ב-DeskKit">
       <a href="sites.html?new=1" class="dk-home-hero-tool" data-dk-product="site"><span class="dk-home-hero-tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.3 2.5 3.6 5.5 3.6 9s-1.3 6.5-3.6 9c-2.3-2.5-3.6-5.5-3.6-9s1.3-6.5 3.6-9z"/></svg></span>אתר</a>
       <a href="builder.html" class="dk-home-hero-tool" data-dk-product="cv"><span class="dk-home-hero-tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M9.5 13h5M9.5 16.5h5"/></svg></span>קורות חיים</a>
-      <a href="quote-app.html" class="dk-home-hero-tool" data-dk-product="quote"><span class="dk-home-hero-tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span>הצעת מחיר</a>
-      <a href="invoice-app.html" class="dk-home-hero-tool" data-dk-product="invoice"><span class="dk-home-hero-tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>חשבונית</a>
-      <a href="products.html?type=deck" class="dk-home-hero-tool" data-dk-product="deck"><span class="dk-home-hero-tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M10 9v5l4-2.5z" fill="currentColor" stroke="none"/><path d="M8 21h8M12 17v4"/></svg></span>מצגת</a>
-      <a href="products.html?type=xlsx" class="dk-home-hero-tool" data-dk-product="xlsx"><span class="dk-home-hero-tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M4 15h16M10 4v16M15 4v16"/></svg></span>גליון</a>
+      <a href="quote-app.html" class="dk-home-hero-tool" data-dk-product="quote"><span class="dk-home-hero-tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span>הצעות מחיר</a>
+      <a href="invoice-app.html" class="dk-home-hero-tool" data-dk-product="invoice"><span class="dk-home-hero-tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>חשבוניות</a>
+      <a href="products.html?type=deck" class="dk-home-hero-tool" data-dk-product="deck"><span class="dk-home-hero-tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M10 9v5l4-2.5z" fill="currentColor" stroke="none"/><path d="M8 21h8M12 17v4"/></svg></span>מצגות</a>
+      <a href="products.html?type=xlsx" class="dk-home-hero-tool" data-dk-product="xlsx"><span class="dk-home-hero-tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M4 15h16M10 4v16M15 4v16"/></svg></span>גליונות</a>
     </div>
   </div>
 </section>
