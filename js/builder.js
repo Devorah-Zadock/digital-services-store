@@ -230,7 +230,19 @@ function wireStaticInputs() {
   document.getElementById("swatches").addEventListener("click", (e) => {
     const hex = e.target.dataset.hex;
     if (!hex) return;
-    document.getElementById("color-picker").value = "#" + hex;
+    const colorEl = document.getElementById("color-picker");
+    colorEl.value = "#" + hex;
+    // Setting .value programmatically fires no event at all, unlike a
+    // real pick through the native color square — js/cv-builder-shell.js's
+    // cvbshellWireSettingsLiveUpdate() listens for a real "input" event
+    // on this element to refresh the Shell's own visible canvas, so
+    // without this a swatch click updated the hidden #preview-doc (via
+    // the renderPreview() call below) but never the canvas the user is
+    // actually looking at — confirmed live ("לא משתנה אלא אם כן בוחרת
+    // מהריבוע הגדול"). Dispatching the real event here fires every
+    // current AND future listener the same way the native input does,
+    // instead of this handler needing to know about each one by name.
+    colorEl.dispatchEvent(new Event("input", { bubbles: true }));
     renderPreview();
   });
 

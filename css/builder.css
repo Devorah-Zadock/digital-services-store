@@ -359,8 +359,17 @@
      overrides that inline display:none. Without this, print rendered
      whichever container happened to be hidden-by-default: a blank page
      for CV, confirmed live. The Shell itself is force-hidden right
-     below so it can never show up in the print output instead. */
-  #builder-wrap-section, #builder-top-section { display: block !important; }
+     below so it can never show up in the print output instead.
+     #builder-wrap-section only — it's the one that actually contains
+     #preview-doc. #builder-top-section is the page's own header bar
+     (breadcrumb, language switcher, save button); it already carries
+     .no-print, and an ID selector beats a class selector regardless
+     of !important on both sides, so force-showing it here was
+     silently overriding its own .no-print and bleeding that header
+     into the exported PDF — confirmed live as the literal "התאימו
+     אישית..." heading and the lang/save controls showing up on the
+     printed page. */
+  #builder-wrap-section { display: block !important; }
   .bshell.active, .dk-mobile-nav { display: none !important; }
   body, .builder-wrap, .container, .builder-preview, .preview-sticky { all: unset; display: block; }
   /* body.dk-app-sidebar-mounted (css/deskkit-ui.css) adds a real
