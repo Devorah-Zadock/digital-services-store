@@ -2,13 +2,11 @@
    guide chatbot. Both are self-injecting (no markup needed in the HTML
    pages) — just include this script after main.js.
 
-   FEEDBACK_ENDPOINT: paste a Formspree endpoint here to receive ratings by
-   email AND have them saved permanently in a private inbox you can revisit
-   any time (see README "משוב ודירוג", and see admin.html for a private
-   in-site page linking to that inbox). Until it's set, the form still
-   works — it just falls back to a "send us an email" link instead of
-   auto-submitting. */
-const FEEDBACK_ENDPOINT = "https://formspree.io/f/moeagwvk";
+   Feedback submissions go through the submit-contact-message Edge
+   Function (see its own comment) — stored permanently in
+   contact_messages and emailed as a notification, the same two things
+   Formspree used to do, minus Formspree's 30-day free-tier retention
+   limit that was silently dropping real messages. */
 
 /* Each entry's keyword list decides which entry wins for free-typed
    questions (highest keyword-match count, see chatMatch()) — so a
@@ -210,7 +208,7 @@ function injectFeedbackWidget() {
     if (!rating) { note.textContent = "בחרו דירוג לפני השליחה 🙂"; note.className = "widget-note warn"; return; }
     const text = document.getElementById("feedback-text").value.trim();
 
-    if (!FEEDBACK_ENDPOINT) {
+    if (typeof supabaseClient === "undefined") {
       const mailHref = `mailto:digital.dz.studio@gmail.com?subject=${encodeURIComponent("משוב על האתר — " + rating + " כוכבים")}&body=${encodeURIComponent(text)}`;
       note.innerHTML = `תודה! טופס המשוב האוטומטי עוד לא מחובר — אם תרצו, אפשר <a href="${mailHref}">לשלוח לנו את זה במייל</a>.`;
       note.className = "widget-note";
@@ -219,12 +217,10 @@ function injectFeedbackWidget() {
     note.textContent = "שולח…";
     note.className = "widget-note";
     try {
-      const res = await fetch(FEEDBACK_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ rating, message: text, page: location.pathname }),
+      const { data, error } = await supabaseClient.functions.invoke("submit-contact-message", {
+        body: { rating, message: text, formType: "feedback", page: location.pathname },
       });
-      if (!res.ok) throw new Error("bad response");
+      if (error || !data || data.error) throw new Error((data && data.error) || "bad response");
       note.textContent = "תודה על המשוב!";
       note.className = "widget-note ok";
       document.getElementById("feedback-text").value = "";

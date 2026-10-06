@@ -4,14 +4,10 @@
    enforcement. This page only decides what to *show*; a visitor who
    isn't signed in as an allow-listed admin gets 401/403 straight from
    the server no matter what this client-side code does, so there's no
-   secret in this file to protect. Also links into the real, persistent
-   feedback inbox (Formspree — see admin.html for why a static site needs
-   an external service to keep messages after a refresh). */
-
-/* Paste the Formspree submissions-dashboard URL here once it's set up
-   (see the setup steps on this page). Leave empty to show the setup
-   instructions instead. */
-const ADMIN_INBOX_URL = "https://formspree.io/forms/moeagwvk/submissions";
+   secret in this file to protect. The "הודעות" tab below reads from
+   contact_messages via admin-stats' list-messages/mark-message-read/
+   delete-message actions — the permanent replacement for Formspree,
+   whose free tier silently dropped anything older than 30 days. */
 
 function escapeHtml(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -431,6 +427,100 @@ async function handleStatsDeleteClick(e) {
   }
 }
 
+/* One card per contact-form/feedback-widget submission — unread ones
+   (read_at is null) get a tinted background + side bar instead of a
+   separate unread badge that could drift out of sync with the actual
+   rows. A feedback submission can have a rating with no free text (the
+   widget only requires the rating), so the body paragraph is only shown
+   when there's actually a message to show. */
+function messageCardHtml(m) {
+  const unread = !m.read_at;
+  const dateStr = m.created_at ? new Date(m.created_at).toLocaleString("he-IL", { dateStyle: "short", timeStyle: "short" }) : "";
+  const typeLabel = m.form_type === "feedback" ? "משוב" : "פנייה";
+  const ratingHtml = m.rating ? `<span class="message-rating">${"★".repeat(m.rating)}${"☆".repeat(5 - m.rating)}</span>` : "";
+  const fromHtml = (m.name || m.email)
+    ? `<span class="message-from">${escapeHtml(m.name || "")}${m.name && m.email ? " · " : ""}${m.email ? escapeHtml(m.email) : ""}</span>`
+    : "";
+  return `
+    <div class="message-card${unread ? " unread" : ""}" data-mid="${m.id}">
+      <div class="message-card-head">
+        <span class="message-type">${typeLabel}</span>
+        ${fromHtml}
+        ${ratingHtml}
+        <span class="message-date">${dateStr}</span>
+      </div>
+      ${m.message ? `<p class="message-body">${escapeHtml(m.message)}</p>` : ""}
+      ${m.page ? `<p class="message-page">נשלח מתוך: ${escapeHtml(m.page)}</p>` : ""}
+      <div class="message-actions">
+        ${unread ? `<button type="button" class="message-action-btn" data-mark-read="${m.id}">סמן כנקרא</button>` : ""}
+        <button type="button" class="message-action-btn danger" data-del-msg="${m.id}">מחיקה</button>
+      </div>
+    </div>`;
+}
+
+function renderMessages(messages) {
+  const list = document.getElementById("messages-list");
+  const countEl = document.getElementById("messages-result-count");
+  if (!list) return;
+  const unreadCount = messages.filter((m) => !m.read_at).length;
+  if (countEl) {
+    countEl.textContent = messages.length
+      ? `${messages.length} הודעות${unreadCount ? ` (${unreadCount} שלא נקראו)` : ""}`
+      : "";
+  }
+  list.innerHTML = messages.length
+    ? messages.map(messageCardHtml).join("")
+    : `<p style="font-size:13.5px; color:var(--grey);">אין הודעות עדיין.</p>`;
+}
+
+async function loadMessages() {
+  const err = document.getElementById("messages-err");
+  const btn = document.getElementById("messages-refresh-btn");
+  if (err) err.textContent = "";
+  if (btn) { btn.disabled = true; btn.textContent = "טוענים..."; }
+  try {
+    const data = await callAdminStats({ action: "list-messages" });
+    renderMessages(data.messages || []);
+  } catch (e) {
+    if (e.status === 401 || e.status === 403) { showAccessDenied(); return; }
+    if (err) err.textContent = "שגיאה בטעינת ההודעות: " + e.message;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "רענון"; }
+  }
+}
+
+/* Delegated on #messages-list rather than wired per-card, since every
+   card re-renders on each loadMessages() call (mark-read/delete both
+   refresh the whole list to stay in sync with the server, there being
+   only a couple hundred messages at most — no pagination needed yet). */
+async function handleMessagesListClick(e) {
+  const markBtn = e.target.closest("[data-mark-read]");
+  const delBtn = e.target.closest("[data-del-msg]");
+  const err = document.getElementById("messages-err");
+  if (markBtn) {
+    markBtn.disabled = true;
+    try {
+      await callAdminStats({ action: "mark-message-read", messageId: markBtn.dataset.markRead });
+      await loadMessages();
+    } catch (e2) {
+      if (err) err.textContent = "שגיאה: " + e2.message;
+      markBtn.disabled = false;
+    }
+    return;
+  }
+  if (delBtn) {
+    if (!confirm("למחוק את ההודעה הזאת? הפעולה בלתי הפיכה.")) return;
+    delBtn.disabled = true;
+    try {
+      await callAdminStats({ action: "delete-message", messageId: delBtn.dataset.delMsg });
+      await loadMessages();
+    } catch (e2) {
+      if (err) err.textContent = "שגיאה במחיקה: " + e2.message;
+      delBtn.disabled = false;
+    }
+  }
+}
+
 /* Three top-level tabs (הודעות / לקוחות / תבניות) instead of numbered
    stacked sections — "לקוחות" and "תבניות" both live inside the same
    #panel-stats (they share one data fetch, one error message and one
@@ -481,32 +571,17 @@ function showCustomerStatsCard() {
   loadCustomerStats();
 }
 
+function showMessagesCard() {
+  document.getElementById("messages-list").addEventListener("click", handleMessagesListClick);
+  document.getElementById("messages-refresh-btn").addEventListener("click", loadMessages);
+  loadMessages();
+}
+
 function showPanel() {
   document.getElementById("admin-gate").style.display = "none";
   document.getElementById("admin-panel").style.display = "";
   wireAdminTopTabs();
-
-  const status = document.getElementById("admin-status");
-  const explain = document.getElementById("admin-explain");
-  const action = document.getElementById("admin-inbox-action");
-  const setupCard = document.getElementById("admin-setup-card");
-
-  if (ADMIN_INBOX_URL) {
-    status.innerHTML = `<span class="admin-status connected">מחובר</span>`;
-    explain.textContent = "הודעות שנשלחות דרך טופס המשוב באתר נשמרות כאן לצמיתות, ולא נעלמות עם רענון — כי הן מאוחסנות בשרת חיצוני, לא בדפדפן.";
-    // Formspree blocks its own dashboard from being framed (standard
-    // clickjacking protection on account pages), so an embedded iframe here
-    // only ever showed an empty grey box — never the real messages. A
-    // plain link to the real dashboard is the only thing that actually works.
-    action.innerHTML = `<a href="${ADMIN_INBOX_URL}" target="_blank" rel="noopener" class="btn btn-gold">פתיחת תיבת ההודעות</a>`;
-    setupCard.style.display = "none";
-  } else {
-    status.innerHTML = `<span class="admin-status pending">עוד לא חובר</span>`;
-    explain.textContent = "תיבת ההודעות עוד לא מחוברת — עד אז, הודעות משוב שנשלחות באתר מוצגות למבקר עם \"תודה על המשוב!\", אבל לא נשמרות באף מקום שאת יכולה לראות. פועלים לפי ההוראות למטה כדי לחבר אותה (לוקח כמה דקות, חד-פעמי).";
-    action.innerHTML = "";
-    setupCard.style.display = "";
-  }
-
+  showMessagesCard();
   showCustomerStatsCard();
 }
 

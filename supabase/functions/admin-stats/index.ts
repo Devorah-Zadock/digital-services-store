@@ -199,6 +199,29 @@ Deno.serve(async (req: Request) => {
     const body = await req.json();
     const action = body.action || "stats";
 
+    // Message actions are a separate concern from the customer/usage
+    // stats below (different table, nothing in common) — handled and
+    // returned here directly rather than falling through to
+    // loadStats(), which would mean re-querying every site/cv/quote/
+    // invoice table just to list messages.
+    if (action === "list-messages") {
+      const { data, error } = await admin.from("contact_messages").select("*").order("created_at", { ascending: false }).limit(200);
+      if (error) throw error;
+      return new Response(JSON.stringify({ messages: data || [] }), { status: 200, headers: corsHeaders });
+    }
+    if (action === "mark-message-read") {
+      if (!body.messageId) return new Response(JSON.stringify({ error: "missing messageId" }), { status: 400, headers: corsHeaders });
+      const { error } = await admin.from("contact_messages").update({ read_at: new Date().toISOString() }).eq("id", body.messageId);
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
+    }
+    if (action === "delete-message") {
+      if (!body.messageId) return new Response(JSON.stringify({ error: "missing messageId" }), { status: 400, headers: corsHeaders });
+      const { error } = await admin.from("contact_messages").delete().eq("id", body.messageId);
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
+    }
+
     if (action === "delete-site") {
       if (!body.siteId) {
         return new Response(JSON.stringify({ error: "missing siteId" }), { status: 400, headers: corsHeaders });
