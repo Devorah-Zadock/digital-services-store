@@ -74,7 +74,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700;800&family=Secular+One&family=Space+Grotesk:wght@500;600;700&display=optional" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700;800&family=Secular+One&family=Space+Grotesk:wght@500;600;700&display=optional" rel="stylesheet"></noscript>
 <link rel="stylesheet" href="css/style.css?v=91">
-<link rel="stylesheet" href="css/deskkit-ui.css?v=27">
+<link rel="stylesheet" href="css/deskkit-ui.css?v=28">
 </head>
 <body class="dk-home dk-has-app-sidebar">
 <header class="site">
@@ -126,17 +126,30 @@
         </div>
         <a href="#how" class="dk-home-hero-watch"><span class="dk-home-hero-play">▶</span>צפו איך זה עובד</a>
       </div>
-      <div class="dk-home-hero-visual" aria-hidden="true">
+      <div class="dk-home-hero-visual">
         <!-- The real laptop photo the user supplied (images/laptop-
              hero.png), cut out to a transparent PNG — its own studio
              backdrop (a faint checkerboard baked into the flattened
              JPEG, confirmed via direct pixel sampling) was removed
              with a connected-component flood-fill from the image
              border, so only genuinely background pixels are cut,
-             never the laptop's own light aluminum base. No separate
-             screen overlay needed: the photo's own screen already
-             shows the finished plants/navbar content baked in. -->
-        <img src="images/laptop-hero.png" alt="" class="dk-home-hero-laptop-img">
+             never the laptop's own light aluminum base. -->
+        <img src="images/laptop-hero.png" alt="" class="dk-home-hero-laptop-img" aria-hidden="true">
+        <!-- The screen's own content (photo + nav baked into the PNG)
+             had no text at all, reading as an empty laptop rather than
+             DeskKit's own product — confirmed live. Positioned/rotated
+             in CSS (not baked into the photo) so it stays real,
+             selectable, translatable text instead of another flattened
+             raster layer. The percentages + rotation are measured
+             directly off the photo's own screen quad (detected via
+             OpenCV contour analysis of the bezel's inner edge: corners
+             at roughly (26,173)/(613,206)/(672,631)/(83,659) in the
+             1024x946 source) — not a generic center overlay, so it
+             sits inside the actual screen glass, tilted to match. */ -->
+        <div class="dk-home-hero-screen-overlay">
+          <p>הופכים רעיונות<br>לפרויקטים</p>
+          <a href="sites.html" class="dk-home-hero-screen-cta">התחילו עכשיו ←</a>
+        </div>
       </div>
     </div>
     <div class="dk-home-hero-tools" aria-label="מה אפשר ליצור ב-DeskKit">
@@ -368,10 +381,10 @@
 <script src="js/create-chooser.js?v=2"></script>
 <script src="js/mobile-nav.js?v=1"></script>
 <script src="js/app-sidebar.js?v=3"></script>
-<script src="js/projects.js?v=3"></script>
+<script src="js/projects.js?v=4"></script>
 <script src="js/index-home.js?v=1"></script>
 <script src="js/domain-guide.js?v=3"></script>
-<script src="js/main.js?v=2"></script>
+<script src="js/main.js?v=3"></script>
 <script src="js/widgets.js?v=11"></script>
 <script src="js/effects.js"></script>
 <script src="js/i18n.js?v=12"></script>

@@ -53,13 +53,30 @@ const DK_PCARD_PRODUCT = { site: "site", cv: "cv", quote: "quote", invoice: "inv
 const MY_PANEL_TEMPLATE_LABELS_FALLBACK = typeof MY_PANEL_TEMPLATE_LABELS !== "undefined" ? MY_PANEL_TEMPLATE_LABELS : {};
 
 async function dkProjectsFetchAll(user) {
-  const [sitesRes, cvRes, quotesRes, invoicesRes, scheduleRes] = await Promise.all([
+  let [sitesRes, cvRes, quotesRes, invoicesRes, scheduleRes] = await Promise.all([
     supabaseClient.from("site_projects").select("id, template, data, status, published_url, slug, updated_at, created_at").eq("user_id", user.id).order("created_at", { ascending: false }),
     supabaseClient.from("cv_saves").select("data, updated_at").eq("user_id", user.id).maybeSingle(),
     supabaseClient.from("quote_saves").select("id, data, updated_at").eq("user_id", user.id).order("updated_at", { ascending: false }),
     supabaseClient.from("invoice_saves").select("id, doc_type, status, number, data, updated_at").eq("user_id", user.id).order("updated_at", { ascending: false }),
     supabaseClient.from("schedule_projects").select("id, data, updated_at").eq("user_id", user.id).order("updated_at", { ascending: false }),
   ]);
+
+  // published_url/slug only exist once the one-time
+  // supabase/sql/site_projects_publish.sql + site_projects_slug.sql
+  // setup has actually been run in the Supabase dashboard — on an
+  // account where it hasn't, selecting them makes the WHOLE query fail
+  // ("column does not exist"), and since supabase-js never throws on a
+  // query error, sitesRes.data silently comes back null and every real
+  // site that account has just vanishes from this page with no visible
+  // error anywhere — confirmed live as "לא יצרת שום אתר" even though
+  // the same account's sites showed up fine in js/my-content.js's older
+  // query, which never asks for those two columns. Retrying once with
+  // only the columns every site_projects row is guaranteed to have
+  // keeps this page working regardless of whether that setup ran.
+  if (sitesRes.error) {
+    console.warn("site_projects query failed, retrying without published_url/slug:", sitesRes.error.message);
+    sitesRes = await supabaseClient.from("site_projects").select("id, template, data, status, updated_at, created_at").eq("user_id", user.id).order("created_at", { ascending: false });
+  }
 
   const items = [];
   (sitesRes.data || []).forEach((s) => {

@@ -115,3 +115,27 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
+/* Every "שדרוג ל-Pro" link across the AI-limit upgrade cards/notes
+   (js/ats-checker.js, js/site-ai-generate.js, js/site-ai-review.js,
+   js/*-builder-shell.js, js/*-ai-generate.js, js/ai-writer.js) points
+   at a real Pro tier that was never actually built — nothing anywhere
+   in this codebase ever sets customer_profiles.is_pro, so the link
+   itself was confirmed live to do nothing at all. Delegated at the
+   document level (one handler for every one of those call sites,
+   instead of wiring each separately) so clicking it now at least says
+   something instead of silently going nowhere, until a real Pro
+   product/checkout exists to point it at. */
+document.addEventListener("click", (e) => {
+  const link = e.target.closest('a[href="#"]');
+  if (!link) return;
+  const isUpgradeLink = link.classList.contains("ats-upgrade-btn") || link.textContent.trim() === "שדרוג ל-Pro";
+  if (!isUpgradeLink) return;
+  e.preventDefault();
+  if (link.dataset.dkUnavailableShown) return;
+  link.dataset.dkUnavailableShown = "1";
+  const note = document.createElement("div");
+  note.textContent = "אפשרות זו אינה זמינה כרגע";
+  note.style.cssText = "margin-top:6px; font-size:12.5px; color:#A0A0A0;";
+  link.insertAdjacentElement("afterend", note);
+});

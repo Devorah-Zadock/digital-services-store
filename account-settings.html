@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=91">
-<link rel="stylesheet" href="css/deskkit-ui.css?v=27">
+<link rel="stylesheet" href="css/deskkit-ui.css?v=28">
 <link rel="stylesheet" href="css/builder.css?v=21">
 <style>
   .as-section { max-width: 480px; margin: 0 auto 40px; padding: 28px; background: var(--white); border: 1px solid #EAEDEC; border-radius: var(--radius); box-shadow: var(--shadow); }
@@ -52,19 +52,16 @@
 </header>
 
 <section class="builder-top no-print">
-  <div class="container">
-    <h1 style="font-size:26px; margin:6px 0 4px;">החשבון שלי</h1>
-    <p style="color:var(--grey); font-size:14px; margin:0;">כתובת מייל: <b id="as-current-email" style="color:var(--ink-dark);"></b></p>
+  <div class="container" style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+    <div>
+      <h1 style="font-size:26px; margin:6px 0 4px;">החשבון שלי</h1>
+      <p style="color:var(--grey); font-size:14px; margin:0;">כתובת מייל: <b id="as-current-email" style="color:var(--ink-dark);"></b></p>
+    </div>
+    <a href="projects.html" style="font-size:13.5px; font-weight:700; color:var(--primary-dark); text-decoration:none; white-space:nowrap; margin-top:10px;">הפרויקטים שלי ←</a>
   </div>
 </section>
 
 <div class="container" style="padding:40px 0;">
-  <div class="as-section" style="max-width:600px;">
-    <h3>התכנים שלי</h3>
-    <p class="sub">כל מה שבניתם עם החשבון הזה, במקום אחד.</p>
-    <div id="my-content-rows" class="my-sites-list"></div>
-  </div>
-
   <div class="as-section">
     <h3>שינוי כתובת מייל</h3>
     <p class="sub">נשלח מייל אישור לכתובת החדשה לפני שהיא נכנסת לתוקף.</p>
@@ -86,13 +83,6 @@
       <div class="as-msg" id="as-password-msg"></div>
       <button type="submit" class="btn btn-teal" style="width:100%;">עדכון סיסמה</button>
     </form>
-  </div>
-
-  <div class="as-section">
-    <h3>ייצוא המידע שלי</h3>
-    <p class="sub">מוריד קובץ JSON עם כל התוכן השמור בחשבון שלכם (פרטי עסק, קורות חיים, אתרים, הצעות מחיר, חשבוניות ומערכות שעות) — בשביל גיבוי אישי, או כדי לבדוק בדיוק מה שמור אצלנו.</p>
-    <div class="as-msg" id="as-export-msg"></div>
-    <button type="button" id="as-export-btn" class="btn btn-outline" style="width:100%;">הורדת המידע שלי</button>
   </div>
 
   <div class="as-section as-danger">
@@ -120,7 +110,6 @@
 <script src="js/domain-guide.js?v=3"></script>
 <script src="js/require-auth.js"></script>
 <script src="js/account-settings.js?v=3"></script>
-<script src="js/my-content.js"></script>
-<script src="js/main.js?v=2"></script>
+<script src="js/main.js?v=3"></script>
 </body>
 </html>
