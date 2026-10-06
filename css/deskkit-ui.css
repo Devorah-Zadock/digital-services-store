@@ -290,7 +290,7 @@ body.dk-home { background: var(--bg-main); }
    2-column grid of small tiles. DOM order is stage, tools — RTL's
    default flex flow alone gives the right visual order. */
 .dk-home-hero-inner { display: flex; align-items: flex-start; gap: 40px; }
-.dk-home-hero-stage { flex: 1; min-width: 0; }
+.dk-home-hero-stage { flex: 1; min-width: 0; container-type: inline-size; }
 .dk-home-hero-text { max-width: 480px; }
 .dk-home-hero-text h1 { font-size: 38px; font-weight: 700; line-height: 1.3; margin: 0 0 16px; color: var(--text-main); font-family: Heebo, Arial, sans-serif; }
 .dk-home-hero-text p { font-size: 16px; color: #475569; line-height: 1.6; margin: 0 0 24px; }
@@ -346,8 +346,33 @@ body.dk-home { background: var(--bg-main); }
    now (not the <img> alone), so the screen-text overlay below —
    positioned with percentages relative to this same box — tracks the
    photo's shift as one unit instead of needing its own copy of every
-   translateX value kept in sync by hand across all 3 breakpoints. */
-.dk-home-hero-visual { width: 100%; max-width: 640px; margin-top: -230px; position: relative; transform: translateX(-150px); }
+   translateX value kept in sync by hand across all 3 breakpoints.
+
+   The leftward pull itself is a formula, not a fixed px value — found
+   (via direct measurement, not guessing) that this box sits flush
+   against the STAGE's own right edge by default (RTL's block default),
+   so a fixed translateX(-170px) is only safe once the stage is wide
+   enough to have 170px of real slack past the image's own 640px
+   max-width; at narrower-but-still-"desktop" widths (confirmed broken
+   live from ~700px to ~1100px) that same -170px drove the photo
+   straight into the tools sidebar cards, reading as the laptop being
+   "cut off" by them — a real layout bug the user's repeated "still
+   clipped" reports were catching, not a rendering artifact. Formula:
+   safe shift = clamp(0px, stageWidth - 656px, 170px), using the
+   .dk-home-hero-stage container's own inline-size (100cqw inside a
+   container-type:inline-size ancestor, see .dk-home-hero-stage above)
+   — 656px = the image's own 640px max-width + a 16px buffer so it
+   never sits flush against the stage's own left edge (where the tools
+   gap begins). Below 640px of stage width the image is no longer
+   capped at 640px and fills the stage exactly (zero slack either way),
+   so the clamp correctly floors the shift at 0 there too — one
+   continuous formula covers both regimes, no separate breakpoint
+   value needed (replacing the old 860px-breakpoint override below). */
+.dk-home-hero-visual {
+  width: 100%; max-width: 640px; margin-top: -250px; position: relative;
+  transform: translateX(calc(-1 * clamp(0px, (100cqw - 656px), 170px)));
+  container-type: inline-size;
+}
 .dk-home-hero-laptop-img {
   width: 100%; display: block;
   filter: drop-shadow(0 25px 35px rgba(0, 0, 0, .12)) drop-shadow(0 8px 10px rgba(0, 0, 0, .08));
@@ -359,28 +384,47 @@ body.dk-home { background: var(--bg-main); }
      <img>, not the link. */
   pointer-events: none;
 }
-/* Sits inside the laptop photo's own screen glass — percentages +
-   rotation measured directly off that screen's 4 corners via OpenCV
-   contour detection on the source PNG (see index.html's own comment
-   for the exact pixel corners), not just centered/guessed. Real HTML
-   text (not baked into the photo) so it renders in the page's actual
-   Hebrew webfont instead of needing a Hebrew-capable font at image-
-   generation time, stays selectable/translatable, and needs no new
-   image asset. */
+/* Sits inside the laptop photo's own screen glass, warped to the
+   screen's real tilted plane instead of just rotated flat — a flat
+   rotate() stood the text "upright" while the screen itself recedes
+   in perspective (its right edge closer/lower than its left), so the
+   text read as floating in front of the glass rather than printed on
+   it. Fixed with a true perspective (homography) transform: this box
+   is laid out as a normal flat 480x380 design canvas, then
+   matrix3d() warps its 4 corners onto the screen's real 4 corners —
+   computed via cv2.getPerspectiveTransform from the screen quad found
+   by OpenCV contour detection on the source PNG (corners roughly
+   (26,173)/(613,206)/(672,631)/(83,659) in the 1024x946 image, shrunk
+   14% inward for bezel margin). matrix3d's translate components are
+   always real pixels in the element's own box, never %, so they're
+   only correct at the image's native 1024px width — the leading
+   scale() converts from that fixed native-pixel space down to
+   whatever size the (fully responsive) photo is actually rendered
+   at, via `100cqw` (container query width = this element's own
+   current rendered width, see container-type:inline-size on
+   .dk-home-hero-visual above) divided by 1024px, which is a plain
+   ratio: no resize listener/JS needed, and both transforms stay
+   correct together at every breakpoint from one set of numbers. */
 .dk-home-hero-screen-overlay {
-  position: absolute; top: 44%; left: 34%; width: 44%; height: 36%;
-  transform: translate(-50%, -50%) rotate(3.2deg);
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  position: absolute; top: 0; left: 0; width: 480px; height: 380px;
+  transform-origin: 0 0;
+  transform: scale(calc(100cqw / 1024px)) matrix3d(
+    1.222539, 0.128996, 0, 0.000297,
+    0.123416, 1.070847, 0, -0.000046,
+    0, 0, 1, 0,
+    71.150002, 207.195007, 0, 1
+  );
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
   text-align: center;
 }
 .dk-home-hero-screen-overlay p {
-  margin: 0; font-weight: 800; line-height: 1.25; color: var(--text-main, #0F172A);
-  font-size: clamp(13px, 3.1vw, 22px); font-family: Heebo, Arial, sans-serif;
+  margin: 0; font-weight: 800; line-height: 1.22; color: var(--text-main, #0F172A);
+  font-size: 42px; font-family: Heebo, Arial, sans-serif;
 }
 .dk-home-hero-screen-cta {
-  display: inline-flex; align-items: center; gap: 6px; text-decoration: none; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 10px; text-decoration: none; white-space: nowrap;
   background: linear-gradient(135deg, var(--brand-color), var(--brand-dark)); color: #fff;
-  font-weight: 700; font-size: clamp(9px, 1.9vw, 13px); padding: clamp(5px, 1vw, 9px) clamp(10px, 2vw, 18px);
+  font-weight: 700; font-size: 21px; padding: 14px 30px;
   border-radius: 999px; box-shadow: 0 6px 14px -4px rgba(15, 118, 110, .4);
 }
 
@@ -388,10 +432,14 @@ body.dk-home { background: var(--bg-main); }
   .dk-home-hero-inner { flex-direction: column; align-items: center; }
   .dk-home-hero-stage { width: 100%; }
   .dk-home-hero-tools { flex: none; width: 100%; max-width: 420px; }
-  /* The -150px leftward pull is tuned for the stage sitting beside the
-     tools column at desktop widths; once the layout stacks to a single
-     centered column here, that same offset instead pushes the laptop
-     off the left edge of the viewport. */
+  /* The formula above (base rule) is only valid for the side-by-side
+     desktop layout, where it solves for the stage's width as
+     container-minus-tools-minus-gap; once the layout stacks to a
+     single centered column here, the stage is ~the full container
+     width instead, which would make that same formula compute a large
+     leftward shift that just pushes the laptop off-center/off the left
+     edge of the viewport — a flat, small nudge is the correct behavior
+     in this stacked layout, not the formula. */
   .dk-home-hero-visual { transform: translateX(-20px); }
 }
 @media (max-width: 680px) {
@@ -399,9 +447,6 @@ body.dk-home { background: var(--bg-main); }
   .dk-home-hero-text h1 { font-size: 30px; }
   .dk-home-hero-text p { font-size: 15.5px; max-width: none; }
   .dk-home-hero-visual { margin-top: -10px; transform: none; }
-  .dk-home-hero-screen-overlay { gap: 8px; }
-  .dk-home-hero-screen-overlay p { font-size: 13px; }
-  .dk-home-hero-screen-cta { font-size: 9px; padding: 5px 10px; }
 }
 
 /* ============ "Why DeskKit" — first thing visible after the hero on
