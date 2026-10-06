@@ -37,25 +37,37 @@ const DK_SIDEBAR_ICONS = {
   settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.04H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1.04-1.56V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.56 1.04H21a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15z"/></svg>',
 };
 
-const DK_SIDEBAR_ITEMS = [
-  { key: "home", label: "בית", href: "index.html" },
-  { key: "projects", label: "הפרויקטים שלי", href: "projects.html" },
+// Labels read from js/i18n.js's I18N dict at render time (see
+// dkSidebarLabel below) rather than hardcoded Hebrew — same
+// confirmed-live bug as js/header.js: this sidebar is built fresh from
+// this array every time it mounts, which ignored whatever language the
+// page had just been switched to.
+const DK_SIDEBAR_ITEMS = () => [
+  { key: "home", labelKey: "nav_home", href: "index.html" },
+  { key: "projects", labelKey: "nav_my_projects", href: "projects.html" },
   { divider: true },
-  { key: "site", product: "site", label: "אתר", href: "sites.html?new=1" },
-  { key: "cv", product: "cv", label: "קורות חיים", href: "builder.html" },
-  { key: "quote", product: "quote", label: "הצעת מחיר", href: "quote-app.html" },
-  { key: "invoice", product: "invoice", label: "חשבונית", href: "invoice-app.html" },
-  { key: "deck", product: "deck", label: "מצגת", href: "products.html?type=deck" },
-  { key: "xlsx", product: "xlsx", label: "גליון", href: "products.html?type=xlsx" },
+  { key: "site", product: "site", labelKey: "tool_site", href: "sites.html?new=1" },
+  { key: "cv", product: "cv", labelKey: "nav_cv", href: "builder.html" },
+  { key: "quote", product: "quote", labelKey: "card_quote_h", href: "quote-app.html" },
+  { key: "invoice", product: "invoice", labelKey: "card_invoice_h", href: "invoice-app.html" },
+  { key: "deck", product: "deck", labelKey: "card_deck_h", href: "products.html?type=deck" },
+  { key: "xlsx", product: "xlsx", labelKey: "card_xlsx_h", href: "products.html?type=xlsx" },
   { divider: true },
-  { key: "settings", label: "הגדרות", href: "account-settings.html" },
+  { key: "settings", labelKey: "nav_settings", href: "account-settings.html" },
 ];
 
+function dkSidebarLabel(key) {
+  const lang = typeof currentLang === "function" ? currentLang() : "he";
+  const dict = (typeof I18N !== "undefined" && I18N[lang]) || {};
+  return dict[key] || key;
+}
+
 function dkAppSidebarItemHtml(it, here) {
+  const label = it.labelKey ? dkSidebarLabel(it.labelKey) : "";
   if (it.divider) return '<div class="dk-app-sidebar-divider"></div>';
   const active = it.href.split("?")[0] === here;
   const iconBox = `<span class="dk-app-sidebar-icon">${DK_SIDEBAR_ICONS[it.key] || ""}</span>`;
-  return `<a href="${it.href}" class="dk-app-sidebar-item${active ? " active" : ""}"${it.product ? ` data-dk-product="${it.product}"` : ""} title="${it.label}">${iconBox}<span class="dk-app-sidebar-item-label">${it.label}</span></a>`;
+  return `<a href="${it.href}" class="dk-app-sidebar-item${active ? " active" : ""}"${it.product ? ` data-dk-product="${it.product}"` : ""} title="${label}">${iconBox}<span class="dk-app-sidebar-item-label">${label}</span></a>`;
 }
 
 // Collapse state (260px <-> 70px icon-only) is a per-viewer convenience,
@@ -87,7 +99,12 @@ function dkAppSidebarAccountHtml(email) {
   </div>`;
 }
 
+// Remembered so a language-change re-render (see "deskkit:langchange"
+// below) doesn't need a real auth round-trip just to redraw.
+let dkSidebarLastEmail = null;
+
 function dkMountAppSidebar(email) {
+  if (email !== undefined) dkSidebarLastEmail = email;
   if (document.getElementById("dk-app-sidebar")) return;
   const header = document.querySelector("header.site");
   if (header) document.documentElement.style.setProperty("--header-h", header.offsetHeight + "px");
@@ -96,8 +113,8 @@ function dkMountAppSidebar(email) {
   const aside = document.createElement("aside");
   aside.id = "dk-app-sidebar";
   aside.className = "dk-app-sidebar no-print";
-  const toggleBtn = '<button type="button" class="dk-app-sidebar-toggle" id="dk-app-sidebar-toggle" aria-label="כיווץ או הרחבת סרגל הצד">‹</button>';
-  aside.innerHTML = toggleBtn + DK_SIDEBAR_ITEMS.map((it) => dkAppSidebarItemHtml(it, here)).join("") + dkAppSidebarAccountHtml(email);
+  const toggleBtn = `<button type="button" class="dk-app-sidebar-toggle" id="dk-app-sidebar-toggle" aria-label="${dkSidebarLabel("sidebar_toggle_aria")}">‹</button>`;
+  aside.innerHTML = toggleBtn + DK_SIDEBAR_ITEMS().map((it) => dkAppSidebarItemHtml(it, here)).join("") + dkAppSidebarAccountHtml(dkSidebarLastEmail);
   document.body.appendChild(aside);
   document.body.classList.add("dk-app-sidebar-mounted");
   if (dkSidebarCollapsedPref()) document.body.classList.add("dk-app-sidebar-collapsed");
@@ -109,7 +126,7 @@ function dkMountAppSidebar(email) {
       e.stopPropagation();
       const wrap = aside.querySelector(".dk-app-sidebar-account");
       if (wrap.querySelector(".nav-account-dropdown")) { closeNavDropdown(); return; }
-      openNavDropdown(wrap, email || "", acctToggle, true);
+      openNavDropdown(wrap, dkSidebarLastEmail || "", acctToggle, true);
     });
   }
 }
@@ -120,8 +137,19 @@ function dkUnmountAppSidebar() {
   document.body.classList.remove("dk-app-sidebar-mounted");
 }
 
+// Re-renders in place (labels only — same items/order/icons) when the
+// language changes while the sidebar is already mounted; a no-op when
+// it isn't mounted (logged-out visitor, or a page without the sidebar).
+function dkRerenderAppSidebarLabels() {
+  const aside = document.getElementById("dk-app-sidebar");
+  if (!aside) return;
+  dkUnmountAppSidebar();
+  dkMountAppSidebar(dkSidebarLastEmail);
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   if (!document.body.classList.contains("dk-has-app-sidebar")) return;
+  document.addEventListener("deskkit:langchange", dkRerenderAppSidebarLabels);
   if (typeof supabaseClient === "undefined") return;
   supabaseClient.auth.onAuthStateChange((_event, session) => {
     if (session && session.user) dkMountAppSidebar(session.user.email); else dkUnmountAppSidebar();

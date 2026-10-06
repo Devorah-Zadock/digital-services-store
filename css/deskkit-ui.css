@@ -291,7 +291,20 @@ body.dk-home { background: var(--bg-main); }
    default flex flow alone gives the right visual order. */
 .dk-home-hero-inner { display: flex; align-items: flex-start; gap: 40px; }
 .dk-home-hero-stage { flex: 1; min-width: 0; container-type: inline-size; }
-.dk-home-hero-text { max-width: 480px; }
+/* z-index + relative: guarantees the headline/CTA/watch-link always
+   paint ABOVE the laptop photo, regardless of how much their boxes
+   overlap. Needed because the photo isn't mirror-symmetric (its real
+   bezel/lid pixels, not just its bounding box, are asymmetric) — in
+   RTL the overlap zone (see .dk-home-hero-visual's own comment on the
+   direction-aware shift) happens to land on a transparent part of the
+   photo, but in LTR the equivalent zone lands on the laptop's actual
+   opaque lid, which was confirmed live to visibly cover/cut off the
+   CTA button and watch-link text. This doesn't fix the composition
+   (the laptop now tucks fully behind the text there instead), but it
+   guarantees the text itself always stays fully readable and
+   clickable in both directions rather than silently depending on
+   which part of an asymmetric photo the overlap zone happens to hit. */
+.dk-home-hero-text { max-width: 480px; position: relative; z-index: 1; }
 .dk-home-hero-text h1 { font-size: 38px; font-weight: 700; line-height: 1.3; margin: 0 0 16px; color: var(--text-main); font-family: Heebo, Arial, sans-serif; }
 .dk-home-hero-text p { font-size: 16px; color: #475569; line-height: 1.6; margin: 0 0 24px; }
 .dk-home-hero-ctas { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -370,9 +383,22 @@ body.dk-home { background: var(--bg-main); }
    value needed (replacing the old 860px-breakpoint override below). */
 .dk-home-hero-visual {
   width: 100%; max-width: 640px; margin-top: -250px; position: relative;
-  transform: translateX(calc(-1 * clamp(0px, (100cqw - 656px), 170px)));
+  /* translateX is always a PHYSICAL shift (never direction-aware on its
+     own) — confirmed-live bug this caused: toggling to English flips
+     the page to dir="ltr", which also flips which physical edge this
+     box sits flush against by default (RTL: flush-right, so shifting
+     left pulls it toward the tools column on the physical left; LTR:
+     flush-left instead, so that same leftward shift pulled it further
+     away from the stage's own box and off the left edge of the
+     viewport entirely — "jumps to the side"). The shift amount itself
+     (the clamp() formula, explained below) is direction-agnostic and
+     correct either way; only its SIGN needs to flip with the page
+     direction, via this custom property. */
+  --dk-hero-shift: clamp(0px, (100cqw - 656px), 170px);
+  transform: translateX(calc(-1 * var(--dk-hero-shift)));
   container-type: inline-size;
 }
+html[dir="ltr"] .dk-home-hero-visual { transform: translateX(var(--dk-hero-shift)); }
 .dk-home-hero-laptop-img {
   width: 100%; display: block;
   filter: drop-shadow(0 25px 35px rgba(0, 0, 0, .12)) drop-shadow(0 8px 10px rgba(0, 0, 0, .08));
@@ -439,8 +465,10 @@ body.dk-home { background: var(--bg-main); }
      width instead, which would make that same formula compute a large
      leftward shift that just pushes the laptop off-center/off the left
      edge of the viewport — a flat, small nudge is the correct behavior
-     in this stacked layout, not the formula. */
-  .dk-home-hero-visual { transform: translateX(-20px); }
+     in this stacked layout, not the formula. Still direction-aware
+     (see the base rule above) since translateX itself never is. */
+  .dk-home-hero-visual { --dk-hero-shift: 20px; transform: translateX(calc(-1 * var(--dk-hero-shift))); }
+  html[dir="ltr"] .dk-home-hero-visual { transform: translateX(var(--dk-hero-shift)); }
 }
 @media (max-width: 680px) {
   .dk-home-hero { padding: 40px 0 36px; }

@@ -357,6 +357,14 @@ const I18N = {
     step3_h: "אתם משנים, משפרים ומפרסמים", step3_p_home: "בבילדר החי, עד שזה מרגיש בדיוק נכון.",
     wow_q: "שאלון", wow_understand: "DeskKit מבין", wow_design: "עיצוב נוצר", wow_result: "תוצאה",
     dash_subtitle: "מה ניצור היום?", recent_projects_h: "הפרויקטים האחרונים שלך", show_all: "הצג הכל ←",
+
+    // Shared header/sidebar JS components (js/header.js, js/app-sidebar.js)
+    // render their own nav/labels from real auth state via plain JS, not
+    // static data-i18n markup — these keys are read directly from I18N by
+    // that code (see currentLang()/I18N usage in those files) rather than
+    // via the data-i18n sweep.
+    nav_create: "יצירה", nav_my_projects: "הפרויקטים שלי", header_cta_start: "התחילו ליצור",
+    nav_settings: "הגדרות", sidebar_toggle_aria: "כיווץ או הרחבת סרגל הצד",
   },
   en: {
     nav_home: "Home", nav_sites: "Build a Site", nav_quotes: "Quotes", nav_cv: "Resumes",
@@ -700,6 +708,9 @@ const I18N = {
     step3_h: "You tweak, improve and publish", step3_p_home: "In the live builder, until it feels exactly right.",
     wow_q: "Questionnaire", wow_understand: "DeskKit understands", wow_design: "Design created", wow_result: "Result",
     dash_subtitle: "What shall we create today?", recent_projects_h: "Your recent projects", show_all: "View all ←",
+
+    nav_create: "Create", nav_my_projects: "My Projects", header_cta_start: "Start creating",
+    nav_settings: "Settings", sidebar_toggle_aria: "Collapse or expand sidebar",
   },
 };
 

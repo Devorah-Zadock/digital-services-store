@@ -305,7 +305,7 @@ body.has-sites-rail header.site {
 .brand-desk { font-weight: 700; }
 .brand-kit { font-weight: 400; color: #0E8C8C; }
 .nav-end-group { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
-@media (min-width: 861px) {
+@media (min-width: 941px) {
   .brand { order: 3; }
   .nav-links { order: 2; }
   .nav-end-group { order: 1; }
@@ -319,10 +319,33 @@ body.has-sites-rail header.site {
    left edge entirely — unclickable. Taking .brand back out of the
    flex flow on mobile (its own pre-existing position:absolute, the
    same technique this file already used for every page before this
-   pass) restores the exact layout this always had below 860px; only
-   desktop gets the new contained/centered row. */
-@media (max-width: 860px) {
-  .nav { padding-inline: 20px; }
+   pass) restores the exact layout this always had below this
+   breakpoint; only desktop gets the new contained/centered row.
+   Raised from 860px to 940px: with the EN translation fix (js/header.js
+   now actually renders English labels — "What you can create", "How it
+   works" — instead of silently staying Hebrew), confirmed live that the
+   inline nav genuinely ran out of room and individual links wrapped
+   mid-phrase in the ~861–919px band specifically in English (longer
+   than the Hebrew labels that band was tuned against) — not a hero/
+   layout bug, a header one. Moving to the mobile nav (already a
+   working, already-styled slide-in panel, see the matching 860px→940px
+   change below) a bit earlier removes that squeeze band entirely
+   rather than trying to fit more words into less room. */
+@media (max-width: 940px) {
+  /* justify-content:flex-end — confirmed live this was still needed:
+     taking .brand out of flow (below) frees up the space, but with no
+     justify-content override .nav's default flex-start simply packs
+     the next in-flow children (.nav-end-group, then .burger — nav-links
+     is also out of flow here, see the slide-in-panel rule) flush
+     against the SAME start edge .brand is itself absolutely pinned to,
+     so they land in the same corner instead of the free space. Only
+     matters once .nav-end-group actually has real content in it (the
+     "Start creating" CTA js/header.js injects for a logged-out
+     visitor) — before the EN-translation fix, that CTA silently never
+     rendered in English, so this collision never got far enough to be
+     visible in practice. flex-end (not a hardcoded side) stays correct
+     under RTL and LTR alike, same as everywhere else in this file. */
+  .nav { padding-inline: 20px; justify-content: flex-end; }
   .brand { position: absolute; top: 50%; inset-inline-start: 20px; transform: translateY(-50%); }
 }
 .nav-links { display: flex; align-items: center; justify-content: center; flex: 1; gap: 6px; font-size: 15px; font-weight: 500; }
@@ -1583,13 +1606,36 @@ body.cookie-notice-active .fab { display: none; }
 @media (max-width: 860px) {
   .grid, .features, .quote-grid, .steps, .footer-grid { grid-template-columns: 1fr; }
   .product-hero { grid-template-columns: 1fr; padding: 30px 0; }
-  .nav-links { position: fixed; inset-inline-end: 0; top: 68px; background: var(--white); flex-direction: column;
-    width: 220px; padding: 20px; box-shadow: 6px 0 20px rgba(0,0,0,.08); transform: translateX(-100%);
-    transition: transform .2s ease; height: calc(100vh - 68px); }
-  .nav-links.open { transform: translateX(0); }
-  .burger { display: block; }
   .hero h1 { font-size: 32px; }
   .banner { flex-direction: column; text-align: center; }
+}
+/* Nav → mobile slide-in panel + burger: moved to its own 940px
+   breakpoint (was bundled into the 860px one above) — see the matching
+   comment on the .brand rule near the top of this file for why. Kept
+   separate from the grid/hero/banner rules above on purpose: those are
+   unrelated to the nav squeeze this fixes, so there's no reason to move
+   their own breakpoint along with it. */
+@media (max-width: 940px) {
+  /* translateX(-100%) only hides this off-canvas correctly in RTL: the
+     panel rests at inset-inline-end:0, which is the PHYSICAL LEFT edge
+     in RTL (direction:rtl, the site's default) but the PHYSICAL RIGHT
+     edge in LTR — translateX is never direction-aware on its own, so
+     the exact same -100% that correctly pushes it further off-screen-
+     left in RTL instead slides it IN from the right, INTO view, in
+     English — confirmed live: switching to English showed this panel
+     sitting open in the middle of the page, fully opaque, over the
+     hero content, without ever clicking the burger. Same fix pattern
+     as the hero laptop's direction-aware shift (see css/deskkit-ui.css,
+     .dk-home-hero-visual): the magnitude stays one shared value, only
+     the sign flips per direction. */
+  .nav-links { position: fixed; inset-inline-end: 0; top: 68px; background: var(--white); flex-direction: column;
+    width: 220px; padding: 20px; box-shadow: 6px 0 20px rgba(0,0,0,.08);
+    --dk-nav-panel-shift: -100%;
+    transform: translateX(var(--dk-nav-panel-shift));
+    transition: transform .2s ease; height: calc(100vh - 68px); }
+  html[dir="ltr"] .nav-links { --dk-nav-panel-shift: 100%; }
+  .nav-links.open { transform: translateX(0); }
+  .burger { display: block; }
 }
 
 /* ---------- Domain connection guide popup ---------- */
