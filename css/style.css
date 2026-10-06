@@ -1737,6 +1737,28 @@ html[dir="rtl"] body.dk-app-sidebar-mounted .upsell-popup-wrap {
 .domain-connect-record { background: var(--grey-light); border-radius: 10px; padding: 10px 13px; font-size: 12.5px; }
 .domain-connect-record div { direction: ltr; text-align: left; font-family: monospace; margin-top: 3px; }
 
+/* ---------- CV style picker (non-AI template auto-pick — see
+   js/cv-style-picker.js) — reuses .domain-guide-overlay/-modal for the
+   backdrop/card shell, just its own option-button layout inside. ---------- */
+.cv-style-pick-modal { max-width: 480px; }
+.cv-style-pick-dots { display: flex; gap: 6px; margin-bottom: 14px; }
+.cv-style-pick-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--grey-light); }
+.cv-style-pick-dot.active { background: var(--ink); }
+.cv-style-pick-opts { display: flex; flex-direction: column; gap: 10px; }
+.cv-style-pick-opt {
+  text-align: start; background: var(--grey-light); border: 2px solid transparent; border-radius: 10px;
+  padding: 13px 16px; cursor: pointer; font-family: inherit; display: flex; flex-direction: column; gap: 3px;
+  transition: border-color .15s ease, background .15s ease;
+}
+.cv-style-pick-opt:hover { border-color: var(--ink); background: var(--ice); }
+.cv-style-pick-opt-label { font-size: 14.5px; font-weight: 700; color: var(--ink-dark); }
+.cv-style-pick-opt-desc { font-size: 12.5px; color: var(--grey); }
+.cv-style-pick-skip {
+  display: block; margin: 18px auto 0; background: none; border: none; cursor: pointer;
+  font-family: inherit; font-size: 12.5px; color: var(--grey); text-decoration: underline;
+}
+.cv-style-pick-skip:hover { color: var(--ink-dark); }
+
 /* ---------- Auth prompt (join-to-save popup — see js/auth-prompt.js) ---------- */
 .auth-prompt-modal { max-width: 400px; text-align: center; }
 .auth-prompt-modal .lead { margin-bottom: 24px; }

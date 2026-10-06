@@ -36,11 +36,41 @@ function dkQuoteIntroNote(html) {
   if (note) note.innerHTML = html;
 }
 
+// Visible, zero-AI style choice on this same first screen — a real gap
+// before this: a new quote always silently opened as QUOTE_TEMPLATE_DEFAULT
+// ("classic") with no way to tell that was even a choice. Only 4 real
+// styles exist (QUOTE_TEMPLATES, js/quote-render.js) and they already map
+// 1:1 onto a style+category description each, so a direct pick list here
+// is the right-sized answer — no multi-question flow needed the way CV's
+// 15-slug/7-field space needed one (js/cv-style-picker.js).
+let dkQuoteIntroStyle = QUOTE_TEMPLATE_DEFAULT;
+
+function dkQuoteIntroRenderStyleRow() {
+  const row = document.getElementById("qa-intro-style-row");
+  if (!row) return;
+  // Reuses .dk-style-chip/.dk-style-grid — the same visual-chip pattern
+  // the Site Wizard already uses for its own style choice — rather than
+  // a one-off look just for this row.
+  row.innerHTML = Object.entries(QUOTE_TEMPLATES).map(([slug, t]) => `
+    <button type="button" class="dk-style-chip${slug === dkQuoteIntroStyle ? " selected" : ""}" data-style="${slug}" title="${escapeHtmlQ(t.desc)}">
+      <span>${escapeHtmlQ(t.label)}</span>
+    </button>
+  `).join("");
+  row.querySelectorAll("[data-style]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      dkQuoteIntroStyle = btn.dataset.style;
+      dkQuoteIntroRenderStyleRow();
+    });
+  });
+}
+
 function dkShowQuoteIntro() {
   showSection("qa-intro");
   dkQuoteIntroNote("");
   const input = document.getElementById("qa-intro-input");
   if (input) input.value = "";
+  dkQuoteIntroStyle = QUOTE_TEMPLATE_DEFAULT;
+  dkQuoteIntroRenderStyleRow();
 }
 
 async function dkQuoteIntroSubmit() {
@@ -67,6 +97,7 @@ async function dkQuoteIntroSubmit() {
       return;
     }
     const state = emptyQuoteEventState();
+    state.template = dkQuoteIntroStyle;
     const q = data.quote || {};
     if (q.eventName) state.eventName = q.eventName;
     if (q.description) state.description = q.description;
@@ -88,6 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const skip = document.getElementById("qa-intro-skip");
   if (skip) {
     skip.addEventListener("click", () => {
+      pendingTemplate = dkQuoteIntroStyle;
       showQuoteBuilder();
       if (typeof quoteBshellActivate === "function") quoteBshellActivate();
     });

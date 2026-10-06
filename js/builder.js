@@ -335,6 +335,13 @@ document.addEventListener("DOMContentLoaded", () => {
   } else {
     state.lang = startLang === "en" ? "en" : "he";
     document.querySelectorAll(".lang-big").forEach((b) => b.classList.toggle("active", b.dataset.lang === state.lang));
+    // A brand-new visitor (no draft, no explicit ?template= link) still
+    // gets a default template here, same as always, so nothing
+    // downstream ever sees an unresolved state. js/cv-style-picker.js
+    // (registered later, after the Shell has activated) then swaps it
+    // for a deliberately-picked one if this flag is set — see that
+    // file's own comment for why it can't just run inline here.
+    window.dkCvNeedsStylePick = !localDraft && !startSlug;
     loadTemplate(startSlug && CV_TEMPLATES[startSlug] ? startSlug : Object.keys(CV_TEMPLATES)[0]);
     select.value = state.slug;
   }

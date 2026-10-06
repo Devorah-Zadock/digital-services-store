@@ -776,6 +776,11 @@ html[dir="ltr"] .dk-home-hero-visual {
   font-family: inherit; font-size: 13.5px; color: var(--text-secondary); text-decoration: underline;
 }
 .dk-intro-skip:hover { color: var(--text); }
+.qa-intro-style-label { font-size: 12.5px; font-weight: 700; color: var(--text-secondary); margin: 0 0 8px; text-align: start; }
+/* Exactly 4 real quote styles (QUOTE_TEMPLATES) — 2 columns reads
+   cleaner than .dk-style-grid's default 3 (which leaves an odd 4th
+   chip alone on its own row). */
+#qa-intro-style-row.dk-style-grid { grid-template-columns: repeat(2, 1fr); margin-bottom: 18px; }
 
 /* Wizard enhancements: style-choice visual chips */
 .dk-style-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
