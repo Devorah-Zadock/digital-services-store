@@ -126,22 +126,58 @@
     transition: transform .18s ease; flex-shrink: 0;
   }
   .user-row.open .user-row-toggle { transform: rotate(90deg); background: var(--ice); }
-  .user-row-quickcounts { display: flex; gap: 6px; flex-wrap: wrap; }
-  .user-quickcount { font-size: 11.5px; background: var(--grey-light); color: var(--grey); border-radius: 10px; padding: 2px 9px; }
+  /* Main table's "total assets" column: one compact icon+count chip per
+     core product instead of the old 5 separate quickcount pills — same
+     idea, half the width, and consistent with the Usage Dashboard's own
+     icon set below so the two views read as one system. */
+  .usage-summary-row { display: flex; gap: 10px; flex-wrap: wrap; font-size: 12.5px; }
+  .usage-summary-chip { color: var(--dark); white-space: nowrap; }
+  .usage-summary-chip-zero { color: var(--grey); opacity: .5; }
+
   .user-detail-row td { padding: 0; border-bottom: 1px solid #EEF1EF; }
-  .user-detail-panel { background: var(--ice); padding: 16px 20px; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-  .user-detail-panel .user-detail-group-wide { grid-column: 1 / -1; }
+  .user-detail-panel { background: var(--ice); padding: 16px 20px; }
+  .user-detail-main-h { font-size: 13px; color: var(--ink-dark); margin: 0 0 10px; font-weight: 800; }
+  .user-detail-main-h:not(:first-child) { margin-top: 22px; }
+
+  /* Usage Dashboard: 6 tiles, one per core product, at the top of every
+     user's detail panel — plain counts only, deliberately no "/Y": there
+     is no real per-product quota anywhere in this product today (sites
+     are free-to-edit-unlimited; publishing is a one-time payment, not a
+     count cap), so a fake denominator would be worse than none. */
+  .usage-dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; }
+  .usage-tile {
+    background: var(--white); border: 1px solid #E2E7E4; border-radius: 10px;
+    padding: 12px 8px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  }
+  .usage-tile-empty { opacity: .55; }
+  .usage-tile-icon { font-size: 18px; }
+  .usage-tile-count { font-size: 20px; font-weight: 800; color: var(--ink-dark); }
+  .usage-tile-label { font-size: 11px; color: var(--grey); }
+
+  /* Activity & Audit Log: product filter tabs + colored action badges,
+     replacing the old flat bullet-list log that stopped being scannable
+     once a user had more than a handful of entries. */
+  .activity-filter-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .activity-filter-btn {
+    background: var(--white); border: 1px solid #E2E7E4; border-radius: 14px; padding: 5px 12px;
+    font-family: inherit; font-size: 12px; cursor: pointer; color: var(--grey);
+  }
+  .activity-filter-btn:hover { color: var(--ink-dark); }
+  .activity-filter-btn.active { background: var(--ink); border-color: var(--ink); color: var(--white); }
+  .activity-log-wrap { max-height: 320px; overflow-y: auto; }
+  .activity-log-table { font-size: 12.5px; }
+  .activity-date { color: var(--grey); white-space: nowrap; }
+  .activity-badge { display: inline-block; border-radius: 10px; padding: 2px 10px; font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+  .activity-badge.badge-create { background: #E3F5E9; color: #1F7A42; }
+  .activity-badge.badge-edit { background: #E5EEFB; color: #2B6CB0; }
+  .activity-badge.badge-download { background: #F0E7FA; color: #6B46C1; }
+  .activity-badge.badge-delete { background: #FBE7E7; color: #B23333; }
+
+  .user-detail-manage-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
   .user-detail-group h4 { font-size: 12px; color: var(--ink-dark); margin: 0 0 8px; font-weight: 700; }
   .user-detail-group .stats-table { background: var(--white); border-radius: 8px; overflow: hidden; }
   .user-detail-group .stats-table th, .user-detail-group .stats-table td { padding: 7px 10px; font-size: 12px; }
-  .usage-log-list { list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; }
-  .usage-log-list li {
-    display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; color: var(--dark);
-    padding: 6px 0; border-bottom: 1px solid #E2E7E4;
-  }
-  .usage-log-list li:last-child { border-bottom: none; }
-  .usage-log-list .usage-log-date { color: var(--grey); flex-shrink: 0; }
-  @media (max-width: 640px) { .user-detail-panel { grid-template-columns: 1fr; } }
+  @media (max-width: 640px) { .user-detail-manage-grid { grid-template-columns: 1fr; } }
   .stats-chip {
     display: inline-flex; align-items: center; gap: 4px; background: var(--white); color: var(--dark);
     border-radius: 14px; padding: 3px 4px 3px 10px; font-size: 12px; margin: 0 6px 6px 0;
@@ -333,6 +369,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js?v=3"></script>
-<script src="js/admin.js?v=18"></script>
+<script src="js/admin.js?v=19"></script>
 </body>
 </html>

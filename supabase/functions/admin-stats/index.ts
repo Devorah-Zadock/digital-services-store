@@ -38,6 +38,21 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// One shared shape for every row this function hands the per-user
+// activity log, regardless of which real table it came from — the admin
+// UI filters/badges purely off `kind`/`action`, never caring which query
+// produced a given row. `action` is always one of the 4 real things that
+// can happen to a document: "create" | "edit" | "download" | "delete".
+// Nothing here is synthetic/sample data — every entry is a real
+// timestamp drawn from an existing column (several tables don't have a
+// dedicated event log of their own, so their own created_at/updated_at/
+// issued_at IS the event, not a simulation of one). There is currently
+// no real delete-tracking anywhere in the data model (a self-service
+// delete isn't logged, and admin-initiated deletes aren't logged
+// either) — the admin UI's "מחיקה" filter exists and simply has nothing
+// in it yet, rather than this function inventing rows to fill it.
+type ActivityEntry = { kind: string; slug: string | null; action: string; createdAt: string };
+
 async function loadStats(admin: ReturnType<typeof createClient>) {
   const [
     { data: profiles, error: profilesErr },
@@ -49,7 +64,7 @@ async function loadStats(admin: ReturnType<typeof createClient>) {
     { data: scheduleProjects, error: scheduleErr },
   ] = await Promise.all([
       admin.from("customer_profiles").select("id, email, created_at").order("created_at", { ascending: false }),
-      admin.from("site_projects").select("id, user_id, template, status, created_at"),
+      admin.from("site_projects").select("id, user_id, template, status, created_at, updated_at"),
       admin.from("cv_saves").select("user_id, updated_at"),
       // Capped — usage_events grows without bound as the site gets used,
       // and this function returns every row straight to the browser in
@@ -61,8 +76,8 @@ async function loadStats(admin: ReturnType<typeof createClient>) {
       // tables may not exist yet on a site that hasn't run their own
       // one-time SQL setup, same reasoning as usage_events below: treated
       // as "no data yet" rather than failing the whole stats card.
-      admin.from("quote_saves").select("user_id, updated_at"),
-      admin.from("invoice_saves").select("user_id, doc_type, status, updated_at"),
+      admin.from("quote_saves").select("id, user_id, template, created_at, updated_at"),
+      admin.from("invoice_saves").select("id, user_id, doc_type, status, created_at, issued_at"),
       admin.from("schedule_projects").select("user_id, updated_at"),
   ]);
   if (profilesErr) throw profilesErr;
@@ -88,16 +103,7 @@ async function loadStats(admin: ReturnType<typeof createClient>) {
 
   const cvUsers = new Set((cvSaves || []).map((r) => r.user_id));
   const quoteUsers = new Set(usageEvents.filter((e) => e.kind === "quote" && e.action === "edit").map((e) => e.user_id));
-  const quoteSaveCountByUser: Record<string, number> = {};
-  for (const r of quoteSavesRows) quoteSaveCountByUser[r.user_id] = (quoteSaveCountByUser[r.user_id] || 0) + 1;
-  const invoiceCountByUser: Record<string, { total: number; issued: number }> = {};
-  for (const r of invoiceSavesRows) {
-    if (!invoiceCountByUser[r.user_id]) invoiceCountByUser[r.user_id] = { total: 0, issued: 0 };
-    invoiceCountByUser[r.user_id].total += 1;
-    if (r.status === "issued") invoiceCountByUser[r.user_id].issued += 1;
-  }
-  const scheduleCountByUser: Record<string, number> = {};
-  for (const r of scheduleProjectsRows) scheduleCountByUser[r.user_id] = (scheduleCountByUser[r.user_id] || 0) + 1;
+
   const deckDownloadCounts: Record<string, number> = {};
   const xlsxDownloadCounts: Record<string, number> = {};
   const cvTemplateCounts: Record<string, number> = {};
@@ -113,6 +119,66 @@ async function loadStats(admin: ReturnType<typeof createClient>) {
   }
   const deckDownloadCount = Object.values(deckDownloadCounts).reduce((a, b) => a + b, 0);
   const xlsxDownloadCount = Object.values(xlsxDownloadCounts).reduce((a, b) => a + b, 0);
+
+  // Per-user activity log: usage_events rows as-is, PLUS real create/
+  // issue events derived from tables that don't log their own creation
+  // into usage_events (site_projects/quote_saves/invoice_saves) — see
+  // this file's own ActivityEntry comment for why nothing here is
+  // fabricated. Grouped by user up front so building each user's final
+  // array below is a straight lookup, not a per-user re-scan of every
+  // table every time.
+  const activityByUser: Record<string, ActivityEntry[]> = {};
+  const pushActivity = (userId: string, entry: ActivityEntry) => {
+    (activityByUser[userId] || (activityByUser[userId] = [])).push(entry);
+  };
+  for (const e of usageEvents) {
+    pushActivity(e.user_id, { kind: e.kind, slug: e.slug, action: e.action, createdAt: e.created_at });
+  }
+  for (const proj of projects || []) {
+    pushActivity(proj.user_id, { kind: "site", slug: proj.template, action: "create", createdAt: proj.created_at });
+    if (proj.status === "finalized") {
+      pushActivity(proj.user_id, { kind: "site", slug: proj.template, action: "download", createdAt: proj.updated_at || proj.created_at });
+    }
+  }
+  for (const q of quoteSavesRows) {
+    pushActivity(q.user_id, { kind: "quote", slug: q.template || null, action: "create", createdAt: q.created_at });
+  }
+  for (const inv of invoiceSavesRows) {
+    pushActivity(inv.user_id, { kind: "invoice", slug: inv.doc_type, action: "create", createdAt: inv.created_at });
+    if (inv.status === "issued" && inv.issued_at) {
+      pushActivity(inv.user_id, { kind: "invoice", slug: inv.doc_type, action: "download", createdAt: inv.issued_at });
+    }
+  }
+  // Newest-first per user, once, here — every consumer (the admin UI's
+  // "All" view and each per-product filtered view) just reads this
+  // order straight, instead of each one re-sorting its own slice.
+  for (const userId of Object.keys(activityByUser)) {
+    activityByUser[userId].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  const quoteSaveCountByUser: Record<string, number> = {};
+  for (const r of quoteSavesRows) quoteSaveCountByUser[r.user_id] = (quoteSaveCountByUser[r.user_id] || 0) + 1;
+  const invoiceCountByUser: Record<string, { total: number; issued: number }> = {};
+  for (const r of invoiceSavesRows) {
+    if (!invoiceCountByUser[r.user_id]) invoiceCountByUser[r.user_id] = { total: 0, issued: 0 };
+    invoiceCountByUser[r.user_id].total += 1;
+    if (r.status === "issued") invoiceCountByUser[r.user_id].issued += 1;
+  }
+  const scheduleCountByUser: Record<string, number> = {};
+  for (const r of scheduleProjectsRows) scheduleCountByUser[r.user_id] = (scheduleCountByUser[r.user_id] || 0) + 1;
+
+  // Per-user deck/xlsx DOWNLOAD counts — the existing deckDownloadCounts/
+  // xlsxDownloadCounts above are keyed by template slug (global, for the
+  // "most-downloaded template" table), not by user; the Usage Dashboard
+  // needs "how many has THIS user downloaded", a different cut of the
+  // same usage_events rows.
+  const deckCountByUser: Record<string, number> = {};
+  const xlsxCountByUser: Record<string, number> = {};
+  for (const e of usageEvents) {
+    if (e.action !== "download") continue;
+    if (e.kind === "deck") deckCountByUser[e.user_id] = (deckCountByUser[e.user_id] || 0) + 1;
+    if (e.kind === "xlsx") xlsxCountByUser[e.user_id] = (xlsxCountByUser[e.user_id] || 0) + 1;
+  }
 
   type UsageLogEntry = { kind: string; slug: string | null; action: string; createdAt: string };
   const byUser: Record<string, { sites: { id: string; template: string; status: string }[]; usedCvBuilder: boolean; usedQuoteBuilder: boolean; downloads: number; usageLog: UsageLogEntry[] }> = {};
@@ -140,23 +206,39 @@ async function loadStats(admin: ReturnType<typeof createClient>) {
     }
   }
 
-  const users = (profiles || []).map((p) => ({
-    id: p.id,
-    email: p.email,
-    createdAt: p.created_at,
-    usedCvBuilder: byUser[p.id] ? byUser[p.id].usedCvBuilder : false,
-    usedQuoteBuilder: byUser[p.id] ? byUser[p.id].usedQuoteBuilder : false,
-    downloads: byUser[p.id] ? byUser[p.id].downloads : 0,
-    sites: byUser[p.id] ? byUser[p.id].sites : [],
-    usageLog: byUser[p.id] ? byUser[p.id].usageLog : [],
-    // Direct per-tool table counts (not derived from usage_events), so
-    // these are accurate even on an account that never ran
-    // usage_events.sql — same reasoning as sites/usedCvBuilder above.
-    quoteSaveCount: quoteSaveCountByUser[p.id] || 0,
-    invoiceCount: (invoiceCountByUser[p.id] && invoiceCountByUser[p.id].total) || 0,
-    invoiceIssuedCount: (invoiceCountByUser[p.id] && invoiceCountByUser[p.id].issued) || 0,
-    scheduleCount: scheduleCountByUser[p.id] || 0,
-  }));
+  const users = (profiles || []).map((p) => {
+    const sites = byUser[p.id] ? byUser[p.id].sites : [];
+    const invoiceCounts = invoiceCountByUser[p.id];
+    return {
+      id: p.id,
+      email: p.email,
+      createdAt: p.created_at,
+      usedCvBuilder: byUser[p.id] ? byUser[p.id].usedCvBuilder : false,
+      usedQuoteBuilder: byUser[p.id] ? byUser[p.id].usedQuoteBuilder : false,
+      downloads: byUser[p.id] ? byUser[p.id].downloads : 0,
+      sites,
+      usageLog: byUser[p.id] ? byUser[p.id].usageLog : [],
+      // Direct per-tool table counts (not derived from usage_events), so
+      // these are accurate even on an account that never ran
+      // usage_events.sql — same reasoning as sites/usedCvBuilder above.
+      quoteSaveCount: quoteSaveCountByUser[p.id] || 0,
+      invoiceCount: (invoiceCounts && invoiceCounts.total) || 0,
+      invoiceIssuedCount: (invoiceCounts && invoiceCounts.issued) || 0,
+      scheduleCount: scheduleCountByUser[p.id] || 0,
+      // The 6-product Usage Dashboard's own numbers, all real counts
+      // (never a fraction of some allowed maximum — there is no such
+      // cap anywhere in this product today).
+      usage: {
+        sites: sites.length,
+        cv: cvUsers.has(p.id) ? 1 : 0,
+        decks: deckCountByUser[p.id] || 0,
+        sheets: xlsxCountByUser[p.id] || 0,
+        quotes: quoteSaveCountByUser[p.id] || 0,
+        invoices: (invoiceCounts && invoiceCounts.total) || 0,
+      },
+      activity: activityByUser[p.id] || [],
+    };
+  });
 
   return {
     userCount: users.length, cvBuilderUserCount: cvUsers.size, quoteBuilderUserCount: quoteUsers.size,

@@ -95,20 +95,87 @@ function renderKpiChart(canvasId, items) {
   });
 }
 
-const USAGE_KIND_LABELS = { cv: "קורות חיים", deck: "מצגת", xlsx: "גיליון", quote: "הצעת מחיר", invoice: "חשבונית/קבלה" };
-const USAGE_ACTION_LABELS = { edit: "עריכה", download: "הורדה" };
+const USAGE_KIND_LABELS = { site: "אתר", cv: "קורות חיים", deck: "מצגת", xlsx: "גיליון", quote: "הצעת מחיר", invoice: "חשבונית/קבלה" };
+const USAGE_ACTION_LABELS = { create: "יצירה", edit: "עריכה", download: "הורדה", delete: "מחיקה" };
+const USAGE_ACTION_BADGE_CLASS = { create: "badge-create", edit: "badge-edit", download: "badge-download", delete: "badge-delete" };
 const INVOICE_DOC_TYPE_LABELS = { invoice_receipt: "חשבונית מס-קבלה", receipt: "קבלה", credit_note: "חשבונית זיכוי" };
-function usageLogLineHtml(entry) {
+
+function activityItemLabel(entry) {
+  if (!entry.slug) return "—";
+  if (entry.kind === "quote") return quoteTemplateLabel(entry.slug);
+  if (entry.kind === "invoice") return INVOICE_DOC_TYPE_LABELS[entry.slug] || entry.slug;
+  if (entry.kind === "site") return templateLabel(entry.slug);
+  return productLabel(entry.slug);
+}
+
+/* One row per real event — [date+time] | [product] | [action badge] |
+   [item] — replacing the old flat bullet-list log, which read fine with
+   a handful of entries but became an unreadable wall of text once a
+   user had dozens/hundreds of them (confirmed as a real ask: "קשה
+   לעקוב אחרי אלפי משתמשים בצורה הזו"). */
+function activityRowHtml(entry) {
   const kindLabel = USAGE_KIND_LABELS[entry.kind] || entry.kind;
   const actionLabel = USAGE_ACTION_LABELS[entry.action] || entry.action;
-  const itemLabel = entry.slug
-    ? (entry.kind === "quote" ? quoteTemplateLabel(entry.slug)
-       : entry.kind === "invoice" ? (INVOICE_DOC_TYPE_LABELS[entry.slug] || entry.slug)
-       : productLabel(entry.slug))
-    : "";
+  const badgeClass = USAGE_ACTION_BADGE_CLASS[entry.action] || "";
   const dateStr = entry.createdAt ? new Date(entry.createdAt).toLocaleString("he-IL", { dateStyle: "short", timeStyle: "short" }) : "";
-  return `<li><span>${escapeHtml(kindLabel)}${itemLabel ? " · " + escapeHtml(itemLabel) : ""} — ${escapeHtml(actionLabel)}</span><span class="usage-log-date">${escapeHtml(dateStr)}</span></li>`;
+  return `<tr>
+    <td class="activity-date">${escapeHtml(dateStr)}</td>
+    <td>${escapeHtml(kindLabel)}</td>
+    <td><span class="activity-badge ${badgeClass}">${escapeHtml(actionLabel)}</span></td>
+    <td>${escapeHtml(activityItemLabel(entry))}</td>
+  </tr>`;
 }
+
+/* Shared between the Usage Dashboard tiles (per-user detail panel) and
+   the main table's "total assets" column — one icon/label per core
+   product, in the fixed order the product ask listed them. Counts only,
+   deliberately with no "/Y": there is no real per-product quota
+   anywhere in this product today (sites are free-to-edit-unlimited,
+   publishing is a one-time payment, not a count cap) — see usage.* on
+   the server (supabase/functions/admin-stats/index.ts). Showing a fake
+   denominator would be worse than showing none. */
+const USAGE_DASHBOARD_ITEMS = [
+  { key: "sites", icon: "🌐", label: "אתרים" },
+  { key: "cv", icon: "📄", label: "קורות חיים" },
+  { key: "decks", icon: "📊", label: "מצגות" },
+  { key: "sheets", icon: "📈", label: "גליונות" },
+  { key: "quotes", icon: "📋", label: "הצעות מחיר" },
+  { key: "invoices", icon: "🧾", label: "חשבוניות" },
+];
+
+function usageDashboardHtml(usage) {
+  const tiles = USAGE_DASHBOARD_ITEMS.map((it) => {
+    const count = (usage && usage[it.key]) || 0;
+    return `<div class="usage-tile${count ? "" : " usage-tile-empty"}">
+      <span class="usage-tile-icon">${it.icon}</span>
+      <span class="usage-tile-count">${count}</span>
+      <span class="usage-tile-label">${escapeHtml(it.label)}</span>
+    </div>`;
+  }).join("");
+  return `<div class="usage-dashboard">${tiles}</div>`;
+}
+
+function usageSummaryRowHtml(usage) {
+  return USAGE_DASHBOARD_ITEMS.map((it) => {
+    const count = (usage && usage[it.key]) || 0;
+    return `<span class="usage-summary-chip${count ? "" : " usage-summary-chip-zero"}" title="${escapeHtml(it.label)}">${it.icon}${count}</span>`;
+  }).join("");
+}
+
+const ACTIVITY_FILTER_TABS = [
+  { key: "all", label: "הכל" },
+  { key: "site", label: "אתרים" },
+  { key: "cv", label: "קו״ח" },
+  { key: "deck", label: "מצגות" },
+  { key: "xlsx", label: "גליונות" },
+  { key: "quote", label: "הצעות מחיר" },
+  { key: "invoice", label: "חשבוניות" },
+];
+
+/* Keyed by user id, kept at module level (not re-declared on every
+   render) so switching a filter tab survives a background data refresh
+   the way the search/sort/page state above already does. */
+let dkAdminActivityFilter = {};
 
 function renderCustomerStats(data) {
   const summary = document.getElementById("stats-summary");
@@ -207,17 +274,28 @@ function dkAdminFilteredUsers() {
   return sorted;
 }
 
-/* One user's detail panel, split into a real table per tool (sites,
-   quote, invoice, schedule — each its own short .stats-table) instead
-   of the old loose chips, plus the full usage log — a clear, scannable
-   breakdown per tool instead of everything folded into a couple of
-   sentences, confirmed as a real ask ("פירוט ממש מסודר מחולק
-   בטבלאות... חלוקה לפי סוג הכלי"). quoteSaveCount/invoiceCount/
-   invoiceIssuedCount/scheduleCount come straight from their own tables
-   server-side (supabase/functions/admin-stats/index.ts), not derived
-   from usage_events, so they're accurate even on an account that never
-   ran usage_events.sql. */
+/* One user's detail panel: a 6-tile Usage Dashboard up top (at-a-glance
+   counts per core product), then a filtered + color-badged Activity
+   Log (the real per-event history), then a compact management section
+   for the two destructive admin actions this page supports (deleting a
+   site or a saved CV). Replaces the old loose quickcounts text, five
+   separate mini-tables and flat usage-log bullet list — confirmed ask:
+   a "normal, professional, visual" structure instead of long text lines
+   that stop being scannable once there are real customers to look
+   through. usage/activity both come straight from the server
+   (supabase/functions/admin-stats/index.ts) — see its own ActivityEntry
+   comment for why there's no "/Y" quota and no fabricated delete rows. */
 function userDetailPanelHtml(u) {
+  const activity = u.activity || [];
+  const filterKey = dkAdminActivityFilter[u.id] || "all";
+  const filtered = filterKey === "all" ? activity : activity.filter((e) => e.kind === filterKey);
+  const tabsHtml = ACTIVITY_FILTER_TABS.map((t) =>
+    `<button type="button" class="activity-filter-btn${t.key === filterKey ? " active" : ""}" data-activity-tab="${t.key}" data-uid="${u.id}">${escapeHtml(t.label)}</button>`
+  ).join("");
+  const rowsHtml = filtered.length
+    ? filtered.map(activityRowHtml).join("")
+    : `<tr><td colspan="4">${activity.length ? "אין פעילות מהסוג הזה" : "אין תיעוד פעילות"}</td></tr>`;
+
   const sitesRows = u.sites.length
     ? u.sites.map((s) => `<tr><td>${escapeHtml(templateLabel(s.template))}</td><td>${s.status === "finalized" ? "✓ שולם והורד" : "טיוטה"}</td><td><button type="button" class="stats-del-btn" data-del="site:${s.id}" title="מחיקת האתר הזה">✕</button></td></tr>`).join("")
     : `<tr><td colspan="3">אין אתרים</td></tr>`;
@@ -226,24 +304,39 @@ function userDetailPanelHtml(u) {
     : `<tr><td colspan="2">לא נעשה שימוש</td></tr>`;
 
   return `
-    <div class="user-detail-group"><h4>אתרים</h4>
-      <table class="stats-table"><thead><tr><th>תבנית</th><th>סטטוס</th><th></th></tr></thead><tbody>${sitesRows}</tbody></table>
+    <h4 class="user-detail-main-h">סיכום צריכה</h4>
+    ${usageDashboardHtml(u.usage)}
+    <h4 class="user-detail-main-h">יומן פעילות</h4>
+    <div class="activity-filter-tabs">${tabsHtml}</div>
+    <div class="stats-table-wrap activity-log-wrap">
+      <table class="stats-table activity-log-table">
+        <thead><tr><th>תאריך ושעה</th><th>מוצר</th><th>פעולה</th><th>פריט</th></tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
     </div>
-    <div class="user-detail-group"><h4>קורות חיים</h4>
-      <table class="stats-table"><tbody>${cvRows}</tbody></table>
-    </div>
-    <div class="user-detail-group"><h4>הצעות מחיר</h4>
-      <table class="stats-table"><tbody><tr><td>${u.quoteSaveCount ? `${u.quoteSaveCount} הצעות נשמרו` : "לא נעשה שימוש"}</td></tr></tbody></table>
-    </div>
-    <div class="user-detail-group"><h4>חשבוניות</h4>
-      <table class="stats-table"><tbody><tr><td>${u.invoiceCount ? `${u.invoiceCount} מסמכים (${u.invoiceIssuedCount} הופקו רשמית)` : "לא נעשה שימוש"}</td></tr></tbody></table>
-    </div>
-    <div class="user-detail-group"><h4>מערכות שעות / גליונות</h4>
-      <table class="stats-table"><tbody><tr><td>${u.scheduleCount ? `${u.scheduleCount} מערכות נשמרו` : "לא נעשה שימוש"}</td></tr></tbody></table>
-    </div>
-    <div class="user-detail-group user-detail-group-wide"><h4>יומן שימוש מפורט</h4>${
-      (u.usageLog && u.usageLog.length) ? `<ul class="usage-log-list">${u.usageLog.map(usageLogLineHtml).join("")}</ul>` : "אין תיעוד שימוש"
-    }</div>`;
+    <h4 class="user-detail-main-h">ניהול</h4>
+    <div class="user-detail-manage-grid">
+      <div class="user-detail-group"><h4>אתרים</h4>
+        <table class="stats-table"><thead><tr><th>תבנית</th><th>סטטוס</th><th></th></tr></thead><tbody>${sitesRows}</tbody></table>
+      </div>
+      <div class="user-detail-group"><h4>קורות חיים</h4>
+        <table class="stats-table"><tbody>${cvRows}</tbody></table>
+      </div>
+    </div>`;
+}
+
+/* Delegated like the other stats-users-table handlers below — re-renders
+   just the one panel whose tab was clicked (looked up fresh from
+   dkAdminRawUsers), so the row stays open and every other open panel is
+   untouched. */
+function handleActivityFilterClick(e) {
+  const btn = e.target.closest("[data-activity-tab]");
+  if (!btn) return;
+  dkAdminActivityFilter[btn.dataset.uid] = btn.dataset.activityTab;
+  const u = dkAdminRawUsers.find((x) => x.id === btn.dataset.uid);
+  if (!u) return;
+  const panel = btn.closest(".user-detail-panel");
+  if (panel) panel.innerHTML = userDetailPanelHtml(u);
 }
 
 function dkAdminSortArrow(key) {
@@ -274,20 +367,13 @@ function renderUsersTable() {
       const i = dkAdminRawUsers.indexOf(u);
       const date = u.createdAt ? new Date(u.createdAt).toLocaleDateString("he-IL") : "—";
       const email = u.email || u.id;
-      const quickCounts = [
-        `${u.sites.length} אתרים`,
-        u.usedCvBuilder ? "קו״ח: כן" : "קו״ח: לא",
-        `${u.quoteSaveCount || 0} הצעות מחיר`,
-        `${u.invoiceCount || 0} חשבוניות`,
-        u.downloads ? `${u.downloads} הורדות` : "0 הורדות",
-      ].map((c) => `<span class="user-quickcount">${escapeHtml(c)}</span>`).join("");
 
       return `
         <tr class="user-row" data-uidx="${i}">
           <td><span class="user-row-toggle">›</span></td>
           <td>${escapeHtml(email)}</td>
           <td>${date}</td>
-          <td><div class="user-row-quickcounts">${quickCounts}</div></td>
+          <td><div class="usage-summary-row">${usageSummaryRowHtml(u.usage)}</div></td>
         </tr>
         <tr class="user-detail-row" data-uidx="${i}" hidden>
           <td colspan="4"><div class="user-detail-panel">${userDetailPanelHtml(u)}</div></td>
@@ -301,7 +387,7 @@ function renderUsersTable() {
         <th></th>
         <th class="sortable${dkAdminSortKey === "email" ? " sort-active" : ""}" data-sort="email">מייל ${dkAdminSortArrow("email")}</th>
         <th class="sortable${dkAdminSortKey === "createdAt" ? " sort-active" : ""}" data-sort="createdAt">נרשם בתאריך ${dkAdminSortArrow("createdAt")}</th>
-        <th>סיכום</th>
+        <th>סך הכל נכסים</th>
       </tr></thead>
       <tbody>${userRows || `<tr><td colspan="4">${dkAdminSearchQuery ? "לא נמצאו משתמשים תואמים" : "עדיין אין משתמשים"}</td></tr>`}</tbody>
     </table>`;
@@ -560,6 +646,7 @@ function showCustomerStatsCard() {
   document.getElementById("stats-users-table").addEventListener("click", handleStatsDeleteClick);
   document.getElementById("stats-users-table").addEventListener("click", handleUserRowToggle);
   document.getElementById("stats-users-table").addEventListener("click", handleUsersTableHeaderClick);
+  document.getElementById("stats-users-table").addEventListener("click", handleActivityFilterClick);
   const searchInput = document.getElementById("stats-search");
   if (searchInput) {
     searchInput.addEventListener("input", () => {
