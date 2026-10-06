@@ -177,27 +177,112 @@ function renderCustomerStats(data) {
 
   renderKpiChart("kpi-chart-canvas", kpiItems);
 
-  // Each user is two rows: a compact summary row (click to expand) and a
-  // detail row that starts hidden — full site list, CV/quote usage, a
-  // full itemized usage log and delete controls live there instead of
-  // being crammed into chips inside the summary row itself.
-  const userRows = data.users
-    .map((u, i) => {
-      const sitesHtml = u.sites.length
-        ? u.sites.map((s) => `<span class="stats-chip">${escapeHtml(templateLabel(s.template))}${s.status === "finalized" ? " ✓ שולם והורד" : " (טיוטה)"}<button type="button" class="stats-del-btn" data-del="site:${s.id}" title="מחיקת האתר הזה">✕</button></span>`).join("")
-        : "אין אתרים";
-      const cvHtml = u.usedCvBuilder
-        ? `<span class="stats-chip">קורות חיים נשמרו<button type="button" class="stats-del-btn" data-del="cv:${u.id}" title="מחיקת קורות החיים">✕</button></span>`
-        : "לא נעשה שימוש";
-      const quoteHtml = u.usedQuoteBuilder ? "כן" : "לא";
-      const usageLogHtml = (u.usageLog && u.usageLog.length)
-        ? `<ul class="usage-log-list">${u.usageLog.map(usageLogLineHtml).join("")}</ul>`
-        : "אין תיעוד שימוש";
+  // Kept across refreshes/deletes (not re-declared here) so a search
+  // term, sort column or page the admin already picked survives a
+  // "רענון נתונים" click or a row delete instead of resetting every time.
+  dkAdminRawUsers = data.users;
+  dkAdminPage = Math.min(dkAdminPage, Math.max(1, Math.ceil(dkAdminFilteredUsers().length / DK_ADMIN_PAGE_SIZE)));
+  renderUsersTable();
+}
+
+let dkAdminRawUsers = [];
+let dkAdminSearchQuery = "";
+let dkAdminSortKey = "createdAt";
+let dkAdminSortDir = "desc";
+let dkAdminPage = 1;
+const DK_ADMIN_PAGE_SIZE = 50;
+
+const DK_ADMIN_SORTERS = {
+  email: (u) => (u.email || u.id || "").toLowerCase(),
+  createdAt: (u) => (u.createdAt ? new Date(u.createdAt).getTime() : 0),
+  sites: (u) => u.sites.length,
+  downloads: (u) => u.downloads || 0,
+};
+
+function dkAdminFilteredUsers() {
+  const q = dkAdminSearchQuery.trim().toLowerCase();
+  const filtered = q ? dkAdminRawUsers.filter((u) => (u.email || u.id || "").toLowerCase().includes(q)) : dkAdminRawUsers;
+  const sorter = DK_ADMIN_SORTERS[dkAdminSortKey] || DK_ADMIN_SORTERS.createdAt;
+  const sorted = filtered.slice().sort((a, b) => {
+    const av = sorter(a), bv = sorter(b);
+    const cmp = av < bv ? -1 : av > bv ? 1 : 0;
+    return dkAdminSortDir === "asc" ? cmp : -cmp;
+  });
+  return sorted;
+}
+
+/* One user's detail panel, split into a real table per tool (sites,
+   quote, invoice, schedule — each its own short .stats-table) instead
+   of the old loose chips, plus the full usage log — a clear, scannable
+   breakdown per tool instead of everything folded into a couple of
+   sentences, confirmed as a real ask ("פירוט ממש מסודר מחולק
+   בטבלאות... חלוקה לפי סוג הכלי"). quoteSaveCount/invoiceCount/
+   invoiceIssuedCount/scheduleCount come straight from their own tables
+   server-side (supabase/functions/admin-stats/index.ts), not derived
+   from usage_events, so they're accurate even on an account that never
+   ran usage_events.sql. */
+function userDetailPanelHtml(u) {
+  const sitesRows = u.sites.length
+    ? u.sites.map((s) => `<tr><td>${escapeHtml(templateLabel(s.template))}</td><td>${s.status === "finalized" ? "✓ שולם והורד" : "טיוטה"}</td><td><button type="button" class="stats-del-btn" data-del="site:${s.id}" title="מחיקת האתר הזה">✕</button></td></tr>`).join("")
+    : `<tr><td colspan="3">אין אתרים</td></tr>`;
+  const cvRows = u.usedCvBuilder
+    ? `<tr><td>נשמרו קורות חיים</td><td><button type="button" class="stats-del-btn" data-del="cv:${u.id}" title="מחיקת קורות החיים">✕</button></td></tr>`
+    : `<tr><td colspan="2">לא נעשה שימוש</td></tr>`;
+
+  return `
+    <div class="user-detail-group"><h4>אתרים</h4>
+      <table class="stats-table"><thead><tr><th>תבנית</th><th>סטטוס</th><th></th></tr></thead><tbody>${sitesRows}</tbody></table>
+    </div>
+    <div class="user-detail-group"><h4>קורות חיים</h4>
+      <table class="stats-table"><tbody>${cvRows}</tbody></table>
+    </div>
+    <div class="user-detail-group"><h4>הצעות מחיר</h4>
+      <table class="stats-table"><tbody><tr><td>${u.quoteSaveCount ? `${u.quoteSaveCount} הצעות נשמרו` : "לא נעשה שימוש"}</td></tr></tbody></table>
+    </div>
+    <div class="user-detail-group"><h4>חשבוניות</h4>
+      <table class="stats-table"><tbody><tr><td>${u.invoiceCount ? `${u.invoiceCount} מסמכים (${u.invoiceIssuedCount} הופקו רשמית)` : "לא נעשה שימוש"}</td></tr></tbody></table>
+    </div>
+    <div class="user-detail-group"><h4>מערכות שעות / גליונות</h4>
+      <table class="stats-table"><tbody><tr><td>${u.scheduleCount ? `${u.scheduleCount} מערכות נשמרו` : "לא נעשה שימוש"}</td></tr></tbody></table>
+    </div>
+    <div class="user-detail-group user-detail-group-wide"><h4>יומן שימוש מפורט</h4>${
+      (u.usageLog && u.usageLog.length) ? `<ul class="usage-log-list">${u.usageLog.map(usageLogLineHtml).join("")}</ul>` : "אין תיעוד שימוש"
+    }</div>`;
+}
+
+function dkAdminSortArrow(key) {
+  if (key !== dkAdminSortKey) return `<span class="sort-arrow">↕</span>`;
+  return `<span class="sort-arrow">${dkAdminSortDir === "asc" ? "↑" : "↓"}</span>`;
+}
+
+function renderUsersTable() {
+  const table = document.getElementById("stats-users-table");
+  const countEl = document.getElementById("stats-result-count");
+  const pager = document.getElementById("stats-pagination");
+  if (!table) return;
+
+  const filtered = dkAdminFilteredUsers();
+  const totalPages = Math.max(1, Math.ceil(filtered.length / DK_ADMIN_PAGE_SIZE));
+  dkAdminPage = Math.min(Math.max(1, dkAdminPage), totalPages);
+  const start = (dkAdminPage - 1) * DK_ADMIN_PAGE_SIZE;
+  const pageUsers = filtered.slice(start, start + DK_ADMIN_PAGE_SIZE);
+
+  if (countEl) {
+    countEl.textContent = dkAdminSearchQuery
+      ? `${filtered.length} מתוך ${dkAdminRawUsers.length} משתמשים`
+      : `${dkAdminRawUsers.length} משתמשים`;
+  }
+
+  const userRows = pageUsers
+    .map((u) => {
+      const i = dkAdminRawUsers.indexOf(u);
       const date = u.createdAt ? new Date(u.createdAt).toLocaleDateString("he-IL") : "—";
       const email = u.email || u.id;
       const quickCounts = [
         `${u.sites.length} אתרים`,
         u.usedCvBuilder ? "קו״ח: כן" : "קו״ח: לא",
+        `${u.quoteSaveCount || 0} הצעות מחיר`,
+        `${u.invoiceCount || 0} חשבוניות`,
         u.downloads ? `${u.downloads} הורדות` : "0 הורדות",
       ].map((c) => `<span class="user-quickcount">${escapeHtml(c)}</span>`).join("");
 
@@ -209,23 +294,47 @@ function renderCustomerStats(data) {
           <td><div class="user-row-quickcounts">${quickCounts}</div></td>
         </tr>
         <tr class="user-detail-row" data-uidx="${i}" hidden>
-          <td colspan="4">
-            <div class="user-detail-panel">
-              <div class="user-detail-group"><h4>אתרים</h4>${sitesHtml}</div>
-              <div class="user-detail-group"><h4>קורות חיים</h4>${cvHtml}</div>
-              <div class="user-detail-group"><h4>שימוש בהצעות מחיר</h4>${quoteHtml}</div>
-              <div class="user-detail-group user-detail-group-wide"><h4>יומן שימוש מפורט</h4>${usageLogHtml}</div>
-            </div>
-          </td>
+          <td colspan="4"><div class="user-detail-panel">${userDetailPanelHtml(u)}</div></td>
         </tr>`;
     })
     .join("");
 
   table.innerHTML = `
     <table class="stats-table">
-      <thead><tr><th></th><th>מייל</th><th>נרשם בתאריך</th><th>סיכום</th></tr></thead>
-      <tbody>${userRows || '<tr><td colspan="4">עדיין אין משתמשים</td></tr>'}</tbody>
+      <thead><tr>
+        <th></th>
+        <th class="sortable${dkAdminSortKey === "email" ? " sort-active" : ""}" data-sort="email">מייל ${dkAdminSortArrow("email")}</th>
+        <th class="sortable${dkAdminSortKey === "createdAt" ? " sort-active" : ""}" data-sort="createdAt">נרשם בתאריך ${dkAdminSortArrow("createdAt")}</th>
+        <th>סיכום</th>
+      </tr></thead>
+      <tbody>${userRows || `<tr><td colspan="4">${dkAdminSearchQuery ? "לא נמצאו משתמשים תואמים" : "עדיין אין משתמשים"}</td></tr>`}</tbody>
     </table>`;
+
+  if (pager) {
+    pager.innerHTML = totalPages > 1
+      ? `<button type="button" id="stats-page-prev" ${dkAdminPage <= 1 ? "disabled" : ""}>→ הקודם</button>
+         <span>עמוד ${dkAdminPage} מתוך ${totalPages}</span>
+         <button type="button" id="stats-page-next" ${dkAdminPage >= totalPages ? "disabled" : ""}>הבא ←</button>`
+      : "";
+    const prevBtn = document.getElementById("stats-page-prev");
+    const nextBtn = document.getElementById("stats-page-next");
+    if (prevBtn) prevBtn.addEventListener("click", () => { dkAdminPage -= 1; renderUsersTable(); });
+    if (nextBtn) nextBtn.addEventListener("click", () => { dkAdminPage += 1; renderUsersTable(); });
+  }
+}
+
+function handleUsersTableHeaderClick(e) {
+  const th = e.target.closest("th.sortable");
+  if (!th) return;
+  const key = th.dataset.sort;
+  if (dkAdminSortKey === key) {
+    dkAdminSortDir = dkAdminSortDir === "asc" ? "desc" : "asc";
+  } else {
+    dkAdminSortKey = key;
+    dkAdminSortDir = "asc";
+  }
+  dkAdminPage = 1;
+  renderUsersTable();
 }
 
 function handleUserRowToggle(e) {
@@ -360,6 +469,15 @@ function showCustomerStatsCard() {
   document.getElementById("stats-load-btn").addEventListener("click", loadCustomerStats);
   document.getElementById("stats-users-table").addEventListener("click", handleStatsDeleteClick);
   document.getElementById("stats-users-table").addEventListener("click", handleUserRowToggle);
+  document.getElementById("stats-users-table").addEventListener("click", handleUsersTableHeaderClick);
+  const searchInput = document.getElementById("stats-search");
+  if (searchInput) {
+    searchInput.addEventListener("input", () => {
+      dkAdminSearchQuery = searchInput.value;
+      dkAdminPage = 1;
+      renderUsersTable();
+    });
+  }
   loadCustomerStats();
 }
 

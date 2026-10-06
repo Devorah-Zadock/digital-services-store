@@ -87,6 +87,32 @@
   .tpl-count-cell .tpl-note { font-size: 11px; color: var(--grey); flex-shrink: 0; white-space: nowrap; }
   #stats-err { color: #B23; font-size: 13px; min-height: 16px; }
 
+  /* Search + sortable columns + pagination — without these, a customer
+     table that's a plain unsorted dump of every signed-up user reads
+     fine with a handful of test accounts but stops being usable the
+     moment there are real customers to find in it, confirmed live as
+     "דף הניהול כרגע נראה כמו רשימה ארוכה". Client-side (not server
+     paged) since loadCustomerStats already fetches the full list in one
+     response — this only keeps the rendered DOM light as that list
+     grows, not the network payload itself. */
+  .stats-toolbar { display: flex; align-items: center; gap: 12px; margin: 10px 0 8px; flex-wrap: wrap; }
+  .stats-search-input {
+    flex: 1; min-width: 200px; max-width: 320px; padding: 8px 12px; border-radius: 8px;
+    border: 1px solid #DADFDD; font-family: inherit; font-size: 13.5px;
+  }
+  .stats-result-count { font-size: 12.5px; color: var(--grey); }
+  .stats-table th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+  .stats-table th.sortable:hover { color: var(--ink); }
+  .stats-table th.sortable .sort-arrow { font-size: 10px; margin-inline-start: 3px; opacity: .5; }
+  .stats-table th.sortable.sort-active .sort-arrow { opacity: 1; }
+  .stats-pagination { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 14px; }
+  .stats-pagination button {
+    background: var(--grey-light); border: none; border-radius: 8px; padding: 7px 14px;
+    font-family: inherit; font-size: 13px; cursor: pointer; color: var(--ink-dark);
+  }
+  .stats-pagination button:disabled { opacity: .4; cursor: default; }
+  .stats-pagination span { font-size: 12.5px; color: var(--grey); }
+
   /* Customer table: a compact summary row per user (email + join date +
      quick counts), expandable on click into a detail panel — instead of
      cramming every site/CV/usage chip into the row itself, which is what
@@ -103,9 +129,11 @@
   .user-row-quickcounts { display: flex; gap: 6px; flex-wrap: wrap; }
   .user-quickcount { font-size: 11.5px; background: var(--grey-light); color: var(--grey); border-radius: 10px; padding: 2px 9px; }
   .user-detail-row td { padding: 0; border-bottom: 1px solid #EEF1EF; }
-  .user-detail-panel { background: var(--ice); padding: 16px 20px; display: grid; gap: 14px; grid-template-columns: 1fr 1fr; }
+  .user-detail-panel { background: var(--ice); padding: 16px 20px; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
   .user-detail-panel .user-detail-group-wide { grid-column: 1 / -1; }
   .user-detail-group h4 { font-size: 12px; color: var(--ink-dark); margin: 0 0 8px; font-weight: 700; }
+  .user-detail-group .stats-table { background: var(--white); border-radius: 8px; overflow: hidden; }
+  .user-detail-group .stats-table th, .user-detail-group .stats-table td { padding: 7px 10px; font-size: 12px; }
   .usage-log-list { list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; }
   .usage-log-list li {
     display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; color: var(--dark);
@@ -203,7 +231,12 @@
       <div id="stats-err"></div>
       <div id="stats-tab-customers">
         <p style="font-size:12px; color:var(--grey); margin:0 0 4px;">לחיצה על שורה פותחת פירוט מלא. לחיצה על ✕ ליד אתר או קורות חיים מוחקת אותם לצמיתות מהחשבון של הלקוח.</p>
+        <div class="stats-toolbar">
+          <input type="search" id="stats-search" class="stats-search-input" placeholder="חיפוש לפי מייל…">
+          <span id="stats-result-count" class="stats-result-count"></span>
+        </div>
         <div class="stats-table-wrap" id="stats-users-table"></div>
+        <div class="stats-pagination" id="stats-pagination"></div>
       </div>
       <div id="stats-tab-charts" style="display:none;">
         <div id="stats-summary"></div>
@@ -279,6 +312,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>
-<script src="js/admin.js?v=16"></script>
+<script src="js/admin.js?v=17"></script>
 </body>
 </html>

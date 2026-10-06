@@ -39,13 +39,32 @@ const corsHeaders = {
 };
 
 async function loadStats(admin: ReturnType<typeof createClient>) {
-  const [{ data: profiles, error: profilesErr }, { data: projects, error: projectsErr }, { data: cvSaves, error: cvErr }, { data: events, error: eventsErr }] =
-    await Promise.all([
+  const [
+    { data: profiles, error: profilesErr },
+    { data: projects, error: projectsErr },
+    { data: cvSaves, error: cvErr },
+    { data: events, error: eventsErr },
+    { data: quoteSaves, error: quoteSavesErr },
+    { data: invoiceSaves, error: invoiceSavesErr },
+    { data: scheduleProjects, error: scheduleErr },
+  ] = await Promise.all([
       admin.from("customer_profiles").select("id, email, created_at").order("created_at", { ascending: false }),
       admin.from("site_projects").select("id, user_id, template, status, created_at"),
-      admin.from("cv_saves").select("user_id"),
-      admin.from("usage_events").select("user_id, kind, slug, action, created_at").order("created_at", { ascending: false }),
-    ]);
+      admin.from("cv_saves").select("user_id, updated_at"),
+      // Capped — usage_events grows without bound as the site gets used,
+      // and this function returns every row straight to the browser in
+      // one response. A few thousand most-recent rows is plenty to drive
+      // the per-user log and the template-usage counts below without the
+      // payload growing forever as the customer base does.
+      admin.from("usage_events").select("user_id, kind, slug, action, created_at").order("created_at", { ascending: false }).limit(5000),
+      // Per-user breakdown by tool (quote/invoice/schedule) — these three
+      // tables may not exist yet on a site that hasn't run their own
+      // one-time SQL setup, same reasoning as usage_events below: treated
+      // as "no data yet" rather than failing the whole stats card.
+      admin.from("quote_saves").select("user_id, updated_at"),
+      admin.from("invoice_saves").select("user_id, doc_type, status, updated_at"),
+      admin.from("schedule_projects").select("user_id, updated_at"),
+  ]);
   if (profilesErr) throw profilesErr;
   if (projectsErr) throw projectsErr;
   if (cvErr) throw cvErr;
@@ -58,9 +77,27 @@ async function loadStats(admin: ReturnType<typeof createClient>) {
   // distinction once someone actually starts using the site.
   const usageEventsAvailable = !eventsErr;
   const usageEvents = eventsErr ? [] : (events || []);
+  // Same defensive treatment as usage_events above — these three are
+  // core per-tool tables (quote-app.html/invoice-app.html/schedule-
+  // builder.html already depend on them to function), but this stats
+  // card would rather show "0" for a table it couldn't read than take
+  // the whole admin page down over one of them.
+  const quoteSavesRows = quoteSavesErr ? [] : (quoteSaves || []);
+  const invoiceSavesRows = invoiceSavesErr ? [] : (invoiceSaves || []);
+  const scheduleProjectsRows = scheduleErr ? [] : (scheduleProjects || []);
 
   const cvUsers = new Set((cvSaves || []).map((r) => r.user_id));
   const quoteUsers = new Set(usageEvents.filter((e) => e.kind === "quote" && e.action === "edit").map((e) => e.user_id));
+  const quoteSaveCountByUser: Record<string, number> = {};
+  for (const r of quoteSavesRows) quoteSaveCountByUser[r.user_id] = (quoteSaveCountByUser[r.user_id] || 0) + 1;
+  const invoiceCountByUser: Record<string, { total: number; issued: number }> = {};
+  for (const r of invoiceSavesRows) {
+    if (!invoiceCountByUser[r.user_id]) invoiceCountByUser[r.user_id] = { total: 0, issued: 0 };
+    invoiceCountByUser[r.user_id].total += 1;
+    if (r.status === "issued") invoiceCountByUser[r.user_id].issued += 1;
+  }
+  const scheduleCountByUser: Record<string, number> = {};
+  for (const r of scheduleProjectsRows) scheduleCountByUser[r.user_id] = (scheduleCountByUser[r.user_id] || 0) + 1;
   const deckDownloadCounts: Record<string, number> = {};
   const xlsxDownloadCounts: Record<string, number> = {};
   const cvTemplateCounts: Record<string, number> = {};
@@ -112,6 +149,13 @@ async function loadStats(admin: ReturnType<typeof createClient>) {
     downloads: byUser[p.id] ? byUser[p.id].downloads : 0,
     sites: byUser[p.id] ? byUser[p.id].sites : [],
     usageLog: byUser[p.id] ? byUser[p.id].usageLog : [],
+    // Direct per-tool table counts (not derived from usage_events), so
+    // these are accurate even on an account that never ran
+    // usage_events.sql — same reasoning as sites/usedCvBuilder above.
+    quoteSaveCount: quoteSaveCountByUser[p.id] || 0,
+    invoiceCount: (invoiceCountByUser[p.id] && invoiceCountByUser[p.id].total) || 0,
+    invoiceIssuedCount: (invoiceCountByUser[p.id] && invoiceCountByUser[p.id].issued) || 0,
+    scheduleCount: scheduleCountByUser[p.id] || 0,
   }));
 
   return {
