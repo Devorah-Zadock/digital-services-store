@@ -785,12 +785,12 @@ html[dir="ltr"] .dk-home-hero-visual {
    js/quote-ai-generate.js's own comment on #qa-intro-start-btn) —
    collapsed by default behind this toggle rather than shown open, so it
    reads as "optional extra", not a second equally-weighted choice. */
-.qa-intro-ai-toggle {
+.dk-intro-ai-toggle {
   display: block; margin: 20px auto 0; background: none; border: none; cursor: pointer;
   font-family: inherit; font-size: 13.5px; color: var(--text-secondary); text-decoration: underline;
 }
-.qa-intro-ai-toggle:hover { color: var(--text); }
-.qa-intro-ai-panel { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.dk-intro-ai-toggle:hover { color: var(--text); }
+.dk-intro-ai-panel { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
 
 /* Wizard enhancements: style-choice visual chips */
 .dk-style-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }

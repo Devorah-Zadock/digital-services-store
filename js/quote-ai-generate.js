@@ -15,9 +15,10 @@
    opens (see supabase/functions/generate-quote's own header comment
    for the same rule server-side).
 
-   A plain "start from a blank form" fallback is always one click away
-   (#qa-intro-skip) — nothing about the existing manual flow is
-   removed, this is a new first screen in front of it. */
+   The AI draft is a secondary, opt-in option behind #qa-intro-ai-toggle
+   — #qa-intro-start-btn (straight into the builder with the chosen
+   style, no AI) is the primary action, per real feedback against AI
+   being the default gate on this screen. */
 
 async function dkQuoteCallGenerate(description) {
   const { data: sessionData } = await supabaseClient.auth.getSession();

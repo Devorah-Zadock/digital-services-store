@@ -10,9 +10,13 @@
    recipientAddress (a real third party the AI has no way to know, see
    supabase/functions/generate-invoice's own header comment), and
    docType/business_type-driven title are decided exactly as they
-   already are in showInvoiceBuilder() for a blank draft. A plain
-   "start from a blank form" fallback (#ia-intro-skip) stays one click
-   away. */
+   already are in showInvoiceBuilder() for a blank draft.
+
+   The AI draft is a secondary, opt-in option behind #ia-intro-ai-toggle
+   — #ia-intro-start-btn (straight into the builder, no AI) is the
+   primary action now, mirroring js/quote-ai-generate.js's own
+   #qa-intro-start-btn and for the same reason: real feedback against
+   AI being the default gate here. */
 
 async function dkInvoiceCallGenerate(description) {
   const { data: sessionData } = await supabaseClient.auth.getSession();
@@ -36,6 +40,10 @@ function dkShowInvoiceIntro() {
   dkInvoiceIntroNote("");
   const input = document.getElementById("ia-intro-input");
   if (input) input.value = "";
+  const panel = document.getElementById("ia-intro-ai-panel");
+  if (panel) panel.hidden = true;
+  const toggle = document.getElementById("ia-intro-ai-toggle");
+  if (toggle) toggle.textContent = "או, תנו ל-AI לנסח עבורכם שורות טיוטה ✨";
 }
 
 async function dkInvoiceIntroSubmit() {
@@ -78,11 +86,27 @@ async function dkInvoiceIntroSubmit() {
 document.addEventListener("DOMContentLoaded", () => {
   const cta = document.getElementById("ia-intro-cta");
   if (cta) cta.addEventListener("click", dkInvoiceIntroSubmit);
-  const skip = document.getElementById("ia-intro-skip");
-  if (skip) {
-    skip.addEventListener("click", () => {
+
+  // Primary path: straight into the builder, no AI call — mirrors
+  // js/quote-ai-generate.js's #qa-intro-start-btn (same reasoning:
+  // real feedback against AI being the default gate on these intro
+  // screens).
+  const startBtn = document.getElementById("ia-intro-start-btn");
+  if (startBtn) {
+    startBtn.addEventListener("click", () => {
       showInvoiceBuilder();
       if (typeof invoiceBshellActivate === "function") invoiceBshellActivate();
+    });
+  }
+
+  const aiToggle = document.getElementById("ia-intro-ai-toggle");
+  const aiPanel = document.getElementById("ia-intro-ai-panel");
+  if (aiToggle && aiPanel) {
+    aiToggle.addEventListener("click", () => {
+      aiPanel.hidden = !aiPanel.hidden;
+      aiToggle.textContent = aiPanel.hidden
+        ? "או, תנו ל-AI לנסח עבורכם שורות טיוטה ✨"
+        : "הסתירו ✕";
     });
   }
 });

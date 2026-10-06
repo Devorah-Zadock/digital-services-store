@@ -140,11 +140,15 @@
 <section class="no-print" id="ia-intro" style="display:none;">
   <div class="dk-form-intro">
     <h1>מה אתם צריכים לחייב?</h1>
-    <p class="lead">תארו במשפט אחד מה מחויב, ו-DeskKit תכין עבורכם שורות טיוטה ראשוניות למסמך.</p>
-    <textarea id="ia-intro-input" class="dk-form-intro-textarea" rows="3" placeholder="לדוגמה: ייעוץ עסקי חודשי + הקמת דף נחיתה"></textarea>
-    <button type="button" class="dk-btn dk-btn-primary dk-btn-lg" id="ia-intro-cta">✨ צור טיוטה עם AI</button>
-    <div id="ia-intro-note" class="ai-limit-note"></div>
-    <button type="button" class="dk-intro-skip" id="ia-intro-skip">או התחילו מטופס ריק ←</button>
+    <p class="lead">תתחילו ליצור את המסמך ישירות עם DeskKit.</p>
+    <button type="button" class="dk-btn dk-btn-primary dk-btn-lg" id="ia-intro-start-btn">התחילו ליצור</button>
+
+    <button type="button" class="dk-intro-ai-toggle" id="ia-intro-ai-toggle">או, תנו ל-AI לנסח עבורכם שורות טיוטה ✨</button>
+    <div class="dk-intro-ai-panel" id="ia-intro-ai-panel" hidden>
+      <textarea id="ia-intro-input" class="dk-form-intro-textarea" rows="3" placeholder="לדוגמה: ייעוץ עסקי חודשי + הקמת דף נחיתה"></textarea>
+      <button type="button" class="dk-btn dk-btn-ghost dk-btn-lg" id="ia-intro-cta">✨ צור טיוטה עם AI</button>
+      <div id="ia-intro-note" class="ai-limit-note"></div>
+    </div>
   </div>
 </section>
 
@@ -336,7 +340,7 @@
 <script src="js/usage-log.js?v=1"></script>
 <script src="js/invoice-cloud-save.js?v=1"></script>
 <script src="js/invoice-app.js?v=6"></script>
-<script src="js/invoice-ai-generate.js?v=1"></script>
+<script src="js/invoice-ai-generate.js?v=2"></script>
 <script src="js/invoice-builder-shell.js?v=9"></script>
 </body>
 </html>
