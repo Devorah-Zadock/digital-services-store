@@ -2,8 +2,21 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
+<script>
+  try {
+    const storedLang = localStorage.getItem("deskkit_lang");
+    const willBeEnglish = storedLang
+      ? storedLang === "en"
+      : !(navigator.languages || [navigator.language || ""]).some((l) => (l || "").toLowerCase().startsWith("he"));
+    if (willBeEnglish) {
+      document.documentElement.classList.add("lang-pending");
+      setTimeout(() => document.documentElement.classList.remove("lang-pending"), 1200);
+    }
+  } catch (e) {}
+</script>
+<style>html.lang-pending body { visibility: hidden; }</style>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>כניסה לחשבון — DeskKit</title>
+<title data-i18n="acct_page_title">כניסה לחשבון — DeskKit</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -50,18 +63,19 @@
   <nav class="nav">
     <a href="index.html" class="brand"><span class="brand-badge"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path class="bm-doc" d="M7,4 H14 L18,8 V20 H7 Z"/><path class="bm-fold" d="M14,4 L14,8 L18,8 Z"/><path class="bm-spark" d="M15,14.3 C15.3,16 16,16.7 17.7,17 C16,17.3 15.3,18 15,19.7 C14.7,18 14,17.3 12.3,17 C14,16.7 14.7,16 15,14.3 Z"/></svg></span><span class="brand-text"><span class="brand-desk">Desk</span><span class="brand-kit">Kit</span></span></a>
     <div class="nav-links">
-      <a href="index.html">בית</a>
-      <a href="products.html?type=cv">קורות חיים</a>
-      <a href="sites.html">בניית אתר</a>
-      <a href="quote-app.html">הצעות מחיר</a>
-      <a href="invoice-app.html">חשבוניות</a>
-      <a href="products.html?type=deck">מצגות</a>
-      <a href="products.html?type=xlsx">גליונות</a>
-      <a href="about.html">אודות</a>
-      <a href="contact.html">צור קשר</a>
+      <a href="index.html" data-i18n="nav_home">בית</a>
+      <a href="products.html?type=cv" data-i18n="nav_cv">קורות חיים</a>
+      <a href="sites.html" data-i18n="nav_sites">בניית אתר</a>
+      <a href="quote-app.html" data-i18n="nav_quotes">הצעות מחיר</a>
+      <a href="invoice-app.html" data-i18n="nav_invoices">חשבוניות</a>
+      <a href="products.html?type=deck" data-i18n="nav_decks">מצגות</a>
+      <a href="products.html?type=xlsx" data-i18n="nav_xlsx">גליונות</a>
+      <a href="about.html" data-i18n="nav_about">אודות</a>
+      <a href="contact.html" data-i18n="nav_contact">צור קשר</a>
     </div>
     <div class="nav-end-group">
-      <a href="#" id="nav-login-link" class="nav-login nav-login-pending">כניסה</a>
+      <a href="#" id="nav-login-link" class="nav-login nav-login-pending" data-i18n="nav_login">כניסה</a>
+      <button type="button" id="lang-toggle" class="lang-toggle" aria-label="Switch language">EN</button>
     </div>
     <button class="burger" aria-label="תפריט">☰</button>
   </nav>
@@ -75,12 +89,12 @@
       <h1 id="qa-auth-title">כניסה</h1>
       <button type="button" id="qa-google-btn" class="qa-google-btn">
         <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.4-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 18.9 13 24 13c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.6 3 24 3 16.3 3 9.7 7.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 45c5.2 0 10-2 13.6-5.2l-6.3-5.3C29.3 36 26.8 37 24 37c-5.2 0-9.6-3.3-11.3-8l-6.6 5.1C9.5 40.6 16.2 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.3-4.1 5.7l6.3 5.3C41.5 35.9 45 30.4 45 24c0-1.4-.1-2.7-.4-3.5z"/></svg>
-        <span>המשך עם Google</span>
+        <span data-i18n="acct_google_continue">המשך עם Google</span>
       </button>
-      <div class="qa-divider"><span>או</span></div>
+      <div class="qa-divider"><span data-i18n="acct_or">או</span></div>
       <form id="qa-auth-form">
-        <div class="field"><label>אימייל</label><input type="email" id="qa-email" dir="ltr" autocomplete="email" required></div>
-        <div class="field"><label>סיסמה</label><input type="password" id="qa-password" autocomplete="current-password" required minlength="6"></div>
+        <div class="field"><label data-i18n="acct_email_label">אימייל</label><input type="email" id="qa-email" dir="ltr" autocomplete="email" required></div>
+        <div class="field"><label data-i18n="acct_password_label">סיסמה</label><input type="password" id="qa-password" autocomplete="current-password" required minlength="6"></div>
         <div class="qa-err" id="qa-auth-err"></div>
         <div class="qa-msg" id="qa-auth-msg"></div>
         <button type="submit" class="btn btn-teal" style="width:100%;" id="qa-auth-submit">כניסה</button>
@@ -90,24 +104,24 @@
         <button type="button" id="qa-switch-btn">להרשמה</button>
       </div>
       <div class="qa-forgot">
-        <button type="button" id="qa-forgot-btn">שכחתי סיסמה</button>
+        <button type="button" id="qa-forgot-btn" data-i18n="acct_forgot_password">שכחתי סיסמה</button>
       </div>
     </div>
     <div id="qa-check-email" style="display:none; text-align:center;">
       <div style="font-size:40px; margin-bottom:8px;">📬</div>
-      <h2 style="margin-bottom:10px;">נשאר רק שלב אחד</h2>
-      <p class="sub" style="margin-bottom:6px;">שלחנו מייל אישור לכתובת:</p>
+      <h2 style="margin-bottom:10px;" data-i18n="acct_check_email_h">נשאר רק שלב אחד</h2>
+      <p class="sub" style="margin-bottom:6px;" data-i18n="acct_check_email_sent_to">שלחנו מייל אישור לכתובת:</p>
       <p style="font-weight:700; color:var(--ink-dark); direction:ltr; margin-bottom:18px;" id="qa-check-email-addr"></p>
-      <p class="sub" style="margin-bottom:22px;">לוחצים על הקישור במייל (בדקו גם ספאם) — ואז זה יחזיר אתכם לכאן מחוברים אוטומטית.</p>
-      <button type="button" class="btn btn-outline" style="width:100%;" id="qa-back-to-login">חזרה למסך התחברות</button>
+      <p class="sub" style="margin-bottom:22px;" data-i18n="acct_check_email_instructions">לוחצים על הקישור במייל (בדקו גם ספאם) — ואז זה יחזיר אתכם לכאן מחוברים אוטומטית.</p>
+      <button type="button" class="btn btn-outline" style="width:100%;" id="qa-back-to-login" data-i18n="acct_back_to_login">חזרה למסך התחברות</button>
     </div>
     <div id="qa-reset-password" style="display:none;">
-      <h2>קביעת סיסמה חדשה</h2>
+      <h2 data-i18n="acct_reset_h">קביעת סיסמה חדשה</h2>
       <form id="qa-reset-form">
-        <div class="field"><label>סיסמה חדשה</label><input type="password" id="qa-new-password" autocomplete="new-password" required minlength="6"></div>
-        <div class="field"><label>אימות סיסמה</label><input type="password" id="qa-new-password-confirm" autocomplete="new-password" required minlength="6"></div>
+        <div class="field"><label data-i18n="acct_new_password_label">סיסמה חדשה</label><input type="password" id="qa-new-password" autocomplete="new-password" required minlength="6"></div>
+        <div class="field"><label data-i18n="acct_confirm_password_label">אימות סיסמה</label><input type="password" id="qa-new-password-confirm" autocomplete="new-password" required minlength="6"></div>
         <div class="qa-err" id="qa-reset-err"></div>
-        <button type="submit" class="btn btn-teal" style="width:100%;">עדכון סיסמה</button>
+        <button type="submit" class="btn btn-teal" style="width:100%;" data-i18n="acct_update_password_btn">עדכון סיסמה</button>
       </form>
     </div>
   </div>
@@ -119,6 +133,7 @@
 <script src="js/create-chooser.js?v=2"></script>
 <script src="js/mobile-nav.js?v=1"></script>
 <script src="js/main.js?v=4"></script>
-<script src="js/account.js?v=1"></script>
+<script src="js/i18n.js?v=17"></script>
+<script src="js/account.js?v=2"></script>
 </body>
 </html>

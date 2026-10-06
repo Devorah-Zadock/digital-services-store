@@ -7,20 +7,30 @@ const params = new URLSearchParams(location.search);
 const redirectTarget = params.get("redirect") || "tools.html";
 let authMode = "login"; // "login" | "signup"
 
+// Same defensive lookup as js/header.js's dkHeaderLabel: js/i18n.js is
+// loaded on this page (unlike most of the plain tool pages), but the
+// Hebrew fallback is real text, not just a dictionary key, in case this
+// page is ever loaded before i18n.js runs.
+function dkAcctLabel(key, fallback) {
+  const lang = typeof currentLang === "function" ? currentLang() : "he";
+  const dict = (typeof I18N !== "undefined" && I18N[lang]) || null;
+  return (dict && dict[key]) || fallback;
+}
+
 function setAuthMode(mode) {
   authMode = mode;
   document.getElementById("qa-auth-err").textContent = "";
   document.getElementById("qa-auth-msg").textContent = "";
   if (mode === "signup") {
-    document.getElementById("qa-auth-title").textContent = "הרשמה";
-    document.getElementById("qa-auth-submit").textContent = "הרשמה";
-    document.getElementById("qa-switch-text").textContent = "כבר יש לכם חשבון?";
-    document.getElementById("qa-switch-btn").textContent = "להתחברות";
+    document.getElementById("qa-auth-title").textContent = dkAcctLabel("acct_signup_title", "הרשמה");
+    document.getElementById("qa-auth-submit").textContent = dkAcctLabel("acct_signup_title", "הרשמה");
+    document.getElementById("qa-switch-text").textContent = dkAcctLabel("acct_have_account", "כבר יש לכם חשבון?");
+    document.getElementById("qa-switch-btn").textContent = dkAcctLabel("acct_to_login", "להתחברות");
   } else {
-    document.getElementById("qa-auth-title").textContent = "כניסה";
-    document.getElementById("qa-auth-submit").textContent = "כניסה";
-    document.getElementById("qa-switch-text").textContent = "עדיין אין לכם חשבון?";
-    document.getElementById("qa-switch-btn").textContent = "להרשמה";
+    document.getElementById("qa-auth-title").textContent = dkAcctLabel("acct_login_title", "כניסה");
+    document.getElementById("qa-auth-submit").textContent = dkAcctLabel("acct_login_title", "כניסה");
+    document.getElementById("qa-switch-text").textContent = dkAcctLabel("acct_no_account", "עדיין אין לכם חשבון?");
+    document.getElementById("qa-switch-btn").textContent = dkAcctLabel("acct_to_signup", "להרשמה");
   }
 }
 
@@ -35,14 +45,14 @@ function setAuthMode(mode) {
 function dkAuthErrorMessage(error, context) {
   const msg = (error && error.message) || "";
   const lower = msg.toLowerCase();
-  if (lower.includes("invalid login credentials")) return "פרטי ההתחברות שגויים — בדקו מייל וסיסמה ונסו שוב.";
-  if (lower.includes("email not confirmed")) return "המייל שלכם עדיין לא אומת — בדקו את תיבת הדואר (כולל תיקיית ספאם) ולחצו על קישור האימות.";
-  if (lower.includes("password should be at least") || lower.includes("password is too short")) return "הסיסמה קצרה מדי — נדרשים לפחות 6 תווים.";
-  if (lower.includes("already registered") || lower.includes("already exists") || lower.includes("user already registered")) return "כתובת המייל הזו כבר רשומה אצלנו — נסו להתחבר במקום להירשם.";
-  if (lower.includes("rate limit") || lower.includes("too many requests")) return "יותר מדי ניסיונות ברצף — המתינו כמה דקות ונסו שוב.";
+  if (lower.includes("invalid login credentials")) return dkAcctLabel("acct_err_invalid_credentials", "פרטי ההתחברות שגויים — בדקו מייל וסיסמה ונסו שוב.");
+  if (lower.includes("email not confirmed")) return dkAcctLabel("acct_err_email_not_confirmed", "המייל שלכם עדיין לא אומת — בדקו את תיבת הדואר (כולל תיקיית ספאם) ולחצו על קישור האימות.");
+  if (lower.includes("password should be at least") || lower.includes("password is too short")) return dkAcctLabel("acct_err_password_too_short", "הסיסמה קצרה מדי — נדרשים לפחות 6 תווים.");
+  if (lower.includes("already registered") || lower.includes("already exists") || lower.includes("user already registered")) return dkAcctLabel("acct_err_already_registered", "כתובת המייל הזו כבר רשומה אצלנו — נסו להתחבר במקום להירשם.");
+  if (lower.includes("rate limit") || lower.includes("too many requests")) return dkAcctLabel("acct_err_rate_limit", "יותר מדי ניסיונות ברצף — המתינו כמה דקות ונסו שוב.");
   return context === "signup"
-    ? "ההרשמה נכשלה. בדקו את החיבור לאינטרנט ונסו שוב בעוד רגע."
-    : "ההתחברות נכשלה. בדקו את החיבור לאינטרנט ונסו שוב בעוד רגע.";
+    ? dkAcctLabel("acct_err_signup_failed", "ההרשמה נכשלה. בדקו את החיבור לאינטרנט ונסו שוב בעוד רגע.")
+    : dkAcctLabel("acct_err_login_failed", "ההתחברות נכשלה. בדקו את החיבור לאינטרנט ונסו שוב בעוד רגע.");
 }
 
 function showCheckEmail(email) {
@@ -64,9 +74,9 @@ function wireResetPassword() {
     const pw2 = document.getElementById("qa-new-password-confirm").value;
     const err = document.getElementById("qa-reset-err");
     err.textContent = "";
-    if (pw !== pw2) { err.textContent = "הסיסמאות לא תואמות."; return; }
+    if (pw !== pw2) { err.textContent = dkAcctLabel("acct_err_password_mismatch", "הסיסמאות לא תואמות."); return; }
     const { error } = await supabaseClient.auth.updateUser({ password: pw });
-    if (error) { err.textContent = "העדכון נכשל, נסו שוב."; return; }
+    if (error) { err.textContent = dkAcctLabel("acct_err_update_failed", "העדכון נכשל, נסו שוב."); return; }
     window.location.href = redirectTarget;
   });
 }
@@ -78,9 +88,9 @@ function wireAuth() {
         provider: "google",
         options: { redirectTo: window.location.origin + window.location.pathname + "?redirect=" + encodeURIComponent(redirectTarget) },
       });
-      if (error) document.getElementById("qa-auth-err").textContent = "לא הצלחנו לפתוח את חלון ההתחברות של Google. נסו שוב.";
+      if (error) document.getElementById("qa-auth-err").textContent = dkAcctLabel("acct_err_google_failed", "לא הצלחנו לפתוח את חלון ההתחברות של Google. נסו שוב.");
     } catch (_networkErr) {
-      document.getElementById("qa-auth-err").textContent = "אירעה תקלת תקשורת. בדקו את החיבור לאינטרנט ונסו שוב.";
+      document.getElementById("qa-auth-err").textContent = dkAcctLabel("acct_err_network", "אירעה תקלת תקשורת. בדקו את החיבור לאינטרנט ונסו שוב.");
     }
   });
 
@@ -94,14 +104,16 @@ function wireAuth() {
     const msg = document.getElementById("qa-auth-msg");
     err.textContent = "";
     msg.textContent = "";
-    if (!email) { err.textContent = "יש להזין קודם את כתובת המייל למעלה."; return; }
+    if (!email) { err.textContent = dkAcctLabel("acct_err_email_required", "יש להזין קודם את כתובת המייל למעלה."); return; }
     try {
       const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
         redirectTo: window.location.origin + window.location.pathname + "?redirect=" + encodeURIComponent(redirectTarget),
       });
-      msg.textContent = error ? "לא הצלחנו לשלוח את המייל, נסו שוב." : "נשלח מייל לאיפוס סיסמה — תבדקו את תיבת הדואר.";
+      msg.textContent = error
+        ? dkAcctLabel("acct_err_reset_send_failed", "לא הצלחנו לשלוח את המייל, נסו שוב.")
+        : dkAcctLabel("acct_msg_reset_sent", "נשלח מייל לאיפוס סיסמה — תבדקו את תיבת הדואר.");
     } catch (_networkErr) {
-      err.textContent = "אירעה תקלת תקשורת. בדקו את החיבור לאינטרנט ונסו שוב.";
+      err.textContent = dkAcctLabel("acct_err_network", "אירעה תקלת תקשורת. בדקו את החיבור לאינטרנט ונסו שוב.");
     }
   });
 
@@ -137,7 +149,7 @@ function wireAuth() {
         // account was told "נרשמת! בדקו את תיבת הדואר", which is false —
         // no new account was created.
         if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
-          err.textContent = "כתובת המייל הזו כבר רשומה אצלנו — נסו להתחבר במקום.";
+          err.textContent = dkAcctLabel("acct_err_already_registered_short", "כתובת המייל הזו כבר רשומה אצלנו — נסו להתחבר במקום.");
           return;
         }
         showCheckEmail(email);
@@ -147,7 +159,7 @@ function wireAuth() {
         // onAuthStateChange picks up the new session and redirects onward.
       }
     } catch (_networkErr) {
-      err.textContent = "אירעה תקלת תקשורת. בדקו את החיבור לאינטרנט ונסו שוב.";
+      err.textContent = dkAcctLabel("acct_err_network", "אירעה תקלת תקשורת. בדקו את החיבור לאינטרנט ונסו שוב.");
     } finally {
       submitBtn.disabled = false;
     }
@@ -166,6 +178,14 @@ document.addEventListener("DOMContentLoaded", () => {
   wireAuth();
   wireResetPassword();
   setAuthMode("login");
+  // qa-auth-title/-submit/qa-switch-text/-btn are deliberately NOT
+  // data-i18n (setAuthMode fully owns their text, toggling between the
+  // login/signup wording) — the sweep in applyLang() would otherwise
+  // reset them to whichever mode's text happens to sit in the static
+  // HTML, even while actually showing the other mode. Re-running
+  // setAuthMode for the CURRENT mode on a language change keeps it
+  // correct either way.
+  document.addEventListener("deskkit:langchange", () => setAuthMode(authMode));
 
   supabaseClient.auth.onAuthStateChange((event, session) => {
     if (event === "PASSWORD_RECOVERY") {
