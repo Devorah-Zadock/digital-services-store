@@ -20,20 +20,30 @@
    ?template= link was followed, and this stays out of the way
    entirely. */
 
+/* Local lookup-with-Hebrew-fallback, same pattern as js/widgets.js's
+   dkWidgetsT — this file renders its own modal fresh via JS each time
+   (not static data-i18n markup i18n.js's sweep can reach), and needs to
+   work even on a page where i18n.js hasn't loaded yet. */
+function cvStyleT(key, fallback) {
+  if (typeof I18N === "undefined" || typeof currentLang !== "function") return fallback;
+  const dict = I18N[currentLang()];
+  return (dict && dict[key] !== undefined) ? dict[key] : fallback;
+}
+
 const CV_STYLE_FIELDS = [
-  { key: "dev", label: "פיתוח / תכנות", match: (slug) => slug.startsWith("cv-dev-") },
-  { key: "design", label: "עיצוב / UX", match: (slug) => slug.startsWith("cv-design-") },
-  { key: "accounting", label: "הנהלת חשבונות", match: (slug) => slug.startsWith("cv-accounting-") },
-  { key: "finance", label: "כספים / אנליטיקה", match: (slug) => slug.startsWith("cv-finance-") },
-  { key: "sales", label: "מכירות / פיתוח עסקי", match: (slug) => slug === "cv-sales" },
-  { key: "customer-service", label: "שירות לקוחות", match: (slug) => slug === "cv-customer-service" },
-  { key: "general", label: "כללי / שיווק / אחר", match: (slug) => slug.startsWith("cv-general-") || slug.startsWith("cv-business-") },
+  { key: "dev", label: cvStyleT("cvsp_field_dev", "פיתוח / תכנות"), match: (slug) => slug.startsWith("cv-dev-") },
+  { key: "design", label: cvStyleT("cvsp_field_design", "עיצוב / UX"), match: (slug) => slug.startsWith("cv-design-") },
+  { key: "accounting", label: cvStyleT("cvsp_field_accounting", "הנהלת חשבונות"), match: (slug) => slug.startsWith("cv-accounting-") },
+  { key: "finance", label: cvStyleT("cvsp_field_finance", "כספים / אנליטיקה"), match: (slug) => slug.startsWith("cv-finance-") },
+  { key: "sales", label: cvStyleT("cvsp_field_sales", "מכירות / פיתוח עסקי"), match: (slug) => slug === "cv-sales" },
+  { key: "customer-service", label: cvStyleT("cvsp_field_customerservice", "שירות לקוחות"), match: (slug) => slug === "cv-customer-service" },
+  { key: "general", label: cvStyleT("cvsp_field_general", "כללי / שיווק / אחר"), match: (slug) => slug.startsWith("cv-general-") || slug.startsWith("cv-business-") },
 ];
 
 const CV_STYLE_LAYOUTS = [
-  { key: "sidebar", label: "עם סרגל צד מסודר", desc: "פרטי קשר וכישורים בצד, תוכן ראשי לידם" },
-  { key: "bold", label: "נועז ובולט", desc: "כותרת גדולה ובטוחה, בולט על המסך" },
-  { key: "classic-mono", label: "מינימליסטי ושקט", desc: "נקי, עניני, בלי קישוטים מיותרים" },
+  { key: "sidebar", label: cvStyleT("cvsp_layout_sidebar", "עם סרגל צד מסודר"), desc: cvStyleT("cvsp_layout_sidebar_desc", "פרטי קשר וכישורים בצד, תוכן ראשי לידם") },
+  { key: "bold", label: cvStyleT("cvsp_layout_bold", "נועז ובולט"), desc: cvStyleT("cvsp_layout_bold_desc", "כותרת גדולה ובטוחה, בולט על המסך") },
+  { key: "classic-mono", label: cvStyleT("cvsp_layout_classicmono", "מינימליסטי ושקט"), desc: cvStyleT("cvsp_layout_classicmono_desc", "נקי, עניני, בלי קישוטים מיותרים") },
 ];
 
 /* First match for the chosen field, preferring the chosen layout within
@@ -53,7 +63,9 @@ function cvPickTemplateSlug(fieldKey, layoutKey) {
 function cvStylePickerStepHtml(stepIdx) {
   const isField = stepIdx === 0;
   const items = isField ? CV_STYLE_FIELDS : CV_STYLE_LAYOUTS;
-  const title = isField ? "באיזה תחום קורות החיים?" : "איזה סגנון מתאים לכם?";
+  const title = isField
+    ? cvStyleT("cvsp_title_field", "באיזה תחום קורות החיים?")
+    : cvStyleT("cvsp_title_layout", "איזה סגנון מתאים לכם?");
   const optsHtml = items.map((it) => `
     <button type="button" class="cv-style-pick-opt" data-pick="${it.key}">
       <span class="cv-style-pick-opt-label">${it.label}</span>
@@ -62,9 +74,9 @@ function cvStylePickerStepHtml(stepIdx) {
   return `
     <div class="cv-style-pick-dots">${[0, 1].map((i) => `<span class="cv-style-pick-dot${i === stepIdx ? " active" : ""}"></span>`).join("")}</div>
     <h2>${title}</h2>
-    <p class="lead">נבחר לכם עיצוב מתאים — אפשר תמיד לשנות אחר כך מתוך ההגדרות.</p>
+    <p class="lead">${cvStyleT("cvsp_lead", "נבחר לכם עיצוב מתאים — אפשר תמיד לשנות אחר כך מתוך ההגדרות.")}</p>
     <div class="cv-style-pick-opts">${optsHtml}</div>
-    <button type="button" class="cv-style-pick-skip" data-skip>דלג, התחילו עם עיצוב ברירת מחדל</button>`;
+    <button type="button" class="cv-style-pick-skip" data-skip>${cvStyleT("cvsp_skip", "דלג, התחילו עם עיצוב ברירת מחדל")}</button>`;
 }
 
 function showCvStylePicker() {

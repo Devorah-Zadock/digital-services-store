@@ -405,6 +405,33 @@ const I18N = {
     acct_msg_reset_sent: "נשלח מייל לאיפוס סיסמה — תבדקו את תיבת הדואר.",
     acct_err_password_mismatch: "הסיסמאות לא תואמות.",
     acct_err_update_failed: "העדכון נכשל, נסו שוב.",
+
+    // CV Builder-Shell (builder.html) — round 1 of translating the
+    // Builder pages: the always-visible top bar + the Settings panel's
+    // style section. The hierarchy/properties panels' own dynamically-
+    // rendered content (js/cv-builder-shell.js) isn't covered yet.
+    cvb_meta_title: "בילדר קורות חיים — DeskKit",
+    cvb_top_doc_name: "קורות חיים",
+    cvb_undo: "↶ בטל", cvb_undo_title: "בטל (Ctrl+Z)",
+    cvb_redo: "↷ חזור", cvb_redo_title: "בצע שוב (Ctrl+Shift+Z)",
+    cvb_ats: "🎯 בדיקת ATS", cvb_download: "הורדת PDF", cvb_save: "שמירה", cvb_exit: "יציאה",
+    cvb_mobile_structure: "מבנה", cvb_mobile_design: "עיצוב",
+    cvb_hier_title: "מבנה קורות החיים", cvb_settings_label: "עיצוב והגדרות",
+    cvb_props_empty: "בחרו שדה בקורות החיים כדי לערוך אותו",
+    cvb_style_section_title: "סגנון עיצוב",
+    cvb_style_sidebar: "עם סרגל צד", cvb_style_bold: "נועז ובולט", cvb_style_classicmono: "מינימליסטי ושקט",
+    cvb_style_hint: "משנה רק את העיצוב — התוכן שלכם נשאר כמו שהוא.",
+    // CV style auto-picker (js/cv-style-picker.js) — the 2-question
+    // modal shown once for a brand-new CV.
+    cvsp_title_field: "באיזה תחום קורות החיים?", cvsp_title_layout: "איזה סגנון מתאים לכם?",
+    cvsp_lead: "נבחר לכם עיצוב מתאים — אפשר תמיד לשנות אחר כך מתוך ההגדרות.",
+    cvsp_skip: "דלג, התחילו עם עיצוב ברירת מחדל",
+    cvsp_field_dev: "פיתוח / תכנות", cvsp_field_design: "עיצוב / UX", cvsp_field_accounting: "הנהלת חשבונות",
+    cvsp_field_finance: "כספים / אנליטיקה", cvsp_field_sales: "מכירות / פיתוח עסקי",
+    cvsp_field_customerservice: "שירות לקוחות", cvsp_field_general: "כללי / שיווק / אחר",
+    cvsp_layout_sidebar: "עם סרגל צד מסודר", cvsp_layout_sidebar_desc: "פרטי קשר וכישורים בצד, תוכן ראשי לידם",
+    cvsp_layout_bold: "נועז ובולט", cvsp_layout_bold_desc: "כותרת גדולה ובטוחה, בולט על המסך",
+    cvsp_layout_classicmono: "מינימליסטי ושקט", cvsp_layout_classicmono_desc: "נקי, עניני, בלי קישוטים מיותרים",
   },
   en: {
     nav_home: "Home", nav_sites: "Build a Site", nav_quotes: "Quotes", nav_cv: "Resumes",
@@ -784,6 +811,27 @@ const I18N = {
     acct_msg_reset_sent: "A password reset email was sent — check your inbox.",
     acct_err_password_mismatch: "The passwords don't match.",
     acct_err_update_failed: "The update failed, try again.",
+
+    cvb_meta_title: "CV Builder — DeskKit",
+    cvb_top_doc_name: "CV",
+    cvb_undo: "↶ Undo", cvb_undo_title: "Undo (Ctrl+Z)",
+    cvb_redo: "↷ Redo", cvb_redo_title: "Redo (Ctrl+Shift+Z)",
+    cvb_ats: "🎯 ATS check", cvb_download: "Download PDF", cvb_save: "Save", cvb_exit: "Exit",
+    cvb_mobile_structure: "Structure", cvb_mobile_design: "Design",
+    cvb_hier_title: "CV structure", cvb_settings_label: "Design & settings",
+    cvb_props_empty: "Select a field in your CV to edit it",
+    cvb_style_section_title: "Design style",
+    cvb_style_sidebar: "With sidebar", cvb_style_bold: "Bold & striking", cvb_style_classicmono: "Minimal & quiet",
+    cvb_style_hint: "Only changes the design — your content stays exactly as it is.",
+    cvsp_title_field: "What field is this CV for?", cvsp_title_layout: "Which style fits you?",
+    cvsp_lead: "We'll pick a matching design for you — you can always change it later from Settings.",
+    cvsp_skip: "Skip, start with the default design",
+    cvsp_field_dev: "Development / Engineering", cvsp_field_design: "Design / UX", cvsp_field_accounting: "Accounting",
+    cvsp_field_finance: "Finance / Analytics", cvsp_field_sales: "Sales / Business Development",
+    cvsp_field_customerservice: "Customer Service", cvsp_field_general: "General / Marketing / Other",
+    cvsp_layout_sidebar: "With a tidy sidebar", cvsp_layout_sidebar_desc: "Contact info and skills on the side, main content next to them",
+    cvsp_layout_bold: "Bold & striking", cvsp_layout_bold_desc: "A big, confident heading that stands out on screen",
+    cvsp_layout_classicmono: "Minimal & quiet", cvsp_layout_classicmono_desc: "Clean, to the point, no unnecessary decoration",
   },
 };
 
@@ -802,6 +850,13 @@ function applyLang(lang) {
   document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
     const key = el.dataset.i18nPlaceholder;
     if (dict[key] !== undefined) el.placeholder = dict[key];
+  });
+  // Same idea again, for a button's hover tooltip (e.g. the CV Shell's
+  // "Undo (Ctrl+Z)" title) — a real UI string, not just decoration, so
+  // it shouldn't stay stuck in Hebrew once everything else switches.
+  document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+    const key = el.dataset.i18nTitle;
+    if (dict[key] !== undefined) el.title = dict[key];
   });
   const toggle = document.getElementById("lang-toggle");
   if (toggle) toggle.textContent = lang === "en" ? "עברית" : "EN";
