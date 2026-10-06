@@ -8,6 +8,17 @@
    Formspree used to do, minus Formspree's 30-day free-tier retention
    limit that was silently dropping real messages. */
 
+/* Picks the Hebrew or English variant of a chat/widget string at the
+   moment it's rendered (not baked in at page load), same as every other
+   dynamically-set piece of text on an i18n.js page — js/i18n.js isn't
+   loaded on every page this file runs on, hence the typeof guard. */
+function dkWidgetsEn() {
+  return typeof currentLang === "function" && currentLang() === "en";
+}
+function dkWidgetsT(he, en) {
+  return dkWidgetsEn() ? en : he;
+}
+
 /* Each entry's keyword list decides which entry wins for free-typed
    questions (highest keyword-match count, see chatMatch()) — so a
    pricing word like "עולה"/"מחיר" is repeated INSIDE every topic-specific
@@ -15,47 +26,64 @@
    used to mean "כמה עולה אתר?" (an "אתר" question) scored only on "עולה"
    and matched the CV entry's free-tools answer instead — wrong, and
    confirmed live. Now the sites entry itself carries "עולה"/"מחיר", so a
-   question mentioning both "אתר" and "עולה" outscores anything vaguer. */
+   question mentioning both "אתר" and "עולה" outscores anything vaguer.
+   Keyword matching stays Hebrew/English-mixed regardless of UI language
+   (a visitor types in whichever language they think in) — only the `a`
+   answer and link label actually displayed switch with aEn/linkLabelEn. */
 const CHAT_FAQ = [
   { kw: ["קו\"ח", "קוח", "קורות חיים", "cv", "resume", "בילדר", "builder"],
     a: "עריכת קורות החיים בבילדר חופשית וללא הגבלה, גם בלי חשבון — הרשמה מהירה נדרשת רק בשמירה או בהורדת ה-PDF, שהיא עצמה חינמית לגמרי.",
-    link: { href: "products.html?type=cv", label: "לתבניות קורות החיים" } },
+    aEn: "Editing your resume in the builder is free and unlimited, even without an account — a quick signup is only needed to save or download the PDF, which is itself completely free.",
+    link: { href: "products.html?type=cv", label: "לתבניות קורות החיים", labelEn: "Browse resume templates" } },
   { kw: ["מצגת", "מצגות", "powerpoint", "pptx", "deck"],
     a: "יש תבניות מצגות עסקיות מוכנות, כולן חינם להורדה ישירה כקובץ PowerPoint מלא לעריכה.",
-    link: { href: "products.html?type=deck", label: "לתבניות המצגות" } },
+    aEn: "There are ready-made business deck templates, all free to download directly as a fully-editable PowerPoint file.",
+    link: { href: "products.html?type=deck", label: "לתבניות המצגות", labelEn: "Browse deck templates" } },
   { kw: ["אקסל", "excel", "xlsx", "תקציב", "גיליון"],
     a: "יש קבצי Excel מוכנים להורדה — כמו תקציב חודשי אישי או חשבונית עסקית — עם נוסחאות אמיתיות, לא מספרים קבועים.",
-    link: { href: "products.html?type=xlsx", label: "לתבניות ה-Excel" } },
+    aEn: "There are ready-made Excel files to download — like a personal monthly budget or a business invoice — with real formulas, not fixed numbers.",
+    link: { href: "products.html?type=xlsx", label: "לתבניות ה-Excel", labelEn: "Browse Excel templates" } },
   { kw: ["אתר", "אתרים", "site", "website", "דומיין", "domain", "תדמית"],
     a: "בונים אתר עסקי שלם תוך דקות מ-18 תבניות, עם תצוגה חיה בזמן אמת. עריכת התוכן, הצבע והתמונות חינמית וללא הגבלה לתמיד — יש תשלום חד-פעמי אחד לפרסום הסופי, בלי מנוי חודשי.",
-    link: { href: "sites.html", label: "לבניית אתר" } },
+    aEn: "You can build a complete business site in minutes from 18 templates, with a real-time live preview. Editing the content, color and images is free and unlimited forever — there's a single one-time payment to publish the final site, no monthly subscription.",
+    link: { href: "sites.html", label: "לבניית אתר", labelEn: "Build a site" } },
   { kw: ["הצעת מחיר", "הצעות מחיר", "quote"],
     a: "נרשמים פעם אחת עם מייל או Google וממלאים את פרטי העסק והלוגו — ומכאן כל הצעת מחיר מופקת מוכנה תוך דקה.",
-    link: { href: "quote-app.html", label: "להצעות מחיר" } },
+    aEn: "You sign up once with email or Google and fill in your business details and logo — from there, every quote is generated ready in under a minute.",
+    link: { href: "quote-app.html", label: "להצעות מחיר", labelEn: "Go to quotes" } },
   { kw: ["חשבונית", "קבלה", "עוסק פטור", "invoice"],
     a: "יש גם מערכת חשבוניות אינטראקטיבית (הרשמה חד-פעמית, הפקה תוך דקה, כולל התאמה לעוסק פטור), וגם תבנית Excel נפרדת להורדה חד-פעמית.",
-    link: { href: "invoice-app.html", label: "לחשבוניות וקבלות" } },
+    aEn: "There's also an interactive invoicing system (one-time signup, generated in under a minute, including support for a tax-exempt dealer), as well as a separate one-time-download Excel template.",
+    link: { href: "invoice-app.html", label: "לחשבוניות וקבלות", labelEn: "Go to invoices & receipts" } },
   { kw: ["crm", "ניהול לקוחות", "לידים", "קנבן"],
     a: "מערכת CRM פשוטה עם לוח קנבן, ישירות בדפדפן — עוזרת לעקוב אחרי לידים ולקוחות בלי אקסל מבולגן.",
-    link: { href: "crm-product.html", label: "למערכת ה-CRM" } },
+    aEn: "There's a simple CRM with a kanban board, right in the browser — it helps you track leads and customers without a messy spreadsheet.",
+    link: { href: "crm-product.html", label: "למערכת ה-CRM", labelEn: "Go to the CRM" } },
   { kw: ["צבע", "גופן", "פונט", "עיצוב", "פלטה"],
-    a: "בבילדרים אפשר לבחור צבע ראשי וגם גופן מתוך כמה אפשרויות — התצוגה החיה מתעדכנת מיד." },
+    a: "בבילדרים אפשר לבחור צבע ראשי וגם גופן מתוך כמה אפשרויות — התצוגה החיה מתעדכנת מיד.",
+    aEn: "In the builders you can pick a primary color and a font from several options — the live preview updates instantly." },
   { kw: ["תמונה", "פרופיל", "אווטאר", "photo", "picture"],
-    a: "בבילדר קורות החיים יש אפשרות להעלות תמונת פרופיל (או להסיר אותה) — היא מופיעה בעיגול ליד השם." },
+    a: "בבילדר קורות החיים יש אפשרות להעלות תמונת פרופיל (או להסיר אותה) — היא מופיעה בעיגול ליד השם.",
+    aEn: "In the resume builder you can upload a profile photo (or remove it) — it appears in a circle next to your name." },
   { kw: ["אנגלית", "english", "שפה", "language", "עברית", "ltr", "rtl"],
-    a: "בראש עמוד הבילדר יש כפתור שפה גדול וברור — עברית או אנגלית, כולל היפוך כיוון אוטומטי של כל התבנית." },
+    a: "בראש עמוד הבילדר יש כפתור שפה גדול וברור — עברית או אנגלית, כולל היפוך כיוון אוטומטי של כל התבנית.",
+    aEn: "At the top of the builder there's a clear language button — Hebrew or English — including automatic direction-flipping of the whole template." },
   { kw: ["הורדה", "pdf", "שמירה", "export", "הדפסה"],
-    a: "לוחצים על \"הורדת PDF\" בתחתית הבילדר — זה פותח את חלון ההדפסה של הדפדפן, ובוחרים \"שמירה כ-PDF\"." },
+    a: "לוחצים על \"הורדת PDF\" בתחתית הבילדר — זה פותח את חלון ההדפסה של הדפדפן, ובוחרים \"שמירה כ-PDF\".",
+    aEn: "Click \"Download PDF\" at the bottom of the builder — it opens the browser's print dialog, and you choose \"Save as PDF\"." },
   { kw: ["צור קשר", "יצירת קשר", "קשר", "מייל", "email", "contact", "בעיה"],
     a: "אפשר לכתוב לנו דרך עמוד צור קשר ונחזור אליכם בהקדם.",
-    link: { href: "contact.html", label: "לעמוד צור קשר" } },
+    aEn: "You can write to us through the Contact page and we'll get back to you soon.",
+    link: { href: "contact.html", label: "לעמוד צור קשר", labelEn: "Go to the Contact page" } },
   { kw: ["קטלוג", "מוצרים", "תבניות", "products"],
     a: "כל התבניות — קורות חיים, מצגות וגיליונות Excel — נמצאות בקטלוג, מסונן לפי קטגוריה.",
-    link: { href: "products.html", label: "לקטלוג המלא" } },
+    aEn: "All the templates — resumes, decks and Excel spreadsheets — are in the catalog, filterable by category.",
+    link: { href: "products.html", label: "לקטלוג המלא", labelEn: "Go to the full catalog" } },
 ];
 const CHAT_FALLBACK = {
   a: "זה נראה לא קשור לכלים של DeskKit — אפשר לנסות לשאול אחרת (קורות חיים, אתרים, הצעות מחיר, חשבוניות...), או לפנות אלינו ישירות.",
-  link: { href: "contact.html", label: "לעמוד צור קשר" },
+  aEn: "That doesn't seem related to DeskKit's tools — you can try asking differently (resumes, sites, quotes, invoices...), or contact us directly.",
+  link: { href: "contact.html", label: "לעמוד צור קשר", labelEn: "Go to the Contact page" },
 };
 
 /* Small, honest "not really AI" layer: a handful of genuinely useful
@@ -66,13 +94,18 @@ const CHAT_FALLBACK = {
    CHAT_FAQ finds zero keyword matches, so a real product question never
    gets shadowed by this. */
 function chatUtilityAnswer(q) {
+  const en = dkWidgetsEn();
   if (/שעה/.test(q)) {
-    const time = new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
-    return { a: `זו שאלה שקצת חורגת מהנושא שלנו כאן 🙂 בכל מקרה — השעה עכשיו היא ${time}. עכשיו ברצינות: אפשר לעזור עם קורות חיים, אתרים, הצעות מחיר או חשבוניות?` };
+    const time = new Date().toLocaleTimeString(en ? "en-US" : "he-IL", { hour: "2-digit", minute: "2-digit" });
+    return { a: en
+      ? `That's a bit outside what we cover here 🙂 Anyway — the time right now is ${time}. Now seriously: can I help with resumes, sites, quotes or invoices?`
+      : `זו שאלה שקצת חורגת מהנושא שלנו כאן 🙂 בכל מקרה — השעה עכשיו היא ${time}. עכשיו ברצינות: אפשר לעזור עם קורות חיים, אתרים, הצעות מחיר או חשבוניות?` };
   }
   if (/תאריך|איזה יום/.test(q)) {
-    const date = new Date().toLocaleDateString("he-IL", { day: "numeric", month: "long", year: "numeric" });
-    return { a: `זה לא ממש קשור לכלים שלנו, אבל שירות לקוחות: היום ${date}. במה אפשר לעזור לך כאן ב-DeskKit?` };
+    const date = new Date().toLocaleDateString(en ? "en-US" : "he-IL", { day: "numeric", month: "long", year: "numeric" });
+    return { a: en
+      ? `That's not really related to our tools, but customer service mode: today is ${date}. What can I help you with here on DeskKit?`
+      : `זה לא ממש קשור לכלים שלנו, אבל שירות לקוחות: היום ${date}. במה אפשר לעזור לך כאן ב-DeskKit?` };
   }
   const mathMatch = q.match(/(-?\d+(?:\.\d+)?)\s*([+\-*xX×÷/])\s*(-?\d+(?:\.\d+)?)/);
   if (mathMatch) {
@@ -86,7 +119,9 @@ function chatUtilityAnswer(q) {
     else if (op === "/" || op === "÷") result = b === 0 ? null : a / b;
     if (result !== null && result !== undefined && Number.isFinite(result)) {
       const rounded = Math.round(result * 1000) / 1000;
-      return { a: `חוץ מהתחום שלנו, אבל בשמחה: ${mathMatch[1]} ${mathMatch[2]} ${mathMatch[3]} = ${rounded}. עכשיו — במה אפשר לעזור לך עם DeskKit?` };
+      return { a: en
+        ? `Outside our scope, but happy to: ${mathMatch[1]} ${mathMatch[2]} ${mathMatch[3]} = ${rounded}. Now — what can I help you with on DeskKit?`
+        : `חוץ מהתחום שלנו, אבל בשמחה: ${mathMatch[1]} ${mathMatch[2]} ${mathMatch[3]} = ${rounded}. עכשיו — במה אפשר לעזור לך עם DeskKit?` };
     }
   }
   return null;
@@ -101,45 +136,54 @@ const CHAT_CATEGORIES = [
   {
     id: "cv",
     icon: "📄",
-    label: "קורות חיים ומצגות",
+    label: "קורות חיים ומצגות", labelEn: "Resumes & decks",
     items: [
-      { q: "האם עריכת קורות החיים בחינם?",
+      { q: "האם עריכת קורות החיים בחינם?", qEn: "Is editing a resume free?",
         a: "לגמרי. עריכת התוכן, הצבע והגופן בבילדר פתוחה לכולם בלי הרשמה — הרשמה מהירה (מייל או Google) נדרשת רק ברגע השמירה או ההורדה, בלי כרטיס אשראי.",
-        link: { href: "products.html?type=cv", label: "לתבניות קורות החיים" } },
-      { q: "העבודה שלי נשמרת אוטומטית?",
-        a: "כן — הטיוטה נשמרת אוטומטית בדפדפן תוך כדי הקלדה, גם בלי חשבון. אחרי הרשמה אפשר גם לשמור לענן ולהמשיך לערוך מכל מכשיר." },
-      { q: "יש גם תבניות מצגות?",
+        aEn: "Completely. Editing the content, color and font in the builder is open to everyone, no signup needed — a quick signup (email or Google) is only required when you save or download, no credit card.",
+        link: { href: "products.html?type=cv", label: "לתבניות קורות החיים", labelEn: "Browse resume templates" } },
+      { q: "העבודה שלי נשמרת אוטומטית?", qEn: "Is my work saved automatically?",
+        a: "כן — הטיוטה נשמרת אוטומטית בדפדפן תוך כדי הקלדה, גם בלי חשבון. אחרי הרשמה אפשר גם לשמור לענן ולהמשיך לערוך מכל מכשיר.",
+        aEn: "Yes — the draft is saved automatically in the browser as you type, even without an account. After signing up you can also save to the cloud and keep editing from any device." },
+      { q: "יש גם תבניות מצגות?", qEn: "Are there deck templates too?",
         a: "יש תבניות מצגות עסקיות מוכנות בקטלוג, כולן להורדה ישירה כקובץ PowerPoint מלא לעריכה.",
-        link: { href: "products.html?type=deck", label: "לתבניות המצגות" } },
+        aEn: "There are ready-made business deck templates in the catalog, all directly downloadable as a fully-editable PowerPoint file.",
+        link: { href: "products.html?type=deck", label: "לתבניות המצגות", labelEn: "Browse deck templates" } },
     ],
   },
   {
     id: "sites",
     icon: "🌐",
-    label: "בניית אתרים ודומיינים",
+    label: "בניית אתרים ודומיינים", labelEn: "Building sites & domains",
     items: [
-      { q: "איך בונים אתר עסקי באתר?",
+      { q: "איך בונים אתר עסקי באתר?", qEn: "How do I build a business site here?",
         a: "בוחרים אחת מ-18 תבניות מוכנות, ממלאים את פרטי העסק ורואים תצוגה חיה שמתעדכנת מיד תוך כדי העריכה — בלי לדעת לתכנת.",
-        link: { href: "sites.html", label: "לבניית אתר" } },
-      { q: "כמה עולה לבנות אתר?",
-        a: "עריכת התוכן, הצבע והתמונות באתר חינמית וללא הגבלה לתמיד. יש תשלום חד-פעמי אחד כדי לפתוח את פרסום האתר הסופי — בלי מנוי חודשי." },
-      { q: "איך מחברים דומיין אישי לאתר?",
-        a: "האתר עולה לאוויר באחסון חינמי לתמיד עם קישור משלו. אם תרצו בהמשך דומיין אישי, אפשר לרכוש אותו מכל ספק ולחבר אותו לפי המדריך המלא שמופיע בסיום התהליך." },
+        aEn: "You pick one of 18 ready templates, fill in your business details, and see a live preview that updates instantly as you edit — no coding knowledge needed.",
+        link: { href: "sites.html", label: "לבניית אתר", labelEn: "Build a site" } },
+      { q: "כמה עולה לבנות אתר?", qEn: "How much does building a site cost?",
+        a: "עריכת התוכן, הצבע והתמונות באתר חינמית וללא הגבלה לתמיד. יש תשלום חד-פעמי אחד כדי לפתוח את פרסום האתר הסופי — בלי מנוי חודשי.",
+        aEn: "Editing the content, color and images is free and unlimited forever. There's a single one-time payment to unlock publishing the final site — no monthly subscription." },
+      { q: "איך מחברים דומיין אישי לאתר?", qEn: "How do I connect a custom domain?",
+        a: "האתר עולה לאוויר באחסון חינמי לתמיד עם קישור משלו. אם תרצו בהמשך דומיין אישי, אפשר לרכוש אותו מכל ספק ולחבר אותו לפי המדריך המלא שמופיע בסיום התהליך.",
+        aEn: "The site goes live on free hosting forever with its own link. If you'd like a custom domain later, you can buy one from any provider and connect it following the full guide shown at the end of the process." },
     ],
   },
   {
     id: "biz",
     icon: "💼",
-    label: "כלים לעסקים וחשבוניות",
+    label: "כלים לעסקים וחשבוניות", labelEn: "Business tools & invoicing",
     items: [
-      { q: "איך מתחילים עם הצעות מחיר או חשבוניות?",
-        a: "נרשמים פעם אחת עם מייל או Google וממלאים את פרטי העסק והלוגו — ומכאן והלאה כל הצעת מחיר או חשבונית מופקת מוכנה תוך דקה." },
-      { q: "החשבוניות מתאימות לעוסק פטור?",
+      { q: "איך מתחילים עם הצעות מחיר או חשבוניות?", qEn: "How do I get started with quotes or invoices?",
+        a: "נרשמים פעם אחת עם מייל או Google וממלאים את פרטי העסק והלוגו — ומכאן והלאה כל הצעת מחיר או חשבונית מופקת מוכנה תוך דקה.",
+        aEn: "You sign up once with email or Google and fill in your business details and logo — from then on, every quote or invoice is generated ready in under a minute." },
+      { q: "החשבוניות מתאימות לעוסק פטור?", qEn: "Are the invoices suitable for a tax-exempt dealer?",
         a: "כן, כולל התאמה מלאה לעוסק פטור ומספור אוטומטי של חשבונית מס-קבלה או קבלה.",
-        link: { href: "invoice-app.html", label: "לחשבוניות וקבלות" } },
-      { q: "מה זה ה-CRM ואיך הוא עוזר?",
+        aEn: "Yes, including full support for a tax-exempt dealer and automatic sequential numbering of a tax invoice-receipt or a receipt.",
+        link: { href: "invoice-app.html", label: "לחשבוניות וקבלות", labelEn: "Go to invoices & receipts" } },
+      { q: "מה זה ה-CRM ואיך הוא עוזר?", qEn: "What is the CRM and how does it help?",
         a: "מערכת ניהול לקוחות פשוטה עם לוח קנבן, ישירות בדפדפן — עוזרת לעקוב אחרי לידים ולקוחות בלי אקסל מבולגן.",
-        link: { href: "crm-product.html", label: "למערכת ה-CRM" } },
+        aEn: "A simple customer management system with a kanban board, right in the browser — it helps you track leads and customers without a messy spreadsheet.",
+        link: { href: "crm-product.html", label: "למערכת ה-CRM", labelEn: "Go to the CRM" } },
     ],
   },
 ];
@@ -167,24 +211,30 @@ function chatMatch(text) {
   return chatUtilityAnswer(q) || CHAT_FALLBACK;
 }
 
+// Picks a {he, en} pair's link label at render time.
+function dkWidgetsLinkLabel(link) {
+  if (!link) return "";
+  return dkWidgetsEn() ? (link.labelEn || link.label) : link.label;
+}
+
 function bubbleHtml(text, link, who) {
   return `<div class="chat-msg chat-msg-${who}">
-    <div class="chat-bubble">${escapeHtml(text)}${link ? `<a href="${link.href}" class="chat-link">${escapeHtml(link.label)} ←</a>` : ""}</div>
+    <div class="chat-bubble">${escapeHtml(text)}${link ? `<a href="${link.href}" class="chat-link">${escapeHtml(dkWidgetsLinkLabel(link))} ←</a>` : ""}</div>
   </div>`;
 }
 
 function injectFeedbackWidget() {
   const wrap = document.createElement("div");
   wrap.innerHTML = `
-    <button type="button" class="fab fab-feedback no-print" id="feedback-fab" title="שתפו משוב" aria-label="שתפו משוב">★</button>
+    <button type="button" class="fab fab-feedback no-print" id="feedback-fab" title="${dkWidgetsT("שתפו משוב", "Share feedback")}" aria-label="${dkWidgetsT("שתפו משוב", "Share feedback")}">★</button>
     <div class="widget-overlay no-print" id="feedback-overlay">
       <div class="widget-modal">
-        <button type="button" class="widget-close" id="feedback-close" aria-label="סגירה">✕</button>
-        <h3>מה דעתכם על DeskKit?</h3>
-        <p class="widget-sub">דירוג קצר עוזר לנו להשתפר — לוקח חצי דקה.</p>
-        <div class="star-row" id="star-row">${[1, 2, 3, 4, 5].map((n) => `<button type="button" class="star" data-star="${n}" aria-label="${n} כוכבים">★</button>`).join("")}</div>
-        <textarea id="feedback-text" rows="3" placeholder="רוצים להוסיף עוד משהו? (לא חובה)"></textarea>
-        <button type="button" class="btn btn-gold" id="feedback-submit" style="width:100%;">שליחת משוב</button>
+        <button type="button" class="widget-close" id="feedback-close" aria-label="${dkWidgetsT("סגירה", "Close")}">✕</button>
+        <h3>${dkWidgetsT("מה דעתכם על DeskKit?", "What do you think of DeskKit?")}</h3>
+        <p class="widget-sub">${dkWidgetsT("דירוג קצר עוזר לנו להשתפר — לוקח חצי דקה.", "A quick rating helps us improve — takes half a minute.")}</p>
+        <div class="star-row" id="star-row">${[1, 2, 3, 4, 5].map((n) => `<button type="button" class="star" data-star="${n}" aria-label="${n} ${dkWidgetsT("כוכבים", "stars")}">★</button>`).join("")}</div>
+        <textarea id="feedback-text" rows="3" placeholder="${dkWidgetsT("רוצים להוסיף עוד משהו? (לא חובה)", "Want to add anything else? (optional)")}"></textarea>
+        <button type="button" class="btn btn-gold" id="feedback-submit" style="width:100%;">${dkWidgetsT("שליחת משוב", "Send feedback")}</button>
         <div class="widget-note" id="feedback-note"></div>
       </div>
     </div>`;
@@ -205,27 +255,30 @@ function injectFeedbackWidget() {
 
   document.getElementById("feedback-submit").addEventListener("click", async () => {
     const note = document.getElementById("feedback-note");
-    if (!rating) { note.textContent = "בחרו דירוג לפני השליחה 🙂"; note.className = "widget-note warn"; return; }
+    if (!rating) { note.textContent = dkWidgetsT("בחרו דירוג לפני השליחה 🙂", "Pick a rating before sending 🙂"); note.className = "widget-note warn"; return; }
     const text = document.getElementById("feedback-text").value.trim();
 
     if (typeof supabaseClient === "undefined") {
-      const mailHref = `mailto:digital.dz.studio@gmail.com?subject=${encodeURIComponent("משוב על האתר — " + rating + " כוכבים")}&body=${encodeURIComponent(text)}`;
-      note.innerHTML = `תודה! טופס המשוב האוטומטי עוד לא מחובר — אם תרצו, אפשר <a href="${mailHref}">לשלוח לנו את זה במייל</a>.`;
+      const mailHref = `mailto:digital.dz.studio@gmail.com?subject=${encodeURIComponent(dkWidgetsT("משוב על האתר — " + rating + " כוכבים", "Site feedback — " + rating + " stars"))}&body=${encodeURIComponent(text)}`;
+      note.innerHTML = dkWidgetsT(
+        `תודה! טופס המשוב האוטומטי עוד לא מחובר — אם תרצו, אפשר <a href="${mailHref}">לשלוח לנו את זה במייל</a>.`,
+        `Thanks! The automatic feedback form isn't connected yet — if you'd like, you can <a href="${mailHref}">send it to us by email</a> instead.`
+      );
       note.className = "widget-note";
       return;
     }
-    note.textContent = "שולח…";
+    note.textContent = dkWidgetsT("שולח…", "Sending…");
     note.className = "widget-note";
     try {
       const { data, error } = await supabaseClient.functions.invoke("submit-contact-message", {
         body: { rating, message: text, formType: "feedback", page: location.pathname },
       });
       if (error || !data || data.error) throw new Error((data && data.error) || "bad response");
-      note.textContent = "תודה על המשוב!";
+      note.textContent = dkWidgetsT("תודה על המשוב!", "Thanks for the feedback!");
       note.className = "widget-note ok";
       document.getElementById("feedback-text").value = "";
     } catch (err) {
-      note.textContent = "משהו השתבש בשליחה — נסו שוב בעוד רגע.";
+      note.textContent = dkWidgetsT("משהו השתבש בשליחה — נסו שוב בעוד רגע.", "Something went wrong sending this — try again in a moment.");
       note.className = "widget-note warn";
     }
   });
@@ -235,8 +288,9 @@ function injectAccessibilityFab() {
   const a = document.createElement("a");
   a.href = "accessibility.html";
   a.className = "fab fab-a11y no-print";
-  a.title = "הצהרת נגישות";
-  a.setAttribute("aria-label", "הצהרת נגישות");
+  const label = dkWidgetsT("הצהרת נגישות", "Accessibility statement");
+  a.title = label;
+  a.setAttribute("aria-label", label);
   a.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="4" r="2"/><path d="M12 7c-1.1 0-2 .9-2 2v3.5L6.5 14l1 2 3-1.5V22h3v-6.5l1.5.8 2.5-4-3-1.6V9c0-1.1-.9-2-2-2z"/></svg>';
   document.body.appendChild(a);
 }
@@ -244,17 +298,17 @@ function injectAccessibilityFab() {
 function injectChatWidget() {
   const wrap = document.createElement("div");
   wrap.innerHTML = `
-    <button type="button" class="fab fab-chat no-print" id="chat-fab" title="עוזר DeskKit" aria-label="פתיחת צ'אט עזרה"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 4v-4H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><circle cx="8" cy="11" r="1.3" fill="#fff"/><circle cx="12" cy="11" r="1.3" fill="#fff"/><circle cx="16" cy="11" r="1.3" fill="#fff"/></svg></button>
+    <button type="button" class="fab fab-chat no-print" id="chat-fab" title="${dkWidgetsT("עוזר DeskKit", "DeskKit Assistant")}" aria-label="${dkWidgetsT("פתיחת צ'אט עזרה", "Open help chat")}"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 4v-4H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><circle cx="8" cy="11" r="1.3" fill="#fff"/><circle cx="12" cy="11" r="1.3" fill="#fff"/><circle cx="16" cy="11" r="1.3" fill="#fff"/></svg></button>
     <div class="chat-panel no-print" id="chat-panel">
       <div class="chat-head">
-        <span>עוזר DeskKit</span>
-        <button type="button" class="widget-close" id="chat-close" aria-label="סגירה">✕</button>
+        <span id="chat-head-label">${dkWidgetsT("עוזר DeskKit", "DeskKit Assistant")}</span>
+        <button type="button" class="widget-close" id="chat-close" aria-label="${dkWidgetsT("סגירה", "Close")}">✕</button>
       </div>
       <div class="chat-body" id="chat-body"></div>
       <div class="chat-quick" id="chat-quick"></div>
       <form class="chat-input-row" id="chat-form">
-        <input type="text" id="chat-input" placeholder="כתבו שאלה..." autocomplete="off">
-        <button type="submit" class="btn btn-gold">שליחה</button>
+        <input type="text" id="chat-input" placeholder="${dkWidgetsT("כתבו שאלה...", "Type a question...")}" autocomplete="off">
+        <button type="submit" class="btn btn-gold">${dkWidgetsT("שליחה", "Send")}</button>
       </form>
     </div>`;
   document.body.appendChild(wrap);
@@ -272,7 +326,7 @@ function injectChatWidget() {
   // Top-level category buttons — the chat's home screen.
   function renderCategoryMenu() {
     quick.innerHTML = CHAT_CATEGORIES.map((cat) =>
-      `<button type="button" class="chat-menu-btn" data-cat="${cat.id}">${cat.icon} ${escapeHtml(cat.label)}</button>`
+      `<button type="button" class="chat-menu-btn" data-cat="${cat.id}">${cat.icon} ${escapeHtml(dkWidgetsEn() ? cat.labelEn : cat.label)}</button>`
     ).join("");
   }
 
@@ -281,9 +335,9 @@ function injectChatWidget() {
     const cat = CHAT_CATEGORIES.find((c) => c.id === catId);
     if (!cat) return renderCategoryMenu();
     quick.innerHTML =
-      `<button type="button" class="chat-menu-btn chat-menu-back" data-back="1">⬅ חזרה לתפריט הראשי</button>` +
+      `<button type="button" class="chat-menu-btn chat-menu-back" data-back="1">⬅ ${dkWidgetsT("חזרה לתפריט הראשי", "Back to main menu")}</button>` +
       cat.items.map((item, i) =>
-        `<button type="button" class="chat-menu-btn" data-cat="${cat.id}" data-item="${i}">${escapeHtml(item.q)}</button>`
+        `<button type="button" class="chat-menu-btn" data-cat="${cat.id}" data-item="${i}">${escapeHtml(dkWidgetsEn() ? item.qEn : item.q)}</button>`
       ).join("");
   }
 
@@ -291,14 +345,14 @@ function injectChatWidget() {
     if (!text.trim()) return;
     addMsg(text, null, "user");
     const match = chatMatch(text);
-    setTimeout(() => addMsg(match.a, match.link, "bot"), 300);
+    setTimeout(() => addMsg(dkWidgetsEn() ? (match.aEn || match.a) : match.a, match.link, "bot"), 300);
   }
 
   document.getElementById("chat-fab").addEventListener("click", () => {
     panel.classList.toggle("open");
     if (panel.classList.contains("open") && !greeted) {
       greeted = true;
-      addMsg("היי! אני העוזר של DeskKit 🤖 אפשר לבחור נושא למטה, או לכתוב שאלה בעצמכם.", null, "bot");
+      addMsg(dkWidgetsT("היי! אני העוזר של DeskKit 🤖 אפשר לבחור נושא למטה, או לכתוב שאלה בעצמכם.", "Hi! I'm the DeskKit assistant 🤖 You can pick a topic below, or type your own question."), null, "bot");
       renderCategoryMenu();
     }
   });
@@ -311,16 +365,16 @@ function injectChatWidget() {
       const cat = CHAT_CATEGORIES.find((c) => c.id === btn.dataset.cat);
       const item = cat && cat.items[Number(btn.dataset.item)];
       if (!item) return;
-      addMsg(item.q, null, "user");
-      setTimeout(() => addMsg(item.a, item.link, "bot"), 300);
+      addMsg(dkWidgetsEn() ? item.qEn : item.q, null, "user");
+      setTimeout(() => addMsg(dkWidgetsEn() ? item.aEn : item.a, item.link, "bot"), 300);
       return;
     }
     if (btn.dataset.cat) {
       const cat = CHAT_CATEGORIES.find((c) => c.id === btn.dataset.cat);
       if (!cat) return;
-      addMsg(cat.icon + " " + cat.label, null, "user");
+      addMsg(cat.icon + " " + (dkWidgetsEn() ? cat.labelEn : cat.label), null, "user");
       setTimeout(() => {
-        addMsg("בחרו שאלה מהרשימה, או חזרו לתפריט הראשי:", null, "bot");
+        addMsg(dkWidgetsT("בחרו שאלה מהרשימה, או חזרו לתפריט הראשי:", "Pick a question from the list, or go back to the main menu:"), null, "bot");
         renderCategoryQuestions(cat.id);
       }, 300);
     }
@@ -330,6 +384,23 @@ function injectChatWidget() {
     const input = document.getElementById("chat-input");
     ask(input.value);
     input.value = "";
+  });
+
+  // Chat chrome (fab tooltip/aria, panel header, input placeholder, send
+  // button) re-renders on a language toggle — same as every other
+  // JS-rendered widget on an i18n.js page. Already-sent bubbles stay as
+  // sent, same as a real chat history would.
+  document.addEventListener("deskkit:langchange", () => {
+    document.getElementById("chat-fab").title = dkWidgetsT("עוזר DeskKit", "DeskKit Assistant");
+    document.getElementById("chat-fab").setAttribute("aria-label", dkWidgetsT("פתיחת צ'אט עזרה", "Open help chat"));
+    document.getElementById("chat-head-label").textContent = dkWidgetsT("עוזר DeskKit", "DeskKit Assistant");
+    document.getElementById("chat-close").setAttribute("aria-label", dkWidgetsT("סגירה", "Close"));
+    document.getElementById("chat-input").placeholder = dkWidgetsT("כתבו שאלה...", "Type a question...");
+    document.querySelector("#chat-form button[type=submit]").textContent = dkWidgetsT("שליחה", "Send");
+    // Re-render whichever quick-menu level is currently showing, so an
+    // open category's question list switches language too, not just the
+    // top-level menu.
+    if (quick.children.length) renderCategoryMenu();
   });
 }
 
@@ -347,10 +418,13 @@ function injectCookieNotice() {
   // "content not contained by landmarks" violation. role="region" +
   // aria-label makes it its own, properly announced landmark.
   bar.setAttribute("role", "region");
-  bar.setAttribute("aria-label", "הודעת עוגיות ואחסון מקומי");
+  bar.setAttribute("aria-label", dkWidgetsT("הודעת עוגיות ואחסון מקומי", "Cookie and local storage notice"));
   bar.innerHTML = `
-    <p>האתר משתמש בעוגיות ואחסון מקומי כדי לשמור את העבודה שלכם. פרטים ב<a href="terms.html#privacy">מדיניות הפרטיות</a>.</p>
-    <button type="button" class="btn btn-teal" id="cookie-notice-ok">הבנתי</button>
+    <p>${dkWidgetsT(
+      'האתר משתמש בעוגיות ואחסון מקומי כדי לשמור את העבודה שלכם. פרטים ב<a href="terms.html#privacy">מדיניות הפרטיות</a>.',
+      'This site uses cookies and local storage to save your work. Details in the <a href="terms.html#privacy">Privacy Policy</a>.'
+    )}</p>
+    <button type="button" class="btn btn-teal" id="cookie-notice-ok">${dkWidgetsT("הבנתי", "Got it")}</button>
   `;
   document.body.appendChild(bar);
   document.body.classList.add("cookie-notice-active");

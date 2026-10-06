@@ -18,6 +18,15 @@ function escapeHtmlNav(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+// Same lookup-with-real-fallback pattern as js/header.js's dkHeaderLabel
+// — works whether or not js/i18n.js is even loaded on this page, since
+// this file (unlike that one) mounts on every page.
+function navLabel(key, fallback) {
+  const lang = typeof currentLang === "function" ? currentLang() : "he";
+  const dict = (typeof I18N !== "undefined" && I18N[lang]) || null;
+  return (dict && dict[key]) || fallback;
+}
+
 // Which element opened the currently-open dropdown — originally always
 // #nav-login-link, now also js/app-sidebar.js's own account row at the
 // bottom of the sidebar. Tracked here (not re-queried by a hardcoded
@@ -54,13 +63,13 @@ function openNavDropdown(wrap, email, trigger, dropup) {
   dd.className = "nav-account-dropdown" + (dropup ? " dropup" : "");
   dd.innerHTML = `
     <div class="nav-account-email">${escapeHtmlNav(email)}</div>
-    <a href="account-settings.html" class="nav-account-settings">החשבון שלי</a>
-    <button type="button" class="nav-account-logout">התנתקות</button>
+    <a href="account-settings.html" class="nav-account-settings">${navLabel("terms_account_link", "החשבון שלי")}</a>
+    <button type="button" class="nav-account-logout">${navLabel("nav_logout", "התנתקות")}</button>
     <div class="nav-account-confirm" hidden>
-      <p>להתנתק?</p>
+      <p>${navLabel("nav_logout_confirm_q", "להתנתק?")}</p>
       <div class="nav-account-confirm-row">
-        <button type="button" class="nav-confirm-yes">כן, להתנתק</button>
-        <button type="button" class="nav-confirm-no">ביטול</button>
+        <button type="button" class="nav-confirm-yes">${navLabel("nav_logout_confirm_yes", "כן, להתנתק")}</button>
+        <button type="button" class="nav-confirm-no">${navLabel("nav_logout_confirm_cancel", "ביטול")}</button>
       </div>
     </div>
   `;
@@ -123,13 +132,8 @@ function applyNavAuthState(session) {
     // own top comment), so header.js's own i18n re-render never touched
     // it. Confirmed-live bug this fixes: toggling to English translated
     // every other nav string except this one, which stayed stuck on
-    // Hebrew. Same lookup-with-real-fallback pattern as dkHeaderLabel in
-    // js/header.js — works whether or not js/i18n.js is even loaded on
-    // this page.
-    const lang = typeof currentLang === "function" ? currentLang() : "he";
-    const dict = (typeof I18N !== "undefined" && I18N[lang]) || null;
-    const loginLabel = (dict && dict.nav_login) || "כניסה";
-    link.innerHTML = navIconSvg() + `<span>${escapeHtmlNav(loginLabel)}</span>`;
+    // Hebrew.
+    link.innerHTML = navIconSvg() + `<span>${escapeHtmlNav(navLabel("nav_login", "כניסה"))}</span>`;
     link.onclick = null;
   }
 }

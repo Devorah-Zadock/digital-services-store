@@ -17,15 +17,25 @@ function dkMobileNavIcon(name) {
   return icons[name] || "";
 }
 
+// Same local helper pattern as js/header.js's dkHeaderLabel and
+// js/create-chooser.js's dkCreateT — this nav mounts on every page, most
+// of which don't load js/i18n.js.
+function dkMobileNavEn() {
+  return typeof currentLang === "function" && currentLang() === "en";
+}
+function dkMobileNavT(he, en) {
+  return dkMobileNavEn() ? en : he;
+}
+
 function dkMobileNavRender(loggedIn) {
   const here = location.pathname.split("/").pop() || "index.html";
   const accountHref = loggedIn ? "account-settings.html" : "account.html?redirect=" + encodeURIComponent(here);
   const items = [
-    { icon: "home", label: "בית", href: "index.html" },
-    { icon: "create", label: "יצירה", action: "create" },
-    { icon: "projects", label: "פרויקטים", href: "projects.html" },
+    { icon: "home", label: dkMobileNavT("בית", "Home"), href: "index.html" },
+    { icon: "create", label: dkMobileNavT("יצירה", "Create"), action: "create" },
+    { icon: "projects", label: dkMobileNavT("פרויקטים", "Projects"), href: "projects.html" },
     { icon: "automate", label: "Automate", href: "automate.html" },
-    { icon: "account", label: "חשבון", href: accountHref },
+    { icon: "account", label: dkMobileNavT("חשבון", "Account"), href: accountHref },
   ];
   return items.map((it) => {
     const active = it.href && it.href.split("?")[0] === here;
@@ -57,8 +67,17 @@ function dkMobileNavMount(loggedIn) {
   }
 }
 
+let dkMobileNavLastLoggedIn = false;
+
 document.addEventListener("DOMContentLoaded", () => {
+  document.addEventListener("deskkit:langchange", () => dkMobileNavMount(dkMobileNavLastLoggedIn));
   if (typeof supabaseClient === "undefined") { dkMobileNavMount(false); return; }
-  supabaseClient.auth.onAuthStateChange((_event, session) => dkMobileNavMount(!!(session && session.user)));
-  supabaseClient.auth.getSession().then(({ data }) => dkMobileNavMount(!!(data.session && data.session.user)));
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
+    dkMobileNavLastLoggedIn = !!(session && session.user);
+    dkMobileNavMount(dkMobileNavLastLoggedIn);
+  });
+  supabaseClient.auth.getSession().then(({ data }) => {
+    dkMobileNavLastLoggedIn = !!(data.session && data.session.user);
+    dkMobileNavMount(dkMobileNavLastLoggedIn);
+  });
 });

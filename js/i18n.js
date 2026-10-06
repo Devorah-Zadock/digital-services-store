@@ -368,6 +368,11 @@ const I18N = {
     // {name} is replaced with the real signed-in name, not translated.
     greet_hello: "שלום, {name} 👋",
 
+    // js/nav-auth.js's account dropdown (read directly via navLabel(),
+    // same pattern as nav_create above — not static data-i18n markup).
+    nav_logout: "התנתקות", nav_logout_confirm_q: "להתנתק?",
+    nav_logout_confirm_yes: "כן, להתנתק", nav_logout_confirm_cancel: "ביטול",
+
     // account.html (login/signup) — static strings via data-i18n, plus
     // the same keys read directly by js/account.js for the parts that
     // toggle dynamically (login⇄signup, inline error/status messages),
@@ -746,6 +751,9 @@ const I18N = {
     nav_create: "Create", nav_my_projects: "My Projects", header_cta_start: "Start creating",
     nav_settings: "Settings", sidebar_toggle_aria: "Collapse or expand sidebar",
     greet_hello: "Hello, {name} 👋",
+
+    nav_logout: "Log out", nav_logout_confirm_q: "Log out?",
+    nav_logout_confirm_yes: "Yes, log out", nav_logout_confirm_cancel: "Cancel",
 
     acct_page_title: "Sign in — DeskKit",
     acct_login_title: "Sign in", acct_signup_title: "Sign up",

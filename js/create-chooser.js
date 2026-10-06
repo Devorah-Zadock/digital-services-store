@@ -11,13 +11,24 @@
    to the existing products.html catalog (real, working infra; not
    touched by this pass). */
 
+// Same local helper pattern as js/header.js's dkHeaderLabel and
+// js/account.js's dkAcctLabel — this file runs on every page (most of
+// which don't load js/i18n.js), so currentLang()/I18N are guarded, not
+// assumed.
+function dkCreateEn() {
+  return typeof currentLang === "function" && currentLang() === "en";
+}
+function dkCreateT(he, en) {
+  return dkCreateEn() ? en : he;
+}
+
 const DK_CREATE_OPTIONS = [
-  { icon: "🌐", product: "site", title: "אתר", sub: "אתר מקצועי לעסק או לפרויקט", href: "sites.html?new=1" },
-  { icon: "📄", product: "cv", title: "קורות חיים", sub: "קורות חיים שנראים כמו שאתם רוצים להיראות", href: "builder.html" },
-  { icon: "📊", product: "deck", title: "מצגת", sub: "מצגת מעוצבת ומוכנה להצגה", href: "products.html?type=deck" },
-  { icon: "💼", product: "quote", title: "הצעת מחיר", sub: "הצעת מחיר מקצועית ללקוחות", href: "quote-app.html" },
-  { icon: "🧾", product: "invoice", title: "חשבונית", sub: "חשבוניות וקבלות", href: "invoice-app.html" },
-  { icon: "📈", product: "xlsx", title: "גליון", sub: "גליון עבודה וניהול מידע", href: "products.html?type=xlsx" },
+  { icon: "🌐", product: "site", title: "אתר", titleEn: "Site", sub: "אתר מקצועי לעסק או לפרויקט", subEn: "A professional site for a business or project", href: "sites.html?new=1" },
+  { icon: "📄", product: "cv", title: "קורות חיים", titleEn: "Resume", sub: "קורות חיים שנראים כמו שאתם רוצים להיראות", subEn: "A resume that looks the way you want to be seen", href: "builder.html" },
+  { icon: "📊", product: "deck", title: "מצגת", titleEn: "Deck", sub: "מצגת מעוצבת ומוכנה להצגה", subEn: "A designed deck, ready to present", href: "products.html?type=deck" },
+  { icon: "💼", product: "quote", title: "הצעת מחיר", titleEn: "Quote", sub: "הצעת מחיר מקצועית ללקוחות", subEn: "A professional price quote for clients", href: "quote-app.html" },
+  { icon: "🧾", product: "invoice", title: "חשבונית", titleEn: "Invoice", sub: "חשבוניות וקבלות", subEn: "Invoices and receipts", href: "invoice-app.html" },
+  { icon: "📈", product: "xlsx", title: "גליון", titleEn: "Spreadsheet", sub: "גליון עבודה וניהול מידע", subEn: "A worksheet for tracking and managing data", href: "products.html?type=xlsx" },
 ];
 
 /* Very small keyword router for the free-text "אני לא בטוח" box —
@@ -56,22 +67,22 @@ window.openCreateChooser = function openCreateChooser() {
   overlay.className = "domain-guide-overlay";
   overlay.innerHTML = `
     <div class="domain-guide-modal" role="dialog" aria-modal="true" aria-labelledby="dk-create-title" style="max-width:600px;">
-      <button type="button" class="domain-guide-close" id="dk-create-close" aria-label="סגירה">✕</button>
-      <h2 id="dk-create-title">מה תרצו ליצור?</h2>
+      <button type="button" class="domain-guide-close" id="dk-create-close" aria-label="${dkCreateT("סגירה", "Close")}">✕</button>
+      <h2 id="dk-create-title">${dkCreateT("מה תרצו ליצור?", "What would you like to create?")}</h2>
       <div class="dk-create-grid">
         ${DK_CREATE_OPTIONS.map((o, i) => `
           <button type="button" class="dk-create-opt" data-dk-create-idx="${i}" data-dk-product="${o.product}">
             <span class="dk-create-opt-icon">${o.icon}</span>
             <span>
-              <span class="dk-create-opt-title">${o.title}</span>
-              <span class="dk-create-opt-sub">${o.sub}</span>
+              <span class="dk-create-opt-title">${dkCreateT(o.title, o.titleEn)}</span>
+              <span class="dk-create-opt-sub">${dkCreateT(o.sub, o.subEn)}</span>
             </span>
           </button>`).join("")}
       </div>
       <div class="dk-create-unsure">
-        <label for="dk-create-unsure-input">✨ אני לא בטוח</label>
-        <textarea id="dk-create-unsure-input" maxlength="300" placeholder="אני צריך משהו שיעזור לי להציג את העסק שלי ללקוח..."></textarea>
-        <button type="button" class="dk-btn dk-btn-primary dk-create-unsure-btn" id="dk-create-unsure-btn">✨ בואו נתחיל</button>
+        <label for="dk-create-unsure-input">✨ ${dkCreateT("אני לא בטוח", "I'm not sure")}</label>
+        <textarea id="dk-create-unsure-input" maxlength="300" placeholder="${dkCreateT("אני צריך משהו שיעזור לי להציג את העסק שלי ללקוח...", "I need something to help me present my business to a client...")}"></textarea>
+        <button type="button" class="dk-btn dk-btn-primary dk-create-unsure-btn" id="dk-create-unsure-btn">✨ ${dkCreateT("בואו נתחיל", "Let's get started")}</button>
       </div>
     </div>
   `;
