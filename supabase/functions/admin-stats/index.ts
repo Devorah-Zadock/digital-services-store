@@ -326,6 +326,25 @@ Deno.serve(async (req: Request) => {
     const stats = await loadStats(admin);
     return new Response(JSON.stringify(stats), { status: 200, headers: corsHeaders });
   } catch (err) {
-    return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: corsHeaders });
+    return new Response(JSON.stringify({ error: errorText(err) }), { status: 500, headers: corsHeaders });
   }
 });
+
+// A real Error (JS-thrown) stringifies fine via String()/.message — but
+// every table read above throws Postgrest's own error shape directly
+// (plain {message, details, hint, code}, not an Error instance), which
+// has no custom toString and so used to serialize as the literal string
+// "[object Object]" here, making every real failure on this endpoint
+// undiagnosable from the admin UI. This pulls the real message out of
+// either shape instead.
+function errorText(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (err && typeof err === "object" && "message" in err && typeof (err as { message: unknown }).message === "string") {
+    return (err as { message: string }).message;
+  }
+  try {
+    return JSON.stringify(err);
+  } catch {
+    return String(err);
+  }
+}
