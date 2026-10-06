@@ -223,24 +223,34 @@ async function downloadInvoicePdf(filenameHint) {
   if (!doc) { temp.remove(); return; }
   await new Promise((resolve) => requestAnimationFrame(resolve));
 
-  let canvas;
+  // Same reasoning as js/quote-render.js's downloadQuotePdf — a
+  // cross-origin logo (Supabase Storage, a different origin than the
+  // site) that taints the canvas makes canvas.toDataURL() throw, and
+  // with nothing downstream of html2canvas previously guarded, that
+  // became a silent unhandled rejection instead of a real message.
   try {
-    canvas = await window.html2canvas(doc, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
-  } finally {
-    temp.remove();
-  }
+    let canvas;
+    try {
+      canvas = await window.html2canvas(doc, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+    } finally {
+      temp.remove();
+    }
 
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF({ unit: "mm", format: "a4" });
-  const pageW = pdf.internal.pageSize.getWidth();
-  const pageH = pdf.internal.pageSize.getHeight();
-  let imgW = pageW;
-  let imgH = (canvas.height / canvas.width) * imgW;
-  if (imgH > pageH) {
-    imgW = imgW * (pageH / imgH);
-    imgH = pageH;
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: "mm", format: "a4" });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    let imgW = pageW;
+    let imgH = (canvas.height / canvas.width) * imgW;
+    if (imgH > pageH) {
+      imgW = imgW * (pageH / imgH);
+      imgH = pageH;
+    }
+    const x = (pageW - imgW) / 2;
+    pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", x, 0, imgW, imgH);
+    pdf.save(`${filenameHint || "מסמך"}.pdf`);
+  } catch (err) {
+    console.error("invoice PDF export failed:", err);
+    alert("הורדת ה-PDF נכשלה. אם יש לוגו מועלה, ייתכן שזו הסיבה — אפשר לנסות שוב, ואם זה חוזר, לנסות בלי לוגו.");
   }
-  const x = (pageW - imgW) / 2;
-  pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", x, 0, imgW, imgH);
-  pdf.save(`${filenameHint || "מסמך"}.pdf`);
 }

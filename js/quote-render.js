@@ -151,7 +151,7 @@ function renderQuoteHtml(q) {
   <div class="quote-doc skin-${skin}" dir="rtl">
     <div class="bsd">בס"ד</div>
     <div class="letterhead">
-      ${q.logoUrl ? `<img class="letterhead-logo" src="${escapeHtmlQ(q.logoUrl)}" alt="${escapeHtmlQ("לוגו " + (q.businessName || ""))}">` : ""}
+      ${q.logoUrl ? `<img class="letterhead-logo" src="${escapeHtmlQ(q.logoUrl)}" alt="${escapeHtmlQ("לוגو " + (q.businessName || ""))}">` : ""}
       <div class="biz-name">${escapeHtmlQ(q.businessName)}</div>
       <div class="tagline">${escapeHtmlQ(q.tagline1)}</div>
       <div class="tagline">${escapeHtmlQ(q.tagline2)}</div>
@@ -276,24 +276,38 @@ async function downloadQuotePdf() {
   if (!doc) { temp.remove(); return; }
   await new Promise((resolve) => requestAnimationFrame(resolve));
 
-  let canvas;
+  // Nothing downstream of html2canvas used to be guarded — a cross-origin
+  // logo (uploaded to Supabase Storage, a different origin than the site
+  // itself) that for any reason doesn't satisfy html2canvas's CORS check
+  // taints the canvas; canvas.toDataURL() then throws a SecurityError,
+  // and with no catch anywhere in this function that became an unhandled
+  // rejection — the button just looked like it did nothing. Caught here,
+  // with a real Hebrew message instead of a silent failure, same
+  // reasoning as every other user-facing error this session's audit
+  // fixed from raw/absent error handling.
   try {
-    canvas = await window.html2canvas(doc, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
-  } finally {
-    temp.remove();
-  }
+    let canvas;
+    try {
+      canvas = await window.html2canvas(doc, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+    } finally {
+      temp.remove();
+    }
 
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF({ unit: "mm", format: "a4" });
-  const pageW = pdf.internal.pageSize.getWidth();
-  const pageH = pdf.internal.pageSize.getHeight();
-  let imgW = pageW;
-  let imgH = (canvas.height / canvas.width) * imgW;
-  if (imgH > pageH) {
-    imgW = imgW * (pageH / imgH);
-    imgH = pageH;
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: "mm", format: "a4" });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    let imgW = pageW;
+    let imgH = (canvas.height / canvas.width) * imgW;
+    if (imgH > pageH) {
+      imgW = imgW * (pageH / imgH);
+      imgH = pageH;
+    }
+    const x = (pageW - imgW) / 2;
+    pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", x, 0, imgW, imgH);
+    pdf.save("הצעת-מחיר.pdf");
+  } catch (err) {
+    console.error("quote PDF export failed:", err);
+    alert("הורדת ה-PDF נכשלה. אם יש לוגו מועלה, ייתכן שזו הסיבה — אפשר לנסות שוב, ואם זה חוזר, לנסות בלי לוגו.");
   }
-  const x = (pageW - imgW) / 2;
-  pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", x, 0, imgW, imgH);
-  pdf.save("הצעת-מחיר.pdf");
 }

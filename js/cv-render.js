@@ -299,24 +299,36 @@ async function downloadCvPdf() {
   }
   await new Promise((resolve) => requestAnimationFrame(resolve));
 
-  let canvas;
+  // Same try/catch as js/quote-render.js's downloadQuotePdf /
+  // js/invoice-render.js's downloadInvoicePdf — this file's own profile
+  // photo is always a same-origin base64 data URI (see builder.js's
+  // FileReader-based upload), so the canvas-taint risk those two
+  // actually carry doesn't apply here, but nothing downstream of
+  // html2canvas was guarded here either, so any other failure still
+  // surfaced as a silent "nothing happened" click.
   try {
-    canvas = await window.html2canvas(doc, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
-  } finally {
-    temp.remove();
-  }
+    let canvas;
+    try {
+      canvas = await window.html2canvas(doc, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+    } finally {
+      temp.remove();
+    }
 
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF({ unit: "mm", format: "a4" });
-  const pageW = pdf.internal.pageSize.getWidth();
-  const pageH = pdf.internal.pageSize.getHeight();
-  let imgW = pageW;
-  let imgH = (canvas.height / canvas.width) * imgW;
-  if (imgH > pageH) {
-    imgW = imgW * (pageH / imgH);
-    imgH = pageH;
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: "mm", format: "a4" });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    let imgW = pageW;
+    let imgH = (canvas.height / canvas.width) * imgW;
+    if (imgH > pageH) {
+      imgW = imgW * (pageH / imgH);
+      imgH = pageH;
+    }
+    const x = (pageW - imgW) / 2;
+    pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", x, 0, imgW, imgH);
+    pdf.save(`${(state.content && state.content.name) || "קורות-חיים"}.pdf`);
+  } catch (err) {
+    console.error("CV PDF export failed:", err);
+    alert("הורדת ה-PDF נכשלה. אפשר לנסות שוב בעוד רגע.");
   }
-  const x = (pageW - imgW) / 2;
-  pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", x, 0, imgW, imgH);
-  pdf.save(`${(state.content && state.content.name) || "קורות-חיים"}.pdf`);
 }
