@@ -210,7 +210,8 @@ async function siteAiRunReview() {
       ? `Pro — נותרו לך ${Math.max(0, data.limit - data.count)} מתוך ${data.limit} בדיקות להיום.`
       : `נותרו לך ${Math.max(0, data.limit - data.count)} מתוך ${data.limit} בדיקות חינם.`;
   } catch (err) {
-    body.innerHTML = `<div class="ats-error">משהו השתבש בבדיקה. אפשר לנסות שוב בעוד רגע. (${escapeHtmlSiteAi(err.message || err)})</div>`;
+    console.error("site AI review failed:", err);
+    body.innerHTML = `<div class="ats-error">משהו השתבש בבדיקה. אפשר לנסות שוב בעוד רגע.</div>`;
   }
 }
 

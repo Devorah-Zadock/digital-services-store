@@ -395,7 +395,8 @@ async function bshellAiSubmit() {
       bshellAiNote("בוטל.");
     });
   } catch (err) {
-    bshellAiNote("משהו השתבש. אפשר לנסות שוב בעוד רגע. (" + escapeHtmlS(err.message || String(err)) + ")");
+    console.error("bshell AI command failed:", err);
+    bshellAiNote("משהו השתבש. אפשר לנסות שוב בעוד רגע.");
   } finally {
     btn.disabled = false;
     btn.textContent = originalLabel;

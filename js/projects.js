@@ -234,15 +234,15 @@ async function dkProjectsDuplicate(item) {
     const s = item.raw;
     const row = { user_id: dkProjectsUser.id, template: s.template, data: s.data };
     const { error } = await supabaseClient.from("site_projects").insert(row);
-    if (error) { alert("שכפול נכשל: " + error.message); return; }
+    if (error) { console.error("duplicate site failed:", error); alert("שכפול נכשל. אפשר לנסות שוב."); return; }
   } else if (item.kind === "quote") {
     const q = item.raw;
     const { error } = await supabaseClient.from("quote_saves").insert({ user_id: dkProjectsUser.id, data: q.data });
-    if (error) { alert("שכפול נכשל: " + error.message); return; }
+    if (error) { console.error("duplicate quote failed:", error); alert("שכפול נכשל. אפשר לנסות שוב."); return; }
   } else if (item.kind === "schedule") {
     const sc = item.raw;
     const { error } = await supabaseClient.from("schedule_projects").insert({ user_id: dkProjectsUser.id, data: sc.data, updated_at: new Date().toISOString() });
-    if (error) { alert("שכפול נכשל: " + error.message); return; }
+    if (error) { console.error("duplicate schedule failed:", error); alert("שכפול נכשל. אפשר לנסות שוב."); return; }
   }
   await dkProjectsLoad(true);
 }

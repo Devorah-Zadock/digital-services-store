@@ -164,7 +164,8 @@ async function siteAiCommandSubmit() {
       siteAiCommandNote("בוטל.");
     });
   } catch (err) {
-    siteAiCommandNote("משהו השתבש. אפשר לנסות שוב בעוד רגע. (" + escapeHtmlS(err.message || String(err)) + ")");
+    console.error("site AI command failed:", err);
+    siteAiCommandNote("משהו השתבש. אפשר לנסות שוב בעוד רגע.");
   } finally {
     btn.disabled = false;
     btn.textContent = originalLabel;

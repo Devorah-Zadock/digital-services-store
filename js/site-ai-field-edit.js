@@ -71,10 +71,11 @@ async function siteAiFieldImprove(btn) {
     input.value = (maxLen > 0) ? data.improved.slice(0, maxLen) : data.improved;
     input.dispatchEvent(new Event("input", { bubbles: true }));
   } catch (err) {
+    console.error("AI field edit failed:", err);
     if (noteHost) {
       const note = document.createElement("div");
       note.className = "ai-limit-note";
-      note.textContent = "משהו השתבש בשיפור הטקסט. אפשר לנסות שוב בעוד רגע. (" + (err.message || String(err)) + ")";
+      note.textContent = "משהו השתבש בשיפור הטקסט. אפשר לנסות שוב בעוד רגע.";
       noteHost.appendChild(note);
     }
   } finally {

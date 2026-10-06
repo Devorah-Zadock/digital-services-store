@@ -115,7 +115,7 @@ async function dkMySitesDuplicate(row) {
   const user = session.session && session.session.user;
   if (!user) return;
   const { error } = await supabaseClient.from("site_projects").insert({ user_id: user.id, template: row.template, data: row.data });
-  if (error) { alert("שכפול נכשל: " + error.message); return; }
+  if (error) { console.error("duplicate site failed:", error); alert("שכפול נכשל. אפשר לנסות שוב."); return; }
   location.reload();
 }
 
@@ -274,7 +274,7 @@ function dkShowPublishChecklist(onConfirm) {
   const hasName = !!(d.businessName && d.businessName.trim());
   const hasContact = !!((d.phone && d.phone.trim()) || (d.email && d.email.trim()) || (d.whatsapp && d.whatsapp.trim()));
   const hasContent = !!((d.about && d.about.trim()) || (d.services || []).some((s) => s.name && s.name.trim()));
-  const hasImages = !!(d.photo || (d.gallery && d.gallery.length));
+  const hasImages = !!(d.heroImage || (d.heroImages && d.heroImages.length));
 
   const overlay = document.createElement("div");
   overlay.id = "dk-publish-checklist-overlay";

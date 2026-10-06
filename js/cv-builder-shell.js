@@ -857,7 +857,8 @@ async function cvbshellImproveSummary() {
     renderPreview();
     cvbshellPatchTextContent("summary", data.improved);
   } catch (err) {
-    cvbshellAiNote("משהו השתבש בשיפור התקציר. אפשר לנסות שוב בעוד רגע. (" + escapeHtml(err.message || String(err)) + ")");
+    console.error("cv AI summary improve failed:", err);
+    cvbshellAiNote("משהו השתבש בשיפור התקציר. אפשר לנסות שוב בעוד רגע.");
   } finally {
     btn.disabled = false;
     btn.textContent = originalLabel;

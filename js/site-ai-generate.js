@@ -330,7 +330,14 @@ async function siteWizardSubmit() {
     await dkApplyGeneratedSite(data.site, values);
     dkShowGeneratedPreview(overlay, body, values);
   } catch (err) {
-    body.innerHTML = `<div class="ats-error">משהו השתבש ביצירת האתר. אפשר לנסות שוב בעוד רגע. (${escapeHtmlS(err.message || String(err))})</div>`;
+    // The raw err.message used to be shown straight to the user in
+    // parentheses — for a network failure that's the browser's own
+    // English text ("Failed to fetch"), meaningless and alarming to a
+    // non-technical Hebrew-speaking visitor. Logged for debugging
+    // instead; the visible message stays a plain, actionable Hebrew
+    // sentence regardless of what actually failed underneath.
+    console.error("site generate failed:", err);
+    body.innerHTML = `<div class="ats-error">משהו השתבש ביצירת האתר. אפשר לנסות שוב בעוד רגע.</div>`;
   }
 }
 
@@ -440,7 +447,8 @@ function dkShowGeneratedPreview(overlay, body, values) {
           await dkApplyGeneratedSite(data.site, revalues);
           dkShowGeneratedPreview(overlay, body, revalues);
         } catch (err) {
-          body.innerHTML = `<div class="ats-error">משהו השתבש. אפשר לנסות שוב. (${escapeHtmlS(err.message || String(err))})</div>`;
+          console.error("site restyle failed:", err);
+          body.innerHTML = `<div class="ats-error">משהו השתבש. אפשר לנסות שוב.</div>`;
         }
       });
     });

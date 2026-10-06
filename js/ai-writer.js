@@ -79,7 +79,8 @@ async function aiImproveSummary() {
     state.content.summary = data.improved;
     renderPreview();
   } catch (err) {
-    aiWriterNote("משהו השתבש בשיפור התקציר. אפשר לנסות שוב בעוד רגע. (" + escapeHtmlAts(err.message || String(err)) + ")");
+    console.error("AI writer improve failed:", err);
+    aiWriterNote("משהו השתבש בשיפור התקציר. אפשר לנסות שוב בעוד רגע.");
   } finally {
     btn.disabled = false;
     btn.textContent = originalLabel;
