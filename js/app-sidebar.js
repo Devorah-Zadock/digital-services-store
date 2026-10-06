@@ -37,33 +37,39 @@ const DK_SIDEBAR_ICONS = {
   settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.04H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1.04-1.56V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.56 1.04H21a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15z"/></svg>',
 };
 
-// Labels read from js/i18n.js's I18N dict at render time (see
-// dkSidebarLabel below) rather than hardcoded Hebrew — same
-// confirmed-live bug as js/header.js: this sidebar is built fresh from
-// this array every time it mounts, which ignored whatever language the
-// page had just been switched to.
+// Each item's Hebrew text is the real fallback value, not just a key —
+// js/i18n.js is only loaded on a handful of pages so far (see its own
+// "rolling out page by page" comment); the sidebar itself mounts on
+// every Builder Shell page (builder.html, sites.html, quote-app.html,
+// invoice-app.html) and on projects.html, NONE of which load i18n.js
+// today. dkSidebarLabel (below) reads I18N[lang][labelKey] only when
+// that dictionary actually exists and has the key — confirmed-live
+// regression this fixes: without this fallback, those pages briefly
+// showed the raw labelKey string itself ("nav_home") instead of any
+// real text, since I18N/currentLang are simply undefined globals
+// there, not an error dkSidebarLabel could otherwise catch.
 const DK_SIDEBAR_ITEMS = () => [
-  { key: "home", labelKey: "nav_home", href: "index.html" },
-  { key: "projects", labelKey: "nav_my_projects", href: "projects.html" },
+  { key: "home", labelKey: "nav_home", label: "בית", href: "index.html" },
+  { key: "projects", labelKey: "nav_my_projects", label: "הפרויקטים שלי", href: "projects.html" },
   { divider: true },
-  { key: "site", product: "site", labelKey: "tool_site", href: "sites.html?new=1" },
-  { key: "cv", product: "cv", labelKey: "nav_cv", href: "builder.html" },
-  { key: "quote", product: "quote", labelKey: "card_quote_h", href: "quote-app.html" },
-  { key: "invoice", product: "invoice", labelKey: "card_invoice_h", href: "invoice-app.html" },
-  { key: "deck", product: "deck", labelKey: "card_deck_h", href: "products.html?type=deck" },
-  { key: "xlsx", product: "xlsx", labelKey: "card_xlsx_h", href: "products.html?type=xlsx" },
+  { key: "site", product: "site", labelKey: "tool_site", label: "אתר", href: "sites.html?new=1" },
+  { key: "cv", product: "cv", labelKey: "nav_cv", label: "קורות חיים", href: "builder.html" },
+  { key: "quote", product: "quote", labelKey: "card_quote_h", label: "הצעת מחיר", href: "quote-app.html" },
+  { key: "invoice", product: "invoice", labelKey: "card_invoice_h", label: "חשבונית", href: "invoice-app.html" },
+  { key: "deck", product: "deck", labelKey: "card_deck_h", label: "מצגת", href: "products.html?type=deck" },
+  { key: "xlsx", product: "xlsx", labelKey: "card_xlsx_h", label: "גליון", href: "products.html?type=xlsx" },
   { divider: true },
-  { key: "settings", labelKey: "nav_settings", href: "account-settings.html" },
+  { key: "settings", labelKey: "nav_settings", label: "הגדרות", href: "account-settings.html" },
 ];
 
-function dkSidebarLabel(key) {
+function dkSidebarLabel(labelKey, fallback) {
   const lang = typeof currentLang === "function" ? currentLang() : "he";
-  const dict = (typeof I18N !== "undefined" && I18N[lang]) || {};
-  return dict[key] || key;
+  const dict = (typeof I18N !== "undefined" && I18N[lang]) || null;
+  return (dict && dict[labelKey]) || fallback;
 }
 
 function dkAppSidebarItemHtml(it, here) {
-  const label = it.labelKey ? dkSidebarLabel(it.labelKey) : "";
+  const label = it.labelKey ? dkSidebarLabel(it.labelKey, it.label) : "";
   if (it.divider) return '<div class="dk-app-sidebar-divider"></div>';
   const active = it.href.split("?")[0] === here;
   const iconBox = `<span class="dk-app-sidebar-icon">${DK_SIDEBAR_ICONS[it.key] || ""}</span>`;
@@ -113,8 +119,23 @@ function dkMountAppSidebar(email) {
   const aside = document.createElement("aside");
   aside.id = "dk-app-sidebar";
   aside.className = "dk-app-sidebar no-print";
-  const toggleBtn = `<button type="button" class="dk-app-sidebar-toggle" id="dk-app-sidebar-toggle" aria-label="${dkSidebarLabel("sidebar_toggle_aria")}">‹</button>`;
-  aside.innerHTML = toggleBtn + DK_SIDEBAR_ITEMS().map((it) => dkAppSidebarItemHtml(it, here)).join("") + dkAppSidebarAccountHtml(dkSidebarLastEmail);
+  const toggleBtn = `<button type="button" class="dk-app-sidebar-toggle" id="dk-app-sidebar-toggle" aria-label="${dkSidebarLabel("sidebar_toggle_aria", "כיווץ או הרחבת סרגל הצד")}">‹</button>`;
+  // The toggle button pokes half outside .dk-app-sidebar's own edge by
+  // design (inset-inline-end:-12px, see its CSS) — that only renders
+  // uncropped if .dk-app-sidebar's own overflow-x is truly "visible".
+  // Confirmed live it wasn't: per the CSS Overflow spec, when
+  // overflow-x and overflow-y differ and either one isn't "visible",
+  // the "visible" one is forced to compute as "auto" instead — so
+  // .dk-app-sidebar's overflow-y:auto (needed for a long item list to
+  // scroll) was silently turning its own overflow-x:visible into auto
+  // too, clipping the toggle button into the half-circle this was
+  // reported as ("cut off"). Fixed by moving overflow-y:auto onto this
+  // new inner wrapper instead, so the toggle button (a sibling of it,
+  // not a descendant) is governed by .dk-app-sidebar's own overflow
+  // alone, which no longer needs to be anything but visible.
+  aside.innerHTML = toggleBtn
+    + `<div class="dk-app-sidebar-scroll">${DK_SIDEBAR_ITEMS().map((it) => dkAppSidebarItemHtml(it, here)).join("")}</div>`
+    + dkAppSidebarAccountHtml(dkSidebarLastEmail);
   document.body.appendChild(aside);
   document.body.classList.add("dk-app-sidebar-mounted");
   if (dkSidebarCollapsedPref()) document.body.classList.add("dk-app-sidebar-collapsed");

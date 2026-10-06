@@ -1558,6 +1558,20 @@ body.cookie-notice-active .fab { display: none; }
   position: fixed; z-index: 260; bottom: 96px; right: 24px;
   width: 340px; max-width: calc(100vw - 48px);
 }
+/* The persistent app-shell sidebar (js/app-sidebar.js, css/deskkit-ui.css's
+   .dk-app-sidebar) sits at inset-inline-start:0 — the physical RIGHT in
+   RTL (this site's own default), the exact same physical edge this
+   popup is hardcoded to. On a page that has both (confirmed live:
+   builder.html, a Builder Shell, triggers this popup after a CV
+   download while logged in, so the sidebar is mounted) the popup
+   rendered half-hidden behind the sidebar, reading as "cut off at the
+   side". Only needs a push in RTL specifically: in LTR the sidebar
+   sits on the opposite physical side (inset-inline-start = left
+   there), so the popup's own unchanged right:24px never collides with
+   it to begin with. */
+html[dir="rtl"] body.dk-app-sidebar-mounted .upsell-popup-wrap {
+  right: calc(var(--app-sidebar-w, 216px) + 24px);
+}
 .upsell-popup {
   position: relative; background: linear-gradient(155deg, var(--ink-dark), var(--ink) 75%);
   color: var(--white); border-radius: 18px; padding: 24px 22px 22px;

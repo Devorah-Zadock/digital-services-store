@@ -77,6 +77,18 @@ async function dkProjectsFetchAll(user) {
     console.warn("site_projects query failed, retrying without published_url/slug:", sitesRes.error.message);
     sitesRes = await supabaseClient.from("site_projects").select("id, template, data, status, updated_at, created_at").eq("user_id", user.id).order("created_at", { ascending: false });
   }
+  // Same silent-failure shape as above, one layer deeper: if the RETRY
+  // also errors (RLS misconfigured, a real outage, anything other than
+  // the missing-columns case the retry exists for), supabase-js still
+  // never throws — (sitesRes.data || []) would quietly produce an empty
+  // array again, indistinguishable from "this account genuinely has zero
+  // sites". Confirmed-live report: a real account with a real site saw
+  // "אתרים (0)" here with no error anywhere. Flagging it (not retrying
+  // again — a second retry wouldn't fix a non-column-related error) lets
+  // the caller show an honest "couldn't load your sites" instead of the
+  // wrong "you have no sites" / "create your first one" empty state.
+  const siteFetchFailed = !!sitesRes.error;
+  if (siteFetchFailed) console.error("site_projects query failed even after retry:", sitesRes.error.message);
 
   const items = [];
   (sitesRes.data || []).forEach((s) => {
@@ -134,6 +146,7 @@ async function dkProjectsFetchAll(user) {
   });
 
   items.sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+  items.siteFetchFailed = siteFetchFailed;
   return items;
 }
 
@@ -161,6 +174,16 @@ function dkProjectsRender() {
   const grid = document.getElementById("dk-projects-grid");
   if (!grid) return;
   const filtered = dkProjectsActiveTab === "all" ? dkProjectsAll : dkProjectsAll.filter((i) => i.kind === dkProjectsActiveTab);
+  // A real fetch failure (see dkProjectsFetchAll's own comment) must never
+  // look like "you have zero projects" — on an "all"/"site" tab with no
+  // site items AND a flagged fetch error, this is "we couldn't load your
+  // sites", not "create your first one".
+  if (!filtered.length && dkProjectsAll.siteFetchFailed && (dkProjectsActiveTab === "all" || dkProjectsActiveTab === "site")) {
+    grid.innerHTML = `<div class="dk-pcard-empty dk-pcard-error">לא הצלחנו לטעון את האתרים שלכם כרגע — זו תקלה בטעינה, לא אומר שאין לכם אתרים. <a href="#" id="dk-projects-retry">נסו לרענן</a></div>`;
+    const retryBtn = document.getElementById("dk-projects-retry");
+    if (retryBtn) retryBtn.addEventListener("click", (e) => { e.preventDefault(); dkProjectsLoad(); });
+    return;
+  }
   if (!filtered.length) {
     grid.innerHTML = `<div class="dk-pcard-empty">עדיין אין כאן פרויקטים. <a href="#" id="dk-projects-empty-create">+ צרו את הראשון שלכם</a></div>`;
     const btn = document.getElementById("dk-projects-empty-create");
@@ -175,7 +198,12 @@ function dkProjectsRenderTabs() {
   if (!wrap) return;
   wrap.innerHTML = DK_PROJECTS_TABS.map((t) => {
     const count = t.key === "all" ? dkProjectsAll.length : dkProjectsAll.filter((i) => i.kind === t.key).length;
-    return `<button type="button" class="dk-tab${t.key === dkProjectsActiveTab ? " active" : ""}" data-dk-tab="${t.key}">${t.label}${count ? ` (${count})` : ""}</button>`;
+    // "(0)" on the sites tab reads as "confirmed zero sites" — wrong and
+    // misleading when the real cause is a failed fetch (see
+    // dkProjectsFetchAll's own comment). "⚠" instead signals "couldn't
+    // check", not "none exist".
+    const countLabel = t.key === "site" && dkProjectsAll.siteFetchFailed ? " ⚠" : count ? ` (${count})` : "";
+    return `<button type="button" class="dk-tab${t.key === dkProjectsActiveTab ? " active" : ""}" data-dk-tab="${t.key}">${t.label}${countLabel}</button>`;
   }).join("");
   wrap.querySelectorAll("[data-dk-tab]").forEach((btn) => {
     btn.addEventListener("click", () => {

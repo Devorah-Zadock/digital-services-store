@@ -20,21 +20,28 @@
    JS-rendered content) so toggling the language updates this header
    immediately instead of only on the next auth event. */
 
-function dkHeaderLabel(key) {
+// fallback is the real Hebrew text, not just a dictionary key — i18n.js
+// is only loaded on a handful of pages so far (see its own "rolling out
+// page by page" comment), but this header mounts on EVERY page via
+// js/header.js, most of which don't load i18n.js at all. Confirmed-live
+// regression this fixes: on those pages, I18N/currentLang are simply
+// undefined globals, and without a real fallback here this printed the
+// raw key string itself ("nav_what_create") instead of any real text.
+function dkHeaderLabel(key, fallback) {
   const lang = typeof currentLang === "function" ? currentLang() : "he";
-  const dict = (typeof I18N !== "undefined" && I18N[lang]) || {};
-  return dict[key] || key;
+  const dict = (typeof I18N !== "undefined" && I18N[lang]) || null;
+  return (dict && dict[key]) || fallback;
 }
 
 const DK_HEADER_LOGGED_OUT_LINKS = () => [
-  { href: "index.html#tools", label: dkHeaderLabel("nav_what_create") },
-  { href: "index.html#how", label: dkHeaderLabel("nav_how_works") },
-  { href: "about.html", label: dkHeaderLabel("nav_about") },
+  { href: "index.html#tools", label: dkHeaderLabel("nav_what_create", "מה אפשר ליצור") },
+  { href: "index.html#how", label: dkHeaderLabel("nav_how_works", "איך זה עובד") },
+  { href: "about.html", label: dkHeaderLabel("nav_about", "אודות") },
 ];
 
 const DK_HEADER_LOGGED_IN_LINKS = () => [
-  { href: "#", label: dkHeaderLabel("nav_create"), action: "create" },
-  { href: "projects.html", label: dkHeaderLabel("nav_my_projects") },
+  { href: "#", label: dkHeaderLabel("nav_create", "יצירה"), action: "create" },
+  { href: "projects.html", label: dkHeaderLabel("nav_my_projects", "הפרויקטים שלי") },
   { href: "automate.html", label: "Automate" },
 ];
 
@@ -85,7 +92,7 @@ function dkHeaderApply(session) {
       // Always refreshed (not just on creation), so a language-change
       // re-render updates existing text instead of leaving the first
       // language it was created in — the bug this whole file fixes.
-      cta.textContent = dkHeaderLabel("header_cta_start");
+      cta.textContent = dkHeaderLabel("header_cta_start", "התחילו ליצור");
     } else if (cta) {
       cta.remove();
     }

@@ -81,11 +81,18 @@ body.dk-has-mobile-nav:has(.bshell.active) .dk-mobile-nav { display: none; }
    removed, not repurposed. */
 .dk-app-sidebar {
   position: fixed; top: var(--header-h, 70px); bottom: 0; inset-inline-start: 0;
-  width: var(--app-sidebar-w, 216px); overflow-y: auto; overflow-x: visible; background: var(--surface);
+  width: var(--app-sidebar-w, 216px); overflow: visible; background: var(--surface);
   border-inline-end: 1px solid var(--border); z-index: 30;
   display: flex; flex-direction: column; gap: 2px; padding: 18px 12px;
   transition: width .18s ease;
 }
+/* The one scrollable piece — isolated from .dk-app-sidebar itself so its
+   overflow-y:auto can't force .dk-app-sidebar's own overflow-x into auto
+   too (see js/app-sidebar.js's own comment on this element for the
+   confirmed-live bug that caused: the collapse toggle button, which
+   intentionally pokes outside .dk-app-sidebar's edge, was getting
+   clipped into a half-circle by exactly that). */
+.dk-app-sidebar-scroll { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
 /* Keyed off .dk-app-sidebar-mounted (added by js/app-sidebar.js only
    once a real logged-in session is confirmed and the sidebar actually
    exists in the DOM) — NOT off body.dk-has-app-sidebar, which is just
@@ -382,7 +389,7 @@ body.dk-home { background: var(--bg-main); }
    continuous formula covers both regimes, no separate breakpoint
    value needed (replacing the old 860px-breakpoint override below). */
 .dk-home-hero-visual {
-  width: 100%; max-width: 640px; margin-top: -250px; position: relative;
+  width: 100%; max-width: 640px; margin-top: var(--dk-hero-margin-top, -250px); position: relative;
   /* translateX is always a PHYSICAL shift (never direction-aware on its
      own) — confirmed-live bug this caused: toggling to English flips
      the page to dir="ltr", which also flips which physical edge this
@@ -394,11 +401,36 @@ body.dk-home { background: var(--bg-main); }
      (the clamp() formula, explained below) is direction-agnostic and
      correct either way; only its SIGN needs to flip with the page
      direction, via this custom property. */
-  --dk-hero-shift: clamp(0px, (100cqw - 656px), 170px);
+  --dk-hero-shift: clamp(0px, (100cqw - 656px), var(--dk-hero-shift-cap, 170px));
   transform: translateX(calc(-1 * var(--dk-hero-shift)));
   container-type: inline-size;
 }
-html[dir="ltr"] .dk-home-hero-visual { transform: translateX(var(--dk-hero-shift)); }
+/* LTR needs its own tuning, not just the RTL numbers with the sign
+   flipped — the laptop photo itself is a real photograph, not a
+   mirror-symmetric graphic, so its own opaque silhouette (the dark
+   lid/bezel) sits in a DIFFERENT place relative to the text once the
+   whole composition flips. In RTL, the horizontal shift happens to
+   carry that opaque area away from where the text sits; in LTR the
+   same shift (even sign-flipped) carried it UNDER the text instead —
+   confirmed live as the laptop visibly covering the CTA button and
+   watch-link text, not just a boxes-overlap technicality. Verified by
+   directly measuring the text block's own real height in English
+   (longer line-wrapping than Hebrew) and solving for a margin-top that
+   clears it, then increasing the horizontal cap so the image also
+   moves further past the text block's own right edge — together, not
+   either alone (checked: horizontal distance alone can't clear the
+   opaque corner within the tools-sidebar-safe shift budget, and
+   vertical clearance alone would undo nearly all of the intentional
+   "tucked under the text" composition, since this box's natural,
+   margin-top:0 position already starts flush at the text's own bottom
+   edge with zero built-in gap in EITHER direction — RTL's working
+   look was never from spare room, only from where the shift happened
+   to land on the photo). */
+html[dir="ltr"] .dk-home-hero-visual {
+  --dk-hero-margin-top: -150px;
+  --dk-hero-shift-cap: 260px;
+  transform: translateX(var(--dk-hero-shift));
+}
 .dk-home-hero-laptop-img {
   width: 100%; display: block;
   filter: drop-shadow(0 25px 35px rgba(0, 0, 0, .12)) drop-shadow(0 8px 10px rgba(0, 0, 0, .08));
@@ -640,6 +672,11 @@ html[dir="ltr"] .dk-home-hero-visual { transform: translateX(var(--dk-hero-shift
 .dk-pcard-menu button.danger { color: var(--error); }
 .dk-pcard-empty { grid-column: 1/-1; text-align: center; padding: 50px 20px; color: var(--text-secondary); }
 .dk-pcard-empty a { color: var(--primary-dark); font-weight: 700; }
+/* A failed fetch, not a genuine "zero items" state (see
+   js/projects.js's dkProjectsRender) — a distinct warm tint so it never
+   reads as the plain, calm empty state. */
+.dk-pcard-empty.dk-pcard-error { color: #B45309; background: #FEF3C7; border-radius: 14px; }
+.dk-pcard-empty.dk-pcard-error a { color: #92400E; }
 
 /* ============ Projects page ============ */
 .dk-projects-wrap { max-width: 1120px; margin: 0 auto; padding: 38px 20px 80px; }

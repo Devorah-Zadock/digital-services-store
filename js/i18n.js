@@ -756,10 +756,31 @@ function currentLang() {
 // everything BELOW this point too) to finish parsing only delayed
 // applying the real language further, widening the exact flash this
 // file exists to prevent.
+// Auto-detects English for a first-time visitor whose browser isn't set
+// to Hebrew (an out-of-Israel visitor, in practice) — requested live:
+// "if someone from America, or anyone not from Israel, opens the
+// site, can it open in English automatically?". Deliberately keyed off
+// navigator.language/navigator.languages (the browser's own UI-language
+// setting), not IP geolocation: no extra network call, no third-party
+// lookup, and it's the same signal every other "auto-detect my
+// language" site already uses. Only ever decides a FIRST visit with no
+// stored preference yet — once applyLang runs once (here, or from the
+// toggle), it always persists to localStorage (see applyLang's own
+// setItem call) and wins over this on every later visit, so a real
+// Hebrew-reading visitor whose browser happens to be in English, or
+// vice versa, only ever gets overridden their very first time, and
+// never again after they've either kept or changed it.
+function dkDetectDefaultLang() {
+  try {
+    const browserLangs = navigator.languages || [navigator.language || ""];
+    return browserLangs.some((l) => (l || "").toLowerCase().startsWith("he")) ? "he" : "en";
+  } catch (err) { return "he"; }
+}
+
 (() => {
-  let stored = "he";
-  try { stored = localStorage.getItem(I18N_LANG_KEY) || "he"; } catch (err) { /* storage unavailable */ }
-  applyLang(stored);
+  let stored = null;
+  try { stored = localStorage.getItem(I18N_LANG_KEY); } catch (err) { /* storage unavailable */ }
+  applyLang(stored || dkDetectDefaultLang());
 
   const toggle = document.getElementById("lang-toggle");
   if (toggle) {

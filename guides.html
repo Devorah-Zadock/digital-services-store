@@ -4,7 +4,11 @@
 <meta charset="UTF-8">
 <script>
   try {
-    if (localStorage.getItem("deskkit_lang") === "en") {
+    const storedLang = localStorage.getItem("deskkit_lang");
+    const willBeEnglish = storedLang
+      ? storedLang === "en"
+      : !(navigator.languages || [navigator.language || ""]).some((l) => (l || "").toLowerCase().startsWith("he"));
+    if (willBeEnglish) {
       document.documentElement.classList.add("lang-pending");
       setTimeout(() => document.documentElement.classList.remove("lang-pending"), 1200);
     }
@@ -21,8 +25,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=94">
-<link rel="stylesheet" href="css/deskkit-ui.css?v=31">
+<link rel="stylesheet" href="css/style.css?v=95">
+<link rel="stylesheet" href="css/deskkit-ui.css?v=33">
 </head>
 <body>
 <header class="site">
@@ -127,12 +131,12 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/nav-auth.js"></script>
-<script src="js/header.js?v=3"></script>
+<script src="js/header.js?v=4"></script>
 <script src="js/create-chooser.js?v=2"></script>
 <script src="js/mobile-nav.js?v=1"></script>
 <script src="js/main.js?v=3"></script>
 <script src="js/widgets.js?v=11"></script>
 <script src="js/effects.js"></script>
-<script src="js/i18n.js?v=14"></script>
+<script src="js/i18n.js?v=15"></script>
 </body>
 </html>
