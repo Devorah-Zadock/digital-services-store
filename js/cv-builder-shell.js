@@ -628,12 +628,15 @@ function cvbshellApplySelectionVisual() {
   toolbar.id = "cvbshell-mini-toolbar";
   toolbar.style.top = Math.max(4, rect.top + scrollY - 34) + "px";
   toolbar.style.insetInlineStart = Math.max(4, rect.left) + "px";
-  const canDuplicate = cvbshellSelection.kind === "job" || cvbshellSelection.kind === "project";
-  const canDelete = canDuplicate;
-  toolbar.innerHTML = `
-    <button type="button" data-tool="edit" title="עריכה">✎</button>
-    <button type="button" data-tool="duplicate" title="שכפול"${canDuplicate ? "" : " disabled"}>⧉</button>
-    <button type="button" data-tool="delete" title="מחיקה"${canDelete ? "" : " disabled"}>🗑</button>`;
+  // Same reasoning as js/builder-shell.js's bshellApplySelectionVisual —
+  // only show buttons that actually apply to this selection's kind.
+  const canDuplicateOrDelete = cvbshellSelection.kind === "job" || cvbshellSelection.kind === "project";
+  const toolbarButtons = [`<button type="button" data-tool="edit" title="עריכה">✎</button>`];
+  if (canDuplicateOrDelete) {
+    toolbarButtons.push(`<button type="button" data-tool="duplicate" title="שכפול">⧉</button>`);
+    toolbarButtons.push(`<button type="button" data-tool="delete" title="מחיקה">🗑</button>`);
+  }
+  toolbar.innerHTML = toolbarButtons.join("");
   toolbar.addEventListener("mousedown", (e) => e.stopPropagation());
   toolbar.addEventListener("click", (e) => {
     e.stopPropagation();

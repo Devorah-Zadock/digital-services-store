@@ -641,14 +641,22 @@ function bshellApplySelectionVisual() {
   toolbar.id = "bshell-mini-toolbar";
   toolbar.style.top = Math.max(4, rect.top + scrollY - 34) + "px";
   toolbar.style.insetInlineStart = Math.max(4, rect.left) + "px";
-  const canDuplicate = bshellSelection.kind === "service";
-  const canHide = bshellSelection.kind === "section";
-  const canDelete = bshellSelection.kind === "service";
-  toolbar.innerHTML = `
-    <button type="button" data-tool="edit" title="עריכה">✎</button>
-    <button type="button" data-tool="duplicate" title="שכפול"${canDuplicate ? "" : " disabled"}>⧉</button>
-    <button type="button" data-tool="hide" title="הסתרה/הצגה"${canHide ? "" : " disabled"}>◐</button>
-    <button type="button" data-tool="delete" title="מחיקה"${canDelete ? "" : " disabled"}>🗑</button>`;
+  // Built from only the actions that actually apply to this selection's
+  // kind, instead of always showing all 4 buttons with most of them
+  // disabled — confirmed live as reading broken rather than just
+  // "nothing else to do here" for a plain text selection (every kind
+  // except service/section had 3 of 4 icons permanently greyed out).
+  const toolbarButtons = [`<button type="button" data-tool="edit" title="עריכה">✎</button>`];
+  if (bshellSelection.kind === "service") {
+    toolbarButtons.push(`<button type="button" data-tool="duplicate" title="שכפול">⧉</button>`);
+  }
+  if (bshellSelection.kind === "section") {
+    toolbarButtons.push(`<button type="button" data-tool="hide" title="הסתרה/הצגה">◐</button>`);
+  }
+  if (bshellSelection.kind === "service") {
+    toolbarButtons.push(`<button type="button" data-tool="delete" title="מחיקה">🗑</button>`);
+  }
+  toolbar.innerHTML = toolbarButtons.join("");
   toolbar.addEventListener("mousedown", (e) => e.stopPropagation());
   toolbar.addEventListener("click", (e) => {
     e.stopPropagation();

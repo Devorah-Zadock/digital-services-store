@@ -640,13 +640,18 @@ function invoiceBshellApplySelectionVisual() {
   toolbar.id = "ibshell-mini-toolbar";
   toolbar.style.top = Math.max(4, rect.top + scrollY - 34) + "px";
   toolbar.style.insetInlineStart = Math.max(4, rect.left) + "px";
+  // Same reasoning as js/builder-shell.js's bshellApplySelectionVisual —
+  // only show buttons that actually apply to this selection's kind (and
+  // to a locked/issued document's real inability to duplicate or delete
+  // a line item, same as it can't be edited at all).
   const locked = invoiceBshellLocked();
-  const canDuplicate = !locked && invoiceBshellSelection.kind === "item";
-  const canDelete = canDuplicate;
-  toolbar.innerHTML = `
-    <button type="button" data-tool="edit" title="עריכה">✎</button>
-    <button type="button" data-tool="duplicate" title="שכפול"${canDuplicate ? "" : " disabled"}>⧉</button>
-    <button type="button" data-tool="delete" title="מחיקה"${canDelete ? "" : " disabled"}>🗑</button>`;
+  const canDuplicateOrDelete = !locked && invoiceBshellSelection.kind === "item";
+  const toolbarButtons = [`<button type="button" data-tool="edit" title="עריכה">✎</button>`];
+  if (canDuplicateOrDelete) {
+    toolbarButtons.push(`<button type="button" data-tool="duplicate" title="שכפול">⧉</button>`);
+    toolbarButtons.push(`<button type="button" data-tool="delete" title="מחיקה">🗑</button>`);
+  }
+  toolbar.innerHTML = toolbarButtons.join("");
   toolbar.addEventListener("mousedown", (e) => e.stopPropagation());
   toolbar.addEventListener("click", (e) => {
     e.stopPropagation();
