@@ -71,6 +71,10 @@ function dkShowQuoteIntro() {
   if (input) input.value = "";
   dkQuoteIntroStyle = QUOTE_TEMPLATE_DEFAULT;
   dkQuoteIntroRenderStyleRow();
+  const panel = document.getElementById("qa-intro-ai-panel");
+  if (panel) panel.hidden = true;
+  const toggle = document.getElementById("qa-intro-ai-toggle");
+  if (toggle) toggle.textContent = "או, תנו ל-AI לנסח עבורכם טיוטה ראשונית ✨";
 }
 
 async function dkQuoteIntroSubmit() {
@@ -116,12 +120,29 @@ async function dkQuoteIntroSubmit() {
 document.addEventListener("DOMContentLoaded", () => {
   const cta = document.getElementById("qa-intro-cta");
   if (cta) cta.addEventListener("click", dkQuoteIntroSubmit);
-  const skip = document.getElementById("qa-intro-skip");
-  if (skip) {
-    skip.addEventListener("click", () => {
+
+  // Primary path: straight into the builder with the chosen style, no AI
+  // call at all — the AI draft is now the secondary, opt-in option below
+  // (see #qa-intro-ai-toggle), not the default gate every new quote used
+  // to go through. Real user feedback: unwanted AI-spend risk, and no
+  // real need for AI here when 4 real styles already cover the choice.
+  const startBtn = document.getElementById("qa-intro-start-btn");
+  if (startBtn) {
+    startBtn.addEventListener("click", () => {
       pendingTemplate = dkQuoteIntroStyle;
       showQuoteBuilder();
       if (typeof quoteBshellActivate === "function") quoteBshellActivate();
+    });
+  }
+
+  const aiToggle = document.getElementById("qa-intro-ai-toggle");
+  const aiPanel = document.getElementById("qa-intro-ai-panel");
+  if (aiToggle && aiPanel) {
+    aiToggle.addEventListener("click", () => {
+      aiPanel.hidden = !aiPanel.hidden;
+      aiToggle.textContent = aiPanel.hidden
+        ? "או, תנו ל-AI לנסח עבורכם טיוטה ראשונית ✨"
+        : "הסתירו ✕";
     });
   }
 });

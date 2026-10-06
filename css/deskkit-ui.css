@@ -781,6 +781,16 @@ html[dir="ltr"] .dk-home-hero-visual {
    cleaner than .dk-style-grid's default 3 (which leaves an odd 4th
    chip alone on its own row). */
 #qa-intro-style-row.dk-style-grid { grid-template-columns: repeat(2, 1fr); margin-bottom: 18px; }
+/* AI draft is the secondary, opt-in option on this screen (see
+   js/quote-ai-generate.js's own comment on #qa-intro-start-btn) —
+   collapsed by default behind this toggle rather than shown open, so it
+   reads as "optional extra", not a second equally-weighted choice. */
+.qa-intro-ai-toggle {
+  display: block; margin: 20px auto 0; background: none; border: none; cursor: pointer;
+  font-family: inherit; font-size: 13.5px; color: var(--text-secondary); text-decoration: underline;
+}
+.qa-intro-ai-toggle:hover { color: var(--text); }
+.qa-intro-ai-panel { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
 
 /* Wizard enhancements: style-choice visual chips */
 .dk-style-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }

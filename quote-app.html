@@ -32,7 +32,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&family=Rubik:wght@500;600;700;900&family=Frank+Ruhl+Libre:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=99">
-<link rel="stylesheet" href="css/deskkit-ui.css?v=39">
+<link rel="stylesheet" href="css/deskkit-ui.css?v=40">
 <link rel="stylesheet" href="css/builder.css?v=21">
 <link rel="stylesheet" href="css/builder-shell.css?v=10">
 <style>
@@ -138,13 +138,17 @@
 <section class="no-print" id="qa-intro" style="display:none;">
   <div class="dk-form-intro">
     <h1>מה אתם צריכים להכין?</h1>
-    <p class="lead">תארו במשפט אחד מה אתם רוצים להציע ללקוח, ו-DeskKit תכין עבורכם טיוטה ראשונית של הצעת המחיר.</p>
-    <textarea id="qa-intro-input" class="dk-form-intro-textarea" rows="3" placeholder="לדוגמה: הצעת מחיר לעיצוב לוגו לאור כהן, 3,500 ש״ח, כולל 2 סבבי תיקונים"></textarea>
+    <p class="lead">בחרו עיצוב, ותתחילו ליצור את הצעת המחיר ישירות עם DeskKit.</p>
     <p class="qa-intro-style-label">איזה עיצוב?</p>
     <div class="dk-style-grid" id="qa-intro-style-row"></div>
-    <button type="button" class="dk-btn dk-btn-primary dk-btn-lg" id="qa-intro-cta">✨ צור טיוטה עם AI</button>
-    <div id="qa-intro-note" class="ai-limit-note"></div>
-    <button type="button" class="dk-intro-skip" id="qa-intro-skip">או התחילו מטופס ריק ←</button>
+    <button type="button" class="dk-btn dk-btn-primary dk-btn-lg" id="qa-intro-start-btn">התחילו ליצור</button>
+
+    <button type="button" class="qa-intro-ai-toggle" id="qa-intro-ai-toggle">או, תנו ל-AI לנסח עבורכם טיוטה ראשונית ✨</button>
+    <div class="qa-intro-ai-panel" id="qa-intro-ai-panel" hidden>
+      <textarea id="qa-intro-input" class="dk-form-intro-textarea" rows="3" placeholder="לדוגמה: הצעת מחיר לעיצוב לוגו לאור כהן, 3,500 ש״ח, כולל 2 סבבי תיקונים"></textarea>
+      <button type="button" class="dk-btn dk-btn-ghost dk-btn-lg" id="qa-intro-cta">✨ צור טיוטה עם AI</button>
+      <div id="qa-intro-note" class="ai-limit-note"></div>
+    </div>
   </div>
 </section>
 
@@ -333,7 +337,7 @@
 <script src="js/usage-log.js?v=1"></script>
 <script src="js/quote-cloud-save.js?v=2"></script>
 <script src="js/quote-app.js?v=13"></script>
-<script src="js/quote-ai-generate.js?v=2"></script>
+<script src="js/quote-ai-generate.js?v=3"></script>
 <script src="js/quote-builder-shell.js?v=9"></script>
 </body>
 </html>
