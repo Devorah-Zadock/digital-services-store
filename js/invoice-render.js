@@ -160,7 +160,15 @@ function renderInvoiceHtml(inv, liveProfile) {
       ${inv.notes ? `<div class="id-notes" data-ikey="notes">${escapeHtmlI(inv.notes)}</div>` : ""}
       <div class="id-signature">${escapeHtmlI(letterhead.businessName)}</div>
     </div>
-  </div>`;
+  </div>
+  ${invoicePdfCreditHtml()}`;
+}
+
+/* Same minimal print-only credit as js/quote-render.js's own
+   quotePdfCreditHtml() — see that function's own comment for why this
+   isn't gated behind a Pro check that doesn't exist anywhere yet. */
+function invoicePdfCreditHtml() {
+  return `<div class="invoice-pdf-credit">Created with DeskKit.co.il</div>`;
 }
 
 /* Same fixed-A4-width-then-scale-to-fit technique as quote-render.js's
@@ -221,6 +229,15 @@ async function downloadInvoicePdf(filenameHint) {
   document.body.appendChild(temp);
   const doc = temp.querySelector(".invoice-doc");
   if (!doc) { temp.remove(); return; }
+  // Same approach as js/quote-render.js's downloadQuotePdf: the credit
+  // line is a sibling of .invoice-doc, hidden by default (css/
+  // builder.css) so it never shows in the live editor/preview — moved
+  // inside and made visible only here, right before the screenshot.
+  const credit = temp.querySelector(".invoice-pdf-credit");
+  if (credit) {
+    credit.style.cssText = "display:block; margin-top:14px; padding:0 24px 18px; font-family:Arial, sans-serif; font-size:8.5pt; color:#A0A0A0; text-align:end;";
+    doc.appendChild(credit);
+  }
   await new Promise((resolve) => requestAnimationFrame(resolve));
 
   // Same reasoning as js/quote-render.js's downloadQuotePdf — a

@@ -346,7 +346,7 @@
   .lang-big { flex: 1; justify-content: center; }
 }
 
-.cv-pdf-credit { display: none; }
+.cv-pdf-credit, .quote-pdf-credit, .invoice-pdf-credit { display: none; }
 
 @media print {
   .no-print { display: none !important; }

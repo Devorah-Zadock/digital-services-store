@@ -174,7 +174,21 @@ function renderQuoteHtml(q) {
       </div>
       <div class="footer-note">נא לאשר בפקס: ${escapeHtmlQ(q.fax)} &nbsp;&nbsp;או במייל חוזר</div>
     </div>
-  </div>`;
+  </div>
+  ${quotePdfCreditHtml()}`;
+}
+
+/* Minimal, print-only brand credit — same treatment as js/cv-render.js's
+   own .cv-pdf-credit (real selectable text, tiny grey corner line, not
+   a logo/watermark that would make the exported document look
+   unprofessional). Always on here: CV's own version is written to skip
+   for a Pro account, but nothing anywhere in this codebase ever sets
+   customer_profiles.is_pro (see js/main.js's own comment on the
+   neutered "שדרוג ל-Pro" links) — there is no real Pro tier yet to gate
+   against, on any of the three document types, so this doesn't invent
+   one just for Quote. */
+function quotePdfCreditHtml() {
+  return `<div class="quote-pdf-credit">Created with DeskKit.co.il</div>`;
 }
 
 /* .quote-doc is always rendered at its true fixed A4-ish width (794px) so
@@ -274,6 +288,16 @@ async function downloadQuotePdf() {
   document.body.appendChild(temp);
   const doc = temp.querySelector(".quote-doc");
   if (!doc) { temp.remove(); return; }
+  // The credit line is a sibling of .quote-doc (not nested inside it, so
+  // it never affects on-screen editing/preview) — moved inside and made
+  // visible as a trailing line only here, so html2canvas (which only
+  // captures .quote-doc) actually picks it up. Same approach as
+  // js/cv-render.js's own downloadCvPdf().
+  const credit = temp.querySelector(".quote-pdf-credit");
+  if (credit) {
+    credit.style.cssText = "display:block; margin-top:14px; padding:0 24px 18px; font-family:Arial, sans-serif; font-size:8.5pt; color:#A0A0A0; text-align:end;";
+    doc.appendChild(credit);
+  }
   await new Promise((resolve) => requestAnimationFrame(resolve));
 
   // Nothing downstream of html2canvas used to be guarded — a cross-origin
