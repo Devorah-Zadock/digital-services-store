@@ -64,7 +64,14 @@ async function loadStats(admin: ReturnType<typeof createClient>) {
     { data: scheduleProjects, error: scheduleErr },
   ] = await Promise.all([
       admin.from("customer_profiles").select("id, email, created_at").order("created_at", { ascending: false }),
-      admin.from("site_projects").select("id, user_id, template, status, created_at, updated_at"),
+      // No updated_at here — confirmed live against the real DB that
+      // site_projects doesn't actually have that column (PostgREST:
+      // "column site_projects.updated_at does not exist"), despite it
+      // being referenced in a few client-side selects elsewhere in this
+      // repo (js/projects.js, js/site-wizard-router.js) — those are a
+      // separate, pre-existing issue, not something this function
+      // should paper over by requesting a column that isn't there.
+      admin.from("site_projects").select("id, user_id, template, status, created_at"),
       admin.from("cv_saves").select("user_id, updated_at"),
       // Capped — usage_events grows without bound as the site gets used,
       // and this function returns every row straight to the browser in
@@ -136,8 +143,12 @@ async function loadStats(admin: ReturnType<typeof createClient>) {
   }
   for (const proj of projects || []) {
     pushActivity(proj.user_id, { kind: "site", slug: proj.template, action: "create", createdAt: proj.created_at });
+    // No real finalize/publish timestamp exists on this row (no
+    // updated_at column — see this function's own select comment above),
+    // so a "finalized" site's download event reuses created_at rather
+    // than inventing a timestamp that isn't there.
     if (proj.status === "finalized") {
-      pushActivity(proj.user_id, { kind: "site", slug: proj.template, action: "download", createdAt: proj.updated_at || proj.created_at });
+      pushActivity(proj.user_id, { kind: "site", slug: proj.template, action: "download", createdAt: proj.created_at });
     }
   }
   for (const q of quoteSavesRows) {
