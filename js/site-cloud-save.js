@@ -153,6 +153,28 @@ document.addEventListener("DOMContentLoaded", () => {
   // modal), not this file.
   const isNewSite = params.get("new") === "1";
 
+  // sites.html is deliberately usable signed-out (local-only draft until
+  // someone signs in), so nothing here used to react to auth state
+  // changing AFTER the page already loaded — only the one getSession()
+  // check below, run once at load. Same confirmed-live bug as the CV
+  // builder (js/builder-cloud-save.js): signing out from the nav
+  // dropdown while still on this page left a previous account's real
+  // saved site (business name, contact info, photos) fully visible and
+  // still editable, with nothing indicating the account was signed out.
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
+    const stillSignedIn = session && session.user;
+    if (!stillSignedIn && siteCurrentUserId) {
+      siteCurrentUserId = null;
+      siteProjectId = null;
+      sitePublishCount = 0;
+      siteIsFinalized = false;
+      if (typeof freshSiteData === "function" && siteState.template) {
+        siteState.data = freshSiteData(siteState.template);
+        if (typeof showWizard === "function") showWizard();
+      }
+    }
+  });
+
   supabaseClient.auth.getSession().then(async ({ data }) => {
     const user = data.session && data.session.user;
     if (user) {

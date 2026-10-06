@@ -21,8 +21,18 @@ async function dkHomeShowLoggedIn(user) {
 
   const nameEl = document.getElementById("dk-home-greet-name");
   if (nameEl) {
+    // Cached on the element itself (not just a local var) so the
+    // deskkit:langchange listener below — which fires on its own, long
+    // after this function has returned — can still re-render the
+    // greeting in the new language without needing the real name
+    // passed back in. Confirmed-live bug this fixes: toggling to
+    // English left the greeting itself stuck on the Hebrew "שלום" even
+    // though every other translated string on the page updated, because
+    // nothing was wired to rebuild this one specific string, is set to
+    // once at load and never touched again.
     const displayName = (user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name)) || (user.email || "").split("@")[0];
-    nameEl.textContent = `שלום, ${displayName} 👋`;
+    nameEl.dataset.dkDisplayName = displayName;
+    dkHomeRenderGreeting(nameEl);
   }
 
   const grid = document.getElementById("dk-home-recent-grid");
@@ -40,6 +50,15 @@ async function dkHomeShowLoggedIn(user) {
   }
 }
 
+function dkHomeRenderGreeting(nameEl) {
+  const name = nameEl.dataset.dkDisplayName;
+  if (!name) return;
+  const lang = typeof currentLang === "function" ? currentLang() : "he";
+  const dict = (typeof I18N !== "undefined" && I18N[lang]) || null;
+  const tpl = (dict && dict.greet_hello) || "שלום, {name} 👋";
+  nameEl.textContent = tpl.replace("{name}", name);
+}
+
 function dkHomeShowLoggedOut() {
   const out = document.getElementById("dk-home-out");
   const inEl = document.getElementById("dk-home-in");
@@ -52,6 +71,11 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btn) btn.addEventListener("click", dkHomeFreeTextRoute);
   const textarea = document.getElementById("dk-home-freetext");
   if (textarea) textarea.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); dkHomeFreeTextRoute(); } });
+
+  document.addEventListener("deskkit:langchange", () => {
+    const nameEl = document.getElementById("dk-home-greet-name");
+    if (nameEl) dkHomeRenderGreeting(nameEl);
+  });
 
   if (typeof supabaseClient === "undefined") return;
   supabaseClient.auth.onAuthStateChange((_event, session) => {

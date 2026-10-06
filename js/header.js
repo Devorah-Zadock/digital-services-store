@@ -99,7 +99,52 @@ function dkHeaderApply(session) {
   }
 }
 
+/* Mounts the EN/עברית toggle into EVERY page's header, not just the 16
+   pages that load js/i18n.js and carry real data-i18n translations —
+   requested live: "the EN switch icon needs to be in the header on
+   every single page". On an i18n.js page the button already exists in
+   that page's own static markup (built long before this function
+   existed) — reused as-is, nothing duplicated. On every other page
+   this creates it fresh, since there's nothing there yet.
+
+   Clicking it still calls the real applyLang() when i18n.js is loaded
+   on the current page — identical behavior to before, nothing lost.
+   On a page with no i18n.js (no data-i18n content to translate at all
+   yet), there is nothing on THIS page translation could change, so the
+   click instead persists the preference and sends the visitor to the
+   Home page, which is guaranteed to render correctly in the chosen
+   language — a toggle that visibly did nothing on click would read as
+   broken, not just "not translated here yet". */
+function dkHeaderMountLangToggle() {
+  const endGroup = document.querySelector("header.site .nav .nav-end-group");
+  if (!endGroup) return;
+  let toggle = document.getElementById("lang-toggle");
+  if (!toggle) {
+    toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.id = "lang-toggle";
+    toggle.className = "lang-toggle";
+    toggle.setAttribute("aria-label", "Switch language");
+    endGroup.appendChild(toggle);
+  }
+  const lang = document.documentElement.lang === "en" ? "en" : "he";
+  toggle.textContent = lang === "en" ? "עברית" : "EN";
+  toggle.addEventListener("click", () => {
+    if (typeof applyLang === "function") {
+      const cur = typeof currentLang === "function" ? currentLang() : lang;
+      applyLang(cur === "en" ? "he" : "en");
+      return;
+    }
+    let stored = null;
+    try { stored = localStorage.getItem("deskkit_lang"); } catch (err) { /* storage unavailable */ }
+    const current = stored === "en" ? "en" : "he";
+    try { localStorage.setItem("deskkit_lang", current === "en" ? "he" : "en"); } catch (err) { /* storage unavailable */ }
+    location.href = "index.html";
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+  dkHeaderMountLangToggle();
   document.addEventListener("deskkit:langchange", () => dkHeaderApply(undefined));
   if (typeof supabaseClient === "undefined") return;
   supabaseClient.auth.onAuthStateChange((_event, session) => dkHeaderApply(session));

@@ -77,18 +77,28 @@ async function dkProjectsFetchAll(user) {
     console.warn("site_projects query failed, retrying without published_url/slug:", sitesRes.error.message);
     sitesRes = await supabaseClient.from("site_projects").select("id, template, data, status, updated_at, created_at").eq("user_id", user.id).order("created_at", { ascending: false });
   }
-  // Same silent-failure shape as above, one layer deeper: if the RETRY
-  // also errors (RLS misconfigured, a real outage, anything other than
-  // the missing-columns case the retry exists for), supabase-js still
-  // never throws — (sitesRes.data || []) would quietly produce an empty
-  // array again, indistinguishable from "this account genuinely has zero
-  // sites". Confirmed-live report: a real account with a real site saw
-  // "אתרים (0)" here with no error anywhere. Flagging it (not retrying
-  // again — a second retry wouldn't fix a non-column-related error) lets
-  // the caller show an honest "couldn't load your sites" instead of the
-  // wrong "you have no sites" / "create your first one" empty state.
+  // Confirmed-live report: even this first retry still came back empty
+  // for a real account with a real site, meaning status/updated_at
+  // ALSO aren't safe to assume on every account's table — only id/
+  // template/data are, because js/my-content.js's older query (which
+  // asks for only those three) showed this exact account's sites fine.
+  // One more retry, down to that same guaranteed-safe column set,
+  // before giving up and calling it a real failure.
+  if (sitesRes.error) {
+    console.warn("site_projects retry also failed, retrying with minimal columns:", sitesRes.error.message);
+    sitesRes = await supabaseClient.from("site_projects").select("id, template, data").eq("user_id", user.id);
+  }
+  // Same silent-failure shape as above, one layer deeper: if this last
+  // retry also errors (RLS misconfigured, a real outage, anything other
+  // than a missing-columns case), supabase-js still never throws —
+  // (sitesRes.data || []) would quietly produce an empty array again,
+  // indistinguishable from "this account genuinely has zero sites".
+  // Flagging it (not retrying again — a further retry wouldn't fix a
+  // non-column-related error) lets the caller show an honest "couldn't
+  // load your sites" instead of the wrong "you have no sites" / "create
+  // your first one" empty state.
   const siteFetchFailed = !!sitesRes.error;
-  if (siteFetchFailed) console.error("site_projects query failed even after retry:", sitesRes.error.message);
+  if (siteFetchFailed) console.error("site_projects query failed even after both retries:", sitesRes.error.message);
 
   const items = [];
   (sitesRes.data || []).forEach((s) => {

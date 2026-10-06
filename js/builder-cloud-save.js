@@ -80,6 +80,26 @@ function applyCvSnapshot(snap) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  // builder.html is deliberately usable signed-out (local-only draft),
+  // so it never loads require-auth.js and nothing here used to react to
+  // auth state changing AFTER the page already loaded — only the one
+  // getSession() check below, run once at load. Confirmed-live bug this
+  // caused: signing out from the nav dropdown while still on this page
+  // left a previous account's real saved CV (name, contact info, work
+  // history) fully visible and still editable on screen, with nothing
+  // indicating the account was no longer signed in — a real problem on
+  // a shared/public computer, not just a visual nit. Mirrors the
+  // "foreign draft" reset below: once there's no session to own this
+  // content, it's reset to a blank template rather than left showing a
+  // now-logged-out account's real data.
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
+    const stillSignedIn = session && session.user;
+    if (!stillSignedIn && cvCurrentUserId) {
+      cvCurrentUserId = null;
+      if (typeof loadTemplate === "function" && state.slug) loadTemplate(state.slug);
+    }
+  });
+
   supabaseClient.auth.getSession().then(async ({ data }) => {
     const user = data.session && data.session.user;
     if (user) {

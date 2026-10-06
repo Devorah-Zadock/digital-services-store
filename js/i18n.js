@@ -365,6 +365,8 @@ const I18N = {
     // via the data-i18n sweep.
     nav_create: "יצירה", nav_my_projects: "הפרויקטים שלי", header_cta_start: "התחילו ליצור",
     nav_settings: "הגדרות", sidebar_toggle_aria: "כיווץ או הרחבת סרגל הצד",
+    // {name} is replaced with the real signed-in name, not translated.
+    greet_hello: "שלום, {name} 👋",
   },
   en: {
     nav_home: "Home", nav_sites: "Build a Site", nav_quotes: "Quotes", nav_cv: "Resumes",
@@ -711,6 +713,7 @@ const I18N = {
 
     nav_create: "Create", nav_my_projects: "My Projects", header_cta_start: "Start creating",
     nav_settings: "Settings", sidebar_toggle_aria: "Collapse or expand sidebar",
+    greet_hello: "Hello, {name} 👋",
   },
 };
 
@@ -781,12 +784,14 @@ function dkDetectDefaultLang() {
   let stored = null;
   try { stored = localStorage.getItem(I18N_LANG_KEY); } catch (err) { /* storage unavailable */ }
   applyLang(stored || dkDetectDefaultLang());
-
-  const toggle = document.getElementById("lang-toggle");
-  if (toggle) {
-    toggle.addEventListener("click", () => {
-      const current = document.documentElement.lang === "en" ? "en" : "he";
-      applyLang(current === "en" ? "he" : "en");
-    });
-  }
+  // The toggle's own click handler now lives in js/header.js instead of
+  // here — that script mounts the toggle into every page's header
+  // (this file is still only loaded on the subset of pages with real
+  // data-i18n translations, see this file's own top comment), and
+  // having BOTH files bind a click listener to the same #lang-toggle on
+  // the pages where they overlap fired applyLang() twice per click
+  // (toggle, then immediately toggle back) — looked like the button
+  // did nothing. header.js's handler already calls this same
+  // applyLang() when it's available, so nothing is lost by removing
+  // the duplicate here.
 })();

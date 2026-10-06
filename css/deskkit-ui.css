@@ -426,9 +426,29 @@ body.dk-home { background: var(--bg-main); }
    edge with zero built-in gap in EITHER direction — RTL's working
    look was never from spare room, only from where the shift happened
    to land on the photo). */
+/* Both --dk-hero-margin-top and --dk-hero-shift above were fixed
+   numbers (-150px / 260px) tuned only for wide desktop, where
+   --dk-hero-shift is already pinned at its cap. Confirmed-live bug this
+   caused: at in-between widths (~900-1250px, a completely normal laptop
+   screen, not a breakpoint edge case) the clamp() hasn't reached that
+   cap yet, so the horizontal shift is smaller — but the vertical pull
+   was still the full fixed -150px regardless, so the laptop's opaque
+   lid sat UNDER "Watch how it works" with no horizontal clearance to
+   carry it away. Fix: margin-top now scales down together with the
+   SAME (100cqw - 656px) term the shift itself uses, so it only reaches
+   its full -150px tuck once the shift has actually reached a cap worth
+   tucking under, and sits flush (0 overlap) at the narrow end where
+   there's no horizontal clearance yet — same formula family, kept in
+   sync by construction instead of as two numbers that can drift apart.
+   -0.5 = -150px / 300px (this rule's own new shift cap, below), so both
+   reach their max together at the same cqw. Cap itself raised from 260
+   to 300 (shift further right, toward the tools column) per repeated
+   "laptop stuck in text, move it toward the tools buttons" reports —
+   verified against the tools column's own left edge to confirm this
+   doesn't newly collide with it at any tested width. */
 html[dir="ltr"] .dk-home-hero-visual {
-  --dk-hero-margin-top: -150px;
-  --dk-hero-shift-cap: 260px;
+  --dk-hero-margin-top: clamp(-150px, calc(-0.5 * (100cqw - 656px)), 0px);
+  --dk-hero-shift-cap: 300px;
   transform: translateX(var(--dk-hero-shift));
 }
 .dk-home-hero-laptop-img {
