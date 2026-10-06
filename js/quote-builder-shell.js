@@ -43,6 +43,26 @@ let quoteBshellRedoStack = [];
 const QUOTEBSHELL_UNDO_CAP = 30;
 let quoteBshellCanvasClickWired = false;
 
+/* Explicit-save-only (see quoteBshellSaveNow's own comment) means
+   there's no autosave net catching a change the way site-cloud-save.js
+   /schedule-cloud-save.js's dirty-tracked autosave does — real risk,
+   confirmed in the product audit: closing the tab or navigating away
+   mid-edit silently drops whatever hasn't been saved yet, with no
+   warning at all. quoteBshellSnapshot() already runs right before
+   every real edit (it's the undo-stack's own "about to change" hook),
+   so it doubles as the one dirty-tracking choke point — cheaper than
+   adding a second one. Cleared on a successful save; exposed on
+   `window` so js/nav-auth.js's logout-confirm (which has no reason to
+   otherwise know this file exists) can warn before a sign-out that
+   would otherwise strand this exact same unsaved state. */
+let quoteBshellDirty = false;
+window.dkQuoteHasUnsavedWork = () => quoteBshellActiveFlag && quoteBshellDirty;
+window.addEventListener("beforeunload", (e) => {
+  if (!quoteBshellActiveFlag || !quoteBshellDirty) return;
+  e.preventDefault();
+  e.returnValue = "";
+});
+
 const QUOTEBSHELL_TEXT_LABELS = {
   today: "תאריך היום", recipient: "לכבוד (שם הנמען)", eventName: "שם האירוע / השירות",
   description: "תיאור", price: "מחיר (₪)", vatNote: 'הערת מע"מ', policeNote: "הערה נוספת",
@@ -246,6 +266,7 @@ function quoteBshellSnapshot() {
   if (quoteBshellUndoStack.length > QUOTEBSHELL_UNDO_CAP) quoteBshellUndoStack.shift();
   quoteBshellRedoStack = [];
   quoteBshellSyncUndoButtons();
+  quoteBshellDirty = true;
 }
 function quoteBshellSyncUndoButtons() {
   const undoBtn = document.getElementById("qbshell-undo-btn");
@@ -338,6 +359,7 @@ async function quoteBshellSaveNow() {
   const err = await saveQuoteNow();
   status.textContent = err ? "השמירה נכשלה, נסו שוב" : "נשמר ✓";
   status.className = "bshell-top-status " + (err ? "" : "saved");
+  if (!err) quoteBshellDirty = false;
   if (window.refreshMyPanel) window.refreshMyPanel();
   setTimeout(() => { if (status.textContent === "נשמר ✓") status.textContent = ""; }, 2500);
 }

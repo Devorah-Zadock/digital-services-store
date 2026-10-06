@@ -315,11 +315,24 @@ async function routeAfterInvoiceAuth(user) {
 }
 
 function routeAsInvoiceGuest() {
+  // Same reasoning as quote-app.js's routeAsGuest — a session can end
+  // with no chance to warn first (expiry, signing out in another tab),
+  // so there's nothing left here to save with either; this just says
+  // what happened instead of the page silently vanishing with the
+  // person's edits still visible one moment and gone the next.
+  const hadUnsavedWork = window.dkInvoiceHasUnsavedWork && window.dkInvoiceHasUnsavedWork();
   invoiceUser = null;
   invoiceCurrentUserId = null;
   invoiceSavedId = null;
   const here = location.pathname.split("/").pop() + location.search;
-  window.location.href = "account.html?redirect=" + encodeURIComponent(here);
+  const redirectUrl = "account.html?redirect=" + encodeURIComponent(here);
+  if (!hadUnsavedWork) { window.location.href = redirectUrl; return; }
+  const status = document.getElementById("ibshell-top-status");
+  if (status) {
+    status.textContent = "ההתחברות הסתיימה — שינויים שלא נשמרו עלולים ללכת לאיבוד";
+    status.className = "bshell-top-status failed";
+  }
+  setTimeout(() => { window.location.href = redirectUrl; }, 2200);
 }
 
 let invoiceAppRoutedUserId; // same re-fire guard as quote-app.js's quoteAppRoutedUserId

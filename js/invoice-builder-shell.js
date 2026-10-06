@@ -65,6 +65,20 @@ let invoiceBshellRedoStack = [];
 const INVOICEBSHELL_UNDO_CAP = 30;
 let invoiceBshellCanvasClickWired = false;
 
+/* Same dirty-tracking + beforeunload warning as js/quote-builder-
+   shell.js's quoteBshellDirty (see its own comment) — this file is
+   explicit-save-only too, and a locked/issued document can't be
+   edited at all (invoiceBshellSnapshot already no-ops then via
+   invoiceBshellLocked()), so there's never a false "unsaved work"
+   warning on an already-finalized document. */
+let invoiceBshellDirty = false;
+window.dkInvoiceHasUnsavedWork = () => invoiceBshellActiveFlag && invoiceBshellDirty;
+window.addEventListener("beforeunload", (e) => {
+  if (!invoiceBshellActiveFlag || !invoiceBshellDirty) return;
+  e.preventDefault();
+  e.returnValue = "";
+});
+
 const INVOICEBSHELL_TEXT_LABELS = {
   date: "תאריך", recipientName: "לכבוד (שם הלקוח)", recipientId: "ת.ז / ח.פ הלקוח (אופציונלי)",
   recipientAddress: "כתובת הלקוח (אופציונלי)", paymentMethod: "אופן תשלום", notes: "הערה נוספת (אופציונלי)",
@@ -166,6 +180,7 @@ function invoiceBshellSnapshot() {
   if (invoiceBshellUndoStack.length > INVOICEBSHELL_UNDO_CAP) invoiceBshellUndoStack.shift();
   invoiceBshellRedoStack = [];
   invoiceBshellSyncUndoButtons();
+  invoiceBshellDirty = true;
 }
 function invoiceBshellSyncUndoButtons() {
   const undoBtn = document.getElementById("ibshell-undo-btn");
@@ -394,6 +409,7 @@ async function invoiceBshellSaveNow() {
   const err = await saveInvoiceDraft();
   status.textContent = err ? "השמירה נכשלה, נסו שוב" : "נשמר ✓";
   status.className = "bshell-top-status " + (err ? "" : "saved");
+  if (!err) invoiceBshellDirty = false;
   if (window.refreshMyPanel) window.refreshMyPanel();
   setTimeout(() => { if (status.textContent === "נשמר ✓") status.textContent = ""; }, 2500);
 }

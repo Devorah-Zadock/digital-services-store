@@ -593,6 +593,10 @@ body.has-sites-rail .nav-account-wrap { display: none; }
 .nav-account-dropdown .nav-account-logout { color: #B23333; border-color: #F0D9D9; }
 .nav-account-dropdown .nav-account-logout:hover { background: #FBEEEE; }
 .nav-account-confirm p { font-size: 13px; margin: 0 0 10px; text-align: center; color: var(--dark); }
+.nav-account-unsaved-warn {
+  background: #FBF1DD; color: #8A6212; border-radius: 8px; padding: 8px 10px;
+  font-size: 12.5px !important; line-height: 1.5; margin-bottom: 10px !important;
+}
 .nav-account-confirm-row { display: flex; gap: 8px; }
 .nav-confirm-yes { background: #B23333 !important; color: #fff !important; border-color: #B23333 !important; }
 .nav-confirm-no { background: var(--grey-light) !important; }

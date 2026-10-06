@@ -372,6 +372,7 @@ const I18N = {
     // same pattern as nav_create above — not static data-i18n markup).
     nav_logout: "התנתקות", nav_logout_confirm_q: "להתנתק?",
     nav_logout_confirm_yes: "כן, להתנתק", nav_logout_confirm_cancel: "ביטול",
+    nav_logout_unsaved_warn: "יש לך שינויים שלא נשמרו — הם יאבדו אם תתנתקו בלי לשמור.",
 
     // account.html (login/signup) — static strings via data-i18n, plus
     // the same keys read directly by js/account.js for the parts that
@@ -754,6 +755,7 @@ const I18N = {
 
     nav_logout: "Log out", nav_logout_confirm_q: "Log out?",
     nav_logout_confirm_yes: "Yes, log out", nav_logout_confirm_cancel: "Cancel",
+    nav_logout_unsaved_warn: "You have unsaved changes — they'll be lost if you log out without saving.",
 
     acct_page_title: "Sign in — DeskKit",
     acct_login_title: "Sign in", acct_signup_title: "Sign up",

@@ -51,6 +51,21 @@ function onNavOutsideClick(e) {
   }
 }
 
+// Checked right before offering to sign out — Quote/Invoice's Builder
+// Shells (js/quote-builder-shell.js, js/invoice-builder-shell.js) are
+// explicit-save-only with no autosave net, and a real sign-out ends the
+// session that save itself needs, so this is the last point where
+// warning (and giving the person a chance to save first) still helps;
+// once already signed out, there's no session left to save with.
+// Checking two known globals directly, rather than a generic registry,
+// matches how window.openCreateChooser/refreshMyPanel are already
+// consulted elsewhere in this codebase — proportional to there being
+// exactly two of these today.
+function dkAnyUnsavedWork() {
+  return !!((window.dkQuoteHasUnsavedWork && window.dkQuoteHasUnsavedWork())
+    || (window.dkInvoiceHasUnsavedWork && window.dkInvoiceHasUnsavedWork()));
+}
+
 function openNavDropdown(wrap, email, trigger, dropup) {
   closeNavDropdown();
   navDropdownTrigger = trigger || wrap;
@@ -61,11 +76,15 @@ function openNavDropdown(wrap, email, trigger, dropup) {
   // bottom of the viewport — same upward variant the old, removed
   // my-panel.js rail used for the exact same reason.
   dd.className = "nav-account-dropdown" + (dropup ? " dropup" : "");
+  const unsavedWarning = dkAnyUnsavedWork()
+    ? `<p class="nav-account-unsaved-warn">${navLabel("nav_logout_unsaved_warn", "יש לך שינויים שלא נשמרו — הם יאבדו אם תתנתקו בלי לשמור.")}</p>`
+    : "";
   dd.innerHTML = `
     <div class="nav-account-email">${escapeHtmlNav(email)}</div>
     <a href="account-settings.html" class="nav-account-settings">${navLabel("terms_account_link", "החשבון שלי")}</a>
     <button type="button" class="nav-account-logout">${navLabel("nav_logout", "התנתקות")}</button>
     <div class="nav-account-confirm" hidden>
+      ${unsavedWarning}
       <p>${navLabel("nav_logout_confirm_q", "להתנתק?")}</p>
       <div class="nav-account-confirm-row">
         <button type="button" class="nav-confirm-yes">${navLabel("nav_logout_confirm_yes", "כן, להתנתק")}</button>

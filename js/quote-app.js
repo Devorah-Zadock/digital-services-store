@@ -358,6 +358,14 @@ async function routeAfterAuth(user) {
    signed-out visitor gets sent to log in first, same as the CV builder
    and the site builder's wizard. */
 function routeAsGuest() {
+  // A session can end for reasons that give no chance to warn first
+  // (expiry, signing out in another tab) — unlike the logout-confirm's
+  // own warning (js/nav-auth.js's dkAnyUnsavedWork check, for the case
+  // where there WAS a chance), there's no session left here to save
+  // with. The least this can do is say what happened instead of the
+  // page just vanishing with the person's edits still on screen one
+  // moment and gone the next, confirmed live as genuinely alarming.
+  const hadUnsavedWork = window.dkQuoteHasUnsavedWork && window.dkQuoteHasUnsavedWork();
   currentUser = null;
   quoteCurrentUserId = null;
   quoteSavedId = null;
@@ -365,7 +373,14 @@ function routeAsGuest() {
   const tpl = pickedTemplateFromUrl();
   if (!qid && !tpl && !quoteWantsShell()) { showQuoteCatalog(); return; }
   const here = location.pathname.split("/").pop() + location.search;
-  window.location.href = "account.html?redirect=" + encodeURIComponent(here);
+  const redirectUrl = "account.html?redirect=" + encodeURIComponent(here);
+  if (!hadUnsavedWork) { window.location.href = redirectUrl; return; }
+  const status = document.getElementById("qbshell-top-status");
+  if (status) {
+    status.textContent = "ההתחברות הסתיימה — שינויים שלא נשמרו עלולים ללכת לאיבוד";
+    status.className = "bshell-top-status failed";
+  }
+  setTimeout(() => { window.location.href = redirectUrl; }, 2200);
 }
 
 function showQuoteCatalog() {
