@@ -7,8 +7,15 @@
 
 let cvCurrentUserId = null;
 
+// Returns the Supabase error (or null on success) — confirmed-live bug
+// this fixes: both callers (the legacy #cv-save-btn handler and
+// cvbshellSaveNow, the Shell's real "שמירה" button) used to show
+// "נשמר ✓" unconditionally, because this never surfaced whether the
+// upsert actually succeeded. supabase-js never throws on a query
+// error, so without checking the return value a failed save looked
+// identical to a successful one.
 async function saveCvNow() {
-  if (!cvCurrentUserId || !state.content) return;
+  if (!cvCurrentUserId || !state.content) return null;
   const snapshot = {
     slug: state.slug,
     lang: state.lang,
@@ -17,7 +24,8 @@ async function saveCvNow() {
     color: document.getElementById("color-picker").value,
     textColor: document.getElementById("text-color-picker").value,
   };
-  await supabaseClient.from("cv_saves").upsert({ user_id: cvCurrentUserId, data: snapshot, updated_at: new Date().toISOString() });
+  const { error } = await supabaseClient.from("cv_saves").upsert({ user_id: cvCurrentUserId, data: snapshot, updated_at: new Date().toISOString() });
+  return error || null;
 }
 
 const CV_LOCAL_KEY_PREFIX = "deskkit_cv_local_";
@@ -139,12 +147,17 @@ document.addEventListener("DOMContentLoaded", () => {
     btn.addEventListener("click", async () => {
       if (!cvCurrentUserId) { if (typeof openAuthPrompt === "function") openAuthPrompt(); return; }
       btn.disabled = true;
-      await saveCvNow();
+      const error = await saveCvNow();
       btn.disabled = false;
-      status.textContent = "נשמר ✓";
-      status.classList.add("ok");
-      if (window.refreshMyPanel) window.refreshMyPanel();
-      setTimeout(() => { status.textContent = ""; status.classList.remove("ok"); }, 2500);
+      if (!error) {
+        status.textContent = "נשמר ✓";
+        status.classList.add("ok");
+        if (window.refreshMyPanel) window.refreshMyPanel();
+        setTimeout(() => { status.textContent = ""; status.classList.remove("ok"); }, 2500);
+      } else {
+        status.textContent = "השמירה נכשלה, נסו שוב";
+        status.classList.remove("ok");
+      }
     });
   }
 });

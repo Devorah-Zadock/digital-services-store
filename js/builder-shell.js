@@ -407,10 +407,23 @@ async function bshellSaveNow() {
   const status = document.getElementById("bshell-top-status");
   status.textContent = "שומרים...";
   status.className = "bshell-top-status saving";
-  if (typeof saveSiteNow === "function") await saveSiteNow();
-  status.textContent = "נשמר ✓";
-  status.className = "bshell-top-status saved";
-  setTimeout(() => { if (status.textContent === "נשמר ✓") status.textContent = ""; }, 2500);
+  // saveSiteNow() now returns the Supabase error (or null) instead of
+  // being fire-and-forget — confirmed-live bug this fixes: this always
+  // showed "נשמר ✓" even when the save itself failed, so a user who hit
+  // a real save error had no way to know their edits weren't actually
+  // safe to walk away from.
+  const error = typeof saveSiteNow === "function" ? await saveSiteNow() : null;
+  if (!error) {
+    status.textContent = "נשמר ✓";
+    status.className = "bshell-top-status saved";
+    setTimeout(() => { if (status.textContent === "נשמר ✓") status.textContent = ""; }, 2500);
+  } else {
+    status.textContent = "לא נשמר — ננסה שוב";
+    status.className = "bshell-top-status failed";
+    // Retry shortly rather than leaving a failed save sitting there
+    // until the next real edit happens to trigger bshellScheduleSave().
+    bshellSaveTimer = setTimeout(bshellSaveNow, 4000);
+  }
 }
 function bshellScheduleSave() {
   clearTimeout(bshellSaveTimer);

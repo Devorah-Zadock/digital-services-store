@@ -43,21 +43,31 @@ function markSiteDirty() {
 async function siteAutosaveTick() {
   if (!siteCurrentUserId || !siteDirty || siteAutosaving) return;
   siteAutosaving = true;
-  await saveSiteNow();
+  const error = await saveSiteNow();
   siteAutosaving = false;
-  if (siteProjectId) {
-    siteDirty = false;
-    const status = document.getElementById("site-save-status");
+  const status = document.getElementById("site-save-status");
+  if (!error) {
+    siteDirty = false; // left true on failure so the NEXT tick retries this same edit
     if (status) { status.textContent = "נשמר אוטומטית ✓"; status.classList.add("ok"); }
+  } else if (status) {
+    status.textContent = "לא הצלחנו לשמור — ננסה שוב";
+    status.classList.remove("ok");
   }
 }
 
+// Returns the Supabase error (or null on success) so every caller can
+// tell a real failure apart from success — confirmed-live bug this
+// fixes: every caller used to show "נשמר ✓" unconditionally, regardless
+// of whether this upsert actually succeeded. supabase-js never throws
+// on a query error, so a caller that doesn't check the return value
+// here has no way to know the save silently failed.
 async function saveSiteNow() {
-  if (!siteCurrentUserId) return;
+  if (!siteCurrentUserId) return null;
   const row = { user_id: siteCurrentUserId, template: siteState.template, data: siteState.data };
   if (siteProjectId) row.id = siteProjectId;
   const { data, error } = await supabaseClient.from("site_projects").upsert(row).select().single();
   if (!error && data) siteProjectId = data.id;
+  return error || null;
 }
 
 async function finalizeSiteProject() {
@@ -292,11 +302,16 @@ document.addEventListener("DOMContentLoaded", () => {
     btn.addEventListener("click", async () => {
       if (!siteCurrentUserId) { window.location.href = "account.html?redirect=" + encodeURIComponent(location.pathname + location.search); return; }
       btn.disabled = true;
-      await saveSiteNow();
+      const error = await saveSiteNow();
       btn.disabled = false;
-      siteDirty = false;
-      status.textContent = "נשמר ✓";
-      status.classList.add("ok");
+      if (!error) {
+        siteDirty = false;
+        status.textContent = "נשמר ✓";
+        status.classList.add("ok");
+      } else {
+        status.textContent = "השמירה נכשלה, נסו שוב";
+        status.classList.remove("ok");
+      }
       if (window.refreshMyPanel) window.refreshMyPanel();
       setTimeout(() => { status.textContent = ""; status.classList.remove("ok"); }, 2500);
     });

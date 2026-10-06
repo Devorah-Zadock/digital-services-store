@@ -37,6 +37,7 @@
 .bshell-top-status { font-size: 12.5px; color: var(--text-muted); white-space: nowrap; }
 .bshell-top-status.saving { color: var(--warning); }
 .bshell-top-status.saved { color: var(--success); }
+.bshell-top-status.failed { color: var(--error); font-weight: 700; }
 .bshell-top-spacer { flex: 1; }
 .bshell-device-row { display: flex; gap: 2px; background: var(--bg-main, var(--bg)); border: 1px solid var(--border-color, var(--border)); border-radius: 999px; padding: 3px; }
 .bshell-device-btn {
@@ -201,4 +202,22 @@
   .bshell-hier.bshell-drawer-open, .bshell-props.bshell-drawer-open { transform: translateY(0); }
   .bshell-canvas-wrap { padding: 14px; }
   .bshell-mobile-tabs { display: flex; gap: 8px; }
+  /* Confirmed-live bug this fixes: .bshell-top never wrapped (single
+     flex row, fixed 64px height), so on a real phone its action
+     buttons — Save, Download PDF, ATS, and (in Invoice) the actual
+     "הפקה סופית"/"זיכוי" buttons that issue or correct a real
+     document — rendered past the edge of the screen entirely.
+     overflow-x:clip on html/body (deskkit-ui.css) means there was no
+     scrollbar to reach them with either; they were simply unreachable.
+     flex-wrap alone isn't enough on its own — wrapped items fill
+     whatever room is left on the CURRENT row first, so name/status/
+     spacer/first-button-or-two would share one row and the rest
+     spill onto a second — giving an inconsistent split per product
+     depending on how many buttons it has. Forcing a break exactly at
+     the spacer (flex-basis:100%) instead puts name+status on their
+     own first row and every actual action button on its own full-
+     width row below, the same way for CV/Quote/Invoice alike. */
+  .bshell-top { height: auto; min-height: 64px; flex-wrap: wrap; row-gap: 8px; padding-block: 10px; }
+  .bshell-top-spacer { flex: 1 0 100%; height: 0; }
+  .bshell-top-name { max-width: none; }
 }

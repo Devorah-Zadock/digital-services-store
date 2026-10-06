@@ -327,11 +327,20 @@ async function cvbshellSaveNow() {
   const status = document.getElementById("cvbshell-top-status");
   status.textContent = "שומרים...";
   status.className = "bshell-top-status saving";
-  if (typeof saveCvNow === "function") await saveCvNow();
-  status.textContent = "נשמר ✓";
-  status.className = "bshell-top-status saved";
-  if (window.refreshMyPanel) window.refreshMyPanel();
-  setTimeout(() => { if (status.textContent === "נשמר ✓") status.textContent = ""; }, 2500);
+  // saveCvNow() now returns the Supabase error (or null) — confirmed-
+  // live bug this fixes: this showed "נשמר ✓" even when the save
+  // itself failed, with no way for the user to know their edits
+  // weren't actually safe.
+  const error = typeof saveCvNow === "function" ? await saveCvNow() : null;
+  if (!error) {
+    status.textContent = "נשמר ✓";
+    status.className = "bshell-top-status saved";
+    if (window.refreshMyPanel) window.refreshMyPanel();
+    setTimeout(() => { if (status.textContent === "נשמר ✓") status.textContent = ""; }, 2500);
+  } else {
+    status.textContent = "לא נשמר — נסו שוב";
+    status.className = "bshell-top-status failed";
+  }
 }
 
 /* ---------- Hierarchy sidebar ---------- */
