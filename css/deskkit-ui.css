@@ -19,6 +19,20 @@
   transition: background .15s ease, transform .15s ease; cursor: pointer;
 }
 .dk-header-cta:hover { background: var(--primary-dark); transform: translateY(-1px); }
+/* Confirmed-live bug: below the breakpoint where .brand goes
+   position:absolute (css/style.css's own 940px rule) and the slide-in
+   nav takes over, .nav-end-group still had to fit this CTA pill AND
+   the login/"Sign in" pill AND (since the EN toggle rollout) the
+   lang-toggle pill, all at once, in a row already narrower than their
+   combined natural width — overflowing straight across .brand's fixed
+   position and visibly overlapping the DeskKit wordmark. Hidden here
+   at the SAME 760px breakpoint .dk-mobile-nav (js/mobile-nav.js)
+   itself uses to take over — that bottom bar's own "חשבון"/"Account"
+   tab already reaches the same account.html entry point this CTA
+   does, so nothing is actually lost by not showing both at once. */
+@media (max-width: 760px) {
+  .dk-header-cta { display: none; }
+}
 .dk-header-bell {
   display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px;
   border-radius: 50%; border: none; background: transparent; color: var(--text-secondary); cursor: pointer;

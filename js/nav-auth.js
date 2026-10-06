@@ -118,12 +118,32 @@ function applyNavAuthState(session) {
     const here = location.pathname.split("/").pop() || "index.html";
     link.href = "account.html?redirect=" + encodeURIComponent(here);
     link.removeAttribute("title");
-    link.innerHTML = navIconSvg() + "<span>כניסה</span>";
+    // Hardcoded "כניסה" here never updated on language toggle — this
+    // link is owned by this file, not by js/header.js (see this file's
+    // own top comment), so header.js's own i18n re-render never touched
+    // it. Confirmed-live bug this fixes: toggling to English translated
+    // every other nav string except this one, which stayed stuck on
+    // Hebrew. Same lookup-with-real-fallback pattern as dkHeaderLabel in
+    // js/header.js — works whether or not js/i18n.js is even loaded on
+    // this page.
+    const lang = typeof currentLang === "function" ? currentLang() : "he";
+    const dict = (typeof I18N !== "undefined" && I18N[lang]) || null;
+    const loginLabel = (dict && dict.nav_login) || "כניסה";
+    link.innerHTML = navIconSvg() + `<span>${escapeHtmlNav(loginLabel)}</span>`;
     link.onclick = null;
   }
 }
 
+let dkNavAuthLastSession = null;
+
 document.addEventListener("DOMContentLoaded", () => {
-  supabaseClient.auth.onAuthStateChange((_event, session) => applyNavAuthState(session));
-  supabaseClient.auth.getSession().then(({ data }) => applyNavAuthState(data.session));
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
+    dkNavAuthLastSession = session;
+    applyNavAuthState(session);
+  });
+  supabaseClient.auth.getSession().then(({ data }) => {
+    dkNavAuthLastSession = data.session;
+    applyNavAuthState(data.session);
+  });
+  document.addEventListener("deskkit:langchange", () => applyNavAuthState(dkNavAuthLastSession));
 });

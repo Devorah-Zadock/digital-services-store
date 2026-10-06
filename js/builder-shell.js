@@ -107,6 +107,18 @@ const BSHELL_TEXT_CONTENT_MAP = {
 let bshellActiveFlag = false;
 let bshellSelection = null; // { kind: "text"|"service"|"section", key?|idx?|type? }
 let bshellUndoStack = [];
+// Which hierarchy sections (by type) are collapsed — starts empty, i.e.
+// every section begins expanded, same as the old hardcoded-open
+// behavior. Tracked separately from bshellSelection because collapsing
+// a section must survive bshellRenderHierarchy() re-renders (every
+// selection change repaints the whole list from scratch), and because
+// <details open> alone can't be the source of truth here: the summary's
+// own click handler calls e.preventDefault() (selecting a section must
+// never ALSO fire the browser's native toggle at the same time as the
+// custom one below), which also suppresses the native open/close toggle
+// entirely — leaving nothing to ever flip it, confirmed-live as the
+// chevron always pointing "open" and never collapsing on click.
+let bshellCollapsedSections = new Set();
 let bshellRedoStack = [];
 const BSHELL_UNDO_CAP = 30;
 let bshellSaveTimer = null;
@@ -434,7 +446,7 @@ function bshellRenderHierarchy() {
       }).join("") + `<button type="button" class="bshell-add-item" data-bshell-add-service>+ הוספת שירות</button>`;
     }
     return `
-      <details class="bshell-sec"${true ? " open" : ""}>
+      <details class="bshell-sec"${bshellCollapsedSections.has(type) ? "" : " open"}>
         <summary class="bshell-sec-head${isSelectedSection ? " is-selected" : ""}${hidden ? " is-hidden" : ""}" data-bshell-select-section="${type}">
           <span class="bshell-sec-chevron"></span>
           <span>${escapeHtmlS(def.label || type)}</span>
@@ -447,7 +459,10 @@ function bshellRenderHierarchy() {
   list.querySelectorAll("[data-bshell-select-section]").forEach((el) => {
     el.addEventListener("click", (e) => {
       e.preventDefault();
-      bshellSelectSection(el.dataset.bshellSelectSection);
+      const type = el.dataset.bshellSelectSection;
+      if (bshellCollapsedSections.has(type)) bshellCollapsedSections.delete(type);
+      else bshellCollapsedSections.add(type);
+      bshellSelectSection(type);
     });
   });
   list.querySelectorAll("[data-bshell-select-service]").forEach((el) => {

@@ -112,6 +112,14 @@ async function sendPurchaseReceipt() {
       ? SITE_TEMPLATES[siteState.template].label : siteState.template;
     const bizName = siteState.data && siteState.data.businessName && siteState.data.businessName.trim();
     const amount = formatGumroadAmount(purchase);
+    // Gumroad's own license-verify response flags a sandbox/test-mode
+    // purchase with purchase.test — real money never changed hands, so
+    // its `price` can legitimately be a throwaway sandbox value instead
+    // of the product's real listed price. A receipt for one of these
+    // must say so loudly: a real-looking "קבלה" (receipt) email with an
+    // unexplained wrong amount is exactly the kind of thing that erodes
+    // trust in every OTHER receipt, even the real ones.
+    const isTest = !!(purchase && purchase.test);
 
     await supabaseClient.functions.invoke("send-receipt", {
       body: {
@@ -119,6 +127,7 @@ async function sendPurchaseReceipt() {
         buyerName: (purchase && purchase.full_name) || bizName || "",
         itemDescription: `בניית אתר עסקי — ${escapeHtmlS(tplLabel)}${bizName ? ` (${escapeHtmlS(bizName)})` : ""}`,
         amount,
+        isTest,
       },
     });
   } catch (err) {

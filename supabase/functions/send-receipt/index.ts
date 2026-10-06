@@ -57,17 +57,26 @@ function escapeHtml(s: string): string {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function receiptHtml(opts: { buyerName: string; buyerEmail: string; itemDescription: string; amount: string; receiptNumber: string; date: string }, forPdf: boolean) {
+function receiptHtml(opts: { buyerName: string; buyerEmail: string; itemDescription: string; amount: string; receiptNumber: string; date: string; isTest: boolean }, forPdf: boolean) {
   // Honest either way: the real number if it's actually configured, or a
   // visibly-a-placeholder line (never a fake-looking digit string) if not
   // — see the TAX_ID comment above for why.
   const taxLine = TAX_ID
     ? `עוסק פטור מס' ${escapeHtml(TAX_ID)} — פטור מהוצאת חשבונית מס לפי סעיף 31 לחוק מס ערך מוסף, התשל"ו-1975.`
     : `עוסק פטור — פטור מהוצאת חשבונית מס לפי סעיף 31 לחוק מס ערך מוסף, התשל"ו-1975. (מספר עוסק פטור טרם הוגדר במערכת)`;
+  // Gumroad's license-verify API marks a sandbox/test-mode purchase with
+  // purchase.test — no real money changed hands, so its price can be a
+  // throwaway sandbox value with no relation to the product's real
+  // price. A receipt for one of these must say so as loudly as the real
+  // amount itself, not just quietly show a number that looks wrong.
+  const testBanner = opts.isTest
+    ? `<p style="margin:0 0 16px; padding:8px 12px; background:#FEF3C7; color:#92400E; border-radius:6px; font-size:13px; font-weight:bold;">⚠ רכישת בדיקה (TEST) — לא בוצע תשלום אמיתי, הסכום אינו מחיר המוצר האמיתי.</p>`
+    : "";
   const card = `
 <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 28px; border: 1px solid #EAEDEC; border-radius: 10px;">
   <h2 style="color:#1F5C4E; margin:0 0 4px;">קבלה — DeskKit</h2>
   <p style="color:#777; font-size:13px; margin:0 0 20px;">מספר קבלה: ${escapeHtml(opts.receiptNumber)} &nbsp;|&nbsp; תאריך: ${escapeHtml(opts.date)}</p>
+  ${testBanner}
   <p style="margin:0 0 4px;">לכבוד: ${escapeHtml(opts.buyerName || opts.buyerEmail)}</p>
   <p style="color:#777; font-size:12.5px; margin:0 0 16px;">מאת: דבורה צדוק (DeskKit)</p>
   <hr style="border:none; border-top:1px solid #EAEDEC;">
@@ -130,7 +139,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { buyerEmail, buyerName, itemDescription, amount } = await req.json();
+    const { buyerEmail, buyerName, itemDescription, amount, isTest } = await req.json();
     if (!buyerEmail || !itemDescription) {
       return new Response(JSON.stringify({ error: "missing buyerEmail or itemDescription" }), { status: 400, headers: corsHeaders });
     }
@@ -144,6 +153,7 @@ Deno.serve(async (req: Request) => {
       amount: amount || "לפי אישור הרכישה ב-Gumroad",
       receiptNumber,
       date,
+      isTest: !!isTest,
     };
 
     // Best-effort: a customer should get their receipt email even if PDF

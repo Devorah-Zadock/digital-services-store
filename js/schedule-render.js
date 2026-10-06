@@ -65,6 +65,7 @@ async function sendSchedulePurchaseReceipt() {
         buyerName: (purchase && purchase.full_name) || "",
         itemDescription: "בונה מערכת שעות לבית ספר — DeskKit",
         amount,
+        isTest: !!(purchase && purchase.test),
       },
     });
   } catch (err) {
