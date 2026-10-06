@@ -331,6 +331,14 @@ body.has-sites-rail header.site {
   html[dir="ltr"] .brand { order: 1; }
   html[dir="ltr"] .nav-end-group { order: 3; }
 }
+/* .brand's own row-reverse (see its rule's comment) puts the icon
+   before the wordmark under RTL — confirmed live, that's what a visitor
+   sees as "D DeskKit" in Hebrew. Under LTR, the same row-reverse instead
+   puts the wordmark first and the icon last ("DeskKit D"), since
+   row-reverse's meaning itself flips with direction — not the icon-
+   before-wordmark relationship the logo is actually going for. Plain
+   row (not reversed) under LTR restores that same icon-first order. */
+html[dir="ltr"] .brand { flex-direction: row; }
 /* js/header.js injects a ~126px CTA button into .nav-end-group for
    logged-out visitors, on top of the login widget + lang toggle — on
    a narrow phone viewport that group alone can run ~290px wide. On

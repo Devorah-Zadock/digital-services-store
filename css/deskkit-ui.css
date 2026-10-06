@@ -465,8 +465,8 @@ body.dk-home { background: var(--bg-main); }
    section's own overflow:hidden bottom edge (checked each width's own
    image-bottom vs hero-bottom). */
 html[dir="ltr"] .dk-home-hero-visual {
-  --dk-hero-margin-top: clamp(-190px, calc(-0.559 * (100cqw - 656px)), 0px);
-  --dk-hero-shift-cap: 340px;
+  --dk-hero-margin-top: clamp(-280px, calc(-0.823 * (100cqw - 656px)), 0px);
+  --dk-hero-shift-cap: 380px;
   transform: translateX(var(--dk-hero-shift));
 }
 .dk-home-hero-laptop-img {
@@ -589,11 +589,30 @@ html[dir="ltr"] .dk-home-hero-visual {
 .dk-home-freetext-eyebrow { display: block; font-weight: 700; color: var(--primary-dark); margin-bottom: 10px; font-size: 14.5px; }
 .dk-home-freetext-row { display: flex; gap: 10px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 16px; padding: 10px; box-shadow: var(--shadow); }
 .dk-home-freetext-row textarea {
-  flex: 1; border: none; resize: none; font-family: inherit; font-size: 15px; min-height: 26px; max-height: 120px;
+  /* min-height was 26px — barely one line, so this box's own placeholder
+     text (3 lines in English: "Tell me what you'd like to create... for
+     example: I'm starting a new business...") rendered visibly clipped,
+     its last line cut off by the textarea's own bottom edge rather than
+     wrapping into view — confirmed live, not a rendering artifact. Tall
+     enough for 3 real lines at this font-size/line-height now, in
+     either language. */
+  flex: 1; border: none; resize: none; font-family: inherit; font-size: 15px; min-height: 84px; max-height: 120px;
   padding: 10px 12px; background: transparent;
 }
 .dk-home-freetext-row textarea:focus { outline: none; }
 .dk-home-freetext-row button { flex-shrink: 0; align-self: flex-end; }
+/* Side-by-side wastes most of the row's width on a cramped button at
+   mobile widths, which is exactly what forced the placeholder down to 4+
+   wrapped lines in the first place (narrower textarea = more lines) —
+   confirmed live as the last line still clipped even after widening
+   min-height above, since that fix sized for 3 lines, not 4. Stacked
+   instead: the textarea gets the row's FULL width (fewer wrapped lines)
+   and its own min-height still has real headroom, with the button on its
+   own full-width line below rather than squeezed beside the text. */
+@media (max-width: 560px) {
+  .dk-home-freetext-row { flex-direction: column; }
+  .dk-home-freetext-row button { align-self: stretch; }
+}
 
 .dk-home-section { max-width: 1120px; margin: 0 auto; padding: 0 20px 64px; }
 .dk-home-section-head { text-align: center; margin-bottom: 32px; }

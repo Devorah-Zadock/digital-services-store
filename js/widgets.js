@@ -282,6 +282,23 @@ function injectFeedbackWidget() {
       note.className = "widget-note warn";
     }
   });
+
+  // Same bug/fix as injectCookieNotice's own langchange listener — this
+  // whole widget's chrome only ever rendered once, in whatever language
+  // was current at page load, and never updated on a later toggle.
+  document.addEventListener("deskkit:langchange", () => {
+    if (!document.body.contains(wrap)) return;
+    const fab = document.getElementById("feedback-fab");
+    const label = dkWidgetsT("שתפו משוב", "Share feedback");
+    fab.title = label;
+    fab.setAttribute("aria-label", label);
+    document.getElementById("feedback-close").setAttribute("aria-label", dkWidgetsT("סגירה", "Close"));
+    wrap.querySelector(".widget-modal h3").textContent = dkWidgetsT("מה דעתכם על DeskKit?", "What do you think of DeskKit?");
+    wrap.querySelector(".widget-sub").textContent = dkWidgetsT("דירוג קצר עוזר לנו להשתפר — לוקח חצי דקה.", "A quick rating helps us improve — takes half a minute.");
+    stars.forEach((s) => s.setAttribute("aria-label", `${s.dataset.star} ${dkWidgetsT("כוכבים", "stars")}`));
+    document.getElementById("feedback-text").placeholder = dkWidgetsT("רוצים להוסיף עוד משהו? (לא חובה)", "Want to add anything else? (optional)");
+    document.getElementById("feedback-submit").textContent = dkWidgetsT("שליחת משוב", "Send feedback");
+  });
 }
 
 function injectAccessibilityFab() {
@@ -293,6 +310,14 @@ function injectAccessibilityFab() {
   a.setAttribute("aria-label", label);
   a.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="4" r="2"/><path d="M12 7c-1.1 0-2 .9-2 2v3.5L6.5 14l1 2 3-1.5V22h3v-6.5l1.5.8 2.5-4-3-1.6V9c0-1.1-.9-2-2-2z"/></svg>';
   document.body.appendChild(a);
+
+  // Same bug/fix as injectCookieNotice's own langchange listener.
+  document.addEventListener("deskkit:langchange", () => {
+    if (!document.body.contains(a)) return;
+    const newLabel = dkWidgetsT("הצהרת נגישות", "Accessibility statement");
+    a.title = newLabel;
+    a.setAttribute("aria-label", newLabel);
+  });
 }
 
 function injectChatWidget() {
@@ -432,6 +457,21 @@ function injectCookieNotice() {
     localStorage.setItem(COOKIE_NOTICE_KEY, "1");
     bar.remove();
     document.body.classList.remove("cookie-notice-active");
+  });
+
+  // Confirmed-live bug this fixes: this bar renders once at page load in
+  // whichever language was current then, and — unlike every data-i18n
+  // element the sweep in applyLang() already handles — never re-rendered
+  // on a later language toggle, so clicking EN/עברית visibly changed
+  // every other string on the page except this one.
+  document.addEventListener("deskkit:langchange", () => {
+    if (!document.body.contains(bar)) return;
+    bar.setAttribute("aria-label", dkWidgetsT("הודעת עוגיות ואחסון מקומי", "Cookie and local storage notice"));
+    bar.querySelector("p").innerHTML = dkWidgetsT(
+      'האתר משתמש בעוגיות ואחסון מקומי כדי לשמור את העבודה שלכם. פרטים ב<a href="terms.html#privacy">מדיניות הפרטיות</a>.',
+      'This site uses cookies and local storage to save your work. Details in the <a href="terms.html#privacy">Privacy Policy</a>.'
+    );
+    bar.querySelector("#cookie-notice-ok").textContent = dkWidgetsT("הבנתי", "Got it");
   });
 }
 
