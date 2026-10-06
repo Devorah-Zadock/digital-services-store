@@ -454,15 +454,19 @@ body.dk-home { background: var(--bg-main); }
    tucking under, and sits flush (0 overlap) at the narrow end where
    there's no horizontal clearance yet — same formula family, kept in
    sync by construction instead of as two numbers that can drift apart.
-   -0.5 = -150px / 300px (this rule's own new shift cap, below), so both
-   reach their max together at the same cqw. Cap itself raised from 260
-   to 300 (shift further right, toward the tools column) per repeated
-   "laptop stuck in text, move it toward the tools buttons" reports —
-   verified against the tools column's own left edge to confirm this
-   doesn't newly collide with it at any tested width. */
+   -0.559 = -190px / 340px (this rule's own cap/pull pair, below), so
+   both reach their max together at the same cqw. Cap raised again
+   (300->340px, shift further right toward the tools column) and the
+   max vertical pull raised too (-150->-190px, tucks the photo higher)
+   per repeated "move it right toward the tools buttons, raise it
+   higher, there's still room" reports — reverified at 1024-1920px
+   that this neither collides with the tools column (checked each
+   width's own gap to .dk-home-hero-tools) nor gets clipped by this
+   section's own overflow:hidden bottom edge (checked each width's own
+   image-bottom vs hero-bottom). */
 html[dir="ltr"] .dk-home-hero-visual {
-  --dk-hero-margin-top: clamp(-150px, calc(-0.5 * (100cqw - 656px)), 0px);
-  --dk-hero-shift-cap: 300px;
+  --dk-hero-margin-top: clamp(-190px, calc(-0.559 * (100cqw - 656px)), 0px);
+  --dk-hero-shift-cap: 340px;
   transform: translateX(var(--dk-hero-shift));
 }
 .dk-home-hero-laptop-img {

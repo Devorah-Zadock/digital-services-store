@@ -309,6 +309,27 @@ body.has-sites-rail header.site {
   .brand { order: 3; }
   .nav-links { order: 2; }
   .nav-end-group { order: 1; }
+  /* This whole order scheme is deliberately a FIXED physical layout —
+     logo on the physical left, login/CTA on the physical right, the
+     same on every page regardless of Hebrew or English (see this
+     block's own comment above: "regardless of the page's RTL text
+     direction"). flex `order` alone can't do that on its own, though:
+     order is relative to the flex container's main-axis START, which
+     itself flips with `direction` (RTL start = physical right, LTR
+     start = physical left) — so the SAME order:3 that correctly lands
+     .brand on the physical left under RTL (main-end) lands it on the
+     physical RIGHT under LTR instead (also main-end, but now on the
+     other physical side) — confirmed live as the logo jumping to the
+     right the moment English mode flips the page to dir="ltr". Since
+     .brand/.nav-end-group/.nav-links never move DOM position (only
+     ever reordered via `order`), the single working fix is to swap
+     brand's and nav-end-group's own order values specifically under
+     LTR, which cancels the flip direction introduces and keeps both
+     on the same physical side in either language. */
+}
+@media (min-width: 941px) {
+  html[dir="ltr"] .brand { order: 1; }
+  html[dir="ltr"] .nav-end-group { order: 3; }
 }
 /* js/header.js injects a ~126px CTA button into .nav-end-group for
    logged-out visitors, on top of the login widget + lang toggle — on
