@@ -131,31 +131,25 @@
         <a href="#how" class="dk-home-hero-watch"><span class="dk-home-hero-play">▶</span><span data-i18n="hero_watch">צפו איך זה עובד</span></a>
       </div>
       <div class="dk-home-hero-visual">
-        <!-- Two laptop mockup photos, cut out to transparent PNGs — a
-             true mirror pair (the LTR photo flipped horizontally, not a
-             second independent render), so both languages get the same
-             composition instead of two photos that happen to look
-             similar. The original AI-generated mockup had its own baked-
-             in logo text misspelled ("Deskujit") in both orientations —
-             confirmed via direct pixel inspection — patched out and
-             redrawn as "DeskKit" directly on the photo (small, mostly-
-             decorative detail; not worth a second AI generation pass).
-             CSS (html[dir]) swaps which one is visible instead of JS,
-             consistent with the rest of this page's bilingual pattern. -->
-        <img src="images/laptop-hero.png" alt="" class="dk-home-hero-laptop-img dk-home-hero-laptop-img-rtl" aria-hidden="true">
-        <img src="images/laptop-hero-en.png" alt="" class="dk-home-hero-laptop-img dk-home-hero-laptop-img-ltr" aria-hidden="true">
+        <!-- The real laptop photo the user supplied (images/laptop-
+             hero.png), cut out to a transparent PNG — its own studio
+             backdrop (a faint checkerboard baked into the flattened
+             JPEG, confirmed via direct pixel sampling) was removed
+             with a connected-component flood-fill from the image
+             border, so only genuinely background pixels are cut,
+             never the laptop's own light aluminum base. -->
+        <img src="images/laptop-hero.png" alt="" class="dk-home-hero-laptop-img" aria-hidden="true">
         <!-- The screen's own content (photo + nav baked into the PNG)
              had no text at all, reading as an empty laptop rather than
              DeskKit's own product — confirmed live. Positioned/rotated
              in CSS (not baked into the photo) so it stays real,
              selectable, translatable text instead of another flattened
              raster layer. The percentages + rotation are measured
-             directly off each photo's own screen quad (OpenCV contour
-             analysis of the bezel's inner edge) — not a generic center
-             overlay, so it sits inside the actual screen glass, tilted
-             to match. Two separate matrix3d values (RTL base rule +
-             html[dir="ltr"] override below) since the two photos are a
-             mirror pair, not the same quad. -->
+             directly off the photo's own screen quad (detected via
+             OpenCV contour analysis of the bezel's inner edge: corners
+             at roughly (26,173)/(613,206)/(672,631)/(83,659) in the
+             1024x946 source) — not a generic center overlay, so it
+             sits inside the actual screen glass, tilted to match. */ -->
         <div class="dk-home-hero-screen-overlay">
           <p data-i18n="hero_screen_text">הופכים רעיונות לפרויקטים</p>
           <a href="sites.html" class="dk-home-hero-screen-cta" data-i18n="hero_screen_cta">התחילו עכשיו ←</a>
