@@ -464,8 +464,20 @@ body.dk-home { background: var(--bg-main); }
    width's own gap to .dk-home-hero-tools) nor gets clipped by this
    section's own overflow:hidden bottom edge (checked each width's own
    image-bottom vs hero-bottom). */
+/* Max pull capped at -140px (was -280px): measured from the photo's
+   own alpha channel, the lid's top edge sits ~44px below the image top
+   across the columns that can fall under the paragraph, and the
+   paragraph's bottom is a fixed ~120px (CTA + watch link) above this
+   box's natural top — so any pull past ~-152px lands the lid on the
+   paragraph's last line. That showed up live at 125% browser zoom
+   (Windows' default scaling), where the English paragraph wraps into
+   two long lines instead of three. The extra +32px of shift (624 = 656
+   - 32) carries the laptop further toward the tools column, into the
+   fixed 56px gap between the stage and the tools — still >=24px clear
+   of them at every width. */
 html[dir="ltr"] .dk-home-hero-visual {
-  --dk-hero-margin-top: clamp(-280px, calc(-0.823 * (100cqw - 656px)), 0px);
+  --dk-hero-margin-top: clamp(-140px, calc(-0.823 * (100cqw - 656px)), 0px);
+  --dk-hero-shift: clamp(0px, (100cqw - 624px), var(--dk-hero-shift-cap, 170px));
   --dk-hero-shift-cap: 380px;
   transform: translateX(var(--dk-hero-shift));
 }
