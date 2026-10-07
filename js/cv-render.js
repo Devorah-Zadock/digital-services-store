@@ -43,7 +43,7 @@ function photoCircleHtml(photo, size) {
   return `<div style="width:${size}px; height:${size}px; border-radius:50%; overflow:hidden; flex:none;"><img src="${photo}" alt="תמונת פרופיל" style="width:100%; height:100%; object-fit:cover; display:block;"></div>`;
 }
 
-function sharedCss(tc) {
+function sharedCss(tc, rtl) {
   return `
   /* flex-shrink:0 matters specifically inside the Shell's own canvas
      iframe (js/cv-builder-shell.js's cvbshellBuildCanvasHtml wraps this
@@ -62,7 +62,13 @@ function sharedCss(tc) {
      place. */
   .cv-doc { font-family: var(--cv-font); background:#fff; color:#${tc}; width:794px; flex-shrink:0; margin:0 auto; box-shadow:0 10px 30px rgba(0,0,0,.12); overflow:hidden; overflow-wrap:break-word; }
   .cv-doc h1, .cv-doc h2, .cv-doc .cv-jobtitle, .cv-doc .contact-line, .cv-doc .role { overflow-wrap:break-word; }
-  .cv-doc ul { margin:0; padding-inline-start:20px; }
+  /* padding-right/left here (not padding-inline-start) — see the
+     timeline-dot comment in renderSidebar() below for why: html2canvas
+     doesn't reliably resolve CSS logical properties, so every one of
+     them anywhere inside what actually gets screenshotted was replaced
+     with an explicit physical side computed from the already-known
+     rtl flag. */
+  .cv-doc ul { margin:0; padding-${rtl ? "right" : "left"}:20px; }
   .cv-doc li { font-size:12.5px; color:#${tc}; line-height:1.6; }
   .cv-doc .cv-jobtitle { font-weight:700; }
   .cv-doc .cv-dates { font-size:11px; font-style:italic; }
@@ -72,7 +78,13 @@ function sharedCss(tc) {
 }
 
 function chipHtml(text, chipBg, chipColor, chipFont) {
-  return `<span style="display:inline-block; background:${chipBg}; color:${chipColor}; font-family:${chipFont || "inherit"}; font-size:11px; padding:5px 12px; border-radius:20px; margin:0 0 6px 6px;">${escapeHtml(text)}</span>`;
+  // line-height:1 (not inherited) pins the text block to exactly the
+  // font's own line box, so the 5px/5px padding above/below it is the
+  // only thing left deciding vertical centering — without this, an
+  // inherited taller ambient line-height left extra space INSIDE the
+  // line box itself that the padding couldn't account for, confirmed
+  // live as skill-pill text sitting visibly above center.
+  return `<span style="display:inline-block; background:${chipBg}; color:${chipColor}; font-family:${chipFont || "inherit"}; font-size:11px; line-height:1; padding:5px 12px; border-radius:20px; margin:0 0 6px 6px;">${escapeHtml(text)}</span>`;
 }
 function projectsList(projects, primaryHex) {
   if (!projects || !projects.length) return "";
@@ -88,6 +100,7 @@ function renderSidebar({ font, palette, content, lang, textColor }) {
   const tc = textColor || CV_DARK;
   const L = LABELS[lang];
   const dir = lang === "en" ? "ltr" : "rtl";
+  const rtl = lang !== "en";
   const contactLines = splitParts(content.contact);
   const skillChips = splitParts(content.skills).map((s) => chipHtml(s, "rgba(255,255,255,.14)", "#fff")).join("");
   const jobsHtml = content.jobs.map((j, i) => `
@@ -100,7 +113,7 @@ function renderSidebar({ font, palette, content, lang, textColor }) {
     </div>`).join("");
 
   return `
-  <style>${sharedCss(tc)}
+  <style>${sharedCss(tc, rtl)}
     /* .cv-side used to rely on align-items:stretch (its background was
        the flex child's own) to reach .cv-main's full height — checked
        out fine in a plain live DOM render and the real Shell canvas
@@ -108,36 +121,49 @@ function renderSidebar({ font, palette, content, lang, textColor }) {
        color falling short of the page's bottom edge. The first fix for
        that (a separate absolutely-positioned backing layer, kept in
        pixel sync with .cv-side's own real 307px box by hand) turned out
-       to be its own source of html2canvas bugs — confirmed live again:
-       a thin white seam at the sidebar/main boundary, right where two
-       independently-positioned layers have to land on the exact same
-       pixel. box-sizing:border-box collapses this back to ONE element
-       that paints its own background over its own full box — nothing
-       left to fall out of sync. width:307px + border-box keeps the
-       exact same 255px content area (307 - 26*2 padding) this was
-       already tuned against, so no text reflow risk from this change. */
-    .cv-sidebar-wrap { position:relative; display:flex; flex-direction:${lang === "en" ? "row" : "row-reverse"}; min-height:1095px; }
+       to be its own source of html2canvas bugs: a thin white seam at
+       the sidebar/main boundary, right where two independently-
+       positioned layers have to land on the exact same pixel.
+       box-sizing:border-box collapsed this back to ONE element that
+       paints its own background over its own full box, and
+       .cv-sidebar-wrap itself ALSO gets that same color here — a
+       reported-live seam persisted even after that, which fits a
+       different, well-documented html2canvas gap: sub-pixel rounding
+       (scale:2 for retina quality) can leave a hairline gap between
+       two adjacent flex children. Painting the PARENT the same color
+       as .cv-side makes any such gap invisible regardless of which
+       exact pixel it lands on, instead of chasing exact pixel sync a
+       second time. */
+    .cv-sidebar-wrap { position:relative; display:flex; flex-direction:${rtl ? "row-reverse" : "row"}; min-height:1095px; background:#${palette.primaryDark}; }
     .cv-side { position:relative; z-index:1; width:307px; box-sizing:border-box; flex:none; background:#${palette.primaryDark}; color:#fff; padding:36px 26px; text-align:center; }
     .cv-side .avatar { width:78px; height:78px; border-radius:50%; background:rgba(255,255,255,.16); display:flex; align-items:center; justify-content:center; margin:0 auto 16px; font-size:26px; font-weight:700; color:#fff; }
     .cv-side h1 { font-size:21px; margin:0 0 4px; }
     .cv-side .role { font-size:12.5px; color:${"#" + palette.headerAccentText}; margin-bottom:18px; }
-    .cv-side .sec-label { font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:${"#" + palette.headerAccentText}; text-align:start; margin:20px 0 10px; opacity:.85; }
-    .cv-side .contact-line { font-size:11.5px; text-align:start; margin-bottom:8px; opacity:.92; word-break:break-word; }
-    .cv-side .chips { text-align:start; }
-    .cv-main { position:relative; z-index:1; flex:1; padding:36px 30px; min-width:0; }
+    .cv-side .sec-label { font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:${"#" + palette.headerAccentText}; text-align:${rtl ? "right" : "left"}; margin:20px 0 10px; opacity:.85; }
+    .cv-side .contact-line { font-size:11.5px; text-align:${rtl ? "right" : "left"}; margin-bottom:8px; opacity:.92; word-break:break-word; }
+    .cv-side .chips { text-align:${rtl ? "right" : "left"}; }
+    .cv-main { position:relative; z-index:1; flex:1; padding:36px 30px; min-width:0; background:#fff; }
     .cv-main h2 { font-size:14px; color:#${palette.primary}; margin:0 0 12px; text-transform:uppercase; letter-spacing:.05em; }
     .cv-main h2:not(:first-child) { margin-top:26px; }
     .tl-wrap { position:relative; }
-    /* inset-inline-end/padding-inline-end here used to resolve to the
-       LEFT edge under RTL (the "end" of an RTL line IS the left) —
-       putting the timeline line/dots at the far side from where RTL
-       text actually starts reading, instead of alongside it. Confirmed
-       live and by direct measurement (reported as "dots that look
-       reversed, should be on the right of the text" in Hebrew — which
-       is the inline-START side for RTL, not inline-end). */
-    .tl-wrap::before { content:""; position:absolute; inset-inline-start:4px; top:5px; bottom:5px; width:2px; background:#EAEAEA; }
-    .tl-item { position:relative; padding-inline-start:20px; }
-    .tl-dot { position:absolute; inset-inline-start:0px; top:3px; width:10px; height:10px; border-radius:50%; box-shadow:0 0 0 3px #fff; }
+    /* Physical right/left here (not inset-inline-start/text-align:start)
+       for the same reason as sharedCss()'s bullet padding above: a
+       reported live PDF still showed these on the wrong side even
+       after an earlier fix from inset-inline-end to inset-inline-start
+       (confirmed correct, by direct pixel measurement, in BOTH a plain
+       live DOM render and the real Shell canvas iframe) — the one
+       render path neither of those checks can reach is html2canvas
+       itself (CDN-blocked in this sandbox), which has known, widely-
+       reported gaps in CSS logical-property support: it doesn't
+       reliably read the element's own computed direction the way a
+       real browser does, so inset-inline-start can silently resolve
+       as if the page were always LTR regardless of dir="rtl". Physical
+       right/left computed from the already-known rtl flag sidesteps
+       that resolution step entirely — there's nothing left for
+       html2canvas to get wrong. */
+    .tl-wrap::before { content:""; position:absolute; ${rtl ? "right" : "left"}:4px; top:5px; bottom:5px; width:2px; background:#EAEAEA; }
+    .tl-item { position:relative; padding-${rtl ? "right" : "left"}:20px; }
+    .tl-dot { position:absolute; ${rtl ? "right" : "left"}:0px; top:3px; width:10px; height:10px; border-radius:50%; box-shadow:0 0 0 3px #fff; }
   </style>
   <div class="cv-doc" dir="${dir}">
     <div class="cv-sidebar-wrap">
@@ -168,6 +194,7 @@ function renderBold({ font, palette, content, lang, textColor }) {
   const tc = textColor || CV_DARK;
   const L = LABELS[lang];
   const dir = lang === "en" ? "ltr" : "rtl";
+  const rtl = lang !== "en";
   const skillChips = splitParts(content.skills).map((s) => chipHtml(s, "#" + palette.ice, "#" + palette.primaryDark)).join("");
   let n = 0;
   const badge = () => { n += 1; return String(n).padStart(2, "0"); };
@@ -183,9 +210,12 @@ function renderBold({ font, palette, content, lang, textColor }) {
     </div>`).join("");
 
   return `
-  <style>${sharedCss(tc)}
+  <style>${sharedCss(tc, rtl)}
     .cv-bold-head { position:relative; padding:44px 40px 26px; overflow:hidden; }
-    .cv-bold-head::before { content:""; position:absolute; inset-inline-end:-60px; top:-70px; width:220px; height:220px; border-radius:50%; background:#${palette.ice}; z-index:0; }
+    /* Physical left/right (not inset-inline-end) — see renderSidebar()'s
+       own timeline-dot comment for why: html2canvas doesn't reliably
+       resolve CSS logical properties against the element's dir. */
+    .cv-bold-head::before { content:""; position:absolute; ${rtl ? "left" : "right"}:-60px; top:-70px; width:220px; height:220px; border-radius:50%; background:#${palette.ice}; z-index:0; }
     .cv-bold-head .inner { position:relative; z-index:1; }
     .cv-bold-head h1 { font-size:46px; font-weight:700; margin:0; line-height:1.05; color:#${tc}; }
     .cv-bold-head .role-badge { display:inline-block; background:#${palette.primary}; color:#fff; font-size:13px; font-weight:600; padding:6px 16px; border-radius:20px; margin-top:14px; }
@@ -197,7 +227,7 @@ function renderBold({ font, palette, content, lang, textColor }) {
   </style>
   <div class="cv-doc" dir="${dir}">
     <div class="cv-bold-head">
-      ${content.photo ? `<div style="position:absolute; z-index:2; top:28px; inset-inline-end:32px; box-shadow:0 8px 20px rgba(0,0,0,.15); border-radius:50%;">${photoCircleHtml(content.photo, 72)}</div>` : ""}
+      ${content.photo ? `<div style="position:absolute; z-index:2; top:28px; ${rtl ? "left" : "right"}:32px; box-shadow:0 8px 20px rgba(0,0,0,.15); border-radius:50%;">${photoCircleHtml(content.photo, 72)}</div>` : ""}
       <div class="inner">
         <h1 data-cvkey="name">${escapeHtml(content.name)}</h1>
         <span class="role-badge" data-cvkey="title">${escapeHtml(content.title)}</span>
@@ -223,6 +253,7 @@ function renderClassicMono({ font, palette, content, lang, textColor }) {
   const tc = textColor || CV_DARK;
   const L = LABELS[lang];
   const dir = lang === "en" ? "ltr" : "rtl";
+  const rtl = lang !== "en";
   let n = 0;
   const badge = () => { n += 1; return String(n).padStart(2, "0"); };
   const jobsHtml = content.jobs.map((j, i) => `
@@ -233,7 +264,7 @@ function renderClassicMono({ font, palette, content, lang, textColor }) {
     </div>`).join("");
 
   return `
-  <style>${sharedCss(tc)}
+  <style>${sharedCss(tc, rtl)}
     .cv-cm-head { padding:40px 44px 22px; text-align:center; border-bottom:1px solid #E6E6E6; }
     .cv-cm-head h1 { font-size:28px; font-weight:700; margin:0; letter-spacing:.02em; color:#${tc}; }
     .cv-cm-head .role { font-size:13px; color:#${palette.primary}; margin-top:8px; letter-spacing:.05em; text-transform:uppercase; }
@@ -321,7 +352,10 @@ async function downloadCvPdf() {
   // captures .cv-doc) picks it up, instead of silently dropping it.
   const credit = temp.querySelector(".cv-pdf-credit");
   if (credit) {
-    credit.style.cssText = "display:block; margin-top:14px; padding:0 24px 18px; font-family:Arial, sans-serif; font-size:8.5pt; color:#A0A0A0; text-align:end;";
+    // Physical left/right (not text-align:end) — same html2canvas
+    // logical-property gap as renderSidebar()'s timeline dots.
+    const creditAlign = state.lang === "en" ? "right" : "left";
+    credit.style.cssText = `display:block; margin-top:14px; padding:0 24px 18px; font-family:Arial, sans-serif; font-size:8.5pt; color:#A0A0A0; text-align:${creditAlign};`;
     doc.appendChild(credit);
   }
   // document.fonts.ready (not just rAF) — a reported live export showed
