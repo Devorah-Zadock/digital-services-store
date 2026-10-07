@@ -320,16 +320,22 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  const startSlug = new URLSearchParams(location.search).get("template");
-  const startLang = new URLSearchParams(location.search).get("lang");
-  // A local draft (this browser, any account or none) wins the very
-  // first paint — see saveCvLocalState()/loadCvLocalState() in
-  // builder-cloud-save.js. If this visitor turns out to be signed in
-  // with a cloud save of their own, that file's own async check
-  // replaces this with the cloud version right after, same as before;
-  // this only changes what shows up in the meantime, from always a
-  // blank template to whatever was actually last on screen.
-  const localDraft = typeof loadCvLocalState === "function" ? loadCvLocalState(startSlug) : null;
+  // window.dkCvOriginalParams (builder.html's own first inline script) is
+  // the query string as the visitor actually arrived with — this file's
+  // own loadTemplate() rewrites location.search to carry ?template=<slug>
+  // on every call, so re-parsing location.search here would already be
+  // reading this run's own output on a second call (setLang() -> loadTemplate()).
+  const urlParams = window.dkCvOriginalParams || new URLSearchParams(location.search);
+  const startSlug = urlParams.get("template");
+  const startLang = urlParams.get("lang");
+  const urlCvId = urlParams.get("cv");
+  const isNewCv = urlParams.get("new") === "1";
+  // ?cv=<id> and ?new=1 are both explicit, router-driven cases (see
+  // js/cv-saves-router.js) — neither should resume whatever not-yet-
+  // saved draft happened to be last active under CV_LAST_SLUG_KEY, since
+  // that key has nothing to do with the specific CV being asked for (an
+  // existing saved one, or a deliberately fresh one).
+  const localDraft = (!urlCvId && !isNewCv && typeof loadCvLocalState === "function") ? loadCvLocalState(startSlug) : null;
   if (localDraft && (!startSlug || localDraft.slug === startSlug)) {
     applyCvSnapshot(localDraft); // also sets font-select/tpl-select internally
   } else {
@@ -341,7 +347,12 @@ document.addEventListener("DOMContentLoaded", () => {
     // (registered later, after the Shell has activated) then swaps it
     // for a deliberately-picked one if this flag is set — see that
     // file's own comment for why it can't just run inline here.
-    window.dkCvNeedsStylePick = !localDraft && !startSlug;
+    // ?new=1 always wants the picker's 2 questions, even over a stale
+    // last-active-template draft; ?cv=<id> wants neither the picker nor
+    // this placeholder template to stick — js/cv-saves-router.js's own
+    // async load swaps in the real one moments later, same as an
+    // explicit ?template= link already skips the picker for.
+    window.dkCvNeedsStylePick = isNewCv || (!localDraft && !startSlug && !urlCvId);
     loadTemplate(startSlug && CV_TEMPLATES[startSlug] ? startSlug : Object.keys(CV_TEMPLATES)[0]);
     select.value = state.slug;
   }

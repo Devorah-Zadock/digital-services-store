@@ -118,5 +118,14 @@ function showCvStylePicker() {
 document.addEventListener("DOMContentLoaded", () => {
   if (!window.dkCvNeedsStylePick) return;
   if (typeof CV_TEMPLATES === "undefined" || typeof loadTemplate !== "function") return;
-  showCvStylePicker();
+  // js/cv-saves-router.js (registered just before this file in
+  // builder.html, so it already ran and set this) resolves the exact
+  // same "bare visit, no explicit param" case asynchronously — wait for
+  // it so a signed-in returning user with existing CVs gets the My-CVs
+  // grid alone, never this picker flashing on top of it first.
+  if (window.dkCvRouterGridPromise && typeof window.dkCvRouterGridPromise.then === "function") {
+    window.dkCvRouterGridPromise.then((showedGrid) => { if (!showedGrid) showCvStylePicker(); });
+  } else {
+    showCvStylePicker();
+  }
 });

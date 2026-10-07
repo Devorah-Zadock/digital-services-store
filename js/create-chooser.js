@@ -24,7 +24,7 @@ function dkCreateT(he, en) {
 
 const DK_CREATE_OPTIONS = [
   { icon: "🌐", product: "site", title: "אתר", titleEn: "Site", sub: "אתר מקצועי לעסק או לפרויקט", subEn: "A professional site for a business or project", href: "sites.html?new=1" },
-  { icon: "📄", product: "cv", title: "קורות חיים", titleEn: "Resume", sub: "קורות חיים שנראים כמו שאתם רוצים להיראות", subEn: "A resume that looks the way you want to be seen", href: "builder.html" },
+  { icon: "📄", product: "cv", title: "קורות חיים", titleEn: "Resume", sub: "קורות חיים שנראים כמו שאתם רוצים להיראות", subEn: "A resume that looks the way you want to be seen", href: "builder.html?new=1" },
   { icon: "📊", product: "deck", title: "מצגת", titleEn: "Deck", sub: "מצגת מעוצבת ומוכנה להצגה", subEn: "A designed deck, ready to present", href: "products.html?type=deck" },
   { icon: "💼", product: "quote", title: "הצעת מחיר", titleEn: "Quote", sub: "הצעת מחיר מקצועית ללקוחות", subEn: "A professional price quote for clients", href: "quote-app.html" },
   { icon: "🧾", product: "invoice", title: "חשבונית", titleEn: "Invoice", sub: "חשבוניות וקבלות", subEn: "Invoices and receipts", href: "invoice-app.html" },
@@ -41,7 +41,7 @@ function dkCreateRouteFreeText(text) {
   const t = (text || "").toLowerCase();
   const hit = (words) => words.some((w) => t.includes(w));
   if (hit(["אתר", "site", "website", "דף נחיתה"])) return "sites.html?new=1";
-  if (hit(["קורות חיים", "cv", "resume", "רזומה"])) return "builder.html";
+  if (hit(["קורות חיים", "cv", "resume", "רזומה"])) return "builder.html?new=1";
   if (hit(["הצעת מחיר", "הצעה", "quote"])) return "quote-app.html";
   if (hit(["חשבונית", "קבלה", "invoice"])) return "invoice-app.html";
   if (hit(["מצגת", "שקפים", "deck", "presentation"])) return "products.html?type=deck";

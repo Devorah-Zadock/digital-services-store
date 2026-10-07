@@ -411,6 +411,7 @@ const I18N = {
     // style section. The hierarchy/properties panels' own dynamically-
     // rendered content (js/cv-builder-shell.js) isn't covered yet.
     cvb_meta_title: "בילדר קורות חיים — DeskKit",
+    cvb_mycvs_title: "הקורות חיים שלי", cvb_mycvs_new: "+ קורות חיים חדשים",
     cvb_top_doc_name: "קורות חיים",
     cvb_undo: "↶ בטל", cvb_undo_title: "בטל (Ctrl+Z)",
     cvb_redo: "↷ חזור", cvb_redo_title: "בצע שוב (Ctrl+Shift+Z)",
@@ -813,6 +814,7 @@ const I18N = {
     acct_err_update_failed: "The update failed, try again.",
 
     cvb_meta_title: "CV Builder — DeskKit",
+    cvb_mycvs_title: "My CVs", cvb_mycvs_new: "+ New CV",
     cvb_top_doc_name: "CV",
     cvb_undo: "↶ Undo", cvb_undo_title: "Undo (Ctrl+Z)",
     cvb_redo: "↷ Redo", cvb_redo_title: "Redo (Ctrl+Shift+Z)",

@@ -212,9 +212,9 @@ function myPanelRenderCv(cv, ctx, el) {
     const cvName = cv.data && cv.data.content && cv.data.content.name && cv.data.content.name.trim();
     el.innerHTML = myPanelRowHtml({
       kind: "cv",
-      href: "builder.html",
+      href: "builder.html?cv=" + encodeURIComponent(cv.id),
       name: cvName || "קורות חיים (ללא שם)",
-      deleteAttr: "cv",
+      deleteAttr: "cv:" + cv.id,
       active: !!(ctx && ctx.kind === "cv"),
     });
   } else {
@@ -296,7 +296,12 @@ function myPanelWriteCache(userId, bundle) {
 async function myPanelFetchAndRender(user, ctx, els) {
   const [sitesRes, cvRes, quotesRes, invoicesRes, profileRes] = await Promise.all([
     supabaseClient.from("site_projects").select("id, template, data, published_url").eq("user_id", user.id).order("created_at", { ascending: false }),
-    supabaseClient.from("cv_saves").select("data").eq("user_id", user.id).maybeSingle(),
+    // cv_saves is one row per SAVED CV now (see supabase/sql/
+    // cv_saves_multi.sql), not one per user — this legacy rail (only
+    // loaded by crm.html/crm-product.html) still only has room for one
+    // CV row, so it shows the most recently touched one rather than
+    // being redesigned into its own list like js/projects.js's real one.
+    supabaseClient.from("cv_saves").select("id, data").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
     els.quotesList
       ? supabaseClient.from("quote_saves").select("id, data").eq("user_id", user.id).order("updated_at", { ascending: false })
       : Promise.resolve({ data: null }),
@@ -383,7 +388,7 @@ async function loadMyPanel(user, opts) {
 }
 
 async function deleteMyPanelItem(kind, id, button) {
-  const label = kind === "cv" ? "את קורות החיים שלכם" : kind === "quote" ? "את הצעת המחיר הזו" : kind === "invoice" ? "את הטיוטה הזו" : "את האתר הזה";
+  const label = kind === "cv" ? "את קורות החיים האלה" : kind === "quote" ? "את הצעת המחיר הזו" : kind === "invoice" ? "את הטיוטה הזו" : "את האתר הזה";
   if (!confirm(`למחוק לצמיתות ${label}? הפעולה בלתי הפיכה.`)) return;
   button.disabled = true;
   const { data } = await supabaseClient.auth.getSession();
@@ -392,7 +397,11 @@ async function deleteMyPanelItem(kind, id, button) {
   if (kind === "site") {
     await supabaseClient.from("site_projects").delete().eq("id", id).eq("user_id", user.id);
   } else if (kind === "cv") {
-    await supabaseClient.from("cv_saves").delete().eq("user_id", user.id);
+    // id is now real (cv_saves is one row per saved CV, see
+    // supabase/sql/cv_saves_multi.sql) — without .eq("id", id) this
+    // would delete every CV the user has, not just the one row shown
+    // here.
+    await supabaseClient.from("cv_saves").delete().eq("id", id).eq("user_id", user.id);
   } else if (kind === "quote") {
     await supabaseClient.from("quote_saves").delete().eq("id", id).eq("user_id", user.id);
   } else if (kind === "invoice") {

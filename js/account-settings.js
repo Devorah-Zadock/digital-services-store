@@ -18,9 +18,13 @@
    reads the signed-in user is allowed to make directly, so a server
    round trip would add nothing except another thing to keep in sync. */
 async function exportMyData(userId, email) {
-  const [profile, cv, sites, quotes, invoices, schedules] = await Promise.all([
+  const [profile, cvs, sites, quotes, invoices, schedules] = await Promise.all([
     supabaseClient.from("profiles").select("*").eq("id", userId).maybeSingle(),
-    supabaseClient.from("cv_saves").select("data, updated_at").eq("user_id", userId).maybeSingle(),
+    // cv_saves is one row per SAVED CV now (see supabase/sql/
+    // cv_saves_multi.sql), not one per user — "export my data" must
+    // include every one of them, same full-array shape as sites/quotes/
+    // invoices/schedules below, not just whichever was touched last.
+    supabaseClient.from("cv_saves").select("*").eq("user_id", userId),
     supabaseClient.from("site_projects").select("*").eq("user_id", userId),
     supabaseClient.from("quote_saves").select("*").eq("user_id", userId),
     supabaseClient.from("invoice_saves").select("*").eq("user_id", userId),
@@ -30,7 +34,7 @@ async function exportMyData(userId, email) {
     exportedAt: new Date().toISOString(),
     account: { email },
     businessProfile: profile.data || null,
-    cv: (cv.data && cv.data.data) || null,
+    cvs: (cvs.data || []).map((r) => r.data),
     sites: sites.data || [],
     quotes: quotes.data || [],
     invoices: invoices.data || [],

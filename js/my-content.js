@@ -41,9 +41,13 @@ async function loadMyContent(user, list) {
   const profileName = profile && profile.business_name && profile.business_name.trim();
   rows.push(myContentRowHtml("quote-app.html", profileName || "עדיין לא הגדרתם פרטי עסק", "הצעות מחיר"));
 
-  const { data: cv } = await supabaseClient.from("cv_saves").select("data").eq("user_id", user.id).maybeSingle();
+  // cv_saves is one row per SAVED CV now (see supabase/sql/
+  // cv_saves_multi.sql), not one per user — this one-row-per-product
+  // overview still only has room for one CV row, so it shows the most
+  // recently touched one (js/projects.js is the real multi-CV list).
+  const { data: cv } = await supabaseClient.from("cv_saves").select("id, data").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle();
   const cvName = cv && cv.data && cv.data.content && cv.data.content.name && cv.data.content.name.trim();
-  rows.push(myContentRowHtml("builder.html", cvName || "עדיין לא יצרתם קורות חיים", "קורות חיים", cv ? "cv" : null));
+  rows.push(myContentRowHtml(cv ? "builder.html?cv=" + encodeURIComponent(cv.id) : "builder.html", cvName || "עדיין לא יצרתם קורות חיים", "קורות חיים", cv ? "cv:" + cv.id : null));
 
   const { data: schedules } = await supabaseClient
     .from("schedule_projects").select("id, data")
@@ -83,7 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (kind === "site") {
         await supabaseClient.from("site_projects").delete().eq("id", id).eq("user_id", user.id);
       } else if (kind === "cv") {
-        await supabaseClient.from("cv_saves").delete().eq("user_id", user.id);
+        await supabaseClient.from("cv_saves").delete().eq("id", id).eq("user_id", user.id);
       } else if (kind === "schedule") {
         await supabaseClient.from("schedule_projects").delete().eq("id", id).eq("user_id", user.id);
       }

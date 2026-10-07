@@ -72,7 +72,12 @@ async function loadStats(admin: ReturnType<typeof createClient>) {
       // separate, pre-existing issue, not something this function
       // should paper over by requesting a column that isn't there.
       admin.from("site_projects").select("id, user_id, template, status, created_at"),
-      admin.from("cv_saves").select("user_id, updated_at"),
+      // id added for cvSaveCountByUser below — cv_saves is one row per
+      // SAVED CV now (see supabase/sql/cv_saves_multi.sql), not one per
+      // user, so a real per-user count needs each row counted, not just
+      // which users have at least one (that's still what cvUsers, right
+      // below, is for).
+      admin.from("cv_saves").select("id, user_id, updated_at"),
       // Capped — usage_events grows without bound as the site gets used,
       // and this function returns every row straight to the browser in
       // one response. A few thousand most-recent rows is plenty to drive
@@ -167,6 +172,8 @@ async function loadStats(admin: ReturnType<typeof createClient>) {
     activityByUser[userId].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
+  const cvSaveCountByUser: Record<string, number> = {};
+  for (const r of (cvSaves || [])) cvSaveCountByUser[r.user_id] = (cvSaveCountByUser[r.user_id] || 0) + 1;
   const quoteSaveCountByUser: Record<string, number> = {};
   for (const r of quoteSavesRows) quoteSaveCountByUser[r.user_id] = (quoteSaveCountByUser[r.user_id] || 0) + 1;
   const invoiceCountByUser: Record<string, { total: number; issued: number }> = {};
@@ -241,7 +248,7 @@ async function loadStats(admin: ReturnType<typeof createClient>) {
       // cap anywhere in this product today).
       usage: {
         sites: sites.length,
-        cv: cvUsers.has(p.id) ? 1 : 0,
+        cv: cvSaveCountByUser[p.id] || 0,
         decks: deckCountByUser[p.id] || 0,
         sheets: xlsxCountByUser[p.id] || 0,
         quotes: quoteSaveCountByUser[p.id] || 0,

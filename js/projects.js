@@ -55,7 +55,7 @@ const MY_PANEL_TEMPLATE_LABELS_FALLBACK = typeof MY_PANEL_TEMPLATE_LABELS !== "u
 async function dkProjectsFetchAll(user) {
   let [sitesRes, cvRes, quotesRes, invoicesRes, scheduleRes] = await Promise.all([
     supabaseClient.from("site_projects").select("id, template, data, status, published_url, slug, updated_at, created_at").eq("user_id", user.id).order("created_at", { ascending: false }),
-    supabaseClient.from("cv_saves").select("data, updated_at").eq("user_id", user.id).maybeSingle(),
+    supabaseClient.from("cv_saves").select("id, data, updated_at").eq("user_id", user.id).order("updated_at", { ascending: false }),
     supabaseClient.from("quote_saves").select("id, data, updated_at").eq("user_id", user.id).order("updated_at", { ascending: false }),
     supabaseClient.from("invoice_saves").select("id, doc_type, status, number, data, updated_at").eq("user_id", user.id).order("updated_at", { ascending: false }),
     supabaseClient.from("schedule_projects").select("id, data, updated_at").eq("user_id", user.id).order("updated_at", { ascending: false }),
@@ -113,15 +113,19 @@ async function dkProjectsFetchAll(user) {
       raw: s,
     });
   });
-  if (cvRes.data) {
-    const cvName = cvRes.data.data && cvRes.data.data.content && cvRes.data.data.content.name && cvRes.data.data.content.name.trim();
+  // cv_saves is one row per SAVED CV (see supabase/sql/cv_saves_multi.sql)
+  // — same shape as quote_saves below — so a user's CVs list here just
+  // like their quotes do, instead of the single always-overwritten row
+  // this used to assume.
+  (cvRes.data || []).forEach((c) => {
+    const cvName = c.data && c.data.content && c.data.content.name && c.data.content.name.trim();
     items.push({
-      kind: "cv", id: "cv", name: cvName || "קורות חיים (ללא שם)", sub: "",
+      kind: "cv", id: c.id, name: cvName || "קורות חיים (ללא שם)", sub: "",
       status: "draft", statusLabel: "",
-      updatedAt: cvRes.data.updated_at,
-      href: "builder.html", raw: cvRes.data,
+      updatedAt: c.updated_at,
+      href: "builder.html?cv=" + encodeURIComponent(c.id), raw: c,
     });
-  }
+  });
   (quotesRes.data || []).forEach((q) => {
     const d = q.data || {};
     const label = (d.recipient && d.recipient.trim()) || (d.eventName && d.eventName.trim());
@@ -235,6 +239,10 @@ async function dkProjectsDuplicate(item) {
     const row = { user_id: dkProjectsUser.id, template: s.template, data: s.data };
     const { error } = await supabaseClient.from("site_projects").insert(row);
     if (error) { console.error("duplicate site failed:", error); alert("שכפול נכשל. אפשר לנסות שוב."); return; }
+  } else if (item.kind === "cv") {
+    const c = item.raw;
+    const { error } = await supabaseClient.from("cv_saves").insert({ user_id: dkProjectsUser.id, data: c.data });
+    if (error) { console.error("duplicate cv failed:", error); alert("שכפול נכשל. אפשר לנסות שוב."); return; }
   } else if (item.kind === "quote") {
     const q = item.raw;
     const { error } = await supabaseClient.from("quote_saves").insert({ user_id: dkProjectsUser.id, data: q.data });
@@ -248,10 +256,10 @@ async function dkProjectsDuplicate(item) {
 }
 
 async function dkProjectsDelete(item) {
-  const label = item.kind === "cv" ? "את קורות החיים שלכם" : item.kind === "quote" ? "את הצעת המחיר הזו" : item.kind === "invoice" ? "את הטיוטה הזו" : item.kind === "schedule" ? "את הגליון הזה" : "את האתר הזה";
+  const label = item.kind === "cv" ? "את קורות החיים האלה" : item.kind === "quote" ? "את הצעת המחיר הזו" : item.kind === "invoice" ? "את הטיוטה הזו" : item.kind === "schedule" ? "את הגליון הזה" : "את האתר הזה";
   if (!confirm(`למחוק לצמיתות ${label}? הפעולה בלתי הפיכה.`)) return;
   if (item.kind === "site") await supabaseClient.from("site_projects").delete().eq("id", item.id).eq("user_id", dkProjectsUser.id);
-  else if (item.kind === "cv") await supabaseClient.from("cv_saves").delete().eq("user_id", dkProjectsUser.id);
+  else if (item.kind === "cv") await supabaseClient.from("cv_saves").delete().eq("id", item.id).eq("user_id", dkProjectsUser.id);
   else if (item.kind === "quote") await supabaseClient.from("quote_saves").delete().eq("id", item.id).eq("user_id", dkProjectsUser.id);
   else if (item.kind === "invoice") await supabaseClient.from("invoice_saves").delete().eq("id", item.id).eq("user_id", dkProjectsUser.id);
   else if (item.kind === "schedule") await supabaseClient.from("schedule_projects").delete().eq("id", item.id).eq("user_id", dkProjectsUser.id);
@@ -261,7 +269,7 @@ async function dkProjectsDelete(item) {
 
 function dkProjectsOpenMenu(card, item) {
   dkProjectsCloseMenu();
-  const canDuplicate = item.kind === "site" || item.kind === "quote" || item.kind === "schedule";
+  const canDuplicate = item.kind === "site" || item.kind === "cv" || item.kind === "quote" || item.kind === "schedule";
   const canDelete = item.kind !== "invoice" || item.status !== "live";
   const menu = document.createElement("div");
   menu.className = "dk-pcard-menu";

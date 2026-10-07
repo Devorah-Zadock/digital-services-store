@@ -1,11 +1,19 @@
-/* Saves the CV builder's state to the signed-in user's account (cv_saves
-   table) and restores it on load instead of starting from the default
-   template — so it's the same CV from any device. Explicit-save only:
-   nothing here runs on every edit, only when #cv-save-btn is clicked —
-   editing a CV (or just looking at one) was silently creating/overwriting
-   a save before a person ever chose to keep anything. */
+/* Saves the CV builder's state to the signed-in user's account. cv_saves
+   is one row PER SAVED CV (not per user — see supabase/sql/
+   cv_saves_multi.sql), same shape as quote_saves/invoice_saves/
+   site_projects, so a user can have more than one CV. cvSavedId tracks
+   which row this tab is editing, exactly like quoteSavedId in
+   js/quote-cloud-save.js — set once the first save creates a row (or
+   immediately, if js/cv-saves-router.js loaded an existing one), then
+   every later save updates that same row via upsert's own id.
+
+   Explicit-save only: nothing here runs on every edit, only when
+   #cv-save-btn is clicked — editing a CV (or just looking at one) was
+   silently creating/overwriting a save before a person ever chose to
+   keep anything. */
 
 let cvCurrentUserId = null;
+let cvSavedId = null;
 
 // Returns the Supabase error (or null on success) — confirmed-live bug
 // this fixes: both callers (the legacy #cv-save-btn handler and
@@ -24,13 +32,33 @@ async function saveCvNow() {
     color: document.getElementById("color-picker").value,
     textColor: document.getElementById("text-color-picker").value,
   };
-  const { error } = await supabaseClient.from("cv_saves").upsert({ user_id: cvCurrentUserId, data: snapshot, updated_at: new Date().toISOString() });
-  return error || null;
+  const row = { user_id: cvCurrentUserId, data: snapshot, updated_at: new Date().toISOString() };
+  if (cvSavedId) row.id = cvSavedId;
+  const { data, error } = await supabaseClient.from("cv_saves").upsert(row).select().single();
+  if (error) return error;
+  cvSavedId = data.id;
+  const url = new URL(location.href);
+  url.searchParams.set("cv", data.id);
+  url.searchParams.delete("new");
+  history.replaceState(null, "", url);
+  return null;
+}
+
+/* Called from js/cv-saves-router.js when the URL names a specific saved
+   CV (?cv=<id>) — the .eq("user_id", userId) is what stops someone
+   from loading another account's CV just by guessing an id, same
+   belt-and-suspenders check the RLS policy already enforces
+   server-side. Mirrors js/quote-cloud-save.js's loadQuoteById. */
+async function loadCvById(id, userId) {
+  const { data } = await supabaseClient.from("cv_saves").select("id, data").eq("id", id).eq("user_id", userId).maybeSingle();
+  if (!data) return null;
+  cvSavedId = data.id;
+  return data.data;
 }
 
 const CV_LOCAL_KEY_PREFIX = "deskkit_cv_local_";
 const CV_LAST_SLUG_KEY = "deskkit_cv_last_slug";
-function cvLocalKey(slug) { return CV_LOCAL_KEY_PREFIX + (slug || ""); }
+function cvLocalKey(key) { return CV_LOCAL_KEY_PREFIX + (key || ""); }
 
 /* Autosave to this browser alone, independent of any account — closing
    the tab (or a crash) used to lose everything typed since the last
@@ -38,7 +66,14 @@ function cvLocalKey(slug) { return CV_LOCAL_KEY_PREFIX + (slug || ""); }
    someone's signed in. Called from renderPreview() in builder.js, the
    same "one hook point catches every edit" trick site-builder.js's own
    saveSiteState() already uses, rather than needing every individual
-   input handler across this whole form to know about saving. */
+   input handler across this whole form to know about saving.
+
+   Keyed by cvSavedId once a CV has one (so two different saved CVs that
+   happen to share a template slug never overwrite each other's local
+   draft) — a brand-new, not-yet-saved CV still keys off its slug, the
+   same transient "draft before the first save" case this always
+   covered, now just superseded the moment saveCvNow() hands it a real
+   id. */
 function saveCvLocalState() {
   if (!state.content) return;
   try {
@@ -47,20 +82,24 @@ function saveCvLocalState() {
       color: document.getElementById("color-picker").value,
       textColor: document.getElementById("text-color-picker").value,
     };
-    localStorage.setItem(cvLocalKey(state.slug), JSON.stringify(snapshot));
-    localStorage.setItem(CV_LAST_SLUG_KEY, state.slug);
+    const key = cvSavedId ? ("id:" + cvSavedId) : state.slug;
+    localStorage.setItem(cvLocalKey(key), JSON.stringify(snapshot));
+    if (!cvSavedId) localStorage.setItem(CV_LAST_SLUG_KEY, state.slug);
   } catch (err) { /* storage unavailable — not fatal, just won't persist */ }
 }
 
-/* Pass a slug to load THAT template's own local draft only (never falls
-   back to a different one — picking a different template from the
-   catalog must actually start that template, not silently resurrect an
-   old draft of some other one); pass nothing to resume whichever
-   template was last active. Mirrors site-builder.js's loadSiteState(). */
-function loadCvLocalState(slug) {
+/* Pass a saved CV's id (prefixed "id:") to resume THAT CV's own local
+   draft only, a template slug to resume a not-yet-saved draft of that
+   exact template, or nothing to resume whichever not-yet-saved
+   template was last active (the pre-router-era fallback, still used by
+   js/cv-saves-router.js's own "start fresh" path before any id
+   exists). Never falls back across different keys — picking a
+   different template, or opening a different saved CV, must actually
+   show that one, not silently resurrect an unrelated draft. */
+function loadCvLocalState(key) {
   try {
-    const key = slug ? cvLocalKey(slug) : cvLocalKey(localStorage.getItem(CV_LAST_SLUG_KEY));
-    const raw = localStorage.getItem(key);
+    const realKey = key ? cvLocalKey(key) : cvLocalKey(localStorage.getItem(CV_LAST_SLUG_KEY));
+    const raw = localStorage.getItem(realKey);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (parsed && parsed.content && CV_TEMPLATES[parsed.slug]) return parsed;
@@ -108,32 +147,26 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // Deciding WHICH CV to show (an existing one by id, the "My CVs" list,
+  // or a genuinely fresh one) is now js/cv-saves-router.js's job alone —
+  // cv_saves is one row per SAVED CV, not per user, so there's no
+  // single "the" save left to silently resume here. This block only
+  // tracks sign-in state (cvCurrentUserId, used by saveCvNow() and the
+  // save button below) and the same foreign-draft guard as always.
   supabaseClient.auth.getSession().then(async ({ data }) => {
     const user = data.session && data.session.user;
     if (user) {
       cvCurrentUserId = user.id;
       const clearedForeignDraft = typeof guardLocalDraftOwnership === "function" && guardLocalDraftOwnership(user.id);
-      const { data: row } = await supabaseClient.from("cv_saves").select("data").eq("user_id", user.id).maybeSingle();
-      // Only resume the saved CV if nothing more specific was asked for —
-      // a plain builder.html link (nav, "my content" rail) means "continue
-      // where I left off", same as the saved template. But a catalog card
-      // for a DIFFERENT template links to builder.html?template=<slug>,
-      // and builder.js's own DOMContentLoaded handler already loaded that
-      // exact template fresh (synchronously, before this async check
-      // resolves) — restoring the old save on top of it here silently
-      // discarded that choice and made "pick a different template" not
-      // actually work.
-      const urlTemplate = new URLSearchParams(location.search).get("template");
-      if (row && row.data && row.data.content && (!urlTemplate || urlTemplate === row.data.slug)) {
-        applyCvSnapshot(row.data);
-      } else if (clearedForeignDraft) {
+      if (clearedForeignDraft) {
         // guardLocalDraftOwnership just wiped a PREVIOUS account's local
         // draft from storage, but builder.js may already have painted it
-        // into the form/state before this async check even started — this
-        // account has no cloud save of its own to overwrite it with, so
+        // into the form/state before this async check even started —
         // reset to a genuinely blank version of whatever template is
         // showing, rather than silently leaving a stranger's real name,
-        // contact info and work history on screen and editable.
+        // contact info and work history on screen and editable. The
+        // router (below, same DOMContentLoaded tick) still decides what
+        // to show instead right after.
         if (typeof loadTemplate === "function" && state.slug) loadTemplate(state.slug);
       }
       logUsageEvent("cv", state.slug, "edit");
