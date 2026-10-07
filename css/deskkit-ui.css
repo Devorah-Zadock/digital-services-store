@@ -145,6 +145,29 @@ body.dk-app-sidebar-collapsed .dk-app-sidebar-toggle { transform: scaleX(-1); }
 body.dk-app-sidebar-mounted .bshell.active {
   inset-inline-start: var(--app-sidebar-w, 216px); transition: inset-inline-start .18s ease;
 }
+/* Inside a Builder Shell, the Shell covers everything except the strip
+   above the sidebar — and the logo (pinned to the header's physical left
+   edge, see css/style.css's .nav order block) sat under the Shell, so
+   the editor showed the site header as an empty corner with just the
+   language button. While a Shell is open, the header itself becomes
+   exactly that corner: logo at the outer edge, language toggle next to
+   it, everything else (links, login/CTA — the account lives in the
+   sidebar's own footer here) hidden. Fixed, so it no longer depends on
+   the body padding / counter-margin pair above. Desktop only, same
+   breakpoint as the sidebar itself. */
+@media (min-width: 901px) {
+  body.dk-app-sidebar-mounted:has(.bshell.active) header.site {
+    position: fixed; top: 0; inset-inline-start: 0; margin: 0;
+    width: var(--app-sidebar-w, 216px); z-index: 5001; background: var(--surface, #fff);
+    border-inline-end: 1px solid var(--border);
+  }
+  body.dk-app-sidebar-mounted:has(.bshell.active) header.site .nav { padding: 16px 14px; justify-content: space-between; gap: 8px; }
+  body.dk-app-sidebar-mounted:has(.bshell.active) header.site .brand { order: 1; font-size: 20px; }
+  body.dk-app-sidebar-mounted:has(.bshell.active) header.site .nav-end-group { order: 2; }
+  body.dk-app-sidebar-mounted:has(.bshell.active) header.site :is(.nav-links, .burger, .nav-account-wrap, .dk-header-cta, .nav-login) { display: none; }
+  body.dk-app-sidebar-collapsed:has(.bshell.active) header.site :is(.brand-text, .nav-end-group) { display: none; }
+  body.dk-app-sidebar-collapsed:has(.bshell.active) header.site .nav { justify-content: center; }
+}
 @media (max-width: 900px) {
   .dk-app-sidebar { display: none; }
   body.dk-app-sidebar-mounted { padding-inline-start: 0; }
@@ -464,21 +487,30 @@ body.dk-home { background: var(--bg-main); }
    width's own gap to .dk-home-hero-tools) nor gets clipped by this
    section's own overflow:hidden bottom edge (checked each width's own
    image-bottom vs hero-bottom). */
-/* Max pull capped at -140px (was -280px): measured from the photo's
-   own alpha channel, the lid's top edge sits ~44px below the image top
-   across the columns that can fall under the paragraph, and the
-   paragraph's bottom is a fixed ~120px (CTA + watch link) above this
-   box's natural top — so any pull past ~-152px lands the lid on the
-   paragraph's last line. That showed up live at 125% browser zoom
-   (Windows' default scaling), where the English paragraph wraps into
-   two long lines instead of three. The extra +32px of shift (624 = 656
-   - 32) carries the laptop further toward the tools column, into the
-   fixed 56px gap between the stage and the tools — still >=24px clear
-   of them at every width. */
+/* English layout, solved against the photo's own alpha channel rather
+   than tuned by eye (the opaque lid's top edge, per column, is what
+   decides whether it touches the text):
+   - max-width 560px (640px in RTL): a slightly smaller laptop fits in
+     the space right of the paragraph, so it can sit both higher and
+     closer to the tools column — and its visible bottom (the lower ~20%
+     of the PNG is transparent shadow) stays above the fold even at 125%
+     browser zoom (Windows' default scaling, where this was reported).
+   - shift = 100cqw - 536px: the photo's right edge lands 24px past the
+     stage, i.e. 16px clear of the tools column (the stage->tools gap is
+     a fixed 40px).
+   - margin-top: the paragraph's bottom sits a fixed ~120px (CTA + watch
+     link) above this box's natural top, and the lid top is 77px below
+     the image top over the columns that can fall under the paragraph at
+     full desktop width — so the pull is capped at -185px (-120 - 77 +
+     12px clearance). At narrower stage widths more of the paragraph
+     overlaps the lid's higher, right-hand part, so the pull ramps down
+     with the stage width (-(100cqw - 720px)); checked column by
+     column that it stays clear at every stage width from 640 to 920px. */
 html[dir="ltr"] .dk-home-hero-visual {
-  --dk-hero-margin-top: clamp(-140px, calc(-0.823 * (100cqw - 656px)), 0px);
-  --dk-hero-shift: clamp(0px, (100cqw - 624px), var(--dk-hero-shift-cap, 170px));
-  --dk-hero-shift-cap: 380px;
+  max-width: 560px;
+  --dk-hero-margin-top: clamp(-185px, calc(720px - 100cqw), 0px);
+  --dk-hero-shift: clamp(0px, (100cqw - 536px), var(--dk-hero-shift-cap, 170px));
+  --dk-hero-shift-cap: 420px;
   transform: translateX(var(--dk-hero-shift));
 }
 .dk-home-hero-laptop-img {
