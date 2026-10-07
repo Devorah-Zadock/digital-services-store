@@ -44,7 +44,14 @@ const QUOTE_TEMPLATE_DEFAULT = "classic";
    every skin. Per-skin colors/fonts/decorative treatment come from
    QUOTE_SKIN_CSS below and are additive on top of this. */
 const QUOTE_CSS = `
-  .quote-doc { font-family: 'Heebo', Arial, sans-serif; background:#fff; color:#1E1E1E; width:794px; margin:0 auto; box-shadow:0 10px 30px rgba(0,0,0,.12); overflow-wrap:break-word; overflow:hidden; }
+  /* flex-shrink:0 — same fix and same reasoning as js/cv-render.js's own
+     .cv-doc rule: js/quote-builder-shell.js's canvas iframe wraps this
+     in body{display:flex; justify-content:center}, and without this a
+     flex item's default flex-shrink:1 silently shrinks this fixed
+     794px design width to fit a narrow canvas pane, reflowing every
+     line instead of the Shell's own transform:scale() shrinking it
+     visually. */
+  .quote-doc { font-family: 'Heebo', Arial, sans-serif; background:#fff; color:#1E1E1E; width:794px; flex-shrink:0; margin:0 auto; box-shadow:0 10px 30px rgba(0,0,0,.12); overflow-wrap:break-word; overflow:hidden; }
   .quote-doc .qd-inner { padding:0 56px 50px; }
   .quote-doc .bsd { font-size:12px; color:#6B6B6B; padding:14px 56px 0; }
   .quote-doc .letterhead { text-align:center; margin-bottom:18px; }

@@ -71,7 +71,14 @@ function invoiceLineTotals(inv, letterhead) {
 }
 
 const INVOICE_CSS = `
-  .invoice-doc { font-family:'Heebo', Arial, sans-serif; background:#fff; color:#1E1E1E; width:794px; margin:0 auto; box-shadow:0 10px 30px rgba(0,0,0,.12); overflow-wrap:break-word; overflow:hidden; }
+  /* flex-shrink:0 — same fix and same reasoning as js/cv-render.js's own
+     .cv-doc rule: js/invoice-builder-shell.js's canvas iframe wraps
+     this in body{display:flex; justify-content:center}, and without
+     this a flex item's default flex-shrink:1 silently shrinks this
+     fixed 794px design width to fit a narrow canvas pane, reflowing
+     every line instead of the Shell's own transform:scale() shrinking
+     it visually. */
+  .invoice-doc { font-family:'Heebo', Arial, sans-serif; background:#fff; color:#1E1E1E; width:794px; flex-shrink:0; margin:0 auto; box-shadow:0 10px 30px rgba(0,0,0,.12); overflow-wrap:break-word; overflow:hidden; }
   .invoice-doc .id-inner { padding:0 56px 50px; }
   .invoice-doc .id-credit-banner { background:#FDECEC; color:#A62B2B; font-weight:700; font-size:13.5px; padding:10px 56px; text-align:center; }
   .invoice-doc .letterhead { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:30px 56px 18px; border-bottom:2px solid #163F35; }

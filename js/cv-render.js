@@ -45,7 +45,22 @@ function photoCircleHtml(photo, size) {
 
 function sharedCss(tc) {
   return `
-  .cv-doc { font-family: var(--cv-font); background:#fff; color:#${tc}; width:794px; margin:0 auto; box-shadow:0 10px 30px rgba(0,0,0,.12); overflow:hidden; overflow-wrap:break-word; }
+  /* flex-shrink:0 matters specifically inside the Shell's own canvas
+     iframe (js/cv-builder-shell.js's cvbshellBuildCanvasHtml wraps this
+     in body{display:flex; justify-content:center}, to center it) — a
+     flex item's default flex-shrink:1 let the browser silently shrink
+     this FIXED 794px design width down to whatever narrower space was
+     available whenever the canvas pane itself was narrow, instead of
+     cvbshellFitCanvas()'s own CSS transform:scale() doing that shrink
+     visually while the real 794px layout (and therefore every line's
+     wrap point) stayed intact. The shrunk real width reflowed every
+     line of text at the wrong, much-narrower width — confirmed live as
+     garbled, overlapping-looking text once the window wasn't wide
+     enough. Harmless everywhere else .cv-doc is used (the off-screen
+     PDF-export div, the plain preview) since flex-shrink only has any
+     effect on an element that is itself a flex item in the first
+     place. */
+  .cv-doc { font-family: var(--cv-font); background:#fff; color:#${tc}; width:794px; flex-shrink:0; margin:0 auto; box-shadow:0 10px 30px rgba(0,0,0,.12); overflow:hidden; overflow-wrap:break-word; }
   .cv-doc h1, .cv-doc h2, .cv-doc .cv-jobtitle, .cv-doc .contact-line, .cv-doc .role { overflow-wrap:break-word; }
   .cv-doc ul { margin:0; padding-inline-start:20px; }
   .cv-doc li { font-size:12.5px; color:#${tc}; line-height:1.6; }
