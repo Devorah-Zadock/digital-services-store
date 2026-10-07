@@ -393,12 +393,25 @@ async function downloadCvPdf() {
   // actually carry doesn't apply here, but nothing downstream of
   // html2canvas was guarded here either, so any other failure still
   // surfaced as a silent "nothing happened" click.
+  // html2canvas finds each font's baseline by measuring a 1x1 <img>
+  // with vertical-align:baseline next to sample text. css/style.css's
+  // site-wide `img { display:block }` knocks that probe out of the line,
+  // so the measured baseline came out a whole line-height low and every
+  // piece of text in the PDF was drawn several px below where the browser
+  // laid it out — skill text sinking out of its pill, bullet dots looking
+  // too high next to their lines. This rule (copied into html2canvas's
+  // cloned document along with the page's other styles) puts the probe
+  // back inline for the duration of the export only.
+  const probeFix = document.createElement("style");
+  probeFix.textContent = 'img[width="1"][height="1"] { display:inline !important; }';
+  document.head.appendChild(probeFix);
   try {
     let canvas;
     try {
       canvas = await window.html2canvas(doc, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
     } finally {
       temp.remove();
+      probeFix.remove();
     }
 
     const { jsPDF } = window.jspdf;
