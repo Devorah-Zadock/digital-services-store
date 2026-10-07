@@ -426,9 +426,18 @@ function quoteBshellRenderHierarchy() {
 function quoteBshellBuildCanvasHtml() {
   const body = renderQuoteHtml(mergedQuoteState());
   const fontsLink = document.querySelector('link[href*="fonts.googleapis.com/css2"]');
+  // .quote-pdf-credit{display:none} — the hidden-by-default rule for
+  // the credit line (css/builder.css) never reaches this iframe at
+  // all (srcdoc is a fully standalone document, no external
+  // stylesheet link to it), so the credit markup rendered flat-out
+  // visible here, as an extra sibling flex item next to .quote-doc —
+  // widening the whole canvas and forcing the odd horizontal scroll
+  // reported live. js/cv-builder-shell.js's own canvas builder already
+  // had this exact line; it just never got copied here when the
+  // credit line was extended to Quote/Invoice.
   return `<!doctype html><html lang="he" dir="rtl"><head><meta charset="UTF-8">
     ${fontsLink ? fontsLink.outerHTML : ""}
-    <style>html,body{margin:0; background:#F3F4F6;} body{display:flex; justify-content:center; padding:36px 20px; box-sizing:border-box;}</style>
+    <style>html,body{margin:0; background:#F3F4F6;} body{display:flex; justify-content:center; padding:36px 20px; box-sizing:border-box;} .quote-pdf-credit{display:none;}</style>
     </head><body>${body}</body></html>`;
 }
 

@@ -478,9 +478,13 @@ function invoiceBshellRenderHierarchy() {
 function invoiceBshellBuildCanvasHtml() {
   const body = renderInvoiceHtml(invoiceEventState, currentInvoiceProfile);
   const fontsLink = document.querySelector('link[href*="fonts.googleapis.com/css2"]');
+  // .invoice-pdf-credit{display:none} — same missing rule, same reason,
+  // as js/quote-builder-shell.js's own canvas builder (see its comment):
+  // this iframe's srcdoc never loads css/builder.css, so the credit
+  // line rendered visible by default, widening the canvas.
   return `<!doctype html><html lang="he" dir="rtl"><head><meta charset="UTF-8">
     ${fontsLink ? fontsLink.outerHTML : ""}
-    <style>html,body{margin:0; background:#F3F4F6;} body{display:flex; justify-content:center; padding:36px 20px; box-sizing:border-box;}</style>
+    <style>html,body{margin:0; background:#F3F4F6;} body{display:flex; justify-content:center; padding:36px 20px; box-sizing:border-box;} .invoice-pdf-credit{display:none;}</style>
     </head><body>${body}</body></html>`;
 }
 
