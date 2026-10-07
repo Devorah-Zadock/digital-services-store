@@ -305,6 +305,49 @@ function bshellAiNote(html) {
   if (note) note.innerHTML = html;
 }
 
+/* What the AI can actually do is exactly site-ai-command's op menu:
+   reorder / add / remove a section, or switch a section's display
+   variant — nothing about colors, fonts or overall "style". The panel
+   used to offer fixed example chips like "make the design more luxurious"
+   / "minimalist", which the server can only ever answer with
+   "unsupported" (each refusal still spending one of the free attempts).
+   The chips are now built from THIS site's real context, so every
+   suggestion is one the server can carry out, and the hint line says
+   plainly what kind of request works. */
+const BSHELL_AI_TYPE_NAMES = { services: "השירותים", about: "האודות", contact: "חלק צור קשר", aboutTags: "התגיות", grid: "הרשת" };
+const BSHELL_AI_HINT = "אפשר לבקש: לשנות את סדר החלקים, להוסיף או להסיר חלק, או סגנון תצוגה אחר ל-Hero ולשירותים. שינויי צבע וגופן נעשים ב\"פרטי העסק ועיצוב\".";
+
+function bshellAiExamples() {
+  const ctx = siteAiCommandContext();
+  const name = (t) => BSHELL_AI_TYPE_NAMES[t] || t;
+  const variants = (siteState.data && siteState.data.blockVariants) || {};
+  const out = [];
+  const movable = ctx.activeTypes.filter((t) => t !== "hero" && BSHELL_AI_TYPE_NAMES[t]);
+  if (movable.length >= 2) out.push(`הזז את ${name(movable[1])} לפני ${name(movable[0])}`);
+  if (ctx.variantOptions.hero) {
+    out.push(variants.hero === "centered" ? "החזר את ה-Hero לעיצוב הקלאסי" : "הפוך את ה-Hero לממורכז");
+  }
+  if (ctx.variantOptions.services && ctx.activeTypes.indexOf("services") !== -1) {
+    out.push(variants.services === "grid" ? "החזר את השירותים לעיצוב ברירת המחדל" : "הצג את השירותים כרשת כרטיסים");
+  }
+  const addable = ctx.availableTypes.filter((t) => ctx.activeTypes.indexOf(t) === -1 && BSHELL_AI_TYPE_NAMES[t]);
+  if (out.length < 3 && addable.length) out.push(`הוסף את ${name(addable[0])}`);
+  const removable = movable.filter((t) => t !== "grid");
+  if (out.length < 3 && removable.length) out.push(`הסר את ${name(removable[removable.length - 1])}`);
+  return out.slice(0, 3);
+}
+
+function bshellRenderAiExamples() {
+  const hint = document.getElementById("bshell-ai-hint");
+  if (hint) hint.textContent = BSHELL_AI_HINT;
+  const box = document.getElementById("bshell-ai-examples");
+  if (!box) return;
+  box.innerHTML = bshellAiExamples().map((ex) => {
+    const safe = escapeHtmlS(ex);
+    return `<button type="button" data-ai-example="${safe.replace(/"/g, "&quot;")}">${safe}</button>`;
+  }).join("");
+}
+
 function bshellWireAiPanel() {
   const btn = document.getElementById("bshell-ai-btn");
   const panel = document.getElementById("bshell-ai-panel");
@@ -316,7 +359,7 @@ function bshellWireAiPanel() {
     const willOpen = panel.hasAttribute("hidden");
     panel.toggleAttribute("hidden", !willOpen);
     btn.setAttribute("aria-expanded", String(willOpen));
-    if (willOpen) input.focus();
+    if (willOpen) { bshellRenderAiExamples(); input.focus(); }
   });
   document.addEventListener("click", (e) => {
     if (panel.hasAttribute("hidden")) return;
@@ -325,11 +368,12 @@ function bshellWireAiPanel() {
     btn.setAttribute("aria-expanded", "false");
   });
 
-  document.querySelectorAll("#bshell-ai-wrap [data-ai-example]").forEach((chip) => {
-    chip.addEventListener("click", () => {
-      input.value = chip.dataset.aiExample;
-      input.focus();
-    });
+  // Delegated — the chips are rebuilt on every open (bshellRenderAiExamples).
+  document.getElementById("bshell-ai-examples").addEventListener("click", (e) => {
+    const chip = e.target.closest("[data-ai-example]");
+    if (!chip) return;
+    input.value = chip.dataset.aiExample;
+    input.focus();
   });
 
   input.addEventListener("keydown", (e) => {
@@ -373,7 +417,7 @@ async function bshellAiSubmit() {
 
     const result = data.result;
     if (!result || result.op === "unsupported") {
-      bshellAiNote(escapeHtmlS((result && result.explanation) || "לא הצלחתי לבצע את הפעולה הזו."));
+      bshellAiNote(`${escapeHtmlS((result && result.explanation) || "לא הצלחתי לבצע את הפעולה הזו.")}<br>${escapeHtmlS(BSHELL_AI_HINT)}`);
       return;
     }
 

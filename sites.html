@@ -30,7 +30,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=99">
 <link rel="stylesheet" href="css/builder.css?v=22">
-<link rel="stylesheet" href="css/builder-shell.css?v=11">
+<link rel="stylesheet" href="css/builder-shell.css?v=12">
 <link rel="stylesheet" href="css/deskkit-ui.css?v=43">
 <style>
   .services-item { border: 1px solid #EDEFEE; border-radius: 8px; padding: 12px; margin-bottom: 12px; display: grid; gap: 8px; }
@@ -539,11 +539,8 @@
       <button type="button" class="bshell-top-btn" id="bshell-ai-btn" aria-expanded="false">✨ עזרה מ-DeskKit</button>
       <div class="bshell-ai-panel" id="bshell-ai-panel" hidden>
         <input type="text" id="bshell-ai-input" placeholder="מה תרצו לשנות?" maxlength="200">
-        <div class="bshell-ai-examples">
-          <button type="button" data-ai-example="עשה את העיצוב יותר יוקרתי">עשה את העיצוב יותר יוקרתי</button>
-          <button type="button" data-ai-example="הפוך את העיצוב למינימליסטי">הפוך את העיצוב למינימליסטי</button>
-          <button type="button" data-ai-example="הזז את השירותים לפני האודות">הזז את השירותים לפני האודות</button>
-        </div>
+        <p class="bshell-ai-hint" id="bshell-ai-hint"></p>
+        <div class="bshell-ai-examples" id="bshell-ai-examples"></div>
         <button type="button" class="bshell-top-btn bshell-top-btn-primary" id="bshell-ai-submit" style="width:100%;">שליחה</button>
         <div class="bshell-ai-note" id="bshell-ai-note"></div>
       </div>
@@ -651,7 +648,7 @@
 <script src="js/app-sidebar.js?v=6"></script>
 <script src="js/domain-guide.js?v=3"></script>
 <script src="js/site-cloud-save.js?v=11"></script>
-<script src="js/builder-shell.js?v=10"></script>
+<script src="js/builder-shell.js?v=11"></script>
 <script src="js/site-ai-review.js?v=2"></script>
 <script src="js/site-wizard-questions.js?v=2"></script>
 <script src="js/site-ai-generate.js?v=6"></script>
