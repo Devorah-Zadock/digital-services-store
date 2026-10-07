@@ -257,12 +257,20 @@ async function downloadInvoicePdf(filenameHint) {
   // site) that taints the canvas makes canvas.toDataURL() throw, and
   // with nothing downstream of html2canvas previously guarded, that
   // became a silent unhandled rejection instead of a real message.
+  // Keeps html2canvas's 1x1 baseline-probe <img> inline during the
+  // export — see js/cv-render.js's downloadCvPdf(): css/style.css's
+  // site-wide img{display:block} otherwise throws off its baseline
+  // measurement and every line of text in the PDF is drawn too low.
+  const probeFix = document.createElement("style");
+  probeFix.textContent = 'img[width="1"][height="1"] { display:inline !important; }';
+  document.head.appendChild(probeFix);
   try {
     let canvas;
     try {
       canvas = await window.html2canvas(doc, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
     } finally {
       temp.remove();
+      probeFix.remove();
     }
 
     const { jsPDF } = window.jspdf;

@@ -64,8 +64,14 @@ const QUOTE_CSS = `
   .quote-doc .recipient { font-size:14.5px; font-weight:700; margin-bottom:14px; }
   .quote-doc .greeting { font-size:14px; margin-bottom:16px; }
   .quote-doc .subject { font-size:14.5px; font-weight:700; margin-bottom:8px; }
-  .quote-doc .dates-list { margin:0 0 16px; padding-inline-start:22px; }
-  .quote-doc .dates-list li { font-size:14px; margin-bottom:4px; }
+  /* Drawn dot instead of the native list marker — html2canvas paints
+     native markers on the LTR side regardless of dir="rtl", so in the PDF
+     every date's bullet landed at the far left of the page (same fix as
+     js/cv-render.js's li::before). Physical right: the quote is always
+     Hebrew/RTL. top = (21px line - 5px dot) / 2. */
+  .quote-doc .dates-list { margin:0 0 16px; padding-inline-start:22px; list-style:none; }
+  .quote-doc .dates-list li { position:relative; font-size:14px; line-height:1.5; margin-bottom:4px; }
+  .quote-doc .dates-list li::before { content:""; position:absolute; right:-15px; top:8px; width:5px; height:5px; border-radius:50%; background:currentColor; }
   .quote-doc .description { font-size:14px; line-height:1.7; margin-bottom:18px; }
   .quote-doc .price-line { font-size:15px; font-weight:700; margin-bottom:4px; }
   .quote-doc .vat-note { font-size:12.5px; color:#6B6B6B; margin-bottom:18px; }
@@ -321,12 +327,20 @@ async function downloadQuotePdf() {
   // with a real Hebrew message instead of a silent failure, same
   // reasoning as every other user-facing error this session's audit
   // fixed from raw/absent error handling.
+  // Keeps html2canvas's 1x1 baseline-probe <img> inline during the
+  // export — see js/cv-render.js's downloadCvPdf(): css/style.css's
+  // site-wide img{display:block} otherwise throws off its baseline
+  // measurement and every line of text in the PDF is drawn too low.
+  const probeFix = document.createElement("style");
+  probeFix.textContent = 'img[width="1"][height="1"] { display:inline !important; }';
+  document.head.appendChild(probeFix);
   try {
     let canvas;
     try {
       canvas = await window.html2canvas(doc, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
     } finally {
       temp.remove();
+      probeFix.remove();
     }
 
     const { jsPDF } = window.jspdf;
