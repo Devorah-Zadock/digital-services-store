@@ -86,34 +86,49 @@ function renderSidebar({ font, palette, content, lang, textColor }) {
 
   return `
   <style>${sharedCss(tc)}
-    .cv-sidebar-wrap { display:flex; flex-direction:${lang === "en" ? "row" : "row-reverse"}; min-height:1095px; }
-    .cv-side { width:255px; flex:none; background:#${palette.primaryDark}; color:#fff; padding:36px 26px; text-align:center; }
+    /* .cv-side is always on the physical left (row-reverse only for RTL
+       cancels out dir="rtl"'s own reversal) — its background used to be
+       the flex child's own, relying on align-items:stretch to reach
+       .cv-main's full height. That stretch checked out fine in both a
+       plain live DOM render and the real Shell canvas iframe (measured
+       0px gap either way), but a reported live export still showed the
+       sidebar color falling short of the page's actual bottom edge —
+       the one untested link is html2canvas itself (CDN-blocked in this
+       sandbox, so not directly verifiable here), which has known,
+       documented gaps in exactly this kind of flex-stretch handling.
+       An absolutely-positioned backing layer sized straight off
+       .cv-sidebar-wrap's own box sidesteps flex-stretch entirely —
+       the same fix already proven for the old print-pagination case
+       below, just applied unconditionally instead of only in
+       @media print, which also makes that print-only version
+       redundant now. */
+    .cv-sidebar-wrap { position:relative; display:flex; flex-direction:${lang === "en" ? "row" : "row-reverse"}; min-height:1095px; }
+    .cv-side-bg { position:absolute; left:0; top:0; bottom:0; width:255px; background:#${palette.primaryDark}; z-index:0; }
+    .cv-side { position:relative; z-index:1; width:255px; flex:none; background:transparent; color:#fff; padding:36px 26px; text-align:center; }
     .cv-side .avatar { width:78px; height:78px; border-radius:50%; background:rgba(255,255,255,.16); display:flex; align-items:center; justify-content:center; margin:0 auto 16px; font-size:26px; font-weight:700; color:#fff; }
     .cv-side h1 { font-size:21px; margin:0 0 4px; }
     .cv-side .role { font-size:12.5px; color:${"#" + palette.headerAccentText}; margin-bottom:18px; }
     .cv-side .sec-label { font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:${"#" + palette.headerAccentText}; text-align:start; margin:20px 0 10px; opacity:.85; }
     .cv-side .contact-line { font-size:11.5px; text-align:start; margin-bottom:8px; opacity:.92; word-break:break-word; }
     .cv-side .chips { text-align:start; }
-    .cv-main { flex:1; padding:36px 30px; min-width:0; }
+    .cv-main { position:relative; z-index:1; flex:1; padding:36px 30px; min-width:0; }
     .cv-main h2 { font-size:14px; color:#${palette.primary}; margin:0 0 12px; text-transform:uppercase; letter-spacing:.05em; }
     .cv-main h2:not(:first-child) { margin-top:26px; }
     .tl-wrap { position:relative; }
-    .tl-wrap::before { content:""; position:absolute; inset-inline-end:4px; top:5px; bottom:5px; width:2px; background:#EAEAEA; }
-    .tl-item { position:relative; padding-inline-end:20px; }
-    .tl-dot { position:absolute; inset-inline-end:0px; top:3px; width:10px; height:10px; border-radius:50%; box-shadow:0 0 0 3px #fff; }
-    .print-side-bg { display:none; }
-    @media print {
-      /* A flex child's background doesn't reliably continue past a print
-         page break — it just stops at page 1's edge on multi-page resumes.
-         position:fixed elements, uniquely, repaint on every printed page,
-         so this backing layer keeps the sidebar color going on page 2+. */
-      .print-side-bg { display:block; position:fixed; top:0; bottom:0; left:0; width:255px; z-index:0; }
-      .cv-sidebar-wrap { position:relative; z-index:1; }
-    }
+    /* inset-inline-end/padding-inline-end here used to resolve to the
+       LEFT edge under RTL (the "end" of an RTL line IS the left) —
+       putting the timeline line/dots at the far side from where RTL
+       text actually starts reading, instead of alongside it. Confirmed
+       live and by direct measurement (reported as "dots that look
+       reversed, should be on the right of the text" in Hebrew — which
+       is the inline-START side for RTL, not inline-end). */
+    .tl-wrap::before { content:""; position:absolute; inset-inline-start:4px; top:5px; bottom:5px; width:2px; background:#EAEAEA; }
+    .tl-item { position:relative; padding-inline-start:20px; }
+    .tl-dot { position:absolute; inset-inline-start:0px; top:3px; width:10px; height:10px; border-radius:50%; box-shadow:0 0 0 3px #fff; }
   </style>
   <div class="cv-doc" dir="${dir}">
-    <div class="print-side-bg" style="background:#${palette.primaryDark};"></div>
     <div class="cv-sidebar-wrap">
+      <div class="cv-side-bg"></div>
       <aside class="cv-side">
         ${content.photo ? `<div class="avatar avatar-photo">${photoCircleHtml(content.photo, 78)}</div>` : `<div class="avatar">${escapeHtml(initialsOf(content.name))}</div>`}
         <h1 data-cvkey="name">${escapeHtml(content.name)}</h1>
