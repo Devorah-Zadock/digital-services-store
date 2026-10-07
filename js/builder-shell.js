@@ -896,7 +896,24 @@ function bshellPropsHtmlForSection(type) {
           <span class="bshell-switch-thumb"></span>
         </label>
       </div>
-    </div>`;
+    </div>
+    ${type === "hero" ? bshellBsdHeroRow(d) : ""}`;
+}
+
+/* בס"ד sits at the very top of the site, so the Hero panel is where
+   people look for it — same d.showBsd as the switch in site settings. */
+function bshellBsdHeroRow(d) {
+  return `
+    <div class="bshell-props-field">
+        <div class="bshell-toggle-row">
+          <label class="bshell-props-label" style="margin:0;">הצגת בס"ד בראש האתר</label>
+          <label class="bshell-switch">
+            <input type="checkbox" id="bshell-prop-bsd"${d.showBsd ? " checked" : ""}>
+            <span class="bshell-switch-track"></span>
+            <span class="bshell-switch-thumb"></span>
+          </label>
+        </div>
+      </div>`;
 }
 
 /* Site-wide settings that have no live canvas anchor at all — unlike
@@ -912,6 +929,20 @@ function bshellPropsHtmlForSettings() {
   const hasWhatsapp = !d.noWhatsapp;
   return `
     <span class="bshell-props-kind">הגדרות האתר</span>
+
+    <div class="bshell-settings-group">
+      <div class="bshell-props-field">
+        <div class="bshell-toggle-row">
+          <label class="bshell-props-label" style="margin:0;">הצגת בס"ד בראש האתר</label>
+          <label class="bshell-switch">
+            <input type="checkbox" id="bshell-set-bsd"${d.showBsd ? " checked" : ""}>
+            <span class="bshell-switch-track"></span>
+            <span class="bshell-switch-thumb"></span>
+          </label>
+        </div>
+      </div>
+      <p class="bshell-settings-field-hint">כבוי כברירת מחדל. מופיע קטן בפינה הימנית העליונה של כל עמודי האתר.</p>
+    </div>
 
     <div class="bshell-settings-group">
       <div class="bshell-settings-group-title">פרטי קשר</div>
@@ -954,16 +985,6 @@ function bshellPropsHtmlForSettings() {
         <select id="bshell-set-font">
           ${fontKeys.map((k) => `<option value="${k}"${(d.fontFamily || "heebo") === k ? " selected" : ""}>${escapeHtmlS(SITE_FONTS[k].name)}</option>`).join("")}
         </select>
-      </div>
-      <div class="bshell-props-field">
-        <div class="bshell-toggle-row">
-          <label class="bshell-props-label" style="margin:0;">הצגת בס"ד בראש האתר</label>
-          <label class="bshell-switch">
-            <input type="checkbox" id="bshell-set-bsd"${d.showBsd ? " checked" : ""}>
-            <span class="bshell-switch-track"></span>
-            <span class="bshell-switch-thumb"></span>
-          </label>
-        </div>
       </div>
       <div class="bshell-props-field">
         <div class="bshell-toggle-row">
@@ -1165,6 +1186,15 @@ function bshellWireSectionProps(type) {
       siteState.data.blockVariants = siteState.data.blockVariants || {};
       if (variantEl.value === "default") delete siteState.data.blockVariants[type];
       else siteState.data.blockVariants[type] = variantEl.value;
+      bshellRenderCanvas(() => bshellSelectSection(type));
+      bshellScheduleSave();
+    });
+  }
+  const bsdEl = document.getElementById("bshell-prop-bsd");
+  if (bsdEl) {
+    bsdEl.addEventListener("change", () => {
+      bshellSnapshot();
+      siteState.data.showBsd = bsdEl.checked;
       bshellRenderCanvas(() => bshellSelectSection(type));
       bshellScheduleSave();
     });

@@ -247,13 +247,14 @@ function quoteBshellWireStyleSwitcher() {
     quoteBshellRenderCanvas(quoteBshellReanchorSelection);
     quoteBshellSyncStyleButtons();
   });
-  // hideBsd (opt-out) rather than showBsd, so every quote saved before
-  // this switch existed keeps its בס"ד exactly as it always had.
+  // showBsd — see quoteShowsBsd() in js/quote-render.js for how quotes
+  // saved before this switch existed are handled.
   const bsd = document.getElementById("qbshell-set-bsd");
   if (bsd) {
     bsd.addEventListener("change", () => {
       quoteBshellSnapshot();
-      quoteEventState.hideBsd = !bsd.checked;
+      quoteEventState.showBsd = bsd.checked;
+      delete quoteEventState.hideBsd;
       renderQuotePreviewQA();
       quoteBshellRenderCanvas(quoteBshellReanchorSelection);
     });
@@ -266,7 +267,7 @@ function quoteBshellSyncStyleButtons() {
     btn.classList.toggle("active", btn.dataset.qStyle === quoteEventState.template);
   });
   const bsd = document.getElementById("qbshell-set-bsd");
-  if (bsd) bsd.checked = !quoteEventState.hideBsd;
+  if (bsd) bsd.checked = quoteShowsBsd(quoteEventState);
 }
 
 /* ---------- Undo / Redo — scoped to quoteEventState only. The shared

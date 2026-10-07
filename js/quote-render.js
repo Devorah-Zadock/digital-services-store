@@ -128,6 +128,16 @@ const QUOTE_SKIN_CSS = {
   `,
 };
 
+/* בס"ד: off by default for a new quote (emptyQuoteEventState() in
+   js/quote-app.js sets showBsd:false), matching every other builder.
+   A quote saved before the switch existed has neither field — it always
+   showed בס"ד then, so it keeps showing it rather than silently losing
+   it; hideBsd is the short-lived opt-out field from before showBsd. */
+function quoteShowsBsd(q) {
+  if (typeof q.showBsd === "boolean") return q.showBsd;
+  return !q.hideBsd;
+}
+
 function renderQuoteHtml(q) {
   const skin = QUOTE_TEMPLATES[q.template] ? q.template : QUOTE_TEMPLATE_DEFAULT;
   // Keeps each date paired with its REAL index in q.eventDates (not its
@@ -162,7 +172,7 @@ function renderQuoteHtml(q) {
   return `
   <style>${QUOTE_CSS}${QUOTE_SKIN_CSS[skin] || ""}</style>
   <div class="quote-doc skin-${skin}" dir="rtl">
-    <div class="bsd">${q.hideBsd ? "&nbsp;" : 'בס"ד'}</div>
+    <div class="bsd">${quoteShowsBsd(q) ? 'בס"ד' : "&nbsp;"}</div>
     <div class="letterhead">
       ${q.logoUrl ? `<img class="letterhead-logo" src="${escapeHtmlQ(q.logoUrl)}" alt="${escapeHtmlQ("לוגو " + (q.businessName || ""))}">` : ""}
       <div class="biz-name">${escapeHtmlQ(q.businessName)}</div>

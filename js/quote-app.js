@@ -40,6 +40,7 @@ function todayHebrewQA() {
 function emptyQuoteEventState() {
   return {
     template: QUOTE_TEMPLATE_DEFAULT,
+    showBsd: false,
     today: todayHebrewQA(),
     recipient: "",
     eventName: "",

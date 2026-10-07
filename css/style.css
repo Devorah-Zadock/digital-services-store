@@ -1542,6 +1542,15 @@ footer.site { background: linear-gradient(180deg, var(--ink-dark), #000000); col
   display: none; flex-direction: column; overflow: hidden; border: 1px solid #EAEDEC;
 }
 .chat-panel.open { display: flex; }
+/* A Builder Shell (css/builder-shell.css, .bshell.active) owns the
+   viewport at z-index:5000 — above this panel's 250 — so in every
+   builder the open chat showed only the slice that happened to overlap
+   the app sidebar, the rest cut off behind the editor. Lift the chat
+   (button + panel only — the feedback/accessibility buttons would sit
+   on top of the editor's own controls) above the Shell while one is
+   open; every other page keeps the normal stacking. */
+body:has(.bshell.active) .fab-chat,
+body:has(.bshell.active) .chat-panel { z-index: 5100; }
 .chat-head {
   background: linear-gradient(135deg, var(--ink-dark), var(--ink)); color: var(--white);
   padding: 14px 16px; font-weight: 700; font-size: 14.5px; display: flex; align-items: center; justify-content: space-between;
