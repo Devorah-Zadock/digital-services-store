@@ -29,6 +29,17 @@ const TOOL = "site-ai-command";
 const FREE_ATTEMPT_LIMIT = 3;
 const PRO_DAILY_LIMIT = 30;
 
+// An "unsupported" answer (the request maps onto none of the ops below)
+// doesn't spend one of the user's attempts — with only 3 free ones, a
+// misunderstood request used to cost a third of them for nothing. Those
+// refusals still cost an OpenAI call, though, so they get their own,
+// separate allowance (same tables, own `tool` slug, so no schema change);
+// once it's used up, a refusal is charged as a normal attempt again,
+// exactly as before.
+const REFUSAL_TOOL = "site-ai-command-refused";
+const FREE_REFUSAL_LIMIT = 10;
+const PRO_DAILY_REFUSAL_LIMIT = 30;
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -193,11 +204,28 @@ Deno.serve(async (req: Request) => {
 
     const result = validateCommandResult(parsed, ctx);
 
-    const newCount = currentCount + 1;
-    const upsertRow: Record<string, unknown> = { user_id: userId, tool: TOOL, count: newCount, updated_at: new Date().toISOString() };
     const onConflict = isPro ? "user_id,tool,day" : "user_id,tool";
-    if (isPro) upsertRow.day = today;
-    const { error: upsertErr } = await admin.from(usageTable).upsert(upsertRow, { onConflict });
+    const bumpUsage = async (tool: string, count: number) => {
+      const row: Record<string, unknown> = { user_id: userId, tool, count, updated_at: new Date().toISOString() };
+      if (isPro) row.day = today;
+      return await admin.from(usageTable).upsert(row, { onConflict });
+    };
+
+    if (result.op === "unsupported") {
+      let refusalQuery = admin.from(usageTable).select("count").eq("user_id", userId).eq("tool", REFUSAL_TOOL);
+      if (isPro) refusalQuery = refusalQuery.eq("day", today);
+      const { data: refusalRow, error: refusalErr } = await refusalQuery.maybeSingle();
+      if (refusalErr) return jsonResponse({ error: refusalErr.message }, 500);
+      const refusalCount = refusalRow ? refusalRow.count : 0;
+      if (refusalCount < (isPro ? PRO_DAILY_REFUSAL_LIMIT : FREE_REFUSAL_LIMIT)) {
+        const { error: refusalUpsertErr } = await bumpUsage(REFUSAL_TOOL, refusalCount + 1);
+        if (refusalUpsertErr) return jsonResponse({ error: refusalUpsertErr.message }, 500);
+        return jsonResponse({ result, isPro, count: currentCount, limit });
+      }
+    }
+
+    const newCount = currentCount + 1;
+    const { error: upsertErr } = await bumpUsage(TOOL, newCount);
     if (upsertErr) return jsonResponse({ error: upsertErr.message }, 500);
 
     return jsonResponse({ result, isPro, count: newCount, limit });
