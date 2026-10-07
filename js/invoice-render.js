@@ -80,6 +80,7 @@ const INVOICE_CSS = `
      it visually. */
   .invoice-doc { font-family:'Heebo', Arial, sans-serif; background:#fff; color:#1E1E1E; width:794px; flex-shrink:0; margin:0 auto; box-shadow:0 10px 30px rgba(0,0,0,.12); overflow-wrap:break-word; overflow:hidden; }
   .invoice-doc .id-inner { padding:0 56px 50px; }
+  .invoice-doc .bsd { font-size:12px; color:#6B6B6B; padding:14px 56px 0; }
   .invoice-doc .id-credit-banner { background:#FDECEC; color:#A62B2B; font-weight:700; font-size:13.5px; padding:10px 56px; text-align:center; }
   .invoice-doc .letterhead { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:30px 56px 18px; border-bottom:2px solid #163F35; }
   .invoice-doc .letterhead-logo { max-height:60px; max-width:180px; display:block; }
@@ -125,6 +126,7 @@ function renderInvoiceHtml(inv, liveProfile) {
   return `
   <style>${INVOICE_CSS}</style>
   <div class="invoice-doc" dir="rtl">
+    ${inv.showBsd ? `<div class="bsd">בס"ד</div>` : ""}
     ${inv.docType === "credit_note" && inv.originalNumber
       ? `<div class="id-credit-banner">מסמך זה מבטל/מתקן את ${escapeHtmlI(INVOICE_DOC_LABEL[inv.originalDocType] || "המסמך")} מס' ${escapeHtmlI(inv.originalNumber)}</div>`
       : ""}

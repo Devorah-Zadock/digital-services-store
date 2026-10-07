@@ -246,6 +246,8 @@ function renderFormValues() {
   if (videoBgCheckbox) videoBgCheckbox.checked = d.heroVideoBg;
   const hideCopyrightCheckbox = document.getElementById("s-hide-copyright");
   if (hideCopyrightCheckbox) hideCopyrightCheckbox.checked = !!d.hideCopyright;
+  const showBsdCheckbox = document.getElementById("s-show-bsd");
+  if (showBsdCheckbox) showBsdCheckbox.checked = !!d.showBsd;
   renderPhotoPreview();
   renderGalleryPreview();
   renderServicesList();
@@ -1304,6 +1306,14 @@ function wireForm() {
     videoBgCheckbox.addEventListener("change", (e) => {
       siteState.data.heroVideoBg = e.target.checked;
       commitSectionPatch("heading-heroTitle");
+    });
+  }
+  const showBsdCheckbox = document.getElementById("s-show-bsd");
+  if (showBsdCheckbox) {
+    showBsdCheckbox.addEventListener("change", (e) => {
+      siteState.data.showBsd = e.target.checked;
+      saveSiteState();
+      renderSitePreview(); // same full reload as #s-hide-copyright below
     });
   }
   const hideCopyrightCheckbox = document.getElementById("s-hide-copyright");

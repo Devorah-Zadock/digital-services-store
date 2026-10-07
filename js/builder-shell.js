@@ -913,6 +913,16 @@ function bshellPropsHtmlForSettings() {
       </div>
       <div class="bshell-props-field">
         <div class="bshell-toggle-row">
+          <label class="bshell-props-label" style="margin:0;">הצגת בס"ד בראש האתר</label>
+          <label class="bshell-switch">
+            <input type="checkbox" id="bshell-set-bsd"${d.showBsd ? " checked" : ""}>
+            <span class="bshell-switch-track"></span>
+            <span class="bshell-switch-thumb"></span>
+          </label>
+        </div>
+      </div>
+      <div class="bshell-props-field">
+        <div class="bshell-toggle-row">
           <label class="bshell-props-label" style="margin:0;">הסתרת שורת זכויות יוצרים בתחתית</label>
           <label class="bshell-switch">
             <input type="checkbox" id="bshell-set-hide-copyright"${d.hideCopyright ? " checked" : ""}>
@@ -1182,6 +1192,16 @@ function bshellWireSettingsProps() {
       bshellSnapshot();
       d.fontFamily = fontEl.value;
       bshellApplyGlobalStylesLive();
+      bshellScheduleSave();
+    });
+  }
+
+  const bsdEl = document.getElementById("bshell-set-bsd");
+  if (bsdEl) {
+    bsdEl.addEventListener("change", () => {
+      bshellSnapshot();
+      d.showBsd = bsdEl.checked;
+      bshellRenderCanvas();
       bshellScheduleSave();
     });
   }

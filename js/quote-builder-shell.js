@@ -247,6 +247,17 @@ function quoteBshellWireStyleSwitcher() {
     quoteBshellRenderCanvas(quoteBshellReanchorSelection);
     quoteBshellSyncStyleButtons();
   });
+  // hideBsd (opt-out) rather than showBsd, so every quote saved before
+  // this switch existed keeps its בס"ד exactly as it always had.
+  const bsd = document.getElementById("qbshell-set-bsd");
+  if (bsd) {
+    bsd.addEventListener("change", () => {
+      quoteBshellSnapshot();
+      quoteEventState.hideBsd = !bsd.checked;
+      renderQuotePreviewQA();
+      quoteBshellRenderCanvas(quoteBshellReanchorSelection);
+    });
+  }
 }
 function quoteBshellSyncStyleButtons() {
   const row = document.getElementById("qbshell-style-row");
@@ -254,6 +265,8 @@ function quoteBshellSyncStyleButtons() {
   row.querySelectorAll("[data-q-style]").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.qStyle === quoteEventState.template);
   });
+  const bsd = document.getElementById("qbshell-set-bsd");
+  if (bsd) bsd.checked = !quoteEventState.hideBsd;
 }
 
 /* ---------- Undo / Redo — scoped to quoteEventState only. The shared
@@ -435,9 +448,16 @@ function quoteBshellBuildCanvasHtml() {
   // reported live. js/cv-builder-shell.js's own canvas builder already
   // had this exact line; it just never got copied here when the
   // credit line was extended to Quote/Invoice.
+  // align-items:flex-start — with the flex default (stretch), the page
+  // took the body's height as its own, and FitCanvas() sets that height
+  // to the ALREADY-SCALED page height: the page got squashed to that
+  // height, then scaled down again, and overflow:hidden cut off its
+  // bottom (the signature/footer vanished from the canvas, though the
+  // separately-rendered PDF was fine). min-height:1123px shows a full A4
+  // sheet, matching the downloaded PDF's page.
   return `<!doctype html><html lang="he" dir="rtl"><head><meta charset="UTF-8">
     ${fontsLink ? fontsLink.outerHTML : ""}
-    <style>html,body{margin:0; background:#F3F4F6;} body{display:flex; justify-content:center; padding:36px 20px; box-sizing:border-box;} .quote-pdf-credit{display:none;}</style>
+    <style>html,body{margin:0; background:#F3F4F6;} body{display:flex; justify-content:center; align-items:flex-start; padding:36px 20px; box-sizing:border-box;} .quote-doc{min-height:1123px;} .quote-pdf-credit{display:none;}</style>
     </head><body>${body}</body></html>`;
 }
 

@@ -489,6 +489,8 @@ const I18N = {
     cvb_style_section_title: "סגנון עיצוב",
     cvb_style_sidebar: "עם סרגל צד", cvb_style_bold: "נועז ובולט", cvb_style_classicmono: "מינימליסטי ושקט",
     cvb_style_hint: "משנה רק את העיצוב — התוכן שלכם נשאר כמו שהוא.",
+    cvb_bsd_label: 'הצגת בס"ד בראש הדף',
+    cvb_bsd_hint: "מופיע קטן בפינה הימנית העליונה של קורות החיים.",
     // CV style auto-picker (js/cv-style-picker.js) — the 2-question
     // modal shown once for a brand-new CV.
     cvsp_title_field: "באיזה תחום קורות החיים?", cvsp_title_layout: "איזה סגנון מתאים לכם?",
@@ -952,6 +954,8 @@ const I18N = {
     cvb_style_section_title: "Design style",
     cvb_style_sidebar: "With sidebar", cvb_style_bold: "Bold & striking", cvb_style_classicmono: "Minimal & quiet",
     cvb_style_hint: "Only changes the design — your content stays exactly as it is.",
+    cvb_bsd_label: 'Show "בס"ד" at the top',
+    cvb_bsd_hint: "Appears small in the top-right corner of the CV.",
     cvsp_title_field: "What field is this CV for?", cvsp_title_layout: "Which style fits you?",
     cvsp_lead: "We'll pick a matching design for you — you can always change it later from Settings.",
     cvsp_skip: "Skip, start with the default design",

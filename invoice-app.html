@@ -276,6 +276,17 @@
           <button type="button" class="btn-mini ai-improve-btn" id="ibshell-ai-draft-btn">✨ צור טיוטה אוטומטית</button>
           <div id="ibshell-ai-draft-note" class="ai-limit-note"></div>
         </div>
+        <div class="bshell-settings-group">
+          <div class="bshell-toggle-row">
+            <label class="bshell-props-label" for="ibshell-set-bsd" style="margin:0;">הצגת בס"ד בראש הדף</label>
+            <label class="bshell-switch">
+              <input type="checkbox" id="ibshell-set-bsd">
+              <span class="bshell-switch-track"></span>
+              <span class="bshell-switch-thumb"></span>
+            </label>
+          </div>
+          <p class="bshell-settings-field-hint">מופיע קטן בפינה הימנית העליונה של המסמך. אחרי הפקה סופית אי אפשר לשנות.</p>
+        </div>
         <div class="bshell-settings-group" id="ibshell-settings-group-profile">
           <div class="bshell-settings-group-title">פרטי העסק (משותפים לכל המסמכים)</div>
         </div>
@@ -332,7 +343,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/invoice-render.js?v=9"></script>
+<script src="js/invoice-render.js?v=10"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/require-auth.js"></script>
 <script src="js/nav-auth.js?v=3"></script>
@@ -347,6 +358,6 @@
 <script src="js/invoice-cloud-save.js?v=1"></script>
 <script src="js/invoice-app.js?v=6"></script>
 <script src="js/invoice-ai-generate.js?v=2"></script>
-<script src="js/invoice-builder-shell.js?v=10"></script>
+<script src="js/invoice-builder-shell.js?v=11"></script>
 </body>
 </html>
