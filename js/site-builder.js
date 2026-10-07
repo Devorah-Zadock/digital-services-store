@@ -1773,16 +1773,13 @@ async function verifySiteLicense() {
   }
 }
 
-// sites.html doesn't load js/require-auth.js (its auth gating is
-// conditional — only entering the wizard needs an account, browsing the
-// catalog doesn't), so it has no window.revealGatedPage of its own. This
-// page defines it directly instead: site-cloud-save.js calls it only
+// sites.html now loads js/require-auth.js like every other builder page,
+// so window.revealGatedPage comes from there — no need to define it here.
+// window.deferReveal (set before require-auth.js loads) keeps it from
+// auto-revealing on a signed-in session; site-cloud-save.js calls it only
 // once it has finished correcting siteState for the real signed-in
-// account, which is what makes it safe to finally show the page.
-window.revealGatedPage = function () {
-  const overlay = document.getElementById("auth-gate-overlay");
-  if (overlay) overlay.remove();
-};
+// account, and the catalog branch below calls it once the catalog itself
+// is actually on screen.
 
 document.addEventListener("DOMContentLoaded", () => {
   const params = new URLSearchParams(location.search);
@@ -1837,8 +1834,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // screen (the intro, "האתרים שלי", or — for ?new=1 — launching the
     // questionnaire directly); nothing further to do here.
   } else if (wantsWizard) {
-    const overlay = document.getElementById("auth-gate-overlay");
-    if (overlay) overlay.style.display = "flex";
+    // The overlay is already visible by default (css/style.css) and
+    // require-auth.js is running its own session check in parallel; this
+    // call does its own because it also needs the resolved session to
+    // decide Shell vs. sidebar vs. preview below, not just to gate entry.
     supabaseClient.auth.getSession().then(async ({ data }) => {
       if (data.session && data.session.user) {
         if (urlTemplate && SITE_TEMPLATES[urlTemplate]) siteState.template = urlTemplate;
@@ -1899,7 +1898,20 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   } else {
-    showCatalog();
+    // ?browse=1 with no template/id/saved content — the one legacy path
+    // dkSitesRouterHandles() never owns (see its own `return false` for
+    // forceBrowse). Every tool now gates upfront, catalog browsing
+    // included, so this still needs its own session check before
+    // revealing — it just never enters the wizard afterward.
+    supabaseClient.auth.getSession().then(({ data }) => {
+      if (data.session && data.session.user) {
+        showCatalog();
+        if (window.revealGatedPage) window.revealGatedPage();
+      } else {
+        const here = location.pathname.split("/").pop() + location.search;
+        location.href = "account.html?redirect=" + encodeURIComponent(here);
+      }
+    });
   }
 
   if (isFullPreview) {

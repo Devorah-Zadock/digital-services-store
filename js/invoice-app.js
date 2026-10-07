@@ -312,8 +312,17 @@ async function routeAfterInvoiceAuth(user) {
     fillInvoiceProfileForm(null);
     invoiceWantsShellAfterProfile = shellMode;
   }
+  // window.revealGatedPage (js/require-auth.js, loaded in invoice-app.html)
+  // — called here, after whichever branch above finished loading its own
+  // data, same reasoning as quote-app.js's own routeAfterAuth.
+  if (window.revealGatedPage) window.revealGatedPage();
 }
 
+/* Every visitor now needs an account before reaching any part of this
+   page — js/require-auth.js (loaded in invoice-app.html) already
+   redirects a signed-out visitor on its own. This function's own
+   redirect stays as the second, belt-and-suspenders path: it's what
+   actually runs for a session that ends WHILE someone is mid-edit. */
 function routeAsInvoiceGuest() {
   // Same reasoning as quote-app.js's routeAsGuest — a session can end
   // with no chance to warn first (expiry, signing out in another tab),

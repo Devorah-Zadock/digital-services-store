@@ -15,18 +15,13 @@
 function dkSitesRouterHandles(opts) {
   if (opts.urlTemplate || opts.urlSiteId || opts.forceBrowse) return false;
 
-  const overlay = document.getElementById("auth-gate-overlay");
-  if (overlay) overlay.style.display = "flex";
-
   supabaseClient.auth.getSession().then(async ({ data }) => {
     const user = data.session && data.session.user;
     if (!user) {
-      if (opts.isNewSite) {
-        location.href = "account.html?redirect=" + encodeURIComponent("sites.html?new=1");
-        return;
-      }
-      dkShowSitesIntro();
-      if (window.revealGatedPage) window.revealGatedPage();
+      // Every tool now requires signing in upfront, this intro screen
+      // included — no more guest-visible "האתרים שלי"/intro before login.
+      const here = opts.isNewSite ? "sites.html?new=1" : "sites.html";
+      location.href = "account.html?redirect=" + encodeURIComponent(here);
       return;
     }
 

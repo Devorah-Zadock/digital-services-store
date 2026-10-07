@@ -321,7 +321,11 @@ async function routeAfterAuth(user) {
   const qid = new URLSearchParams(location.search).get("quote");
   const tpl = pickedTemplateFromUrl();
   const shellMode = quoteWantsShell();
-  if (!qid && !tpl && !shellMode) { showQuoteCatalog(); return; }
+  if (!qid && !tpl && !shellMode) {
+    showQuoteCatalog();
+    if (window.revealGatedPage) window.revealGatedPage();
+    return;
+  }
   pendingTemplate = tpl;
 
   const { data } = await supabaseClient.from("profiles").select("*").eq("id", user.id).maybeSingle();
@@ -350,13 +354,23 @@ async function routeAfterAuth(user) {
     fillProfileForm(null);
     quoteWantsShellAfterProfile = shellMode;
   }
+  // window.revealGatedPage (js/require-auth.js, loaded in quote-app.html
+  // now that guest browsing is gone too — see routeAsGuest's own
+  // comment) — called here, after whichever branch above finished
+  // loading its own data, not up front, so the auth-gate overlay never
+  // lifts onto a still-default/empty screen a moment before the real
+  // content replaces it.
+  if (window.revealGatedPage) window.revealGatedPage();
 }
 
-/* Browsing the design catalog never needs an account — same as every
-   other catalog on the site. But actually opening the builder (a
-   template picked, or an existing saved quote) is real tool usage, so a
-   signed-out visitor gets sent to log in first, same as the CV builder
-   and the site builder's wizard. */
+/* Every visitor now needs an account before reaching any part of this
+   page — js/require-auth.js (loaded in quote-app.html) already redirects
+   a signed-out visitor on its own, same gate the CV builder and the
+   site builder's wizard now use too. This function's own redirect
+   stays as the second, belt-and-suspenders path: it's what actually
+   runs for a session that ends WHILE someone is mid-edit (expiry,
+   signing out in another tab) — require-auth.js only ever checks once,
+   on load, so it has nothing left to catch at that point. */
 function routeAsGuest() {
   // A session can end for reasons that give no chance to warn first
   // (expiry, signing out in another tab) — unlike the logout-confirm's
@@ -369,9 +383,6 @@ function routeAsGuest() {
   currentUser = null;
   quoteCurrentUserId = null;
   quoteSavedId = null;
-  const qid = new URLSearchParams(location.search).get("quote");
-  const tpl = pickedTemplateFromUrl();
-  if (!qid && !tpl && !quoteWantsShell()) { showQuoteCatalog(); return; }
   const here = location.pathname.split("/").pop() + location.search;
   const redirectUrl = "account.html?redirect=" + encodeURIComponent(here);
   if (!hadUnsavedWork) { window.location.href = redirectUrl; return; }

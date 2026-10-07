@@ -135,7 +135,7 @@
 </style>
 </head>
 <body class="dk-has-app-sidebar">
-<div id="auth-gate-overlay" class="auth-gate-overlay" style="display:none;">
+<div id="auth-gate-overlay" class="auth-gate-overlay">
   <div class="auth-gate-spinner"></div>
   <p style="color:var(--grey); font-size:14px; margin:0;">בודקים חיבור…</p>
 </div>
@@ -636,9 +636,11 @@
      downloadable code export, only a published, DeskKit-managed site.
      See js/site-builder.js's own comment on downloadSiteZip() for the
      removed implementation. -->
-<script src="js/site-builder.js?v=59"></script>
+<script src="js/site-builder.js?v=60"></script>
+<script>window.deferReveal = true;</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-config.js"></script>
+<script src="js/require-auth.js"></script>
 <script src="js/nav-auth.js?v=3"></script>
 <script src="js/header.js?v=5"></script>
 <script src="js/create-chooser.js?v=4"></script>
@@ -652,7 +654,7 @@
 <script src="js/site-ai-generate.js?v=6"></script>
 <script src="js/site-ai-field-edit.js?v=2"></script>
 <script src="js/site-ai-command.js?v=2"></script>
-<script src="js/site-wizard-router.js?v=5"></script>
+<script src="js/site-wizard-router.js?v=6"></script>
 <script src="js/main.js?v=4"></script>
 <script src="js/widgets.js?v=14"></script>
 </body>
