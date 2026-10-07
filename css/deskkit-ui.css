@@ -403,7 +403,7 @@ body.dk-home { background: var(--bg-main); }
    continuous formula covers both regimes, no separate breakpoint
    value needed (replacing the old 860px-breakpoint override below). */
 .dk-home-hero-visual {
-  width: 100%; max-width: 640px; margin-top: var(--dk-hero-margin-top, -250px); position: relative;
+  width: 100%; max-width: 640px; margin-top: var(--dk-hero-margin-top, -80px); position: relative;
   /* translateX is always a PHYSICAL shift (never direction-aware on its
      own) — confirmed-live bug this caused: toggling to English flips
      the page to dir="ltr", which also flips which physical edge this
@@ -420,53 +420,27 @@ body.dk-home { background: var(--bg-main); }
   container-type: inline-size;
 }
 /* LTR needs its own tuning, not just the RTL numbers with the sign
-   flipped — the laptop photo itself is a real photograph, not a
-   mirror-symmetric graphic, so its own opaque silhouette (the dark
-   lid/bezel) sits in a DIFFERENT place relative to the text once the
-   whole composition flips. In RTL, the horizontal shift happens to
-   carry that opaque area away from where the text sits; in LTR the
-   same shift (even sign-flipped) carried it UNDER the text instead —
-   confirmed live as the laptop visibly covering the CTA button and
-   watch-link text, not just a boxes-overlap technicality. Verified by
-   directly measuring the text block's own real height in English
-   (longer line-wrapping than Hebrew) and solving for a margin-top that
-   clears it, then increasing the horizontal cap so the image also
-   moves further past the text block's own right edge — together, not
-   either alone (checked: horizontal distance alone can't clear the
-   opaque corner within the tools-sidebar-safe shift budget, and
-   vertical clearance alone would undo nearly all of the intentional
-   "tucked under the text" composition, since this box's natural,
-   margin-top:0 position already starts flush at the text's own bottom
-   edge with zero built-in gap in EITHER direction — RTL's working
-   look was never from spare room, only from where the shift happened
-   to land on the photo). */
-/* Both --dk-hero-margin-top and --dk-hero-shift above were fixed
-   numbers (-150px / 260px) tuned only for wide desktop, where
-   --dk-hero-shift is already pinned at its cap. Confirmed-live bug this
-   caused: at in-between widths (~900-1250px, a completely normal laptop
-   screen, not a breakpoint edge case) the clamp() hasn't reached that
-   cap yet, so the horizontal shift is smaller — but the vertical pull
-   was still the full fixed -150px regardless, so the laptop's opaque
-   lid sat UNDER "Watch how it works" with no horizontal clearance to
-   carry it away. Fix: margin-top now scales down together with the
-   SAME (100cqw - 656px) term the shift itself uses, so it only reaches
-   its full -150px tuck once the shift has actually reached a cap worth
-   tucking under, and sits flush (0 overlap) at the narrow end where
-   there's no horizontal clearance yet — same formula family, kept in
-   sync by construction instead of as two numbers that can drift apart.
-   -0.559 = -190px / 340px (this rule's own cap/pull pair, below), so
-   both reach their max together at the same cqw. Cap raised again
-   (300->340px, shift further right toward the tools column) and the
-   max vertical pull raised too (-150->-190px, tucks the photo higher)
-   per repeated "move it right toward the tools buttons, raise it
-   higher, there's still room" reports — reverified at 1024-1920px
-   that this neither collides with the tools column (checked each
-   width's own gap to .dk-home-hero-tools) nor gets clipped by this
-   section's own overflow:hidden bottom edge (checked each width's own
-   image-bottom vs hero-bottom). */
+   flipped — the laptop photo itself is a real photograph (a mirror PAIR
+   of two files, not one mirror-symmetric graphic — see index.html's own
+   comment), so the two photos' opaque silhouettes sit in different
+   places relative to the text once the composition flips.
+
+   2026-10-07: both this rule and the RTL default above were reset to a
+   conservative, mostly-untucked baseline (small/no negative margin-top)
+   after a confirmed-live report that the previous hand-tuned values
+   (carried over from the OLD laptop photo, before it was replaced) made
+   the laptop visibly cover the lead paragraph text. The old photo's
+   geometry no longer applies to these new photos, so retuning from
+   scratch — a flush, slightly-overlapping-at-most start — was safer
+   than reusing a large negative pull untested against the new images.
+   If there's visibly too much empty space between the text block and
+   the laptop at a given width, increase the magnitude of
+   --dk-hero-margin-top (more negative) and re-verify there's no
+   collision with the lead paragraph/CTA at any width from ~680px to
+   ~1920px before shipping a larger pull. */
 html[dir="ltr"] .dk-home-hero-visual {
-  --dk-hero-margin-top: clamp(-280px, calc(-0.823 * (100cqw - 656px)), 0px);
-  --dk-hero-shift-cap: 380px;
+  --dk-hero-margin-top: clamp(-60px, calc(-0.2 * (100cqw - 656px)), 0px);
+  --dk-hero-shift-cap: 200px;
   transform: translateX(var(--dk-hero-shift));
 }
 .dk-home-hero-laptop-img {
@@ -480,6 +454,19 @@ html[dir="ltr"] .dk-home-hero-visual {
      <img>, not the link. */
   pointer-events: none;
 }
+/* The two mockup photos (real mirror pair, see index.html's own comment
+   on the two <img> tags) occupy the same box; CSS picks which one is in
+   flow by html[dir], the same pattern the rest of this page already
+   uses for bilingual content. Only one is ever display:block, so this
+   box's own height always comes from exactly one photo, never both
+   stacking. Placed after the shared .dk-home-hero-laptop-img rule above
+   (same specificity, source order decides) — confirmed-live bug when
+   this sat BEFORE it instead: that rule's own display:block, applying
+   to both images via their shared class, won the cascade and kept the
+   "wrong" language's photo visible too, doubling this box's height. */
+.dk-home-hero-laptop-img-ltr { display: none; }
+html[dir="ltr"] .dk-home-hero-laptop-img-ltr { display: block; }
+html[dir="ltr"] .dk-home-hero-laptop-img-rtl { display: none; }
 /* Sits inside the laptop photo's own screen glass, warped to the
    screen's real tilted plane instead of just rotated flat — a flat
    rotate() stood the text "upright" while the screen itself recedes
@@ -488,14 +475,17 @@ html[dir="ltr"] .dk-home-hero-visual {
    it. Fixed with a true perspective (homography) transform: this box
    is laid out as a normal flat 480x380 design canvas, then
    matrix3d() warps its 4 corners onto the screen's real 4 corners —
-   computed via cv2.getPerspectiveTransform from the screen quad found
-   by OpenCV contour detection on the source PNG (corners roughly
-   (26,173)/(613,206)/(672,631)/(83,659) in the 1024x946 image, shrunk
-   14% inward for bezel margin). matrix3d's translate components are
-   always real pixels in the element's own box, never %, so they're
-   only correct at the image's native 1024px width — the leading
-   scale() converts from that fixed native-pixel space down to
-   whatever size the (fully responsive) photo is actually rendered
+   computed via cv2.getPerspectiveTransform from each photo's own screen
+   quad (corners estimated directly off a pixel grid overlay, shrunk 14%
+   inward for bezel margin: RTL/images/laptop-hero.png roughly
+   (409,248)/(956,222)/(931,668)/(339,685), LTR/images/laptop-hero-en.png
+   roughly (68,222)/(615,248)/(685,685)/(93,668), both in the 1024x1024
+   source — the two photos are a real mirror pair, not the same quad
+   mirrored in CSS, so each gets its own matrix3d below). matrix3d's
+   translate components are always real pixels in the element's own box,
+   never %, so they're only correct at the image's native 1024px width —
+   the leading scale() converts from that fixed native-pixel space down
+   to whatever size the (fully responsive) photo is actually rendered
    at, via `100cqw` (container query width = this element's own
    current rendered width, see container-type:inline-size on
    .dk-home-hero-visual above) divided by 1024px, which is a plain
@@ -504,14 +494,24 @@ html[dir="ltr"] .dk-home-hero-visual {
 .dk-home-hero-screen-overlay {
   position: absolute; top: 0; left: 0; width: 480px; height: 380px;
   transform-origin: 0 0;
+  /* RTL default — images/laptop-hero.png's own screen quad. */
   transform: scale(calc(100cqw / 1024px)) matrix3d(
-    1.222539, 0.128996, 0, 0.000297,
-    0.123416, 1.070847, 0, -0.000046,
+    0.936011, -0.058849, 0, -0.000048,
+    -0.236173, 0.856719, 0, -0.000203,
     0, 0, 1, 0,
-    71.150002, 207.195007, 0, 1
+    443.964996, 277.084991, 0, 1
   );
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
   text-align: center;
+}
+html[dir="ltr"] .dk-home-hero-screen-overlay {
+  /* images/laptop-hero-en.png's own screen quad. */
+  transform: scale(calc(100cqw / 1024px)) matrix3d(
+    1.008633, 0.060242, 0, 0.000049,
+    0.029386, 0.876989, 0, -0.000207,
+    0, 0, 1, 0,
+    109.614998, 254.725006, 0, 1
+  );
 }
 .dk-home-hero-screen-overlay p {
   margin: 0; font-weight: 800; line-height: 1.22; color: var(--text-main, #0F172A);
