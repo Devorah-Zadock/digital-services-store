@@ -118,7 +118,20 @@ function renderSidebar({ font, palette, content, lang, textColor }) {
        @media print, which also makes that print-only version
        redundant now. */
     .cv-sidebar-wrap { position:relative; display:flex; flex-direction:${lang === "en" ? "row" : "row-reverse"}; min-height:1095px; }
-    .cv-side-bg { position:absolute; left:0; top:0; bottom:0; width:255px; background:#${palette.primaryDark}; z-index:0; }
+    /* .cv-side's real rendered width is NOT 255px: nothing here sets
+       box-sizing:border-box, so its 36px/26px padding adds on top of
+       the 255px content width — 255 + 26*2 = 307px is .cv-side's actual
+       layout box, confirmed live (getBoundingClientRect width: 307).
+       Matching that real width here (not the literal 255px) matters
+       now that this is a separate layer from .cv-side's own background
+       — anything narrower left a visible white gap cutting through the
+       sidebar's own text, confirmed live right after this was first
+       introduced. Deliberately not "fixed" by adding border-box to
+       .cv-side itself instead — that would shrink its actual content
+       width by those same 52px and risk new wrapping/overflow in
+       existing CVs tuned against the width that's actually been live
+       this whole time. */
+    .cv-side-bg { position:absolute; left:0; top:0; bottom:0; width:307px; background:#${palette.primaryDark}; z-index:0; }
     .cv-side { position:relative; z-index:1; width:255px; flex:none; background:transparent; color:#fff; padding:36px 26px; text-align:center; }
     .cv-side .avatar { width:78px; height:78px; border-radius:50%; background:rgba(255,255,255,.16); display:flex; align-items:center; justify-content:center; margin:0 auto 16px; font-size:26px; font-weight:700; color:#fff; }
     .cv-side h1 { font-size:21px; margin:0 0 4px; }
