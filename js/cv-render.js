@@ -68,8 +68,14 @@ function sharedCss(tc, rtl) {
      them anywhere inside what actually gets screenshotted was replaced
      with an explicit physical side computed from the already-known
      rtl flag. */
-  .cv-doc ul { margin:0; padding-${rtl ? "right" : "left"}:20px; }
-  .cv-doc li { font-size:12.5px; color:#${tc}; line-height:1.6; }
+  .cv-doc ul { margin:0; padding-${rtl ? "right" : "left"}:20px; list-style:none; }
+  .cv-doc li { position:relative; font-size:12.5px; color:#${tc}; line-height:1.6; }
+  /* Drawn bullet instead of the native list marker: html2canvas paints
+     native ::marker bullets on the LTR side regardless of dir="rtl", so a
+     Hebrew PDF had every bullet floating at the far end of its line. A
+     ::before dot with a physical right/left offset renders identically in
+     the live preview and in the screenshot. top = (20px line - 5px)/2. */
+  .cv-doc li::before { content:""; position:absolute; ${rtl ? "right" : "left"}:-13px; top:8px; width:5px; height:5px; border-radius:50%; background:currentColor; }
   .cv-doc .cv-jobtitle { font-weight:700; }
   .cv-doc .cv-dates { font-size:11px; font-style:italic; }
   .cv-doc .cv-summary { font-size:13px; line-height:1.65; margin:0; }
@@ -78,13 +84,15 @@ function sharedCss(tc, rtl) {
 }
 
 function chipHtml(text, chipBg, chipColor, chipFont) {
-  // line-height:1 (not inherited) pins the text block to exactly the
-  // font's own line box, so the 5px/5px padding above/below it is the
-  // only thing left deciding vertical centering — without this, an
-  // inherited taller ambient line-height left extra space INSIDE the
-  // line box itself that the padding couldn't account for, confirmed
-  // live as skill-pill text sitting visibly above center.
-  return `<span style="display:inline-block; background:${chipBg}; color:${chipColor}; font-family:${chipFont || "inherit"}; font-size:11px; line-height:1; padding:5px 12px; border-radius:20px; margin:0 0 6px 6px;">${escapeHtml(text)}</span>`;
+  // Fixed height with line-height equal to it (no vertical padding):
+  // the text is centered by the line box itself. The previous
+  // line-height:1 + 5px padding looked centered in the browser, but
+  // line-height:1 is shorter than the font's own content area, and
+  // html2canvas positions text from the font metrics rather than the
+  // line box — the exported PDF showed the letters sliding out of the
+  // bottom of their pill. A line box taller than the glyphs keeps both
+  // renderers in agreement.
+  return `<span style="display:inline-block; vertical-align:top; height:22px; line-height:22px; background:${chipBg}; color:${chipColor}; font-family:${chipFont || "inherit"}; font-size:11px; padding:0 12px; border-radius:11px; margin:0 0 6px 6px; white-space:nowrap;">${escapeHtml(text)}</span>`;
 }
 function projectsList(projects, primaryHex) {
   if (!projects || !projects.length) return "";
@@ -134,7 +142,7 @@ function renderSidebar({ font, palette, content, lang, textColor }) {
        as .cv-side makes any such gap invisible regardless of which
        exact pixel it lands on, instead of chasing exact pixel sync a
        second time. */
-    .cv-sidebar-wrap { position:relative; display:flex; flex-direction:${rtl ? "row-reverse" : "row"}; min-height:1095px; background:#${palette.primaryDark}; }
+    .cv-sidebar-wrap { position:relative; display:flex; flex-direction:${rtl ? "row-reverse" : "row"}; min-height:1123px; background:#${palette.primaryDark}; }
     .cv-side { position:relative; z-index:1; width:307px; box-sizing:border-box; flex:none; background:#${palette.primaryDark}; color:#fff; padding:36px 26px; text-align:center; }
     .cv-side .avatar { width:78px; height:78px; border-radius:50%; background:rgba(255,255,255,.16); display:flex; align-items:center; justify-content:center; margin:0 auto 16px; font-size:26px; font-weight:700; color:#fff; }
     .cv-side h1 { font-size:21px; margin:0 0 4px; }
@@ -354,8 +362,18 @@ async function downloadCvPdf() {
   if (credit) {
     // Physical left/right (not text-align:end) — same html2canvas
     // logical-property gap as renderSidebar()'s timeline dots.
-    const creditAlign = state.lang === "en" ? "right" : "left";
-    credit.style.cssText = `display:block; margin-top:14px; padding:0 24px 18px; font-family:Arial, sans-serif; font-size:8.5pt; color:#A0A0A0; text-align:${creditAlign};`;
+    // The sidebar layout keeps its colored column on the left in both
+    // languages (row-reverse under RTL), so its white side is always the
+    // right one.
+    const creditAlign = (layout === "sidebar" || state.lang === "en") ? "right" : "left";
+    // Absolutely positioned over the bottom corner instead of appended as
+    // a trailing line: as a block it added ~45px under the sidebar's
+    // full-A4 min-height, which pushed the snapshot past one page, so the
+    // shrink-to-fit below narrowed the image and left white strips down
+    // both sides of the PDF — cutting the sidebar off the page edge. The
+    // corner it lands on is the white main column's side.
+    doc.style.position = "relative";
+    credit.style.cssText = `display:block; position:absolute; bottom:10px; ${creditAlign}:24px; font-family:Arial, sans-serif; font-size:8.5pt; color:#A0A0A0; z-index:2;`;
     doc.appendChild(credit);
   }
   // document.fonts.ready (not just rAF) — a reported live export showed
@@ -389,8 +407,13 @@ async function downloadCvPdf() {
     const pageH = pdf.internal.pageSize.getHeight();
     let imgW = pageW;
     let imgH = (canvas.height / canvas.width) * imgW;
-    if (imgH > pageH) {
+    // Up to 1% over (the sidebar's 1123px min-height vs A4's 1122.97px)
+    // is squeezed vertically instead — invisible, whereas shrinking the
+    // width leaves white strips down both page edges beside the sidebar.
+    if (imgH > pageH * 1.01) {
       imgW = imgW * (pageH / imgH);
+      imgH = pageH;
+    } else if (imgH > pageH) {
       imgH = pageH;
     }
     const x = (pageW - imgW) / 2;
