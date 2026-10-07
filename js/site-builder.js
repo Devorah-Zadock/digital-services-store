@@ -1,8 +1,10 @@
 /* Business-website builder: wizard form + live iframe preview (free), with
-   the downloadable ZIP gated behind a Gumroad license key — same pattern as
-   the CV builder used before it went free (see README "Gumroad setup" for
-   exact setup steps, and the honest security caveat: client-side check,
-   not real DRM). */
+   publishing live (watermark removal) gated behind a Gumroad license key —
+   same pattern as the CV builder used before it went free (see README
+   "Gumroad setup" for exact setup steps, and the honest security caveat:
+   client-side check, not real DRM). DeskKit never offers a downloadable
+   code export of the site — see downloadSiteZip()'s own removal comment
+   further down for why. */
 
 /* IMPORTANT: placeholder product ID/checkout link — see README before going
    live with this product. Gumroad's current UI surfaces a per-product
@@ -1357,113 +1359,14 @@ function removeServiceItem(idx) {
   commitSectionPatch("heading-services");
 }
 
-// ZIP download (publishGuideText/downloadSiteZip) was removed once
-// before per explicit product decision: non-technical customers don't
-// know what to do with raw HTML files — it only confused and worried
-// people, and DeskKit's actual deliverable is a live link, not a file
-// (see git history, commit b7a7d15). Reintroduced here under a
-// DIFFERENT, narrower product decision that doesn't reopen that one: a
-// free account never sees this at all (same reasoning as before stays
-// true for them), it lives under "אפשרויות נוספות" — never competing
-// with "פרסום" as the primary action — and it's offered only to an
-// already-paid account as a value-add (the same files they already got
-// a live link for, portable to host anywhere themselves).
-//
-// The HTML this generates is produced client-side from siteState, the
-// exact same data already fully in the browser's memory to render the
-// live preview regardless of payment status — there is no FILE
-// CONTENT here a server could meaningfully withhold (nothing stops a
-// technical free user from saving the live preview's rendered HTML by
-// hand today, paid or not). What the check in downloadSiteZip() below
-// actually gates is the ACTION of producing a clean, ready-to-host
-// bundle in one click — and that check is a real server round-trip
-// (siteExportAuthorized(), reading site_projects.status fresh from
-// Supabase) rather than a client-only flag, specifically so hiding the
-// button or faking the localStorage unlock flag in devtools is not
-// enough to reach it.
-function publishGuideText(pages) {
-  const fileList = pages.map((p) => `${p}.html`).concat("site-data.json").map((f) => `  • ${f}`).join("\n");
-  return `קובצי האתר שלכם
-==================
-
-מה יש בתיקייה הזו:
-${fileList}
-
-הקבצים האלה הם האתר המלא שלכם, בלי תגית DeskKit — אפשר להעלות אותם
-לכל שירות אחסון שתבחרו (Netlify, Vercel, GitHub Pages, חברת אחסון
-ישראלית וכו').
-
-רוצים לערוך שוב בעתיד (גם ממחשב אחר)?
-פשוט מתחברים לחשבון שלכם בעמוד בניית האתר ב-DeskKit — הפרטים נשמרים שם
-אוטומטית וחוזרים בדיוק כמו שהיו. site-data.json נשאר כאן רק כגיבוי
-גולמי לנתונים, למי שרוצה.
-
-שאלות? digital.dz.studio@gmail.com
-`;
-}
-
-/* Real server round-trip, not the localStorage unlock flag: re-reads
-   site_projects.status fresh from Supabase (RLS-scoped to this same
-   signed-in user's own row) instead of trusting a client-side cache of
-   an earlier successful check. Closes the "hide the locked note / set
-   the localStorage flag by hand in devtools" bypass — reaching
-   downloadSiteZip() now requires the DATABASE to actually say this
-   site is finalized, not just the page.
-   NOTE (pre-existing, not introduced by this check): site_projects'
-   own UPDATE policy (supabase/sql/core_tables_rls_verify.sql) is
-   ownership-scoped only, not column-restricted — the same account
-   could in principle call supabaseClient.from("site_projects")
-   .update({status:"finalized"}) directly and satisfy this exact
-   check. That gap already exists today for watermark removal
-   (finalizeSiteProject() in js/site-cloud-save.js performs that same
-   write from the client, not from a trusted server path) and is not
-   something this pass touches — fixing it properly means moving that
-   write into the redeem-license Edge Function's own service-role
-   connection and revoking client UPDATE on status/finalized_at/
-   gumroad_license_key, a real payments-system change outside this
-   export-specific pass's scope. */
-async function siteExportAuthorized() {
-  if (!siteProjectId || !siteCurrentUserId) return false;
-  try {
-    const { data, error } = await supabaseClient
-      .from("site_projects").select("status").eq("id", siteProjectId).eq("user_id", siteCurrentUserId).maybeSingle();
-    if (error || !data) return false;
-    return data.status === "finalized";
-  } catch (err) {
-    return false;
-  }
-}
-
-async function downloadSiteZip() {
-  if (localStorage.getItem(currentUnlockKey()) !== "1") return; // fast client-side pre-check, see the comment above this function
-  if (!(await siteExportAuthorized())) return; // the real, server-verified check
-  const btn = document.getElementById("export-site-btn");
-  if (btn) btn.disabled = true;
-  try {
-    const zip = new JSZip();
-    const pages = enabledSitePages();
-    pages.forEach((page) => { zip.file(`${page}.html`, currentSiteHtml(page)); });
-    // Lets the customer restore their exact form data later — even from
-    // a different device — without us needing any separate export
-    // system beyond this same button.
-    zip.file("site-data.json", JSON.stringify(siteState, null, 2));
-    zip.file("קרא-אותי.txt", publishGuideText(pages));
-    const blob = await zip.generateAsync({ type: "blob" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    // Plain-ASCII filename on purpose: a Hebrew business name in the
-    // `download` attribute isn't handled consistently across every
-    // browser/OS combination, so keep this generic and safe everywhere.
-    a.download = "website-files.zip";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  } finally {
-    if (btn) btn.disabled = false;
-  }
-}
+// publishGuideText()/siteExportAuthorized()/downloadSiteZip() — a
+// paid-only "ייצוא קובצי האתר" ZIP download under "אפשרויות נוספות" —
+// removed entirely per explicit product decision: DeskKit is a
+// published, managed site, never a downloadable code export, with no
+// button/link/promise of one left anywhere in the product (this is
+// the second time this exact feature has been removed; see git
+// history, commit b7a7d15, for the first). JSZip's own <script> tag
+// in sites.html was removed along with this.
 
 /* One click to a live URL, via the publish-site Edge Function (see
    supabase/functions/publish-site) — no ZIP, no dragging files to
@@ -1622,7 +1525,10 @@ function renderPublishClaimedScreen(url, selfHosted, slug) {
       <span id="publish-url-text">${url}</span>
       <button type="button" id="publish-copy-btn" class="btn-mini publish-copy-btn">העתקת קישור</button>
     </div>
-    <button type="button" id="publish-domain-guide-btn" class="btn-mini" style="width:100%; margin-top:10px;">🌐 רוצים גם דומיין משלכם? לחצו כאן</button>
+    <!-- Custom-domain connect button removed for now (per explicit
+         request — feature not ready to expose yet). js/domain-guide.js
+         still has the real implementation; re-enable by restoring this
+         button and the addEventListener call below it. -->
     ${offerRename ? `
     <div class="host-info-box" style="margin-top:14px;">
       <b>✏️ רוצים כתובת עם שם משלכם במקום "${slug}"?</b>
@@ -1646,7 +1552,7 @@ function renderPublishClaimedScreen(url, selfHosted, slug) {
     }
     setTimeout(() => { copyBtn.textContent = original; }, 2000);
   });
-  document.getElementById("publish-domain-guide-btn").addEventListener("click", () => openDomainGuide(siteProjectId));
+  // document.getElementById("publish-domain-guide-btn").addEventListener("click", () => openDomainGuide(siteProjectId));
   if (offerRename) wireSlugRenameUI();
 }
 
@@ -1763,10 +1669,6 @@ function refreshUnlockUI() {
   if (upsell) upsell.style.display = unlocked ? "none" : "";
   if (removed) removed.style.display = unlocked ? "" : "none";
 
-  const exportLocked = document.getElementById("export-site-locked");
-  const exportUnlocked = document.getElementById("export-site-unlocked");
-  if (exportLocked) exportLocked.style.display = unlocked ? "none" : "";
-  if (exportUnlocked) exportUnlocked.style.display = unlocked ? "" : "none";
   // Inside watermark-upsell: hide only the "buy a new code" block during
   // the outage (see SITE_HOSTING_PAUSED above), never the license-key
   // redemption box below it — someone who already paid before the outage
@@ -2045,8 +1947,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("verify-btn").addEventListener("click", verifySiteLicense);
   document.getElementById("publish-site-btn").addEventListener("click", publishSite);
-  const exportBtn = document.getElementById("export-site-btn");
-  if (exportBtn) exportBtn.addEventListener("click", downloadSiteZip);
 
   // The preview iframe's nav links can't really navigate (see
   // previewNavScript in site-templates.js — a relative href inside srcdoc

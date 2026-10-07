@@ -142,11 +142,13 @@ function myPanelRowHtml(opts) {
   const del = opts.deleteAttr
     ? `<button type="button" class="my-content-delete-btn" data-panel-delete="${opts.deleteAttr}" title="מחיקה" aria-label="מחיקה">${myPanelTrashIcon()}</button>`
     : "";
-  // Only offered once a site is actually live (published_url set) —
-  // connecting a domain to nothing wouldn't make sense before that.
-  const domainBtn = opts.showDomainBtn
-    ? `<button type="button" class="my-content-domain-btn" data-domain-guide="${opts.siteProjectId}" title="חיבור דומיין משלכם" aria-label="חיבור דומיין משלכם">${myPanelDomainIcon()}</button>`
-    : "";
+  // Custom-domain connect button removed for now (per explicit request
+  // — feature not ready to expose yet). js/domain-guide.js still has
+  // the real implementation; re-enable by restoring the line below.
+  const domainBtn = "";
+  // const domainBtn = opts.showDomainBtn
+  //   ? `<button type="button" class="my-content-domain-btn" data-domain-guide="${opts.siteProjectId}" title="חיבור דומיין משלכם" aria-label="חיבור דומיין משלכם">${myPanelDomainIcon()}</button>`
+  //   : "";
   const activeClass = opts.active ? " active" : "";
   const thumbClass = opts.kind === "cv" ? " my-panel-card-thumb-cv" : opts.kind === "quote" ? " my-panel-card-thumb-quote" : opts.kind === "invoice" ? " my-panel-card-thumb-invoice" : "";
   const icon = opts.kind === "cv" ? myPanelCvIcon() : opts.kind === "quote" ? myPanelQuoteIcon() : opts.kind === "invoice" ? myPanelInvoiceIcon() : myPanelSiteIcon();
