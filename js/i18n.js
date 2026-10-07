@@ -410,7 +410,7 @@ const I18N = {
     // Builder pages: the always-visible top bar + the Settings panel's
     // style section. The hierarchy/properties panels' own dynamically-
     // rendered content (js/cv-builder-shell.js) isn't covered yet.
-    cvb_meta_title: "בילדר קורות חיים — DeskKit",
+    cvb_meta_title: "יצירת קורות חיים בחינם — DeskKit",
     cvb_mycvs_title: "הקורות חיים שלי", cvb_mycvs_new: "+ קורות חיים חדשים",
     cvb_top_doc_name: "קורות חיים",
     cvb_undo: "↶ בטל", cvb_undo_title: "בטל (Ctrl+Z)",
@@ -813,7 +813,7 @@ const I18N = {
     acct_err_password_mismatch: "The passwords don't match.",
     acct_err_update_failed: "The update failed, try again.",
 
-    cvb_meta_title: "CV Builder — DeskKit",
+    cvb_meta_title: "Free Resume Builder — DeskKit",
     cvb_mycvs_title: "My CVs", cvb_mycvs_new: "+ New CV",
     cvb_top_doc_name: "CV",
     cvb_undo: "↶ Undo", cvb_undo_title: "Undo (Ctrl+Z)",
