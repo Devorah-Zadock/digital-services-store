@@ -41,6 +41,19 @@ function loadTemplate(slug) {
   document.getElementById("text-color-picker").value = "#222222";
   renderForm();
   renderPreview();
+  // Skipped entirely once this page is scoped to a specific saved CV
+  // (?cv=<id> — see js/cv-saves-router.js): writing the placeholder (or
+  // currently-active) template's own slug into the URL here used to
+  // leave the URL carrying BOTH ?cv= and ?template= after the very
+  // first render (including the synchronous placeholder render before
+  // the router's async load even replaces it) — a bare refresh of that
+  // URL then hit js/cv-saves-router.js's own "?template= present -> an
+  // explicit catalog link, stay out of the way" rule and skipped the
+  // router entirely, silently reverting the whole page to that
+  // template's default content instead of the actual saved CV.
+  // Confirmed live: open a saved CV, refresh, watch it revert.
+  const urlCvId = (window.dkCvOriginalParams || new URLSearchParams(location.search)).get("cv");
+  if (urlCvId) return;
   const url = new URL(location.href);
   url.searchParams.set("template", slug);
   history.replaceState(null, "", url);

@@ -165,7 +165,12 @@
 .bshell-settings-group-title { font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 14px; }
 .bshell-settings-field-hint { font-size: 11.5px; color: var(--text-muted); margin: -6px 0 10px; line-height: 1.5; }
 .bshell-ai-draft-textarea { width: 100%; box-sizing: border-box; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; font-family: inherit; resize: vertical; margin-bottom: 10px; }
-.bshell-align-row { display: flex; gap: 4px; }
+/* margin-bottom here (not on .bshell-settings-field-hint's own -6px,
+   which was tuned against a form field with its own baked-in bottom
+   space, not a zero-margin button row) — without it, the style-picker
+   hint directly below this row (builder.html's #cvbshell-style-row)
+   sat flush against the buttons' own bottom edge, confirmed live. */
+.bshell-align-row { display: flex; gap: 4px; margin-bottom: 8px; }
 .bshell-align-btn { flex: 1; padding: 7px 0; border-radius: 7px; border: 1px solid var(--border); background: var(--surface); color: var(--text-secondary); font-size: 12px; cursor: pointer; }
 .bshell-align-btn.active { background: var(--primary-dark); border-color: var(--primary-dark); color: #fff; }
 .bshell-props-toolbar { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
