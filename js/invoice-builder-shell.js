@@ -107,12 +107,36 @@ function invoiceBshellActivate() {
   invoiceBshellWireLogoLiveUpdate();
   invoiceBshellWireFinalizeWatcher();
   invoiceBshellWireAiDraft();
+  invoiceBshellWireBsdToggle();
   document.getElementById("ibshell-root").classList.add("active");
   invoiceBshellWireTopBar();
   invoiceBshellSyncLockUI();
   invoiceBshellRenderHierarchy();
   invoiceBshellRenderCanvas();
   invoiceBshellSyncUndoButtons();
+}
+
+/* בס"ד on/off — showBsd is opt-in (unset = hidden), so no existing
+   invoice changes. Part of the document itself, so it goes through
+   Snapshot (undo) and honors the issued-document lock like every other
+   per-document field. */
+function invoiceBshellWireBsdToggle() {
+  const bsd = document.getElementById("ibshell-set-bsd");
+  if (!bsd || bsd.dataset.wired) return;
+  bsd.dataset.wired = "1";
+  bsd.addEventListener("change", () => {
+    if (invoiceBshellLocked()) { bsd.checked = !!invoiceEventState.showBsd; return; }
+    invoiceBshellSnapshot();
+    invoiceEventState.showBsd = bsd.checked;
+    if (typeof renderInvoicePreviewIA === "function") renderInvoicePreviewIA();
+    invoiceBshellRenderCanvas(invoiceBshellReanchorSelection);
+  });
+}
+function invoiceBshellSyncBsdToggle() {
+  const bsd = document.getElementById("ibshell-set-bsd");
+  if (!bsd) return;
+  bsd.checked = !!invoiceEventState.showBsd;
+  bsd.disabled = invoiceBshellLocked();
 }
 
 /* Reparents the EXISTING #ia-profile-form wholesale (not recreating
@@ -482,9 +506,12 @@ function invoiceBshellBuildCanvasHtml() {
   // as js/quote-builder-shell.js's own canvas builder (see its comment):
   // this iframe's srcdoc never loads css/builder.css, so the credit
   // line rendered visible by default, widening the canvas.
+  // align-items:flex-start / min-height — see js/quote-builder-shell.js's
+  // quoteBshellBuildCanvasHtml(): the flex default (stretch) squashed the
+  // page to the already-scaled height and cut its bottom off.
   return `<!doctype html><html lang="he" dir="rtl"><head><meta charset="UTF-8">
     ${fontsLink ? fontsLink.outerHTML : ""}
-    <style>html,body{margin:0; background:#F3F4F6;} body{display:flex; justify-content:center; padding:36px 20px; box-sizing:border-box;} .invoice-pdf-credit{display:none;}</style>
+    <style>html,body{margin:0; background:#F3F4F6;} body{display:flex; justify-content:center; align-items:flex-start; padding:36px 20px; box-sizing:border-box;} .invoice-doc{min-height:1123px;} .invoice-pdf-credit{display:none;}</style>
     </head><body>${body}</body></html>`;
 }
 
@@ -718,6 +745,7 @@ function invoiceBshellRenderProperties() {
     dyn.style.display = "none";
     dyn.innerHTML = "";
     settingsView.style.display = "";
+    invoiceBshellSyncBsdToggle();
     return;
   }
   settingsView.style.display = "none";

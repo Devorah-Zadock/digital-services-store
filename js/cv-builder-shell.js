@@ -169,6 +169,17 @@ function cvbshellWireStyleSwitcher() {
     cvbshellRenderCanvas(cvbshellReanchorSelection);
     cvbshellSyncStyleButtons();
   });
+  // content.showBsd — opt-in, and rides inside `content` for the same
+  // save/undo reasons as layoutOverride above.
+  const bsd = document.getElementById("cvbshell-set-bsd");
+  if (bsd) {
+    bsd.addEventListener("change", () => {
+      cvbshellSnapshot();
+      state.content.showBsd = bsd.checked;
+      renderPreview();
+      cvbshellRenderCanvas(cvbshellReanchorSelection);
+    });
+  }
 }
 function cvbshellSyncStyleButtons() {
   const row = document.getElementById("cvbshell-style-row");
@@ -178,6 +189,8 @@ function cvbshellSyncStyleButtons() {
   row.querySelectorAll("[data-cv-style]").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.cvStyle === current);
   });
+  const bsd = document.getElementById("cvbshell-set-bsd");
+  if (bsd) bsd.checked = !!(state.content && state.content.showBsd);
 }
 
 /* ---------- Undo / Redo — snapshots `state` PLUS the color/text-color
@@ -443,7 +456,10 @@ function cvbshellBuildCanvasHtml() {
     ${fontsLink ? fontsLink.outerHTML : ""}
     <style>
       html,body{margin:0; background:#F3F4F6;}
-      body{display:flex; justify-content:center; padding:36px 20px; box-sizing:border-box;}
+      /* align-items:flex-start — see js/quote-builder-shell.js's
+         quoteBshellBuildCanvasHtml(): the flex default (stretch) squashed
+         the page to the already-scaled height and cut its bottom off. */
+      body{display:flex; justify-content:center; align-items:flex-start; padding:36px 20px; box-sizing:border-box;}
       .cv-pdf-credit{display:none;}
     </style>
     </head><body>${body}</body></html>`;

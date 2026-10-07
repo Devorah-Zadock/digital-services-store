@@ -162,7 +162,7 @@ function renderQuoteHtml(q) {
   return `
   <style>${QUOTE_CSS}${QUOTE_SKIN_CSS[skin] || ""}</style>
   <div class="quote-doc skin-${skin}" dir="rtl">
-    <div class="bsd">בס"ד</div>
+    <div class="bsd">${q.hideBsd ? "&nbsp;" : 'בס"ד'}</div>
     <div class="letterhead">
       ${q.logoUrl ? `<img class="letterhead-logo" src="${escapeHtmlQ(q.logoUrl)}" alt="${escapeHtmlQ("לוגو " + (q.businessName || ""))}">` : ""}
       <div class="biz-name">${escapeHtmlQ(q.businessName)}</div>

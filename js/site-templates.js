@@ -448,6 +448,11 @@ function searchScriptHtml() {
   </script>`;
 }
 
+/* head.showBsd (d.showBsd, opt-in from either builder) adds a small בס"ד
+   in the page's top-right corner on every template — one place here
+   instead of per template, same reasoning as copyrightLineHtml(). It
+   scrolls away with the page (absolute, not fixed) and sits on a light
+   pill so it stays readable over dark heroes too. */
 function siteDoc(head, body) {
   return `<!doctype html>
 <html lang="he" dir="rtl">
@@ -460,6 +465,7 @@ ${siteFontImport(head.fontFamily)}
 <style>${siteBaseCss(head.fontFamily)}${head.css}</style>
 </head>
 <body>
+${head.showBsd ? `<div class="site-bsd" style="position:absolute; top:6px; right:10px; z-index:2147483000; font-size:11px; line-height:1.4; color:#333; background:rgba(255,255,255,.85); padding:1px 6px; border-radius:6px; pointer-events:none;">בס"ד</div>` : ""}
 ${body}
 ${heroSlideshowScript()}
 ${scrollRevealScript()}
@@ -668,7 +674,7 @@ function renderLocalServiceSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${rail}${topbar}${main}${footer}`).replace("<body>", '<body class="ls-body">');
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${rail}${topbar}${main}${footer}`).replace("<body>", '<body class="ls-body">');
 }
 
 /* ---------- Template 2: freelancer / consultant ---------- */
@@ -798,7 +804,7 @@ function renderFreelancerSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${navBar}${main}${footer}`);
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${navBar}${main}${footer}`);
 }
 
 /* ---------- Template 3: small catalog / shop ---------- */
@@ -926,7 +932,7 @@ function renderCatalogSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${nav}${main}${footer}`);
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${nav}${main}${footer}`);
 }
 
 /* ---------- Template 4: modern gallery / editorial ---------- */
@@ -1090,7 +1096,7 @@ function renderGallerySite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${header}${main}${footer}`);
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${header}${main}${footer}`);
 }
 
 /* ---------- Template 5: bold / neo-brutalist ---------- */
@@ -1235,7 +1241,7 @@ function renderBoldSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${header}${main}${footer}`);
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${header}${main}${footer}`);
 }
 
 /* ---------- Template 6: elegant split-hero (events / boutique) ---------- */
@@ -1419,7 +1425,7 @@ function renderElegantSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${header}${main}${footer}`);
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${header}${main}${footer}`);
 }
 
 /* ---------- Template 7: process / how-we-work ---------- */
@@ -1581,7 +1587,7 @@ function renderProcessSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${header}${main}${footer}`);
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${header}${main}${footer}`);
 }
 
 /* ---------- Template 8: creative portfolio (personal) ---------- */
@@ -1732,7 +1738,7 @@ function renderPortfolioSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${header}${main}${footer}`);
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${header}${main}${footer}`);
 }
 
 /* ---------- Template 9: boutique shop with a featured item (shop) ---------- */
@@ -1901,7 +1907,7 @@ function renderBoutiqueSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${nav}${main}${footer}`);
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${nav}${main}${footer}`);
 }
 
 /* ---------- Template 10: dark luxury (events / boutique) ---------- */
@@ -2047,7 +2053,7 @@ function renderNoirSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${header}${main}${footer}`).replace("<body>", '<body class="nr-body">');
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${header}${main}${footer}`).replace("<body>", '<body class="nr-body">');
 }
 
 /* Reveal-on-scroll — originally built for the studio template only
@@ -2258,7 +2264,7 @@ function renderStudioSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${rail}${main}${footer}`).replace("<body>", '<body class="ag-body">');
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${rail}${main}${footer}`).replace("<body>", '<body class="ag-body">');
 }
 
 /* ---------- Template 12: bento grid (modular, apple-widget style) ---------- */
@@ -2474,7 +2480,7 @@ function renderBentoSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${header}${main}${footer}`);
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${header}${main}${footer}`);
 }
 
 /* ---------- Template 13: cinematic dark (glassmorphism, mouse-glow) ---------- */
@@ -2646,7 +2652,7 @@ function renderCinematicSite(d, page) {
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
   const glowDiv = `<div class="cd-glow" id="cd-glow"></div>`;
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${glowDiv}${header}${main}${footer}${glowScript}`).replace("<body>", '<body class="cd-body">');
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${glowDiv}${header}${main}${footer}${glowScript}`).replace("<body>", '<body class="cd-body">');
 }
 
 /* ---------- Template 14: neo-brutalism (bold color blocks, arcade press) ---------- */
@@ -2802,7 +2808,7 @@ function renderBrutalSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${header}${main}${footer}`).replace("<body>", '<body class="br-body">');
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${header}${main}${footer}`).replace("<body>", '<body class="br-body">');
 }
 
 /* ---------- Template 15: neon future (cyberpunk agency) ---------- */
@@ -3048,7 +3054,7 @@ function renderNeonSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${meshDiv}${header}${main}${footer}${cursorScript}${splitScript}`).replace("<body>", '<body class="nf-body">');
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${meshDiv}${header}${main}${footer}${cursorScript}${splitScript}`).replace("<body>", '<body class="nf-body">');
 }
 
 /* ---------- Template 16: organized chaos (fashion / artist portfolio) ---------- */
@@ -3258,7 +3264,7 @@ function renderChaosSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${header}${main}${footer}`).replace("<body>", '<body class="oc-body">');
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${header}${main}${footer}`).replace("<body>", '<body class="oc-body">');
 }
 
 /* ---------- Template 17: 3D minimalist luxury (architects / real estate) ---------- */
@@ -3464,7 +3470,7 @@ function renderLuxurySite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${iris}${header}${main}${footer}`).replace("<body>", '<body class="lx-body">');
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${iris}${header}${main}${footer}`).replace("<body>", '<body class="lx-body">');
 }
 
 /* ---------- Template 18: playground (physics-based, playful) ----------
@@ -3781,7 +3787,7 @@ function renderPlaygroundSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily }, `${header}${main}${footer}`).replace("<body>", '<body class="pg-body">');
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${header}${main}${footer}`).replace("<body>", '<body class="pg-body">');
 }
 
 const SITE_CATEGORIES = [
