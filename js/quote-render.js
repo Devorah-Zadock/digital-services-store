@@ -305,6 +305,11 @@ async function downloadQuotePdf() {
     credit.style.cssText = "display:block; margin-top:14px; padding:0 24px 18px; font-family:Arial, sans-serif; font-size:8.5pt; color:#A0A0A0; text-align:end;";
     doc.appendChild(credit);
   }
+  // document.fonts.ready (not just rAF) — see js/cv-render.js's
+  // downloadCvPdf() for the full reasoning: rAF alone doesn't wait for a
+  // still-downloading Google Font, so html2canvas can capture a frame
+  // rendered in a fallback font instead of the real one.
+  if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch (err) { /* unsupported — rAF below still runs */ } }
   await new Promise((resolve) => requestAnimationFrame(resolve));
 
   // Nothing downstream of html2canvas used to be guarded — a cross-origin

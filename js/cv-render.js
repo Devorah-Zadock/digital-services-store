@@ -101,38 +101,23 @@ function renderSidebar({ font, palette, content, lang, textColor }) {
 
   return `
   <style>${sharedCss(tc)}
-    /* .cv-side is always on the physical left (row-reverse only for RTL
-       cancels out dir="rtl"'s own reversal) — its background used to be
-       the flex child's own, relying on align-items:stretch to reach
-       .cv-main's full height. That stretch checked out fine in both a
-       plain live DOM render and the real Shell canvas iframe (measured
-       0px gap either way), but a reported live export still showed the
-       sidebar color falling short of the page's actual bottom edge —
-       the one untested link is html2canvas itself (CDN-blocked in this
-       sandbox, so not directly verifiable here), which has known,
-       documented gaps in exactly this kind of flex-stretch handling.
-       An absolutely-positioned backing layer sized straight off
-       .cv-sidebar-wrap's own box sidesteps flex-stretch entirely —
-       the same fix already proven for the old print-pagination case
-       below, just applied unconditionally instead of only in
-       @media print, which also makes that print-only version
-       redundant now. */
+    /* .cv-side used to rely on align-items:stretch (its background was
+       the flex child's own) to reach .cv-main's full height — checked
+       out fine in a plain live DOM render and the real Shell canvas
+       iframe, but a reported live PDF export still showed the sidebar
+       color falling short of the page's bottom edge. The first fix for
+       that (a separate absolutely-positioned backing layer, kept in
+       pixel sync with .cv-side's own real 307px box by hand) turned out
+       to be its own source of html2canvas bugs — confirmed live again:
+       a thin white seam at the sidebar/main boundary, right where two
+       independently-positioned layers have to land on the exact same
+       pixel. box-sizing:border-box collapses this back to ONE element
+       that paints its own background over its own full box — nothing
+       left to fall out of sync. width:307px + border-box keeps the
+       exact same 255px content area (307 - 26*2 padding) this was
+       already tuned against, so no text reflow risk from this change. */
     .cv-sidebar-wrap { position:relative; display:flex; flex-direction:${lang === "en" ? "row" : "row-reverse"}; min-height:1095px; }
-    /* .cv-side's real rendered width is NOT 255px: nothing here sets
-       box-sizing:border-box, so its 36px/26px padding adds on top of
-       the 255px content width — 255 + 26*2 = 307px is .cv-side's actual
-       layout box, confirmed live (getBoundingClientRect width: 307).
-       Matching that real width here (not the literal 255px) matters
-       now that this is a separate layer from .cv-side's own background
-       — anything narrower left a visible white gap cutting through the
-       sidebar's own text, confirmed live right after this was first
-       introduced. Deliberately not "fixed" by adding border-box to
-       .cv-side itself instead — that would shrink its actual content
-       width by those same 52px and risk new wrapping/overflow in
-       existing CVs tuned against the width that's actually been live
-       this whole time. */
-    .cv-side-bg { position:absolute; left:0; top:0; bottom:0; width:307px; background:#${palette.primaryDark}; z-index:0; }
-    .cv-side { position:relative; z-index:1; width:255px; flex:none; background:transparent; color:#fff; padding:36px 26px; text-align:center; }
+    .cv-side { position:relative; z-index:1; width:307px; box-sizing:border-box; flex:none; background:#${palette.primaryDark}; color:#fff; padding:36px 26px; text-align:center; }
     .cv-side .avatar { width:78px; height:78px; border-radius:50%; background:rgba(255,255,255,.16); display:flex; align-items:center; justify-content:center; margin:0 auto 16px; font-size:26px; font-weight:700; color:#fff; }
     .cv-side h1 { font-size:21px; margin:0 0 4px; }
     .cv-side .role { font-size:12.5px; color:${"#" + palette.headerAccentText}; margin-bottom:18px; }
@@ -156,7 +141,6 @@ function renderSidebar({ font, palette, content, lang, textColor }) {
   </style>
   <div class="cv-doc" dir="${dir}">
     <div class="cv-sidebar-wrap">
-      <div class="cv-side-bg"></div>
       <aside class="cv-side">
         ${content.photo ? `<div class="avatar avatar-photo">${photoCircleHtml(content.photo, 78)}</div>` : `<div class="avatar">${escapeHtml(initialsOf(content.name))}</div>`}
         <h1 data-cvkey="name">${escapeHtml(content.name)}</h1>
@@ -340,6 +324,14 @@ async function downloadCvPdf() {
     credit.style.cssText = "display:block; margin-top:14px; padding:0 24px 18px; font-family:Arial, sans-serif; font-size:8.5pt; color:#A0A0A0; text-align:end;";
     doc.appendChild(credit);
   }
+  // document.fonts.ready (not just rAF) — a reported live export showed
+  // skill-pill text sitting noticeably above center inside its own
+  // rounded background, a known html2canvas symptom of capturing before
+  // a @font-face swap finishes: the fallback font's glyph metrics (which
+  // the box's own padding was never sized against) get rasterized for a
+  // frame instead of the real one. rAF alone only waits for the next
+  // paint, not for a still-downloading Google Font to finish loading.
+  if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch (err) { /* unsupported — rAF below still runs */ } }
   await new Promise((resolve) => requestAnimationFrame(resolve));
 
   // Same try/catch as js/quote-render.js's downloadQuotePdf /
