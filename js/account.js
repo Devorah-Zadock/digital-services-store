@@ -45,6 +45,10 @@ function setAuthMode(mode) {
     if (mode === "signup") { pwInput.minLength = 8; pwInput.autocomplete = "new-password"; }
     else { pwInput.removeAttribute("minlength"); pwInput.autocomplete = "current-password"; }
   }
+  const forgotWrap = document.getElementById("qa-forgot-wrap");
+  if (forgotWrap) forgotWrap.hidden = mode === "signup";
+  const pwHint = document.getElementById("qa-password-hint");
+  if (pwHint) pwHint.hidden = mode !== "signup";
   document.getElementById("qa-auth-err").textContent = "";
   document.getElementById("qa-auth-msg").textContent = "";
   if (mode === "signup") {
@@ -68,6 +72,24 @@ function setAuthMode(mode) {
    something they can actually read. context is "signup"|"login", for
    the handful of messages worth a different Hebrew phrasing depending
    on which form this was. */
+/* Why setting a new password failed, in words — the most common reasons
+   are a too-short / weak password, reusing the previous password, or a
+   reset link that expired or was already used. Anything else gets a
+   short code for support. */
+function dkPasswordUpdateErrorMessage(error) {
+  const lower = String((error && error.message) || "").toLowerCase();
+  const code = String((error && error.code) || "");
+  if (code === "same_password" || lower.includes("different from the old")) return dkAcctLabel("acct_err_same_password", "הסיסמה החדשה חייבת להיות שונה מהסיסמה הקודמת.");
+  if (code === "weak_password" || lower.includes("at least") || lower.includes("weak") || lower.includes("pwned") || lower.includes("leaked")) {
+    return dkAcctLabel("acct_err_password_too_short", "הסיסמה קצרה מדי — נדרשים לפחות 8 תווים.");
+  }
+  if (code === "reauthentication_needed" || code === "session_not_found" || code === "session_expired" || lower.includes("session") || lower.includes("reauthentication") || (error && error.status === 401)) {
+    return dkAcctLabel("acct_err_reset_link_expired", "קישור האיפוס פג תוקף או כבר נוצל — חזרו למסך ההתחברות, לחצו \"שכחתי סיסמה\" וקבלו קישור חדש.");
+  }
+  const short = [error && error.status, code].filter(Boolean).join(" ");
+  return dkAcctLabel("acct_err_update_failed", "העדכון נכשל, נסו שוב.") + (short ? ` (${short})` : "");
+}
+
 /* Password-reset failures used to all read "couldn't send the email" —
    now the two common, harmless reasons say what they are, and anything
    else carries a short code so a support request can be diagnosed. */
@@ -109,6 +131,21 @@ function showResetPassword() {
   document.getElementById("qa-reset-password").style.display = "";
 }
 
+// After a reset email is sent the button stays disabled for a minute,
+// showing a countdown (Supabase refuses a second email that soon anyway).
+function dkForgotCooldown(btn) {
+  const label = btn.textContent;
+  let left = 60;
+  btn.disabled = true;
+  const tick = () => {
+    if (left <= 0) { btn.disabled = false; btn.textContent = label; return; }
+    btn.textContent = dkAcctLabel("acct_msg_reset_sent_wait", "נשלח ✓ — אפשר לבקש שוב בעוד {s} שניות").replace("{s}", left);
+    left -= 1;
+    setTimeout(tick, 1000);
+  };
+  tick();
+}
+
 function wireResetPassword() {
   document.getElementById("qa-reset-form").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -117,9 +154,18 @@ function wireResetPassword() {
     const err = document.getElementById("qa-reset-err");
     err.textContent = "";
     if (pw !== pw2) { err.textContent = dkAcctLabel("acct_err_password_mismatch", "הסיסמאות לא תואמות."); return; }
-    const { error } = await supabaseClient.auth.updateUser({ password: pw });
-    if (error) { err.textContent = dkAcctLabel("acct_err_update_failed", "העדכון נכשל, נסו שוב."); return; }
-    window.location.href = redirectTarget;
+    if (pw.length < 8) { err.textContent = dkAcctLabel("acct_err_password_too_short", "הסיסמה קצרה מדי — נדרשים לפחות 8 תווים."); return; }
+    const btn = document.getElementById("qa-reset-submit");
+    if (btn) btn.disabled = true;
+    try {
+      const { error } = await supabaseClient.auth.updateUser({ password: pw });
+      if (error) { err.textContent = dkPasswordUpdateErrorMessage(error); return; }
+      window.location.href = redirectTarget;
+    } catch (_networkErr) {
+      err.textContent = dkAcctLabel("acct_err_network", "אירעה תקלת תקשורת. בדקו את החיבור לאינטרנט ונסו שוב.");
+    } finally {
+      if (btn) btn.disabled = false;
+    }
   });
 }
 
@@ -147,6 +193,11 @@ function wireAuth() {
     err.textContent = "";
     msg.textContent = "";
     if (!email) { err.textContent = dkAcctLabel("acct_err_email_required", "יש להזין קודם את כתובת המייל למעלה."); return; }
+    // Grey it out right away — a click with no visible change looked like
+    // nothing happened, which led to repeated clicks (and rate limits).
+    const forgotBtn = document.getElementById("qa-forgot-btn");
+    forgotBtn.disabled = true;
+    msg.textContent = dkAcctLabel("acct_msg_sending", "שולחים…");
     try {
       const captchaToken = await dkCaptchaToken("qa-captcha");
       const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
@@ -157,7 +208,10 @@ function wireAuth() {
       msg.textContent = error
         ? dkResetErrorMessage(error)
         : dkAcctLabel("acct_msg_reset_sent", "נשלח מייל לאיפוס סיסמה — תבדקו את תיבת הדואר.");
+      if (!error) dkForgotCooldown(forgotBtn);
+      else forgotBtn.disabled = false;
     } catch (_networkErr) {
+      forgotBtn.disabled = false;
       err.textContent = dkAcctLabel("acct_err_network", "אירעה תקלת תקשורת. בדקו את החיבור לאינטרנט ונסו שוב.");
     }
   });

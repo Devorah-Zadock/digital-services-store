@@ -55,6 +55,7 @@
   .qa-google-btn:hover { background: var(--grey-light); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
   .qa-divider { display: flex; align-items: center; gap: 10px; margin: 16px 0; color: var(--grey); font-size: 12.5px; }
   .qa-divider::before, .qa-divider::after { content: ""; flex: 1; height: 1px; background: #EAEDEC; }
+  #qa-forgot-btn:disabled, #qa-reset-submit:disabled { opacity: .55; cursor: default; }
 </style>
 </head>
 <body>
@@ -95,6 +96,7 @@
       <form id="qa-auth-form">
         <div class="field"><label data-i18n="acct_email_label">אימייל</label><input type="email" id="qa-email" dir="ltr" autocomplete="email" required></div>
         <div class="field"><label data-i18n="acct_password_label">סיסמה</label><input type="password" id="qa-password" autocomplete="current-password" required></div>
+        <p hidden class="qa-pw-hint" id="qa-password-hint" data-i18n="acct_password_rule" style="font-size:12.5px; color:var(--grey); margin:-4px 0 10px;">לפחות 8 תווים. אין חובה באותיות גדולות, במספרים או בסימנים מיוחדים — אבל סיסמה ארוכה וייחודית שומרת עליכם יותר.</p>
         <div id="qa-captcha" style="margin:4px 0 8px;"></div>
         <div class="qa-err" id="qa-auth-err"></div>
         <div class="qa-msg" id="qa-auth-msg"></div>
@@ -104,7 +106,7 @@
         <span id="qa-switch-text">עדיין אין לכם חשבון?</span>
         <button type="button" id="qa-switch-btn">להרשמה</button>
       </div>
-      <div class="qa-forgot">
+      <div class="qa-forgot" id="qa-forgot-wrap">
         <button type="button" id="qa-forgot-btn" data-i18n="acct_forgot_password">שכחתי סיסמה</button>
       </div>
     </div>
@@ -121,8 +123,9 @@
       <form id="qa-reset-form">
         <div class="field"><label data-i18n="acct_new_password_label">סיסמה חדשה</label><input type="password" id="qa-new-password" autocomplete="new-password" required minlength="8"></div>
         <div class="field"><label data-i18n="acct_confirm_password_label">אימות סיסמה</label><input type="password" id="qa-new-password-confirm" autocomplete="new-password" required minlength="8"></div>
+        <p class="qa-pw-hint" id="qa-reset-hint" data-i18n="acct_password_rule" style="font-size:12.5px; color:var(--grey); margin:-4px 0 10px;">לפחות 8 תווים. אין חובה באותיות גדולות, במספרים או בסימנים מיוחדים — אבל סיסמה ארוכה וייחודית שומרת עליכם יותר.</p>
         <div class="qa-err" id="qa-reset-err"></div>
-        <button type="submit" class="btn btn-teal" style="width:100%;" data-i18n="acct_update_password_btn">עדכון סיסמה</button>
+        <button type="submit" class="btn btn-teal" style="width:100%;" id="qa-reset-submit" data-i18n="acct_update_password_btn">עדכון סיסמה</button>
       </form>
     </div>
   </div>
@@ -135,8 +138,8 @@
 <script src="js/mobile-nav.js?v=2"></script>
 <script src="js/main.js?v=6"></script>
 <script src="js/widgets.js?v=18"></script>
-<script src="js/i18n.js?v=29"></script>
+<script src="js/i18n.js?v=30"></script>
 <script src="js/captcha.js?v=3"></script>
-<script src="js/account.js?v=4"></script>
+<script src="js/account.js?v=5"></script>
 </body>
 </html>
