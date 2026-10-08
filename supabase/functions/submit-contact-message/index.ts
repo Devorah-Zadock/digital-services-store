@@ -65,7 +65,7 @@ async function notifyByEmail(row: { form_type: string; name: string | null; emai
   }
 }
 
-const GLOBAL_LIMIT_10_MIN = 40;
+const GLOBAL_LIMIT_10_MIN = 100;
 const PER_EMAIL_LIMIT_1_HOUR = 5;
 
 Deno.serve(async (req: Request) => {
@@ -104,9 +104,10 @@ Deno.serve(async (req: Request) => {
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Honeypot: the contact form has a "website" field people never see.
-    // A filled one is a bot — pretend it worked, store and send nothing.
-    if (typeof body.website === "string" && body.website.trim()) {
+    // Honeypot: the contact form has a hidden field people never see (named
+    // so password managers won't autofill it). Filled = a bot — pretend it
+    // worked, store and send nothing.
+    if (typeof body.hp === "string" && body.hp.trim()) {
       return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
     }
 

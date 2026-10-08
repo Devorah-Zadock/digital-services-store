@@ -16,7 +16,9 @@ function safeRedirectTarget(raw) {
     const u = new URL(raw, location.href);
     if (u.origin !== location.origin || (u.protocol !== "https:" && u.protocol !== "http:")) return "tools.html";
     if (/^\/api\//i.test(u.pathname)) return "tools.html";
-    return u.pathname + u.search + u.hash;
+    // The full, already-checked URL — never just the path: a path like
+    // "//evil.com" (from "/.//evil.com") would be read as another site.
+    return u.href;
   } catch (_badUrl) {
     return "tools.html";
   }

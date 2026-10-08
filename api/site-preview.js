@@ -85,7 +85,7 @@ const SITE_SUBDOMAIN_HOST = /^([a-z0-9-]{1,63})\.sites\.deskkit\.co\.il$/;
 const OWN_HOST = /^((www\.)?deskkit\.co\.il|sites\.deskkit\.co\.il|localhost|127\.0\.0\.1)$|\.vercel\.app$/;
 
 function requestHost(req) {
-  const raw = String(req.headers["x-forwarded-host"] || req.headers.host || "");
+  const raw = String(req.headers.host || req.headers["x-forwarded-host"] || "");
   return raw.split(",")[0].trim().toLowerCase().replace(/:\d+$/, "");
 }
 

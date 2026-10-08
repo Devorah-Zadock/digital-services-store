@@ -148,6 +148,9 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: corsHeaders });
   }
 
+  // Set once this request has claimed the license's one receipt; called
+  // on any failure after that so a retry can still send it.
+  let releaseClaim: (() => PromiseLike<unknown>) | null = null;
   try {
     // The receipt is tied to a real, already-redeemed purchase of THIS
     // account: recipient, name, amount and test-flag all come from the
@@ -184,12 +187,12 @@ Deno.serve(async (req: Request) => {
     if (!claimed || !claimed.length) {
       return new Response(JSON.stringify({ success: true, alreadySent: true }), { status: 200, headers: corsHeaders });
     }
-    const releaseClaim = () => authClient.from("license_redemptions").update({ receipt_sent_at: null }).eq("license_key", licenseKey).eq("user_id", userId);
+    releaseClaim = () => authClient.from("license_redemptions").update({ receipt_sent_at: null }).eq("license_key", licenseKey).eq("user_id", userId);
 
     const purchase = (lic.purchase || {}) as Record<string, unknown>;
     const buyerEmail = (typeof purchase.email === "string" && purchase.email) || userData.user.email || "";
     if (!buyerEmail) {
-      await releaseClaim();
+      await releaseClaim!();
       return new Response(JSON.stringify({ error: "no recipient" }), { status: 400, headers: corsHeaders });
     }
     const buyerName = typeof purchase.full_name === "string" ? purchase.full_name.slice(0, 100) : "";
@@ -232,12 +235,14 @@ Deno.serve(async (req: Request) => {
     if (!emailRes.ok) {
       const errText = await emailRes.text();
       console.error("Resend failed", emailRes.status, errText.slice(0, 500));
-      await releaseClaim();
+      await releaseClaim!();
       return new Response(JSON.stringify({ error: "sending the receipt failed" }), { status: 502, headers: corsHeaders });
     }
 
     return new Response(JSON.stringify({ success: true, receiptNumber, pdfAttached: !!pdfBytes, taxIdConfigured: !!TAX_ID }), { status: 200, headers: corsHeaders });
   } catch (err) {
-    return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: corsHeaders });
+    if (releaseClaim) await Promise.resolve(releaseClaim()).catch(() => {});
+    console.error("send-receipt failed", String(err));
+    return new Response(JSON.stringify({ error: "sending the receipt failed" }), { status: 500, headers: corsHeaders });
   }
 });

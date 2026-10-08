@@ -102,6 +102,13 @@ Deno.serve(async (req: Request) => {
     const { data: domainRows } = await admin.from("site_projects").select("custom_domain").eq("user_id", userId).not("custom_domain", "is", null);
     for (const row of domainRows || []) await removeVercelDomain(String(row.custom_domain));
 
+    // Messages this person sent through the contact/feedback forms are
+    // keyed by email, not user id — removed with the account too.
+    if (userData.user.email) {
+      const { error: msgErr } = await admin.from("contact_messages").delete().eq("email", userData.user.email);
+      if (msgErr) console.error("delete-account: failed to clear contact_messages", msgErr.message);
+    }
+
     for (const table of USER_TABLES) {
       const column = table === "profiles" ? "id" : "user_id";
       const { error } = await admin.from(table).delete().eq(column, userId);
