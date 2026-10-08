@@ -451,6 +451,22 @@ function dkConfirm(opts) {
   });
 }
 
+/* ---------- auto-lock after 15 idle minutes ----------
+   A computer left with the admin area open locks itself: the unlock
+   token is dropped and the lock screen comes back. */
+const DK_IDLE_LOCK_MS = 15 * 60 * 1000;
+function dkStartIdleLock() {
+  let last = Date.now();
+  const bump = () => { last = Date.now(); };
+  ["mousemove", "mousedown", "keydown", "scroll", "touchstart"].forEach((ev) => document.addEventListener(ev, bump, { passive: true }));
+  setInterval(() => {
+    if (Date.now() - last > DK_IDLE_LOCK_MS) {
+      dkClearUnlockToken();
+      window.location.reload();
+    }
+  }, 30 * 1000);
+}
+
 /* ---------- change admin password ----------
    Needs the current admin password. Changing it signs every other admin
    session out at once (the server ties unlock tokens to the password's
@@ -947,7 +963,7 @@ async function cxRunUserAction(act, u, afterChange) {
       return done("החשבון נמחק");
     }
   } catch (e) {
-    dkToast("הפעולה נכשלה: " + e.message, "err");
+    if (!e.cancelled) dkToast("הפעולה נכשלה: " + e.message, "err");
   }
 }
 
@@ -968,7 +984,7 @@ async function cxBulk(op) {
     cx.selected.clear();
     cxLoadSummary(); cxLoadUsers();
   } catch (e) {
-    dkToast("הפעולה נכשלה: " + e.message, "err");
+    if (!e.cancelled) dkToast("הפעולה נכשלה: " + e.message, "err");
   }
 }
 
@@ -985,7 +1001,9 @@ async function cxExport(userIds) {
   });
   if (!ok) return;
   try {
-    const body = userIds ? { action: "export-users", userIds, sort: cx.sort, dir: cx.dir } : { action: "export-users", ...cxFilterBody() };
+    const confirmPassword = await dkAskAdminPassword();
+    if (!confirmPassword) return;
+    const body = { ...(userIds ? { action: "export-users", userIds, sort: cx.sort, dir: cx.dir } : { action: "export-users", ...cxFilterBody() }), confirmPassword };
     // The server hands rows out in batches; keep asking until a short batch.
     const users = [];
     const btn = document.getElementById("cx-export");
@@ -1020,7 +1038,7 @@ async function cxExport(userIds) {
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     dkToast(`יוצאו ${fmtNum((users || []).length)} לקוחות`, "ok");
   } catch (e) {
-    dkToast("הייצוא נכשל: " + e.message, "err");
+    if (!e.cancelled) dkToast("הייצוא נכשל: " + e.message, "err");
   }
 }
 
@@ -1034,7 +1052,7 @@ const AUDIT_ACTION_LABELS = {
   revoke_pro: "ביטול Pro", delete_account: "מחיקת חשבון", delete_site: "מחיקת אתר", delete_cv: "מחיקת קורות חיים",
   delete_message: "מחיקת הודעה", set_admin_role: "עדכון הרשאת מנהל", remove_admin: "הסרת מנהל",
   admin_unlock: "כניסה לאזור הניהול", admin_unlock_failed: "סיסמת ניהול שגויה", admin_unlock_locked: "ניסיון כניסה בזמן נעילה",
-  set_admin_password: "קביעת סיסמת ניהול",
+  set_admin_password: "קביעת סיסמת ניהול", admin_confirm_failed: "אישור פעולה נכשל (סיסמה שגויה)",
 };
 
 function closeUserDrawer() {
@@ -1216,7 +1234,7 @@ function wireUserDrawer() {
         dkDrawer.tab = "docs"; renderUserDrawer();
         cxLoadUsers();
       } catch (err) {
-        dkToast("המחיקה נכשלה: " + err.message, "err");
+        if (!err.cancelled) dkToast("המחיקה נכשלה: " + err.message, "err");
       }
     }
   });
@@ -1308,14 +1326,14 @@ function wireAdmins() {
       await callAdminStats({ action: "set-admin-role", email, role });
       document.getElementById("admin-add-email").value = "";
       dkToast("נוסף", "ok"); loadAdmins();
-    } catch (err) { dkToast("נכשל: " + err.message, "err"); }
+    } catch (err) { if (!err.cancelled) dkToast("נכשל: " + err.message, "err"); }
   });
   const wrap = document.getElementById("admins-table-wrap");
   wrap.addEventListener("change", async (e) => {
     const email = e.target.dataset.roleFor;
     if (!email) return;
     try { await callAdminStats({ action: "set-admin-role", email, role: e.target.value }); dkToast("ההרשאה עודכנה", "ok"); }
-    catch (err) { dkToast("נכשל: " + err.message, "err"); loadAdmins(); }
+    catch (err) { if (!err.cancelled) dkToast("נכשל: " + err.message, "err"); loadAdmins(); }
   });
   wrap.addEventListener("click", async (e) => {
     const email = e.target.dataset && e.target.dataset.removeAdmin;
@@ -1323,7 +1341,7 @@ function wireAdmins() {
     const ok = await dkConfirm({ title: "הסרת הרשאה", danger: true, confirmLabel: "הסרה", body: `<p>ל-<b dir="ltr">${escapeHtml(email)}</b> לא תהיה יותר גישה לאזור הניהול.</p>` });
     if (!ok) return;
     try { await callAdminStats({ action: "remove-admin", email }); dkToast("ההרשאה הוסרה", "ok"); loadAdmins(); }
-    catch (err) { dkToast("נכשל: " + err.message, "err"); }
+    catch (err) { if (!err.cancelled) dkToast("נכשל: " + err.message, "err"); }
   });
 }
 
@@ -1343,7 +1361,49 @@ function handleSetupError(e) {
    role server-side. res.status is attached to the thrown error so
    callers can tell "not an admin" (403) apart from "not set up yet"
    (500) apart from any other failure. */
+// Must match STEP_UP_ACTIONS in supabase/functions/admin-stats.
+const DK_STEP_UP_ACTIONS = new Set([
+  "set-pro", "delete-account", "export-users", "set-admin-role", "remove-admin",
+  "suspend-user", "unsuspend-user", "bulk", "delete-site", "delete-cv",
+]);
+
+// Asks for the admin password again before a sensitive action. Resolves
+// to the typed password, or null if cancelled.
+function dkAskAdminPassword() {
+  return new Promise((resolve) => {
+    const wrap = document.createElement("div");
+    wrap.className = "cx-modal-backdrop";
+    wrap.innerHTML = `
+      <div class="cx-modal" role="dialog" aria-modal="true" aria-labelledby="cx-step-title">
+        <h3 id="cx-step-title">אישור בסיסמת ניהול</h3>
+        <div class="cx-modal-body"><p class="cx-muted">זו פעולה רגישה — כדי לבצע אותה, הקלידו שוב את סיסמת הניהול.</p></div>
+        <input type="password" class="cx-input" id="cx-step-pw" autocomplete="current-password" placeholder="סיסמת ניהול">
+        <div class="cx-modal-actions">
+          <button type="button" class="cx-btn" data-cx-cancel>ביטול</button>
+          <button type="button" class="cx-btn cx-btn-primary" id="cx-step-ok">אישור</button>
+        </div>
+      </div>`;
+    document.body.appendChild(wrap);
+    const input = wrap.querySelector("#cx-step-pw");
+    const close = (v) => { wrap.remove(); resolve(v); };
+    wrap.addEventListener("click", (e) => { if (e.target === wrap) close(null); });
+    wrap.querySelector("[data-cx-cancel]").addEventListener("click", () => close(null));
+    wrap.querySelector("#cx-step-ok").addEventListener("click", () => close(input.value || null));
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") close(input.value || null); if (e.key === "Escape") close(null); });
+    input.focus();
+  });
+}
+
 async function callAdminStats(body) {
+  if (DK_STEP_UP_ACTIONS.has(body.action) && body.confirmPassword === undefined) {
+    const pw = await dkAskAdminPassword();
+    if (!pw) {
+      const err = new Error("הפעולה בוטלה");
+      err.cancelled = true;
+      throw err;
+    }
+    body = { ...body, confirmPassword: pw };
+  }
   let { data: sessionData } = await supabaseClient.auth.getSession();
   // Right after a sign-in redirect the session can take a moment to be
   // restored — wait briefly before calling it "not signed in".
@@ -1370,7 +1430,10 @@ async function callAdminStats(body) {
       dkClearUnlockToken();
       window.location.reload();
     }
-    const err = new Error(data.error || String(res.status));
+    const msg = data.error === "confirm-password" ? "סיסמת ניהול שגויה — הפעולה לא בוצעה"
+      : data.error === "locked" && body.confirmPassword !== undefined ? "יותר מדי ניסיונות שגויים — נעול ל-15 דקות"
+      : (data.error || String(res.status));
+    const err = new Error(msg);
     err.status = res.status;
     err.data = data;
     throw err;
@@ -1523,6 +1586,7 @@ async function showPanel() {
     }
     dkAdminRole = me.role;
     document.getElementById("admin-role-pill").textContent = `${me.email} · ${DK_ROLE_LABELS[me.role] || me.role}`;
+    dkStartIdleLock();
     const changePwBtn = document.getElementById("admin-change-pw");
     if (changePwBtn) changePwBtn.addEventListener("click", dkChangeAdminPassword);
   } catch (e) {
