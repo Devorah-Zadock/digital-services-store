@@ -427,6 +427,13 @@ body.dk-home { background: var(--bg-main); }
    value needed (replacing the old 860px-breakpoint override below). */
 .dk-home-hero-visual {
   width: 100%; max-width: 640px; margin-top: var(--dk-hero-margin-top, -250px); position: relative;
+  /* RTL vertical pull: the full -250px tuck only once the stage is wide
+     enough (>=~790px) for the leftward shift to carry the lid clear of
+     the text; at narrower desktop widths (~860-1150px viewports) that
+     same fixed -250px landed the lid on the paragraph. Ramps to -180px
+     there — solved per width against the photo's alpha channel, same
+     method as the LTR rule below. Wide screens are unchanged. */
+  --dk-hero-margin-top: clamp(-250px, calc(-180px - 0.4 * (100cqw - 617px)), -180px);
   /* translateX is always a PHYSICAL shift (never direction-aware on its
      own) — confirmed-live bug this caused: toggling to English flips
      the page to dir="ltr", which also flips which physical edge this
@@ -581,7 +588,12 @@ html[dir="ltr"] .dk-home-hero-visual {
      edge of the viewport — a flat, small nudge is the correct behavior
      in this stacked layout, not the formula. Still direction-aware
      (see the base rule above) since translateX itself never is. */
-  .dk-home-hero-visual { --dk-hero-shift: 20px; transform: translateX(calc(-1 * var(--dk-hero-shift))); }
+  /* Stacked layout: the stage is the full container width here, so the
+     desktop ramp above would reach its full -250px tuck again and land
+     the lid on the paragraph (measured at ~760-860px viewports); -220px
+     clears it. html[dir="ltr"]'s own rule still wins in English. */
+  .dk-home-hero-visual { --dk-hero-shift: 20px; transform: translateX(calc(-1 * var(--dk-hero-shift)));
+    --dk-hero-margin-top: clamp(-220px, calc(-180px - 0.4 * (100cqw - 617px)), -180px); }
   html[dir="ltr"] .dk-home-hero-visual { transform: translateX(var(--dk-hero-shift)); }
 }
 @media (max-width: 680px) {
