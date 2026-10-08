@@ -103,6 +103,19 @@ function openNavDropdown(wrap, email, trigger, dropup) {
     dd.querySelector(".nav-account-logout").hidden = false;
   });
   dd.querySelector(".nav-confirm-yes").addEventListener("click", async () => {
+    // Local working copies (CV/site drafts with names, phones, emails)
+    // must not stay behind on a shared computer once the owner signs out
+    // — the account's cloud copies are untouched.
+    // Only drafts that also live in the account: CRM leads are local-only
+    // (no account copy) and unlock flags are just re-checked, so those stay.
+    try {
+      const drop = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith("deskkit_cv_") || k.startsWith("deskkit_sites_data_v1_") || k === "deskkit_sites_last_template" || k === "deskkit_local_draft_owner")) drop.push(k);
+      }
+      drop.forEach((k) => localStorage.removeItem(k));
+    } catch (_e) { /* storage unavailable */ }
     await supabaseClient.auth.signOut();
     // Reload in place rather than jumping to a fixed page: a public page
     // just re-renders with the logged-out header, and a gated page falls

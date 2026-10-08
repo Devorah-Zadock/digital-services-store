@@ -81,7 +81,7 @@
   </nav>
 </header>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/vendor/supabase-js-2.116.0.js"></script>
 
 <div id="qa-auth" class="qa-gate-wrap no-print">
   <div class="qa-gate-box">
@@ -95,6 +95,7 @@
       <form id="qa-auth-form">
         <div class="field"><label data-i18n="acct_email_label">אימייל</label><input type="email" id="qa-email" dir="ltr" autocomplete="email" required></div>
         <div class="field"><label data-i18n="acct_password_label">סיסמה</label><input type="password" id="qa-password" autocomplete="current-password" required></div>
+        <div id="qa-captcha" style="margin:4px 0 8px;"></div>
         <div class="qa-err" id="qa-auth-err"></div>
         <div class="qa-msg" id="qa-auth-msg"></div>
         <button type="submit" class="btn btn-teal" style="width:100%;" id="qa-auth-submit">כניסה</button>
@@ -128,13 +129,14 @@
 </div>
 
 <script src="js/supabase-config.js"></script>
-<script src="js/nav-auth.js?v=3"></script>
+<script src="js/nav-auth.js?v=4"></script>
 <script src="js/header.js?v=5"></script>
 <script src="js/create-chooser.js?v=4"></script>
 <script src="js/mobile-nav.js?v=2"></script>
-<script src="js/main.js?v=4"></script>
-<script src="js/widgets.js?v=16"></script>
-<script src="js/i18n.js?v=25"></script>
+<script src="js/main.js?v=5"></script>
+<script src="js/widgets.js?v=17"></script>
+<script src="js/i18n.js?v=26"></script>
+<script src="js/captcha.js?v=2"></script>
 <script src="js/account.js?v=3"></script>
 </body>
 </html>

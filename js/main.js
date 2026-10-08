@@ -102,7 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (note) { note.textContent = t.sending; note.className = "widget-note"; }
       try {
         const { data, error } = await supabaseClient.functions.invoke("submit-contact-message", {
-          body: { name, email, message, formType: "contact", page: location.pathname },
+          body: { name, email, message, formType: "contact", page: location.pathname, website: (form.querySelector("#website") || {}).value || "" },
         });
         if (error || !data || data.error) throw new Error((data && data.error) || "bad response");
         if (note) { note.textContent = t.ok; note.className = "widget-note ok"; }

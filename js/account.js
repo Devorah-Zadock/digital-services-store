@@ -132,9 +132,12 @@ function wireAuth() {
     msg.textContent = "";
     if (!email) { err.textContent = dkAcctLabel("acct_err_email_required", "יש להזין קודם את כתובת המייל למעלה."); return; }
     try {
+      const captchaToken = await dkCaptchaToken("qa-captcha");
       const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
         redirectTo: window.location.origin + window.location.pathname + "?redirect=" + encodeURIComponent(redirectTarget),
+        captchaToken,
       });
+      dkCaptchaReset("qa-captcha");
       msg.textContent = error
         ? dkAcctLabel("acct_err_reset_send_failed", "לא הצלחנו לשלוח את המייל, נסו שוב.")
         : dkAcctLabel("acct_msg_reset_sent", "נשלח מייל לאיפוס סיסמה — תבדקו את תיבת הדואר.");
@@ -162,10 +165,12 @@ function wireAuth() {
     submitBtn.disabled = true;
     try {
       if (authMode === "signup") {
+        const captchaToken = await dkCaptchaToken("qa-captcha");
         const { data, error } = await supabaseClient.auth.signUp({
           email, password,
-          options: { emailRedirectTo: window.location.origin + window.location.pathname + "?redirect=" + encodeURIComponent(redirectTarget) },
+          options: { emailRedirectTo: window.location.origin + window.location.pathname + "?redirect=" + encodeURIComponent(redirectTarget), captchaToken },
         });
+        dkCaptchaReset("qa-captcha");
         if (error) { err.textContent = dkAuthErrorMessage(error, "signup"); return; }
         if (data.session) return; // email confirmation is off — already logged in, onAuthStateChange handles it
         // Supabase's documented anti-enumeration behavior for signUp()
@@ -180,7 +185,9 @@ function wireAuth() {
         }
         showCheckEmail(email);
       } else {
-        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        const captchaToken = await dkCaptchaToken("qa-captcha");
+        const { error } = await supabaseClient.auth.signInWithPassword({ email, password, options: { captchaToken } });
+        dkCaptchaReset("qa-captcha");
         if (error) { err.textContent = dkAuthErrorMessage(error, "login"); return; }
         // onAuthStateChange picks up the new session and redirects onward.
       }
@@ -205,6 +212,7 @@ function wireAuth() {
 let isPasswordRecovery = /(^|[#&?])type=recovery(&|$)/.test(location.hash) || params.get("type") === "recovery";
 
 document.addEventListener("DOMContentLoaded", () => {
+  dkCaptchaMount("qa-captcha"); // no-op unless CAPTCHA is configured (js/captcha.js)
   wireAuth();
   wireResetPassword();
   setAuthMode("login");

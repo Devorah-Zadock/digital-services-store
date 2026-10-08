@@ -59,7 +59,10 @@ function dkHasPassword(user) {
 async function dkReauthenticate(user, password) {
   if (dkHasPassword(user)) {
     if (!password) return "יש להזין את הסיסמה הנוכחית.";
-    const { error } = await supabaseClient.auth.signInWithPassword({ email: user.email, password });
+    const captchaToken = typeof dkCaptchaToken === "function" ? await dkCaptchaToken("as-captcha") : undefined;
+    const { error } = await supabaseClient.auth.signInWithPassword({ email: user.email, password, options: { captchaToken } });
+    if (typeof dkCaptchaReset === "function") dkCaptchaReset("as-captcha");
+    if (error && /captcha/i.test(error.message || "")) return "אימות האבטחה נכשל — רעננו את הדף ונסו שוב.";
     return error ? "הסיסמה הנוכחית שגויה." : "";
   }
   const last = Date.parse(user.last_sign_in_at || "");
@@ -80,6 +83,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("as-delete-email-hint").textContent = user.email;
     const hasPw = dkHasPassword(user);
     document.querySelectorAll(".as-current-pw-field").forEach((el) => { el.hidden = !hasPw; });
+    if (hasPw && typeof dkCaptchaMount === "function") dkCaptchaMount("as-captcha");
   });
 
   const exportBtn = document.getElementById("as-export-btn");
