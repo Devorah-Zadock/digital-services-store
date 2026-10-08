@@ -40,7 +40,9 @@
 // affect the main site.
 
 const SUBDOMAIN_PATTERN = /^([a-z0-9-]+)\.sites\.deskkit\.co\.il$/i;
-const OWN_HOST_PATTERN = /^((www\.)?deskkit\.co\.il|sites\.deskkit\.co\.il)$|\.vercel\.app$/i;
+// Any other *.deskkit.co.il host (e.g. login.deskkit.co.il) is ours too —
+// it must never be looked up as a customer's custom domain.
+const OWN_HOST_PATTERN = /^((www\.)?deskkit\.co\.il|sites\.deskkit\.co\.il)$|\.deskkit\.co\.il$|\.vercel\.app$/i;
 
 export default function middleware(request) {
   const host = (request.headers.get("host") || "").toLowerCase();

@@ -11,7 +11,19 @@
    owner only). */
 
 function escapeHtml(s) {
-  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+// Only real https:// links ever become clickable in the admin page —
+// published_url is a value that once came from the browser, so anything
+// else (javascript:, data:, odd strings) is shown as plain text instead.
+function dkSafeHttpsUrl(raw) {
+  try {
+    const u = new URL(String(raw || ""));
+    return u.protocol === "https:" ? u.href : "";
+  } catch (_bad) {
+    return "";
+  }
 }
 
 function templateLabel(slug) {
@@ -1041,7 +1053,7 @@ function renderUserDrawer() {
     body =
       table("אתרים", ["תבנית", "סטטוס", "נוצר", ""], (sites || []).map((s) => `<tr>
           <td>${escapeHtml(templateLabel(s.template))}</td>
-          <td>${s.published_url ? `<a href="${escapeHtml(s.published_url)}" target="_blank" rel="noopener">פורסם ↗</a>` : (s.status === "finalized" ? "שולם" : "טיוטה")}</td>
+          <td>${s.published_url ? (dkSafeHttpsUrl(s.published_url) ? `<a href="${escapeHtml(dkSafeHttpsUrl(s.published_url))}" target="_blank" rel="noopener noreferrer">פורסם ↗</a>` : "פורסם") : (s.status === "finalized" ? "שולם" : "טיוטה")}</td>
           <td class="cx-nowrap">${escapeHtml(fmtDateTime(s.created_at))}</td>
           <td>${canDel ? `<button type="button" class="cx-link-btn danger" data-del-site="${s.id}">מחיקה</button>` : ""}</td></tr>`), "אין אתרים")
       + table("קורות חיים", ["נשמר לאחרונה", ""], (cvs || []).map((c) => `<tr>

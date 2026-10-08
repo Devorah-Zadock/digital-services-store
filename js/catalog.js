@@ -41,7 +41,7 @@ function cs() { return CATALOG_STR[catalogLang()] || CATALOG_STR.he; }
 
 function money(n) { return n === 0 ? cs().free : "₪" + n; }
 function escapeHtmlC(s) {
-  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
 function cardHtml(p) {

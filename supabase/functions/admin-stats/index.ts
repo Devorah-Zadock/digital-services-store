@@ -462,7 +462,11 @@ Deno.serve(async (req: Request) => {
   const { data: userData, error: userErr } = await admin.auth.getUser(token);
   if (userErr || !userData.user) return json({ error: "unauthorized" }, 401);
   const callerEmail = (userData.user.email || "").toLowerCase();
-  const role = await resolveRole(admin, callerEmail);
+  // Roles are keyed by email, so the email must be proven to belong to
+  // this account — otherwise (with email confirmation ever turned off)
+  // someone could simply sign up AS an admin's address.
+  const emailConfirmed = !!(userData.user.email_confirmed_at || (userData.user as { confirmed_at?: string }).confirmed_at);
+  const role = emailConfirmed ? await resolveRole(admin, callerEmail) : null;
   if (!role) {
     if (!ADMIN_EMAILS.length) return json({ error: "ADMIN_EMAILS not configured" }, 500);
     return json({ error: "forbidden" }, 403);

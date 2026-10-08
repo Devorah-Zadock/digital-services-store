@@ -126,6 +126,8 @@ function buildClaimLink(siteProjectId: string) {
   return `https://app.netlify.com/claim?utm_source=deskkit#${token}`;
 }
 
+const MAX_SITE_CHARS = 8_000_000;
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method not allowed" }, 405);
@@ -174,6 +176,12 @@ Deno.serve(async (req: Request) => {
     const ALLOWED_PAGE_NAMES = new Set(["index", "about", "contact"]);
     if (pageNames.some((name) => !ALLOWED_PAGE_NAMES.has(name))) {
       return jsonResponse({ error: "unexpected page name" }, 400);
+    }
+    // Generous ceiling (older sites still carry photos inlined as base64),
+    // but not unlimited free hosting of arbitrary large files.
+    const totalChars = pageNames.reduce((n, name) => n + String(pages[name]).length, 0);
+    if (totalChars > MAX_SITE_CHARS) {
+      return jsonResponse({ error: "site too large" }, 413);
     }
 
     // Ownership check: userId here is the verified token's own subject
@@ -249,6 +257,16 @@ Deno.serve(async (req: Request) => {
       // happened to send. See applyWatermark()'s own comment.
       const watermarkedPages: Record<string, string> = {};
       for (const name of pageNames) watermarkedPages[name] = applyWatermark(String(pages[name]), isPaid);
+
+      // The address must not already be serving a DIFFERENT site.
+      const { data: existingPage } = await admin
+        .from("hosted_site_pages")
+        .select("site_project_id")
+        .eq("slug", slug)
+        .maybeSingle();
+      if (existingPage && existingPage.site_project_id && existingPage.site_project_id !== siteProjectId) {
+        return jsonResponse({ error: "this address belongs to another site" }, 409);
+      }
 
       const { error: upsertErr } = await admin
         .from("hosted_site_pages")

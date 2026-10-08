@@ -49,6 +49,31 @@ const corsHeaders = {
   "Content-Type": "application/json",
 };
 
+// Our two Gumroad products. The site product is one price for any site
+// template (the key gets bound to the template it's first redeemed for);
+// the schedule product only ever unlocks the schedule builder.
+const SITE_PRODUCT_ID = "NUyzNlvxdpU_49TE5nk9fg==";
+const SCHEDULE_PRODUCT_ID = "K122yL6VSdTui67Be5ZiYw==";
+const SCHEDULE_TEMPLATE = "schedule-builder";
+function productAllowsTemplate(productId: string, template: string): boolean {
+  if (!/^[a-z0-9-]{1,60}$/.test(template)) return false;
+  if (productId === SCHEDULE_PRODUCT_ID) return template === SCHEDULE_TEMPLATE;
+  if (productId === SITE_PRODUCT_ID) return template !== SCHEDULE_TEMPLATE;
+  return false;
+}
+
+// The few Gumroad-verified purchase fields send-receipt needs, kept
+// server-side so the receipt never relies on what the browser claims.
+function receiptFields(p: Record<string, unknown>) {
+  return {
+    email: typeof p.email === "string" ? p.email : null,
+    full_name: typeof p.full_name === "string" ? p.full_name : null,
+    price: typeof p.price === "number" ? p.price : null,
+    currency: typeof p.currency === "string" ? p.currency : null,
+    test: !!p.test,
+  };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") {
@@ -69,12 +94,21 @@ Deno.serve(async (req: Request) => {
   const userId = userData.user.id;
 
   try {
-    const { licenseKey, productId, template } = await req.json();
+    const body = await req.json();
+    const licenseKey = typeof body.licenseKey === "string" ? body.licenseKey.trim().slice(0, 200) : "";
+    const productId = typeof body.productId === "string" ? body.productId.trim() : "";
+    const template = typeof body.template === "string" ? body.template.trim() : "";
     if (!licenseKey || !productId || !template) {
       return new Response(JSON.stringify({ error: "missing licenseKey, productId or template" }), {
         status: 400,
         headers: corsHeaders,
       });
+    }
+    // Which templates each of OUR Gumroad products may unlock. Without
+    // this, any valid key — for the cheaper product, or even for some
+    // other seller's product — could be redeemed as any site template.
+    if (!productAllowsTemplate(productId, template)) {
+      return new Response(JSON.stringify({ success: false, reason: "invalid" }), { status: 200, headers: corsHeaders });
     }
 
     // Confirmed twice in real testing: a license verified within the
@@ -101,6 +135,12 @@ Deno.serve(async (req: Request) => {
       }
       if (gumroadData.success) break;
       if (attempt < 3) await new Promise((r) => setTimeout(r, 1500));
+    }
+    // A refunded / charged-back / disputed purchase no longer unlocks
+    // anything, even though Gumroad still reports the key as existing.
+    const purchaseInfo = (gumroadData.purchase || {}) as Record<string, unknown>;
+    if (gumroadData.success && (purchaseInfo.refunded || purchaseInfo.chargebacked || purchaseInfo.disputed)) {
+      return new Response(JSON.stringify({ success: false, reason: "refunded" }), { status: 200, headers: corsHeaders });
     }
     if (!gumroadData.success) {
       // Gumroad's own message ("That license does not exist for the
@@ -152,7 +192,7 @@ Deno.serve(async (req: Request) => {
     // of both requests reading "no existing row" and both succeeding.
     const { error: insertErr } = await admin
       .from("license_redemptions")
-      .insert({ license_key: licenseKey, product_id: productId, user_id: userId, template });
+      .insert({ license_key: licenseKey, product_id: productId, user_id: userId, template, purchase: receiptFields(purchaseInfo) });
     if (insertErr) {
       if (insertErr.code === "23505") {
         return new Response(JSON.stringify({ success: false, reason: "redeemed-elsewhere" }), {

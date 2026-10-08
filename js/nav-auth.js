@@ -15,7 +15,7 @@ function navIconSvg() {
 }
 
 function escapeHtmlNav(s) {
-  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
 // Same lookup-with-real-fallback pattern as js/header.js's dkHeaderLabel

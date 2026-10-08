@@ -1736,10 +1736,12 @@ async function verifySiteLicense() {
       // from scratch.
       const supportMailto = `mailto:digital.dz.studio@gmail.com?subject=${encodeURIComponent("בעיה בקוד רישוי — בניית אתר")}&body=${encodeURIComponent("הקוד שהזנתי: " + key)}`;
       const supportLine = `<br>עדיין תקועים? <a href="${supportMailto}" style="color:inherit; text-decoration:underline;">כתבו לנו ונפתור את זה ידנית</a>.`;
-      const invalidMsg = "קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב." + (data.gumroadMessage ? ` (Gumroad: ${data.gumroadMessage})` : "") + supportLine;
+      const invalidMsg = "קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב." + (data.gumroadMessage ? ` (Gumroad: ${escapeHtmlS(data.gumroadMessage)})` : "") + supportLine;
       note.innerHTML = data.reason === "redeemed-elsewhere" || data.reason === "different-template"
         ? "קוד הרישוי הזה כבר שימש לפתיחת אתר אחר. לתבנית נוספת נדרשת רכישה נפרדת." + supportLine
-        : invalidMsg;
+        : data.reason === "refunded"
+          ? "הרכישה הזו בוטלה או הוחזרה, ולכן הקוד כבר לא פעיל." + supportLine
+          : invalidMsg;
       note.className = "unlock-note err";
       return;
     }

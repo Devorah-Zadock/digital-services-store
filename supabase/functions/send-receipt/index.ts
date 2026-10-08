@@ -54,7 +54,7 @@ const corsHeaders = {
 };
 
 function escapeHtml(s: string): string {
-  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
 function receiptHtml(opts: { buyerName: string; buyerEmail: string; itemDescription: string; amount: string; receiptNumber: string; date: string; isTest: boolean }, forPdf: boolean) {
@@ -118,6 +118,16 @@ function toBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
+const CURRENCY_SYMBOLS: Record<string, string> = { ils: "₪", usd: "$", eur: "€", gbp: "£" };
+// Same formatting the browser used (js/widgets.js formatGumroadAmount),
+// now applied to the stored, Gumroad-verified price.
+function formatGumroadAmount(p: Record<string, unknown>): string | null {
+  if (typeof p.price !== "number") return null;
+  const code = String(p.currency || "").toLowerCase();
+  const symbol = CURRENCY_SYMBOLS[code] || (code ? code.toUpperCase() + " " : "");
+  return `${(p.price / 100).toFixed(2)} ${symbol}`;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") {
@@ -139,10 +149,52 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { buyerEmail, buyerName, itemDescription, amount, isTest } = await req.json();
-    if (!buyerEmail || !itemDescription) {
-      return new Response(JSON.stringify({ error: "missing buyerEmail or itemDescription" }), { status: 400, headers: corsHeaders });
+    // The receipt is tied to a real, already-redeemed purchase of THIS
+    // account: recipient, name, amount and test-flag all come from the
+    // Gumroad-verified record redeem-license stored — never from the
+    // request. (Taking them from the body let any signed-in user send a
+    // DeskKit-branded "receipt" to any address.) One receipt per license.
+    const body = await req.json();
+    const licenseKey = typeof body.licenseKey === "string" ? body.licenseKey.trim().slice(0, 200) : "";
+    const itemDescription = (typeof body.itemDescription === "string" ? body.itemDescription.trim().slice(0, 150) : "") || "רכישה ב-DeskKit";
+    if (!licenseKey) {
+      return new Response(JSON.stringify({ error: "missing licenseKey" }), { status: 400, headers: corsHeaders });
     }
+
+    const userId = userData.user.id;
+    const { data: lic, error: licErr } = await authClient
+      .from("license_redemptions")
+      .select("purchase")
+      .eq("license_key", licenseKey)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (licErr) return new Response(JSON.stringify({ error: "lookup failed" }), { status: 500, headers: corsHeaders });
+    if (!lic) return new Response(JSON.stringify({ error: "no matching purchase" }), { status: 404, headers: corsHeaders });
+
+    // Atomic "send once": only the request that flips receipt_sent_at
+    // from NULL gets to send.
+    const { data: claimed, error: claimErr } = await authClient
+      .from("license_redemptions")
+      .update({ receipt_sent_at: new Date().toISOString() })
+      .eq("license_key", licenseKey)
+      .eq("user_id", userId)
+      .is("receipt_sent_at", null)
+      .select("license_key");
+    if (claimErr) return new Response(JSON.stringify({ error: "lookup failed" }), { status: 500, headers: corsHeaders });
+    if (!claimed || !claimed.length) {
+      return new Response(JSON.stringify({ success: true, alreadySent: true }), { status: 200, headers: corsHeaders });
+    }
+    const releaseClaim = () => authClient.from("license_redemptions").update({ receipt_sent_at: null }).eq("license_key", licenseKey).eq("user_id", userId);
+
+    const purchase = (lic.purchase || {}) as Record<string, unknown>;
+    const buyerEmail = (typeof purchase.email === "string" && purchase.email) || userData.user.email || "";
+    if (!buyerEmail) {
+      await releaseClaim();
+      return new Response(JSON.stringify({ error: "no recipient" }), { status: 400, headers: corsHeaders });
+    }
+    const buyerName = typeof purchase.full_name === "string" ? purchase.full_name.slice(0, 100) : "";
+    const amount = formatGumroadAmount(purchase);
+    const isTest = !!purchase.test;
 
     const receiptNumber = `DK-${Date.now()}`;
     const date = new Date().toLocaleDateString("he-IL");
@@ -179,7 +231,9 @@ Deno.serve(async (req: Request) => {
 
     if (!emailRes.ok) {
       const errText = await emailRes.text();
-      return new Response(JSON.stringify({ error: errText }), { status: 502, headers: corsHeaders });
+      console.error("Resend failed", emailRes.status, errText.slice(0, 500));
+      await releaseClaim();
+      return new Response(JSON.stringify({ error: "sending the receipt failed" }), { status: 502, headers: corsHeaders });
     }
 
     return new Response(JSON.stringify({ success: true, receiptNumber, pdfAttached: !!pdfBytes, taxIdConfigured: !!TAX_ID }), { status: 200, headers: corsHeaders });

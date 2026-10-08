@@ -4,7 +4,24 @@
    lands back here already authenticated), we send them straight there. */
 
 const params = new URLSearchParams(location.search);
-const redirectTarget = params.get("redirect") || "tools.html";
+
+/* ?redirect= comes from the URL, so anyone can craft it. Only same-origin
+   http(s) pages are allowed — never "javascript:", another site, or a
+   protocol-relative "//evil.com" — otherwise a link to this page could
+   run code on deskkit.co.il (and read the session) or bounce a freshly
+   signed-in user to a phishing page. Anything else falls back to tools. */
+function safeRedirectTarget(raw) {
+  if (!raw) return "tools.html";
+  try {
+    const u = new URL(raw, location.href);
+    if (u.origin !== location.origin || (u.protocol !== "https:" && u.protocol !== "http:")) return "tools.html";
+    if (/^\/api\//i.test(u.pathname)) return "tools.html";
+    return u.pathname + u.search + u.hash;
+  } catch (_badUrl) {
+    return "tools.html";
+  }
+}
+const redirectTarget = safeRedirectTarget(params.get("redirect"));
 let authMode = "login"; // "login" | "signup"
 
 // Same defensive lookup as js/header.js's dkHeaderLabel: js/i18n.js is
@@ -19,6 +36,13 @@ function dkAcctLabel(key, fallback) {
 
 function setAuthMode(mode) {
   authMode = mode;
+  // 8+ characters for NEW passwords only — existing accounts with an
+  // older, shorter password must still be able to log in.
+  const pwInput = document.getElementById("qa-password");
+  if (pwInput) {
+    if (mode === "signup") { pwInput.minLength = 8; pwInput.autocomplete = "new-password"; }
+    else { pwInput.removeAttribute("minlength"); pwInput.autocomplete = "current-password"; }
+  }
   document.getElementById("qa-auth-err").textContent = "";
   document.getElementById("qa-auth-msg").textContent = "";
   if (mode === "signup") {
@@ -47,7 +71,9 @@ function dkAuthErrorMessage(error, context) {
   const lower = msg.toLowerCase();
   if (lower.includes("invalid login credentials")) return dkAcctLabel("acct_err_invalid_credentials", "פרטי ההתחברות שגויים — בדקו מייל וסיסמה ונסו שוב.");
   if (lower.includes("email not confirmed")) return dkAcctLabel("acct_err_email_not_confirmed", "המייל שלכם עדיין לא אומת — בדקו את תיבת הדואר (כולל תיקיית ספאם) ולחצו על קישור האימות.");
-  if (lower.includes("password should be at least") || lower.includes("password is too short")) return dkAcctLabel("acct_err_password_too_short", "הסיסמה קצרה מדי — נדרשים לפחות 6 תווים.");
+  if (lower.includes("password should be at least") || lower.includes("password is too short")) return dkAcctLabel("acct_err_password_too_short", "הסיסמה קצרה מדי — נדרשים לפחות 8 תווים.");
+  if (lower.includes("pwned") || lower.includes("leaked") || lower.includes("weak") || lower.includes("known to be")) return dkAcctLabel("acct_err_password_weak", "הסיסמה הזו חלשה מדי או שהופיעה בדליפת מידע — בחרו סיסמה אחרת.");
+  if (lower.includes("captcha")) return dkAcctLabel("acct_err_captcha", "אימות האבטחה נכשל — רעננו את הדף ונסו שוב.");
   if (lower.includes("already registered") || lower.includes("already exists") || lower.includes("user already registered")) return dkAcctLabel("acct_err_already_registered", "כתובת המייל הזו כבר רשומה אצלנו — נסו להתחבר במקום להירשם.");
   if (lower.includes("rate limit") || lower.includes("too many requests")) return dkAcctLabel("acct_err_rate_limit", "יותר מדי ניסיונות ברצף — המתינו כמה דקות ונסו שוב.");
   return context === "signup"
@@ -172,7 +198,11 @@ function wireAuth() {
   });
 }
 
-let isPasswordRecovery = false;
+// A recovery link lands here with type=recovery in the URL. Checked
+// synchronously too: getSession() can resolve before supabase-js fires
+// PASSWORD_RECOVERY, which would otherwise redirect away before the
+// "choose a new password" form ever shows.
+let isPasswordRecovery = /(^|[#&?])type=recovery(&|$)/.test(location.hash) || params.get("type") === "recovery";
 
 document.addEventListener("DOMContentLoaded", () => {
   wireAuth();
@@ -197,6 +227,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   supabaseClient.auth.getSession().then(({ data }) => {
+    if (data.session && data.session.user && isPasswordRecovery) { showResetPassword(); return; }
     if (data.session && data.session.user && !isPasswordRecovery) window.location.href = redirectTarget;
   });
 });

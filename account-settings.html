@@ -67,6 +67,7 @@
     <p class="sub">נשלח מייל אישור לכתובת החדשה לפני שהיא נכנסת לתוקף.</p>
     <form id="as-email-form" class="builder-form">
       <div class="field"><label>כתובת מייל חדשה</label><input type="email" id="as-new-email" dir="ltr" required></div>
+      <div class="field as-current-pw-field" hidden><label>הסיסמה הנוכחית שלכם</label><input type="password" id="as-email-current-password" autocomplete="current-password"></div>
       <div class="as-err" id="as-email-err"></div>
       <div class="as-msg" id="as-email-msg"></div>
       <button type="submit" class="btn btn-teal" style="width:100%;">עדכון מייל</button>
@@ -77,8 +78,9 @@
     <h3>שינוי סיסמה</h3>
     <p class="sub">גם אם נכנסתם עם Google — אפשר להוסיף סיסמה ככניסה חלופית.</p>
     <form id="as-password-form" class="builder-form">
-      <div class="field"><label>סיסמה חדשה</label><input type="password" id="as-new-password" autocomplete="new-password" required minlength="6"></div>
-      <div class="field"><label>אימות סיסמה</label><input type="password" id="as-new-password-confirm" autocomplete="new-password" required minlength="6"></div>
+      <div class="field as-current-pw-field" hidden><label>סיסמה נוכחית</label><input type="password" id="as-current-password" autocomplete="current-password"></div>
+      <div class="field"><label>סיסמה חדשה (לפחות 8 תווים)</label><input type="password" id="as-new-password" autocomplete="new-password" required minlength="8"></div>
+      <div class="field"><label>אימות סיסמה</label><input type="password" id="as-new-password-confirm" autocomplete="new-password" required minlength="8"></div>
       <div class="as-err" id="as-password-err"></div>
       <div class="as-msg" id="as-password-msg"></div>
       <button type="submit" class="btn btn-teal" style="width:100%;">עדכון סיסמה</button>
@@ -92,6 +94,10 @@
     <div id="as-delete-confirm" style="display:none; margin-top:16px;">
       <p class="sub" style="margin-bottom:10px;">כדי לאשר, הקלידו את כתובת המייל שלכם (<b id="as-delete-email-hint" style="color:var(--dark);"></b>) בשדה הבא:</p>
       <input type="email" id="as-delete-email-input" dir="ltr" autocomplete="off" style="width:100%; box-sizing:border-box; padding:10px 12px; border-radius:8px; border:1px solid #DADFDD; font-family:inherit; font-size:14px; margin-bottom:10px;">
+      <div class="as-current-pw-field" hidden>
+        <p class="sub" style="margin-bottom:6px;">ואת הסיסמה שלכם:</p>
+        <input type="password" id="as-delete-password" autocomplete="current-password" style="width:100%; box-sizing:border-box; padding:10px 12px; border-radius:8px; border:1px solid #DADFDD; font-family:inherit; font-size:14px; margin-bottom:10px;">
+      </div>
       <div class="as-err" id="as-delete-err"></div>
       <div style="display:flex; gap:8px;">
         <button type="button" id="as-delete-cancel" class="btn btn-outline" style="flex:1;">ביטול</button>
@@ -109,7 +115,7 @@
 <script src="js/mobile-nav.js?v=2"></script>
 <script src="js/domain-guide.js?v=3"></script>
 <script src="js/require-auth.js"></script>
-<script src="js/account-settings.js?v=4"></script>
+<script src="js/account-settings.js?v=5"></script>
 <script src="js/main.js?v=4"></script>
 <script src="js/widgets.js?v=16"></script>
 </body>
