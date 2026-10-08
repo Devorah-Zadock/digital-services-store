@@ -11,7 +11,7 @@
         file's ?v= in account.html and account-settings.html, deploy.
      2. Supabase → Authentication → Attack Protection → Enable CAPTCHA
         protection → Turnstile → paste the SECRET key → Save. */
-const DK_TURNSTILE_SITE_KEY = "";
+const DK_TURNSTILE_SITE_KEY = "0x4AAAAAAFRnydl-Hm65uzrp";
 
 const dkCaptcha = { widgets: {}, tokens: {}, scriptPromise: null };
 
@@ -37,7 +37,15 @@ async function dkCaptchaMount(containerId) {
   if (!dkCaptchaEnabled()) return;
   const el = document.getElementById(containerId);
   if (!el || dkCaptcha.widgets[containerId] !== undefined) return;
-  await dkCaptchaLoadScript();
+  // A blocked/failed script (ad-blocker, network) must never break the
+  // form itself — the server just won't get a token and says so.
+  try {
+    await dkCaptchaLoadScript();
+  } catch (_e) {
+    dkCaptcha.scriptPromise = null;
+    return;
+  }
+  if (!window.turnstile || dkCaptcha.widgets[containerId] !== undefined) return;
   dkCaptcha.widgets[containerId] = window.turnstile.render(el, {
     sitekey: DK_TURNSTILE_SITE_KEY,
     size: "flexible",
@@ -53,7 +61,8 @@ async function dkCaptchaMount(containerId) {
 // dkCaptchaReset() after every attempt.
 async function dkCaptchaToken(containerId) {
   if (!dkCaptchaEnabled()) return undefined;
-  await dkCaptchaMount(containerId);
+  try { await dkCaptchaMount(containerId); } catch (_e) { return undefined; }
+  if (dkCaptcha.widgets[containerId] === undefined) return undefined; // script blocked — don't wait
   for (let i = 0; i < 40 && !dkCaptcha.tokens[containerId]; i++) {
     await new Promise((r) => setTimeout(r, 200));
   }
@@ -63,5 +72,5 @@ async function dkCaptchaToken(containerId) {
 function dkCaptchaReset(containerId) {
   if (!dkCaptchaEnabled() || dkCaptcha.widgets[containerId] === undefined || !window.turnstile) return;
   dkCaptcha.tokens[containerId] = null;
-  window.turnstile.reset(dkCaptcha.widgets[containerId]);
+  try { window.turnstile.reset(dkCaptcha.widgets[containerId]); } catch (_e) { /* widget gone */ }
 }
