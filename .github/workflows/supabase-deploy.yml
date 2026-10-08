@@ -22,7 +22,7 @@ on:
         description: "What to do"
         type: choice
         default: check-live
-        options: [check-live, deploy-functions, run-sql, auth-settings, turnstile-enable, turnstile-disable]
+        options: [check-live, deploy-functions, run-sql, auth-settings, turnstile-enable, turnstile-disable, auth-errors]
       sql_files:
         description: "run-sql: space-separated SQL files"
         default: ""
@@ -76,6 +76,10 @@ jobs:
         run: |
           python3 .github/scripts/supabase_api.py auth-show
           python3 .github/scripts/supabase_api.py sql supabase/sql/security_check_live.sql
+
+      - name: Recent Auth errors (read-only, redacted)
+        if: github.event_name == 'workflow_dispatch' && inputs.task == 'auth-errors'
+        run: python3 .github/scripts/supabase_api.py auth-errors 90
 
       - name: Change auth settings
         if: github.event_name == 'workflow_dispatch' && inputs.task == 'auth-settings'
