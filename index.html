@@ -77,8 +77,8 @@
 <link rel="preload" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700;800&family=Secular+One&family=Space+Grotesk:wght@500;600;700&display=optional" as="style">
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700;800&family=Secular+One&family=Space+Grotesk:wght@500;600;700&display=optional" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700;800&family=Secular+One&family=Space+Grotesk:wght@500;600;700&display=optional" rel="stylesheet"></noscript>
-<link rel="stylesheet" href="css/style.css?v=100">
-<link rel="stylesheet" href="css/deskkit-ui.css?v=44">
+<link rel="stylesheet" href="css/style.css?v=101">
+<link rel="stylesheet" href="css/deskkit-ui.css?v=46">
 </head>
 <body class="dk-home dk-has-app-sidebar">
 <header class="site">
@@ -138,7 +138,20 @@
              with a connected-component flood-fill from the image
              border, so only genuinely background pixels are cut,
              never the laptop's own light aluminum base. -->
-        <img src="images/laptop-hero.png" alt="" class="dk-home-hero-laptop-img" aria-hidden="true">
+        <!-- width/height reserve the photo's real box before it loads —
+             without them the visual was 0px tall until the 275KB PNG
+             arrived, so on a slow phone connection the tool cards slid
+             up underneath and the screen-overlay text floated on top of
+             them. WebP (~33KB) first, PNG fallback. is-loaded reveals the
+             overlay only once the photo it sits on is actually there; a
+             failed load drops the whole block instead of leaving bare
+             floating text. -->
+        <picture>
+          <source srcset="images/laptop-hero.webp" type="image/webp">
+          <img src="images/laptop-hero.png" alt="" class="dk-home-hero-laptop-img" aria-hidden="true" width="1024" height="946" decoding="async" fetchpriority="high"
+               onload="this.closest('.dk-home-hero-visual').classList.add('is-loaded')"
+               onerror="this.closest('.dk-home-hero-visual').style.display='none'">
+        </picture>
         <!-- The screen's own content (photo + nav baked into the PNG)
              had no text at all, reading as an empty laptop rather than
              DeskKit's own product — confirmed live. Positioned/rotated
