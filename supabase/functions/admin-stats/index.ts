@@ -533,15 +533,40 @@ async function notifyAdmin(email: string, subject: string, htmlBody: string) {
   } catch (_e) { /* best effort */ }
 }
 
-function notifyAdminUnlock(email: string) {
+// The full "what to do" guide, in every security email, so it's there
+// in the inbox exactly when it's needed.
+const ACTIONS_URL = "https://github.com/Devorah-Zadock/digital-services-store/actions/workflows/supabase-deploy.yml";
+const EMERGENCY_STEPS_HTML =
+  `<div style="margin-top:16px;padding:12px 14px;border:1px solid #f0c36d;background:#fff8e6;border-radius:8px;">` +
+  `<b>אם זו לא את/ה — מה עושים, לפי הסדר:</b><ol style="margin:8px 0 0;padding-inline-start:20px;line-height:1.7;">` +
+  `<li><b>מחליפים את סיסמת חשבון ה-Google</b> (או את סיסמת החשבון באתר, אם נכנסים עם מייל וסיסמה): ` +
+  `<a href="https://myaccount.google.com/security">myaccount.google.com/security</a>.</li>` +
+  `<li><b>מנתקים את כל הגישה לניהול:</b> נכנסים ל-<a href="${ACTIONS_URL}">GitHub ← Actions ← Supabase deploy</a> ← ` +
+  `לוחצים <b>Run workflow</b> ← בשדה "What to do" בוחרים <b>admin-reset</b> ← <b>Run workflow</b> (הירוק). ` +
+  `זה מוחק את סיסמת הניהול ומנתק את כל המנהלים מכל המכשירים. הלקוחות לא מושפעים.</li>` +
+  `<li><b>נכנסים מחדש לאזור הניהול</b> וקובעים סיסמת ניהול חדשה.</li>` +
+  `<li>בודקים בלשונית <b>"יומן ניהול"</b> מה בוצע, ופונים לתמיכה אם משהו נראה חשוד.</li></ol>` +
+  `<div style="margin-top:8px;font-size:13px;color:#555;">אין זמן עכשיו לכל השלבים? בשלב 2 בחרו <b>admin-lockdown</b> — ` +
+  `זה נועל את הניהול לגמרי ל-30 יום ומנתק את כולם. מאוחר יותר <b>admin-reset</b> פותח אותו שוב.</div></div>`;
+
+function securityEmail(email: string, subject: string, whatHappened: string) {
   const when = new Date().toLocaleString("he-IL", { timeZone: "Asia/Jerusalem" });
-  return notifyAdmin(email, "כניסה לאזור הניהול של DeskKit",
-    `נכנסו לאזור הניהול עם החשבון שלך ב-${when}.<br><br>` +
-    `<b>אם זו את/ה — אין צורך לעשות דבר.</b><br><br>` +
-    `<b>אם זו לא את/ה:</b><ol style="margin:6px 0;padding-inline-start:20px;">` +
-    `<li>היכנסו לאזור הניהול ולחצו "שינוי סיסמת ניהול" — זה מנתק מיד כל מי שנכנס עם הסיסמה הקודמת.</li>` +
-    `<li>התנתקו מהאתר (התנתקות מנתקת את החשבון בכל המכשירים), ואז החליפו את סיסמת חשבון ה-Google / סיסמת החשבון באתר.</li>` +
-    `<li>צרו קשר כדי שנבדוק ביומן הניהול מה בוצע.</li></ol>`);
+  return notifyAdmin(email, subject,
+    `${whatHappened} (${when}).<br><br><b>אם זו את/ה — אין צורך לעשות דבר.</b>` + EMERGENCY_STEPS_HTML);
+}
+
+function notifyAdminUnlock(email: string) {
+  return securityEmail(email, "כניסה לאזור הניהול של DeskKit", "נכנסו לאזור הניהול עם החשבון שלך");
+}
+
+// One email per lock-out (not one for every request made while locked).
+async function notifyAdminLockedOnce(admin: ReturnType<typeof createClient>, email: string) {
+  const since = new Date(Date.now() - 16 * 60 * 1000).toISOString();
+  const { count } = await admin.from("admin_audit_log").select("id", { count: "exact", head: true })
+    .eq("admin_email", email).eq("action", "admin_unlock_locked").gte("created_at", since);
+  if (count) return;
+  await securityEmail(email, "⚠️ ניסיונות כושלים לסיסמת הניהול — DeskKit",
+    "הוקלדה סיסמת ניהול שגויה 5 פעמים בחשבון שלך, ולכן אזור הניהול ננעל ל-15 דקות");
 }
 
 Deno.serve(async (req: Request) => {
@@ -588,7 +613,11 @@ Deno.serve(async (req: Request) => {
     if (STEP_UP_ACTIONS.has(action)) {
       const confirm = await admin.rpc("admin_secret_check", { p_email: callerEmail, p_password: String(body.confirmPassword || "") });
       if (confirm.error) throw confirm.error;
-      if (confirm.data === "locked") return json({ error: "locked" }, 423);
+      if (confirm.data === "locked") {
+        await notifyAdminLockedOnce(admin, callerEmail);
+        await audit(admin, actor, "admin_unlock_locked", null, { action });
+        return json({ error: "locked" }, 423);
+      }
       if (confirm.data !== "ok") {
         await audit(admin, actor, "admin_confirm_failed", null, { action });
         return json({ error: "confirm-password" }, 401);
@@ -597,12 +626,13 @@ Deno.serve(async (req: Request) => {
 
     if (action === "whoami") return json({ email: callerEmail, role, adminPassword, unlocked });
 
-    // Exchange the admin password for an unlock token (8 hours).
+    // Exchange the admin password for an unlock token (2 hours).
     if (action === "unlock") {
       const result = await admin.rpc("admin_secret_check", { p_email: callerEmail, p_password: String(body.password || "") });
       if (result.error) throw result.error;
       if (result.data === "unset") return json({ error: "not-set" }, 409);
       if (result.data === "locked") {
+        await notifyAdminLockedOnce(admin, callerEmail);
         await audit(admin, actor, "admin_unlock_locked", null);
         return json({ error: "locked" }, 423);
       }
@@ -623,8 +653,15 @@ Deno.serve(async (req: Request) => {
       if (adminPassword === "set") {
         const check = await admin.rpc("admin_secret_check", { p_email: callerEmail, p_password: String(body.currentPassword || "") });
         if (check.error) throw check.error;
-        if (check.data === "locked") return json({ error: "locked" }, 423);
-        if (check.data !== "ok") return json({ error: "bad-password" }, 401);
+        if (check.data === "locked") {
+          await notifyAdminLockedOnce(admin, callerEmail);
+          await audit(admin, actor, "admin_unlock_locked", null, { action });
+          return json({ error: "locked" }, 423);
+        }
+        if (check.data !== "ok") {
+          await audit(admin, actor, "admin_unlock_failed", null, { action });
+          return json({ error: "bad-password" }, 401);
+        }
       }
       // First-time setup needs no extra step (a forced fresh sign-in was
       // too much friction with Google log-in); instead the admin is told
@@ -633,8 +670,7 @@ Deno.serve(async (req: Request) => {
       await audit(admin, actor, "set_admin_password", null);
       const setRes = await admin.rpc("admin_secret_set", { p_email: callerEmail, p_password: newPassword });
       if (setRes.error) throw setRes.error;
-      await notifyAdmin(callerEmail, "נקבעה סיסמת ניהול — DeskKit",
-        `נקבעה (או הוחלפה) סיסמת ניהול לחשבון שלך ב-DeskKit ב-${new Date().toLocaleString("he-IL", { timeZone: "Asia/Jerusalem" })}.<br>אם זו לא את/ה — צרו קשר מיד כדי לאפס אותה.`);
+      await securityEmail(callerEmail, "נקבעה סיסמת ניהול — DeskKit", "נקבעה (או הוחלפה) סיסמת ניהול לחשבון שלך ב-DeskKit");
       const { data: newVersion } = await admin.rpc("admin_secret_version", { p_email: callerEmail });
       return json(await makeUnlockToken(actor.id, String(newVersion)));
     }
