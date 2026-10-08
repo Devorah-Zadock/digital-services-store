@@ -44,6 +44,7 @@ AUTH_FIELDS = [
     "rate_limit_email_sent", "rate_limit_verify", "rate_limit_token_refresh",
     "rate_limit_otp", "rate_limit_anonymous_users", "jwt_exp",
     "sessions_timebox", "sessions_inactivity_timeout", "external_google_enabled",
+    "external_google_client_id",  # public (it is in every Google sign-in URL); the secret is never printed
     "mfa_totp_enroll_enabled", "mfa_totp_verify_enabled",
     "smtp_host", "smtp_port", "smtp_user", "smtp_admin_email", "smtp_sender_name", "smtp_max_frequency",
     "mailer_subjects_confirmation", "mailer_subjects_recovery", "mailer_subjects_email_change",
