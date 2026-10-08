@@ -1376,7 +1376,14 @@ async function showPanel() {
       document.getElementById("stats-setup-card").hidden = false;
       return;
     }
-    document.querySelector("#admin-gate p").textContent = "שגיאה: " + e.message;
+    // Any other failure: say so and stop the spinner — it isn't loading.
+    const spinner = document.querySelector("#admin-gate .admin-gate-spinner");
+    if (spinner) spinner.hidden = true;
+    // "unknown action" = the server still runs an older admin-stats that
+    // predates "whoami", i.e. the Edge Function wasn't redeployed yet.
+    document.querySelector("#admin-gate p").textContent = e.message === "unknown action"
+      ? "פונקציית השרת admin-stats עדיין בגרסה הישנה. צריך לפרוס אותה מחדש ב-Supabase (Edge Functions → admin-stats) ואז לרענן את הדף."
+      : "שגיאה: " + e.message;
     return;
   }
   document.getElementById("admin-gate").style.display = "none";
