@@ -9,10 +9,14 @@ personal access token, stored as a GitHub Actions secret) and PROJECT_REF.
   supabase_api.py turnstile-enable   turn on the invisible CAPTCHA (needs the
                                      TURNSTILE_SECRET_KEY env/GitHub secret)
   supabase_api.py turnstile-disable  turn it off again (emergency switch)
+  supabase_api.py auth-errors [min]  recent Auth errors (no emails/IPs printed)
 """
+import datetime
 import json
 import os
+import re
 import sys
+import urllib.parse
 import urllib.error
 import urllib.request
 
@@ -101,5 +105,22 @@ if __name__ == "__main__":
         call("DELETE", "/secrets", ["TURNSTILE_SECRET_KEY"])
         print("Turnstile disabled. Current values:")
         auth_show()
+    elif cmd == "auth-errors":
+        minutes = int(sys.argv[2]) if len(sys.argv) > 2 else 60
+        start = (datetime.datetime.utcnow() - datetime.timedelta(minutes=minutes)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        sql = "select timestamp, event_message from auth_logs order by timestamp desc limit 300"
+        res = call("GET", "/analytics/endpoints/logs.all?" + urllib.parse.urlencode({"sql": sql, "iso_timestamp_start": start})) or {}
+        rows = res.get("result") or []
+        print(f"{len(rows)} auth log lines in the last {minutes} minutes (errors/warnings, redacted):")
+        scrub = lambda t: re.sub(r"[\w.+-]+@[\w-]+\.[\w.-]+", "<email>", re.sub(r"\b\d{1,3}(\.\d{1,3}){3}\b", "<ip>", str(t)))
+        for r in rows:
+            try:
+                m = json.loads(r.get("event_message") or "{}")
+            except Exception:
+                m = {"msg": r.get("event_message")}
+            level = m.get("level", "")
+            status = m.get("status") or m.get("code") or ""
+            if level in ("error", "warning") or (isinstance(status, int) and status >= 400) or m.get("error"):
+                print(" | ".join(scrub(x) for x in [m.get("time", r.get("timestamp")), level, m.get("method", ""), m.get("path", ""), status, m.get("error_code", ""), m.get("error", ""), m.get("msg", "")]))
     else:
         sys.exit(__doc__)
