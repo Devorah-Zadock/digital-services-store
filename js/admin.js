@@ -365,7 +365,7 @@ function renderUsersTable() {
   const userRows = pageUsers
     .map((u) => {
       const i = dkAdminRawUsers.indexOf(u);
-      const date = u.createdAt ? new Date(u.createdAt).toLocaleDateString("he-IL") : "—";
+      const date = u.createdAt ? new Date(u.createdAt).toLocaleString("he-IL", { dateStyle: "short", timeStyle: "short" }) : "—";
       const email = u.email || u.id;
 
       return `
@@ -386,7 +386,7 @@ function renderUsersTable() {
       <thead><tr>
         <th></th>
         <th class="sortable${dkAdminSortKey === "email" ? " sort-active" : ""}" data-sort="email">מייל ${dkAdminSortArrow("email")}</th>
-        <th class="sortable${dkAdminSortKey === "createdAt" ? " sort-active" : ""}" data-sort="createdAt">נרשם בתאריך ${dkAdminSortArrow("createdAt")}</th>
+        <th class="sortable${dkAdminSortKey === "createdAt" ? " sort-active" : ""}" data-sort="createdAt">תאריך ושעת הרשמה ${dkAdminSortArrow("createdAt")}</th>
         <th>סך הכל נכסים</th>
       </tr></thead>
       <tbody>${userRows || `<tr><td colspan="4">${dkAdminSearchQuery ? "לא נמצאו משתמשים תואמים" : "עדיין אין משתמשים"}</td></tr>`}</tbody>
@@ -524,9 +524,13 @@ function messageCardHtml(m) {
   const dateStr = m.created_at ? new Date(m.created_at).toLocaleString("he-IL", { dateStyle: "short", timeStyle: "short" }) : "";
   const typeLabel = m.form_type === "feedback" ? "משוב" : "פנייה";
   const ratingHtml = m.rating ? `<span class="message-rating">${"★".repeat(m.rating)}${"☆".repeat(5 - m.rating)}</span>` : "";
+  // Feedback from a signed-in visitor carries the account's own name/email
+  // (resolved server-side from their session — see
+  // supabase/functions/submit-contact-message); anything else came from
+  // someone who wasn't signed in.
   const fromHtml = (m.name || m.email)
     ? `<span class="message-from">${escapeHtml(m.name || "")}${m.name && m.email ? " · " : ""}${m.email ? escapeHtml(m.email) : ""}</span>`
-    : "";
+    : (m.form_type === "feedback" ? `<span class="message-from">אורח/ת (לא מחובר/ת)</span>` : "");
   return `
     <div class="message-card${unread ? " unread" : ""}" data-mid="${m.id}">
       <div class="message-card-head">
