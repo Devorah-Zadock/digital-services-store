@@ -201,9 +201,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (reauthErr) { err.textContent = reauthErr; return; }
     const { error } = await supabaseClient.auth.updateUser({ password: pw });
     if (error) {
-      err.textContent = /weak|leaked|pwned|characters/i.test(error.message || "")
-        ? "הסיסמה חלשה מדי או שהופיעה בדליפת מידע — בחרו סיסמה אחרת (לפחות 8 תווים)."
-        : "העדכון נכשל, נסו שוב.";
+      const m = error.message || "";
+      err.textContent = error.code === "same_password" || /different from the old/i.test(m)
+        ? "הסיסמה החדשה חייבת להיות שונה מהסיסמה הקודמת."
+        : /weak|leaked|pwned|characters|at least/i.test(m)
+          ? "הסיסמה קצרה או חלשה מדי — נדרשים לפחות 8 תווים."
+          : "העדכון נכשל, נסו שוב." + (error.status || error.code ? ` (${[error.status, error.code].filter(Boolean).join(" ")})` : "");
       return;
     }
     // Anyone who was signed in elsewhere with the old password is signed
