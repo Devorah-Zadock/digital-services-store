@@ -1,6 +1,6 @@
 -- Security hardening (security audit, October 2026). Safe to run more than
--- once; every part checks that its table exists first. Run the whole file
--- in Supabase Dashboard → SQL Editor.
+-- once. Run the whole file in Supabase Dashboard → SQL Editor (or it runs
+-- automatically on merge — see .github/workflows/supabase-deploy.yml).
 --
 -- 1. site_projects: the columns only the server may set (slug, custom
 --    domain, publish info) can no longer be written from the browser.
@@ -64,102 +64,90 @@ begin
 end;
 $$;
 
-do $$
-begin
-  if to_regclass('public.site_projects') is not null then
-    drop trigger if exists site_projects_protect_columns on public.site_projects;
-    create trigger site_projects_protect_columns
-      before insert or update on public.site_projects
-      for each row execute function public.site_projects_protect_columns();
-  end if;
-end $$;
+drop trigger if exists site_projects_protect_columns on public.site_projects;
+create trigger site_projects_protect_columns
+  before insert or update on public.site_projects
+  for each row execute function public.site_projects_protect_columns();
 
 -- ---------------------------------------------------------------------
--- 2 + 3. invoices
+-- 2 + 3. invoices (plain top-level statements — the Supabase SQL editor
+-- choked on these when they were nested inside a DO block)
 -- ---------------------------------------------------------------------
-do $$
+create or replace function public.finalize_invoice(p_id uuid)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_user_id uuid;
+  v_doc_type text;
+  v_status text;
+  v_number integer;
 begin
-  if to_regclass('public.invoice_saves') is null then
-    return;
+  if v_uid is null then
+    raise exception 'not authenticated' using errcode = '42501';
   end if;
 
-  execute $f$
-    create or replace function public.finalize_invoice(p_id uuid)
-    returns integer
-    language plpgsql
-    security definer
-    set search_path = ''
-    as $body$
-    declare
-      v_uid uuid := auth.uid();
-      v_user_id uuid;
-      v_doc_type text;
-      v_status text;
-      v_number integer;
-    begin
-      if v_uid is null then
-        raise exception 'not authenticated' using errcode = '42501';
-      end if;
+  select user_id, doc_type, status into v_user_id, v_doc_type, v_status
+  from public.invoice_saves where id = p_id for update;
 
-      select user_id, doc_type, status into v_user_id, v_doc_type, v_status
-      from public.invoice_saves where id = p_id for update;
+  if v_user_id is null or v_user_id is distinct from v_uid then
+    raise exception 'invoice not found';
+  end if;
+  if v_status <> 'draft' then
+    raise exception 'already issued';
+  end if;
 
-      if v_user_id is null or v_user_id is distinct from v_uid then
-        raise exception 'invoice not found';
-      end if;
-      if v_status <> 'draft' then
-        raise exception 'already issued';
-      end if;
+  insert into public.invoice_counters (user_id, doc_type, next_number)
+  values (v_user_id, v_doc_type, 1)
+  on conflict (user_id, doc_type) do nothing;
 
-      insert into public.invoice_counters (user_id, doc_type, next_number)
-      values (v_user_id, v_doc_type, 1)
-      on conflict (user_id, doc_type) do nothing;
+  update public.invoice_counters
+  set next_number = next_number + 1
+  where user_id = v_user_id and doc_type = v_doc_type
+  returning next_number - 1 into v_number;
 
-      update public.invoice_counters
-      set next_number = next_number + 1
-      where user_id = v_user_id and doc_type = v_doc_type
-      returning next_number - 1 into v_number;
+  update public.invoice_saves
+  set status = 'issued', number = v_number, issued_at = now(), updated_at = now()
+  where id = p_id;
 
-      update public.invoice_saves
-      set status = 'issued', number = v_number, issued_at = now(), updated_at = now()
-      where id = p_id;
+  return v_number;
+end;
+$$;
 
-      return v_number;
-    end;
-    $body$
-  $f$;
-  revoke all on function public.finalize_invoice(uuid) from public, anon;
-  grant execute on function public.finalize_invoice(uuid) to authenticated;
+revoke all on function public.finalize_invoice(uuid) from public, anon;
+grant execute on function public.finalize_invoice(uuid) to authenticated;
 
-  drop policy if exists "invoice_saves_insert_own" on public.invoice_saves;
-  create policy "invoice_saves_insert_own" on public.invoice_saves
-    for insert to authenticated
-    with check (
-      auth.uid() = user_id and status = 'draft' and number is null and issued_at is null
-      and (
-        invoice_saves.original_invoice_id is null
-        or exists (
-          select 1 from public.invoice_saves oi
-          where oi.id = invoice_saves.original_invoice_id and oi.user_id = auth.uid() and oi.status = 'issued'
-        )
+drop policy if exists "invoice_saves_insert_own" on public.invoice_saves;
+create policy "invoice_saves_insert_own" on public.invoice_saves
+  for insert to authenticated
+  with check (
+    auth.uid() = user_id and status = 'draft' and number is null and issued_at is null
+    and (
+      invoice_saves.original_invoice_id is null
+      or exists (
+        select 1 from public.invoice_saves oi
+        where oi.id = invoice_saves.original_invoice_id and oi.user_id = auth.uid() and oi.status = 'issued'
       )
-    );
+    )
+  );
 
-  drop policy if exists "invoice_saves_update_own_draft" on public.invoice_saves;
-  create policy "invoice_saves_update_own_draft" on public.invoice_saves
-    for update to authenticated
-    using (auth.uid() = user_id and status = 'draft')
-    with check (
-      auth.uid() = user_id and status = 'draft' and number is null and issued_at is null
-      and (
-        invoice_saves.original_invoice_id is null
-        or exists (
-          select 1 from public.invoice_saves oi
-          where oi.id = invoice_saves.original_invoice_id and oi.user_id = auth.uid() and oi.status = 'issued'
-        )
+drop policy if exists "invoice_saves_update_own_draft" on public.invoice_saves;
+create policy "invoice_saves_update_own_draft" on public.invoice_saves
+  for update to authenticated
+  using (auth.uid() = user_id and status = 'draft')
+  with check (
+    auth.uid() = user_id and status = 'draft' and number is null and issued_at is null
+    and (
+      invoice_saves.original_invoice_id is null
+      or exists (
+        select 1 from public.invoice_saves oi
+        where oi.id = invoice_saves.original_invoice_id and oi.user_id = auth.uid() and oi.status = 'issued'
       )
-    );
-end $$;
+    )
+  );
 
 -- ---------------------------------------------------------------------
 -- 4. storage
@@ -270,10 +258,5 @@ grant execute on function public.ai_usage_release(uuid, text, boolean) to servic
 -- ---------------------------------------------------------------------
 -- 7. license_redemptions: verified purchase + receipt sent once
 -- ---------------------------------------------------------------------
-do $$
-begin
-  if to_regclass('public.license_redemptions') is not null then
-    alter table public.license_redemptions add column if not exists purchase jsonb;
-    alter table public.license_redemptions add column if not exists receipt_sent_at timestamptz;
-  end if;
-end $$;
+alter table public.license_redemptions add column if not exists purchase jsonb;
+alter table public.license_redemptions add column if not exists receipt_sent_at timestamptz;

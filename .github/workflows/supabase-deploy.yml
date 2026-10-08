@@ -1,0 +1,84 @@
+# Deploys the Supabase side of DeskKit, so nothing has to be copied into
+# the dashboard by hand.
+#
+# On every merge to main that touches supabase/:
+#   1. runs the SQL files that changed in that push (SQL first — new
+#      function code may depend on it), then
+#   2. deploys every Edge Function in supabase/functions.
+# Manually (Actions → "Supabase deploy" → Run workflow): the same, or a
+# read-only security check of the live project, or an auth-settings change.
+#
+# One-time setup: a Supabase personal access token saved in GitHub →
+# Settings → Secrets and variables → Actions as SUPABASE_ACCESS_TOKEN.
+name: Supabase deploy
+
+on:
+  push:
+    branches: [main]
+    paths: ["supabase/**"]
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "What to do"
+        type: choice
+        default: check-live
+        options: [check-live, deploy-functions, run-sql, auth-settings]
+      sql_files:
+        description: "run-sql: space-separated SQL files"
+        default: ""
+      auth_patch:
+        description: 'auth-settings: JSON, e.g. {"password_min_length": 8}'
+        default: ""
+
+concurrency:
+  group: supabase-deploy
+  cancel-in-progress: false
+
+env:
+  PROJECT_REF: vafkjsetlrpaczsmqvqs
+  SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run changed SQL files (merge)
+        if: github.event_name == 'push'
+        run: |
+          files=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" -- 'supabase/sql/*.sql' | grep -v 'security_check_live.sql' || true)
+          if [ -z "$files" ]; then echo "No SQL changes."; exit 0; fi
+          existing=""
+          for f in $files; do [ -f "$f" ] && existing="$existing $f"; done
+          [ -z "$existing" ] && { echo "No SQL changes."; exit 0; }
+          python3 .github/scripts/supabase_api.py sql $existing
+
+      - name: Run SQL files (manual)
+        if: github.event_name == 'workflow_dispatch' && inputs.task == 'run-sql'
+        run: python3 .github/scripts/supabase_api.py sql ${{ inputs.sql_files }}
+
+      - uses: supabase/setup-cli@v1
+        if: github.event_name == 'push' || inputs.task == 'deploy-functions'
+        with:
+          version: latest
+
+      # verify_jwt off: every function checks the caller's token itself
+      # (submit-contact-message is public by design).
+      - name: Deploy all Edge Functions
+        if: github.event_name == 'push' || inputs.task == 'deploy-functions'
+        run: supabase functions deploy --project-ref "$PROJECT_REF" --no-verify-jwt --use-api
+
+      - name: Live security check (read-only)
+        if: github.event_name == 'workflow_dispatch' && inputs.task == 'check-live'
+        run: |
+          python3 .github/scripts/supabase_api.py auth-show
+          python3 .github/scripts/supabase_api.py sql supabase/sql/security_check_live.sql
+
+      - name: Change auth settings
+        if: github.event_name == 'workflow_dispatch' && inputs.task == 'auth-settings'
+        env:
+          AUTH_PATCH: ${{ inputs.auth_patch }}
+        run: python3 .github/scripts/supabase_api.py auth-patch "$AUTH_PATCH"
