@@ -13,6 +13,12 @@ personal access token, stored as a GitHub Actions secret) and PROJECT_REF.
   supabase_api.py smtp-resend        send auth emails from noreply@deskkit.co.il
                                      via Resend (needs RESEND_SMTP_KEY secret)
   supabase_api.py auth-templates     install the Hebrew auth email templates
+  supabase_api.py admin-lockdown     emergency: lock the admin area for 30 days,
+                                     void every admin unlock and sign all admins
+                                     out everywhere
+  supabase_api.py admin-reset        recovery: delete the admin passwords and sign
+                                     all admins out everywhere, so the owner can
+                                     log in again and set a new one
 """
 import datetime
 import json
@@ -42,6 +48,26 @@ AUTH_FIELDS = [
     "smtp_host", "smtp_port", "smtp_user", "smtp_admin_email", "smtp_sender_name", "smtp_max_frequency",
     "mailer_subjects_confirmation", "mailer_subjects_recovery", "mailer_subjects_email_change",
 ]
+
+# Signs every admin out on every device (their refresh tokens stop working;
+# an already-issued access token lapses within the hour, and the admin area
+# itself is closed at once by the steps above it).
+KILL_ADMIN_SESSIONS = """
+delete from auth.sessions where user_id in (
+  select u.id from auth.users u join public.admin_users a on a.email = lower(u.email));
+"""
+
+ADMIN_LOCKDOWN_SQL = """
+update public.admin_secrets set locked_until = now() + interval '30 days', failed_count = 0, updated_at = now();
+""" + KILL_ADMIN_SESSIONS + """
+select count(*) as admin_passwords_locked from public.admin_secrets;
+"""
+
+ADMIN_RESET_SQL = """
+delete from public.admin_secrets;
+""" + KILL_ADMIN_SESSIONS + """
+select count(*) as admin_passwords_left from public.admin_secrets;
+"""
 
 # Hebrew auth emails (supabase/templates/*.html) and their subjects.
 AUTH_TEMPLATES = {
@@ -163,5 +189,12 @@ if __name__ == "__main__":
             status = m.get("status") or m.get("code") or ""
             if level in ("error", "warning") or (isinstance(status, int) and status >= 400) or m.get("error"):
                 print(" | ".join(scrub(x) for x in [m.get("time", r.get("timestamp")), level, m.get("method", ""), m.get("path", ""), status, m.get("error_code", ""), m.get("error", ""), m.get("msg", "")]))
+    elif cmd in ("admin-lockdown", "admin-reset"):
+        # Prints only counts — no emails reach the (public) workflow log.
+        rows = call("POST", "/database/query", {"query": ADMIN_LOCKDOWN_SQL if cmd == "admin-lockdown" else ADMIN_RESET_SQL})
+        for r in rows or []:
+            print(" | ".join(f"{k} = {v}" for k, v in r.items()))
+        print("Admin area locked for 30 days; all admins signed out." if cmd == "admin-lockdown"
+              else "Admin passwords cleared; all admins signed out. Sign in and set a new admin password.")
     else:
         sys.exit(__doc__)

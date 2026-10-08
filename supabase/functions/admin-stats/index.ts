@@ -455,7 +455,15 @@ async function setSuspended(admin: ReturnType<typeof createClient>, userId: stri
 // admin_unlock.sql). The token is an HMAC over {user id, expiry}, keyed
 // from the service-role secret, so it can't be forged or moved to another
 // account, and it expires by itself.
-const UNLOCK_TTL_MS = 8 * 60 * 60 * 1000;
+const UNLOCK_TTL_MS = 2 * 60 * 60 * 1000;
+// Actions that change customers' accounts or data, grant paid features,
+// export personal data or change who's an admin: each needs the admin
+// password typed again (confirmPassword), so a computer left unlocked
+// with the admin area open isn't enough to do any of them.
+const STEP_UP_ACTIONS = new Set([
+  "set-pro", "delete-account", "export-users", "set-admin-role", "remove-admin",
+  "suspend-user", "unsuspend-user", "bulk", "delete-site", "delete-cv",
+]);
 const UNLOCK_FREE_ACTIONS = new Set(["whoami", "unlock", "set-admin-password"]);
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
@@ -575,6 +583,16 @@ Deno.serve(async (req: Request) => {
     const unlocked = adminPassword === "set" && await unlockTokenValid(body.adminToken, actor.id, String(secretVersion));
     if (!UNLOCK_FREE_ACTIONS.has(action) && !unlocked) {
       return json({ error: "admin-locked", adminPassword }, 401);
+    }
+
+    if (STEP_UP_ACTIONS.has(action)) {
+      const confirm = await admin.rpc("admin_secret_check", { p_email: callerEmail, p_password: String(body.confirmPassword || "") });
+      if (confirm.error) throw confirm.error;
+      if (confirm.data === "locked") return json({ error: "locked" }, 423);
+      if (confirm.data !== "ok") {
+        await audit(admin, actor, "admin_confirm_failed", null, { action });
+        return json({ error: "confirm-password" }, 401);
+      }
     }
 
     if (action === "whoami") return json({ email: callerEmail, role, adminPassword, unlocked });
