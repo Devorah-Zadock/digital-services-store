@@ -22,7 +22,7 @@ on:
         description: "What to do"
         type: choice
         default: check-live
-        options: [check-live, deploy-functions, run-sql, auth-settings, turnstile-enable, turnstile-disable, auth-errors]
+        options: [check-live, deploy-functions, run-sql, auth-settings, turnstile-enable, turnstile-disable, auth-errors, smtp-resend, auth-templates]
       sql_files:
         description: "run-sql: space-separated SQL files"
         default: ""
@@ -93,4 +93,10 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && (inputs.task == 'turnstile-enable' || inputs.task == 'turnstile-disable')
         env:
           TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+        run: python3 .github/scripts/supabase_api.py ${{ inputs.task }}
+
+      - name: Auth emails from deskkit.co.il / Hebrew templates
+        if: github.event_name == 'workflow_dispatch' && (inputs.task == 'smtp-resend' || inputs.task == 'auth-templates')
+        env:
+          RESEND_SMTP_KEY: ${{ secrets.RESEND_SMTP_KEY }}
         run: python3 .github/scripts/supabase_api.py ${{ inputs.task }}

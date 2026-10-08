@@ -10,6 +10,9 @@ personal access token, stored as a GitHub Actions secret) and PROJECT_REF.
                                      TURNSTILE_SECRET_KEY env/GitHub secret)
   supabase_api.py turnstile-disable  turn it off again (emergency switch)
   supabase_api.py auth-errors [min]  recent Auth errors (no emails/IPs printed)
+  supabase_api.py smtp-resend        send auth emails from noreply@deskkit.co.il
+                                     via Resend (needs RESEND_SMTP_KEY secret)
+  supabase_api.py auth-templates     install the Hebrew auth email templates
 """
 import datetime
 import json
@@ -36,7 +39,16 @@ AUTH_FIELDS = [
     "rate_limit_otp", "rate_limit_anonymous_users", "jwt_exp",
     "sessions_timebox", "sessions_inactivity_timeout", "external_google_enabled",
     "mfa_totp_enroll_enabled", "mfa_totp_verify_enabled",
+    "smtp_host", "smtp_port", "smtp_user", "smtp_admin_email", "smtp_sender_name", "smtp_max_frequency",
+    "mailer_subjects_confirmation", "mailer_subjects_recovery", "mailer_subjects_email_change",
 ]
+
+# Hebrew auth emails (supabase/templates/*.html) and their subjects.
+AUTH_TEMPLATES = {
+    "confirmation": "אישור כתובת המייל — DeskKit",
+    "recovery": "איפוס סיסמה — DeskKit",
+    "email_change": "אישור שינוי כתובת המייל — DeskKit",
+}
 
 
 def call(method, path, body=None):
@@ -104,6 +116,25 @@ if __name__ == "__main__":
         call("PATCH", "/config/auth", {"security_captcha_enabled": False})
         call("DELETE", "/secrets", ["TURNSTILE_SECRET_KEY"])
         print("Turnstile disabled. Current values:")
+        auth_show()
+    elif cmd == "smtp-resend":
+        key = os.environ.get("RESEND_SMTP_KEY", "").strip()
+        if not key:
+            sys.exit("RESEND_SMTP_KEY secret is not set in GitHub → Settings → Secrets → Actions.")
+        call("PATCH", "/config/auth", {
+            "smtp_host": "smtp.resend.com", "smtp_port": "465", "smtp_user": "resend", "smtp_pass": key,
+            "smtp_admin_email": "noreply@deskkit.co.il", "smtp_sender_name": "DeskKit",
+        })
+        print("Auth emails now go out from noreply@deskkit.co.il. Current values:")
+        auth_show()
+    elif cmd == "auth-templates":
+        base = os.path.join(os.path.dirname(__file__), "..", "..", "supabase", "templates")
+        patch = {}
+        for name, subject in AUTH_TEMPLATES.items():
+            patch[f"mailer_subjects_{name}"] = subject
+            patch[f"mailer_templates_{name}_content"] = open(os.path.join(base, name + ".html"), encoding="utf-8").read()
+        call("PATCH", "/config/auth", patch)
+        print("Templates installed. Current values:")
         auth_show()
     elif cmd == "auth-errors":
         minutes = int(sys.argv[2]) if len(sys.argv) > 2 else 60

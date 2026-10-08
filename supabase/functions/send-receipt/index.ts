@@ -70,7 +70,7 @@ function receiptHtml(opts: { buyerName: string; buyerEmail: string; itemDescript
   // price. A receipt for one of these must say so as loudly as the real
   // amount itself, not just quietly show a number that looks wrong.
   const testBanner = opts.isTest
-    ? `<p style="margin:0 0 16px; padding:8px 12px; background:#FEF3C7; color:#92400E; border-radius:6px; font-size:13px; font-weight:bold;">⚠ רכישת בדיקה (TEST) — לא בוצע תשלום אמיתי, הסכום אינו מחיר המוצר האמיתי.</p>`
+    ? `<p style="margin:0 0 16px; padding:8px 12px; background:#FEF3C7; color:#92400E; border-radius:6px; font-size:13px; font-weight:bold;">⚠ רכישת בדיקה (TEST) של Gumroad — לא בוצע תשלום אמיתי ולא חויב כרטיס אשראי.</p>`
     : "";
   const card = `
 <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 28px; border: 1px solid #EAEDEC; border-radius: 10px;">
@@ -205,7 +205,10 @@ Deno.serve(async (req: Request) => {
       buyerName: buyerName || "",
       buyerEmail,
       itemDescription,
-      amount: amount || "לפי אישור הרכישה ב-Gumroad",
+      // A Gumroad test purchase (e.g. the seller buying her own product)
+      // charges nothing and reports a throwaway price — never print that
+      // number as if it were a real amount.
+      amount: isTest ? "0 ₪ — רכישת בדיקה, לא בוצע חיוב" : (amount || "לפי אישור הרכישה ב-Gumroad"),
       receiptNumber,
       date,
       isTest: !!isTest,
