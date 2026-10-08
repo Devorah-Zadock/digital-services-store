@@ -108,11 +108,19 @@ if __name__ == "__main__":
     elif cmd == "auth-errors":
         minutes = int(sys.argv[2]) if len(sys.argv) > 2 else 60
         start = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=minutes)).strftime("%Y-%m-%dT%H:%M:%SZ")
-        sql = "select timestamp, event_message from auth_logs order by timestamp desc limit 300"
-        res = call("GET", "/analytics/endpoints/logs?" + urllib.parse.urlencode({"sql": sql, "iso_timestamp_start": start})) or {}
-        rows = res.get("result") or res.get("data") or []
-        if res.get("error"):
-            print("logs API error:", str(res.get("error"))[:500])
+        # The logs API was reworked (logs.all → logs); try the likely names
+        # for the Auth source and use the first one it accepts.
+        end = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        rows = []
+        for table in ["auth_logs", "auth", "gotrue_logs", "auth_audit_logs"]:
+            sql = f"select timestamp, event_message from {table} order by timestamp desc limit 300"
+            res = call("GET", "/analytics/endpoints/logs?" + urllib.parse.urlencode({"sql": sql, "iso_timestamp_start": start, "iso_timestamp_end": end})) or {}
+            if res.get("error"):
+                print(f"[{table}] logs API error:", str(res.get("error"))[:300])
+                continue
+            rows = res.get("result") or res.get("data") or []
+            print(f"[{table}] ok")
+            break
         print(f"{len(rows)} auth log lines in the last {minutes} minutes (errors/warnings, redacted):")
         scrub = lambda t: re.sub(r"[\w.+-]+@[\w-]+\.[\w.-]+", "<email>", re.sub(r"\b\d{1,3}(\.\d{1,3}){3}\b", "<ip>", str(t)))
         for r in rows:

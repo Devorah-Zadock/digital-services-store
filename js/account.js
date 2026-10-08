@@ -68,6 +68,19 @@ function setAuthMode(mode) {
    something they can actually read. context is "signup"|"login", for
    the handful of messages worth a different Hebrew phrasing depending
    on which form this was. */
+/* Password-reset failures used to all read "couldn't send the email" —
+   now the two common, harmless reasons say what they are, and anything
+   else carries a short code so a support request can be diagnosed. */
+function dkResetErrorMessage(error) {
+  const lower = String((error && error.message) || "").toLowerCase();
+  if (lower.includes("captcha")) return dkAcctLabel("acct_err_captcha", "אימות האבטחה נכשל — רעננו את הדף ונסו שוב.");
+  if (lower.includes("rate limit") || lower.includes("only request this after") || lower.includes("too many") || (error && error.status === 429)) {
+    return dkAcctLabel("acct_err_reset_wait", "כבר שלחנו מייל איפוס לפני רגע — המתינו דקה ונסו שוב (ובינתיים בדקו גם בתיקיית הספאם).");
+  }
+  const code = [error && error.status, error && error.code].filter(Boolean).join(" ");
+  return dkAcctLabel("acct_err_reset_send_failed", "לא הצלחנו לשלוח את המייל, נסו שוב.") + (code ? ` (${code})` : "");
+}
+
 function dkAuthErrorMessage(error, context) {
   const msg = (error && error.message) || "";
   const lower = msg.toLowerCase();
@@ -78,9 +91,10 @@ function dkAuthErrorMessage(error, context) {
   if (lower.includes("captcha")) return dkAcctLabel("acct_err_captcha", "אימות האבטחה נכשל — רעננו את הדף ונסו שוב.");
   if (lower.includes("already registered") || lower.includes("already exists") || lower.includes("user already registered")) return dkAcctLabel("acct_err_already_registered", "כתובת המייל הזו כבר רשומה אצלנו — נסו להתחבר במקום להירשם.");
   if (lower.includes("rate limit") || lower.includes("too many requests")) return dkAcctLabel("acct_err_rate_limit", "יותר מדי ניסיונות ברצף — המתינו כמה דקות ונסו שוב.");
-  return context === "signup"
+  const code = [error && error.status, error && error.code].filter(Boolean).join(" ");
+  return (context === "signup"
     ? dkAcctLabel("acct_err_signup_failed", "ההרשמה נכשלה. בדקו את החיבור לאינטרנט ונסו שוב בעוד רגע.")
-    : dkAcctLabel("acct_err_login_failed", "ההתחברות נכשלה. בדקו את החיבור לאינטרנט ונסו שוב בעוד רגע.");
+    : dkAcctLabel("acct_err_login_failed", "ההתחברות נכשלה. בדקו את החיבור לאינטרנט ונסו שוב בעוד רגע.")) + (code ? ` (${code})` : "");
 }
 
 function showCheckEmail(email) {
@@ -141,7 +155,7 @@ function wireAuth() {
       });
       dkCaptchaReset("qa-captcha");
       msg.textContent = error
-        ? dkAcctLabel("acct_err_reset_send_failed", "לא הצלחנו לשלוח את המייל, נסו שוב.")
+        ? dkResetErrorMessage(error)
         : dkAcctLabel("acct_msg_reset_sent", "נשלח מייל לאיפוס סיסמה — תבדקו את תיבת הדואר.");
     } catch (_networkErr) {
       err.textContent = dkAcctLabel("acct_err_network", "אירעה תקלת תקשורת. בדקו את החיבור לאינטרנט ונסו שוב.");
