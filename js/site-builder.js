@@ -1449,7 +1449,7 @@ async function publishSite() {
       // self-hosted publishing doesn't depend on Netlify at all — kept
       // as a non-broken message in case that path is ever reactivated,
       // rather than assuming it can truly never fire.
-      note.innerHTML = `פרסום לאוויר זמנית לא זמין אצלנו בגלל עומס אצל ספק האחסון — זה לא קשור לרכישה שלכם, והיא בתוקף. האתר שלכם שמור ומוכן; אפשר לנסות לפרסם שוב בעוד כמה דקות מאותו מסך. תקועים? <a href="mailto:digital.dz.studio@gmail.com?subject=${encodeURIComponent("פרסום נכשל — בניית אתר")}" style="color:inherit; text-decoration:underline;">כתבו לנו</a>.`;
+      note.innerHTML = `פרסום לאוויר זמנית לא זמין אצלנו בגלל עומס אצל ספק האחסון — זה לא קשור לרכישה שלכם, והיא בתוקף. האתר שלכם שמור ומוכן; אפשר לנסות לפרסם שוב בעוד כמה דקות מאותו מסך. תקועים? <a href="mailto:${["digital.dz.studio", "gmail.com"].join("@")}?subject=${encodeURIComponent("פרסום נכשל — בניית אתר")}" style="color:inherit; text-decoration:underline;">כתבו לנו</a>.`;
       return;
     }
     if (data.reason === "not_purchased") {
@@ -1467,7 +1467,7 @@ async function publishSite() {
       // comment). Kept as a non-broken message, not assumed dead.
       sitePublishCount = data.publishCount;
       renderPublishRemaining();
-      note.innerHTML = `הגעתם למספר המרבי של עדכוני פרסום חינמיים לאתר הזה. רוצים להמשיך לפרסם דרכנו? <a href="mailto:digital.dz.studio@gmail.com?subject=${encodeURIComponent("בקשה להמשך פרסום — בניית אתר")}" style="color:inherit; text-decoration:underline;">כתבו לנו</a>.`;
+      note.innerHTML = `הגעתם למספר המרבי של עדכוני פרסום חינמיים לאתר הזה. רוצים להמשיך לפרסם דרכנו? <a href="mailto:${["digital.dz.studio", "gmail.com"].join("@")}?subject=${encodeURIComponent("בקשה להמשך פרסום — בניית אתר")}" style="color:inherit; text-decoration:underline;">כתבו לנו</a>.`;
       return;
     }
     if (!data.success) {
@@ -1734,7 +1734,7 @@ async function verifySiteLicense() {
       // not just "try again" with nowhere left to go. Prefills the email
       // with exactly the key they tried, so following up doesn't start
       // from scratch.
-      const supportMailto = `mailto:digital.dz.studio@gmail.com?subject=${encodeURIComponent("בעיה בקוד רישוי — בניית אתר")}&body=${encodeURIComponent("הקוד שהזנתי: " + key)}`;
+      const supportMailto = `mailto:${["digital.dz.studio", "gmail.com"].join("@")}?subject=${encodeURIComponent("בעיה בקוד רישוי — בניית אתר")}&body=${encodeURIComponent("הקוד שהזנתי: " + key)}`;
       const supportLine = `<br>עדיין תקועים? <a href="${supportMailto}" style="color:inherit; text-decoration:underline;">כתבו לנו ונפתור את זה ידנית</a>.`;
       const invalidMsg = "קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב." + (data.gumroadMessage ? ` (Gumroad: ${escapeHtmlS(data.gumroadMessage)})` : "") + supportLine;
       note.innerHTML = data.reason === "redeemed-elsewhere" || data.reason === "different-template"

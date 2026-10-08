@@ -6,6 +6,9 @@ personal access token, stored as a GitHub Actions secret) and PROJECT_REF.
   supabase_api.py sql <file>...      run SQL files, in order, stop on error
   supabase_api.py auth-show          print the security-relevant auth settings
   supabase_api.py auth-patch <json>  change auth settings, then print them
+  supabase_api.py turnstile-enable   turn on the invisible CAPTCHA (needs the
+                                     TURNSTILE_SECRET_KEY env/GitHub secret)
+  supabase_api.py turnstile-disable  turn it off again (emergency switch)
 """
 import json
 import os
@@ -82,6 +85,21 @@ if __name__ == "__main__":
             sys.exit(f"refusing to change unlisted auth settings: {bad}")
         call("PATCH", "/config/auth", patch)
         print("Updated. Current values:")
+        auth_show()
+    elif cmd == "turnstile-enable":
+        secret = os.environ.get("TURNSTILE_SECRET_KEY", "").strip()
+        if not secret:
+            sys.exit("TURNSTILE_SECRET_KEY secret is not set in GitHub → Settings → Secrets → Actions.")
+        # The contact/feedback function checks tokens with it…
+        call("POST", "/secrets", [{"name": "TURNSTILE_SECRET_KEY", "value": secret}])
+        # …and Supabase Auth checks sign-up / log-in / password-reset.
+        call("PATCH", "/config/auth", {"security_captcha_enabled": True, "security_captcha_provider": "turnstile", "security_captcha_secret": secret})
+        print("Turnstile enabled. Current values:")
+        auth_show()
+    elif cmd == "turnstile-disable":
+        call("PATCH", "/config/auth", {"security_captcha_enabled": False})
+        call("DELETE", "/secrets", ["TURNSTILE_SECRET_KEY"])
+        print("Turnstile disabled. Current values:")
         auth_show()
     else:
         sys.exit(__doc__)

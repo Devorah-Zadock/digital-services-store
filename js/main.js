@@ -75,6 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // than 30 days — real messages were disappearing.
   const form = document.querySelector("form.contact-form");
   if (form) {
+    if (typeof dkCaptchaMount === "function") dkCaptchaMount("contact-captcha");
     const note = document.getElementById("contact-form-note");
     const submitBtn = document.getElementById("contact-submit-btn");
     const isEn = typeof currentLang === "function" && currentLang() === "en";
@@ -92,7 +93,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const message = form.querySelector("#message").value.trim();
       const subject = encodeURIComponent("פנייה מהאתר - " + name);
       const body = encodeURIComponent(message + "\n\nלחזרה: " + email);
-      const mailHref = `mailto:digital.dz.studio@gmail.com?subject=${subject}&body=${body}`;
+      const mailHref = `mailto:${["digital.dz.studio", "gmail.com"].join("@")}?subject=${subject}&body=${body}`;
 
       if (typeof supabaseClient === "undefined") {
         window.location.href = mailHref;
@@ -101,9 +102,12 @@ document.addEventListener("DOMContentLoaded", () => {
       if (submitBtn) submitBtn.disabled = true;
       if (note) { note.textContent = t.sending; note.className = "widget-note"; }
       try {
+        // Invisible Turnstile check (js/captcha.js) — undefined while off.
+        const captchaToken = typeof dkCaptchaToken === "function" ? await dkCaptchaToken("contact-captcha") : undefined;
         const { data, error } = await supabaseClient.functions.invoke("submit-contact-message", {
-          body: { name, email, message, formType: "contact", page: location.pathname, hp: (form.querySelector("#dk-hp-check") || {}).value || "" },
+          body: { name, email, message, formType: "contact", page: location.pathname, hp: (form.querySelector("#dk-hp-check") || {}).value || "", captchaToken },
         });
+        if (typeof dkCaptchaReset === "function") dkCaptchaReset("contact-captcha");
         if (error || !data || data.error) throw new Error((data && data.error) || "bad response");
         if (note) { note.textContent = t.ok; note.className = "widget-note ok"; }
         form.reset();

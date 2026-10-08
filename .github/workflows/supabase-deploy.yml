@@ -22,7 +22,7 @@ on:
         description: "What to do"
         type: choice
         default: check-live
-        options: [check-live, deploy-functions, run-sql, auth-settings]
+        options: [check-live, deploy-functions, run-sql, auth-settings, turnstile-enable, turnstile-disable]
       sql_files:
         description: "run-sql: space-separated SQL files"
         default: ""
@@ -82,3 +82,11 @@ jobs:
         env:
           AUTH_PATCH: ${{ inputs.auth_patch }}
         run: python3 .github/scripts/supabase_api.py auth-patch "$AUTH_PATCH"
+
+      # Only after js/captcha.js has the site key and is live — otherwise
+      # sign-up/log-in would demand a token the pages can't produce yet.
+      - name: Turnstile on/off
+        if: github.event_name == 'workflow_dispatch' && (inputs.task == 'turnstile-enable' || inputs.task == 'turnstile-disable')
+        env:
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+        run: python3 .github/scripts/supabase_api.py ${{ inputs.task }}
