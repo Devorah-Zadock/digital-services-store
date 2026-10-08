@@ -202,6 +202,23 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
+      // The server's record of which templates this account paid for is
+      // the truth (it's what publish-site uses for the badge): the local
+      // "unlocked" flags are synced to it — set for every paid template,
+      // cleared for any other — so a purchase made on another device
+      // shows as paid here, and a hand-set flag doesn't.
+      try {
+        const { data: paid, error: paidErr } = await supabaseClient.rpc("my_license_templates");
+        if (!paidErr && Array.isArray(paid)) {
+          const paidSet = new Set(paid);
+          paidSet.forEach((tpl) => localStorage.setItem(SITE_UNLOCK_KEY + "_" + tpl, "1"));
+          for (let i = localStorage.length - 1; i >= 0; i--) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith(SITE_UNLOCK_KEY + "_") && !paidSet.has(k.slice(SITE_UNLOCK_KEY.length + 1))) localStorage.removeItem(k);
+          }
+        }
+      } catch (_e) { /* offline / not deployed yet — keep local flags as they are */ }
+
       const { data: rows } = await supabaseClient
         .from("site_projects").select("*").eq("user_id", user.id)
         .order("created_at", { ascending: false });
