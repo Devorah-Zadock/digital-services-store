@@ -1528,20 +1528,30 @@ const AUTO_SLUG_PATTERN = /^site-[0-9a-f]{8}$/;
 
 function renderPublishClaimedScreen(url, selfHosted, slug) {
   const note = document.getElementById("publish-note");
-  const offerRename = selfHosted && slug && AUTO_SLUG_PATTERN.test(slug);
+  // The site's current address is THE answer here — open it, copy it.
+  // Choosing a different address is a secondary, tucked-away option
+  // (collapsed until asked for), whether the address was auto-generated
+  // or picked earlier.
+  const offerRename = selfHosted && slug;
+  const isAuto = slug && AUTO_SLUG_PATTERN.test(slug);
   note.innerHTML = `
-    <div style="margin-bottom:4px; font-weight:700; color:var(--ink-dark);">האתר חי ושייך לכם!</div>
+    <div style="margin-bottom:4px; font-weight:700; color:var(--ink-dark);">האתר שלכם באוויר ✓</div>
     <div class="publish-url-box">
-      <span id="publish-url-text">${url}</span>
+      <span id="publish-url-text" dir="ltr">${url}</span>
       <button type="button" id="publish-copy-btn" class="btn-mini publish-copy-btn">העתקת קישור</button>
     </div>
+    <a href="${url}" target="_blank" rel="noopener" class="btn btn-teal" style="display:block; text-align:center; margin-top:10px;">פתיחת האתר ↗</a>
     <!-- Custom-domain connect button removed for now (per explicit
          request — feature not ready to expose yet). js/domain-guide.js
          still has the real implementation; re-enable by restoring this
          button and the addEventListener call below it. -->
     ${offerRename ? `
-    <div class="host-info-box" style="margin-top:14px;">
-      <b>✏️ רוצים כתובת עם שם משלכם במקום "${slug}"?</b>
+    <div style="margin-top:12px; text-align:center;">
+      <button type="button" id="slug-rename-toggle" class="cx-link-btn" style="background:none; border:none; color:var(--grey); text-decoration:underline; cursor:pointer; font-family:inherit; font-size:13px;">${isAuto ? "✏️ להחליף לכתובת עם שם משלכם" : "✏️ שינוי כתובת האתר"}</button>
+    </div>
+    <div class="host-info-box" id="slug-rename-box" style="margin-top:10px;" hidden>
+      <b>כתובת חדשה לאתר</b>
+      <div style="font-size:12.5px; color:var(--grey); margin-top:4px;">שימו לב: אחרי השינוי, הכתובת הנוכחית תפסיק לעבוד — כדאי לעדכן אותה בכל מקום ששיתפתם.</div>
       <div style="display:flex; align-items:center; gap:8px; background:var(--white); border:2px solid #DDE4E1; border-radius:10px; padding:8px 12px; margin-top:8px;">
         <input type="text" id="slug-rename-input" placeholder="my-business-name" dir="ltr" autocomplete="off" style="flex:1; border:none; outline:none; font-family:inherit; font-size:14px; direction:ltr; text-align:left; background:transparent;">
         <span style="color:var(--grey); font-size:13px; white-space:nowrap;">.sites.deskkit.co.il</span>
@@ -1551,6 +1561,13 @@ function renderPublishClaimedScreen(url, selfHosted, slug) {
       <button type="button" id="slug-rename-confirm-btn" class="btn btn-teal" style="width:100%; margin-top:8px;" disabled>שינוי הכתובת</button>
     </div>` : ""}
   `;
+  if (offerRename) {
+    document.getElementById("slug-rename-toggle").addEventListener("click", () => {
+      const box = document.getElementById("slug-rename-box");
+      box.hidden = !box.hidden;
+      if (!box.hidden) document.getElementById("slug-rename-input").focus();
+    });
+  }
   document.getElementById("publish-copy-btn").addEventListener("click", async (e) => {
     const copyBtn = e.currentTarget;
     const original = copyBtn.textContent;

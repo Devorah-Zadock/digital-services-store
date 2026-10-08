@@ -981,6 +981,8 @@ const AUDIT_ACTION_LABELS = {
   unsuspend_user: "ביטול השעיה", send_password_reset: "שליחת איפוס סיסמה", grant_pro: "הענקת Pro",
   revoke_pro: "ביטול Pro", delete_account: "מחיקת חשבון", delete_site: "מחיקת אתר", delete_cv: "מחיקת קורות חיים",
   delete_message: "מחיקת הודעה", set_admin_role: "עדכון הרשאת מנהל", remove_admin: "הסרת מנהל",
+  admin_unlock: "כניסה לאזור הניהול", admin_unlock_failed: "סיסמת ניהול שגויה", admin_unlock_locked: "ניסיון כניסה בזמן נעילה",
+  set_admin_password: "קביעת סיסמת ניהול",
 };
 
 function closeUserDrawer() {
@@ -1300,15 +1302,87 @@ async function callAdminStats(body) {
   const res = await fetch(SUPABASE_URL + "/functions/v1/admin-stats", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: "Bearer " + token, apikey: SUPABASE_ANON_KEY },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ ...body, adminToken: dkGetUnlockToken() }),
   });
   const data = await res.json();
   if (!res.ok) {
+    // The unlock expired (8 hours) or was never there: back to the lock
+    // screen rather than a broken panel.
+    if (res.status === 401 && data.error === "admin-locked" && body.action !== "whoami") {
+      dkClearUnlockToken();
+      window.location.reload();
+    }
     const err = new Error(data.error || String(res.status));
     err.status = res.status;
+    err.data = data;
     throw err;
   }
   return data;
+}
+
+/* ---------- admin password ("second lock") ----------
+   The unlock token lives in sessionStorage: it's gone when the tab/browser
+   closes, and the server also expires it after 8 hours. */
+const DK_UNLOCK_KEY = "dk_admin_unlock_v1";
+function dkGetUnlockToken() {
+  try {
+    const raw = JSON.parse(sessionStorage.getItem(DK_UNLOCK_KEY) || "null");
+    return raw && raw.expiresAt > Date.now() ? raw.token : null;
+  } catch (_e) { return null; }
+}
+function dkSetUnlockToken(t) {
+  try { sessionStorage.setItem(DK_UNLOCK_KEY, JSON.stringify({ token: t.token, expiresAt: t.expiresAt })); } catch (_e) { /* storage blocked */ }
+}
+function dkClearUnlockToken() {
+  try { sessionStorage.removeItem(DK_UNLOCK_KEY); } catch (_e) { /* storage blocked */ }
+}
+
+// Shows the lock screen inside the existing gate box; resolves once the
+// admin password was set or entered correctly.
+function dkShowAdminLock(me) {
+  return new Promise((resolve) => {
+    const box = document.querySelector("#admin-gate .admin-gate-box");
+    const isSetup = me.adminPassword !== "set";
+    box.innerHTML = `
+      <h1>אזור ניהול</h1>
+      <p style="margin-bottom:14px;">${isSetup
+        ? "שלב אבטחה נוסף: בחרו <b>סיסמת ניהול</b> — סיסמה נפרדת שתידרש בכל כניסה לאזור הניהול, בנוסף להתחברות לחשבון. אל תשתמשו בסיסמה של המייל או של החשבון."
+        : "להמשך, הקלידו את <b>סיסמת הניהול</b> שלכם."}</p>
+      <form id="dk-lock-form" style="text-align:right;">
+        <input type="password" id="dk-lock-pw" class="cx-input" autocomplete="${isSetup ? "new-password" : "current-password"}" placeholder="סיסמת ניהול" style="width:100%; margin-bottom:8px;" required>
+        ${isSetup ? `<input type="password" id="dk-lock-pw2" class="cx-input" autocomplete="new-password" placeholder="אימות סיסמת ניהול" style="width:100%; margin-bottom:6px;" required>
+        <p style="font-size:12.5px; color:var(--grey); margin:0 0 8px;">לפחות 10 תווים.</p>` : ""}
+        <div id="dk-lock-err" style="color:#B23333; font-size:13px; min-height:18px; margin-bottom:6px;"></div>
+        <button type="submit" class="btn btn-teal" id="dk-lock-btn" style="width:100%;">${isSetup ? "שמירת סיסמת הניהול" : "כניסה לאזור הניהול"}</button>
+      </form>`;
+    const form = document.getElementById("dk-lock-form");
+    const err = document.getElementById("dk-lock-err");
+    const btn = document.getElementById("dk-lock-btn");
+    document.getElementById("dk-lock-pw").focus();
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      err.textContent = "";
+      const pw = document.getElementById("dk-lock-pw").value;
+      if (isSetup) {
+        if (pw.length < 10) { err.textContent = "סיסמת הניהול חייבת לכלול לפחות 10 תווים."; return; }
+        if (pw !== document.getElementById("dk-lock-pw2").value) { err.textContent = "הסיסמאות לא תואמות."; return; }
+      }
+      btn.disabled = true;
+      try {
+        const t = await callAdminStats(isSetup ? { action: "set-admin-password", newPassword: pw } : { action: "unlock", password: pw });
+        dkSetUnlockToken(t);
+        resolve();
+      } catch (ex) {
+        const code = ex.message;
+        err.textContent = code === "bad-password" ? "סיסמת ניהול שגויה."
+          : code === "locked" ? "יותר מדי ניסיונות שגויים — הכניסה נעולה ל-15 דקות."
+          : code === "reauth" ? "מטעמי אבטחה, התנתקו והתחברו מחדש לחשבון — ואז קבעו את סיסמת הניהול (תוך 15 דקות מההתחברות)."
+          : code === "too-short" ? "סיסמת הניהול חייבת לכלול לפחות 10 תווים."
+          : "שגיאה: " + code;
+        btn.disabled = false;
+      }
+    });
+  });
 }
 
 function showAccessDenied() {
@@ -1381,7 +1455,14 @@ async function showPanel() {
   // Role first: it decides which tabs and actions exist at all. A 401/403
   // here is the server saying this account isn't an admin.
   try {
-    const me = await callAdminStats({ action: "whoami" });
+    let me = await callAdminStats({ action: "whoami" });
+    // Second lock: until the admin password is entered (or first set),
+    // the server answers nothing else. (adminPassword is undefined only
+    // while an older server version is still deployed.)
+    if (me.adminPassword !== undefined && !me.unlocked) {
+      await dkShowAdminLock(me);
+      me = await callAdminStats({ action: "whoami" });
+    }
     dkAdminRole = me.role;
     document.getElementById("admin-role-pill").textContent = `${me.email} · ${DK_ROLE_LABELS[me.role] || me.role}`;
   } catch (e) {
