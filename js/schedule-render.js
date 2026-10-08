@@ -51,22 +51,13 @@ let scheduleVerifying = false;
    Best-effort and silent on failure, same as the site builder's version:
    a receipt email failing must never block someone who just paid and is
    waiting to actually use the tool. */
-async function sendSchedulePurchaseReceipt() {
+async function sendSchedulePurchaseReceipt(licenseKey) {
+  // Recipient, name, amount and test-flag come from the Gumroad-verified
+  // purchase the server stored at redemption — see send-receipt.
+  if (!licenseKey) return;
   try {
-    const { data } = await supabaseClient.auth.getSession();
-    const sessionEmail = data.session && data.session.user && data.session.user.email;
-    const purchase = scheduleLastVerifiedPurchase;
-    const buyerEmail = (purchase && purchase.email) || sessionEmail;
-    if (!buyerEmail) return;
-    const amount = formatGumroadAmount(purchase) || "499.00 ₪";
     await supabaseClient.functions.invoke("send-receipt", {
-      body: {
-        buyerEmail,
-        buyerName: (purchase && purchase.full_name) || "",
-        itemDescription: "בונה מערכת שעות לבית ספר — DeskKit",
-        amount,
-        isTest: !!(purchase && purchase.test),
-      },
+      body: { licenseKey, itemDescription: "בונה מערכת שעות לבית ספר — DeskKit" },
     });
   } catch (err) {
     // silent — a failed receipt email is a support follow-up, not a
@@ -110,8 +101,10 @@ async function verifyScheduleLicense() {
       // from scratch.
       const supportMailto = `mailto:digital.dz.studio@gmail.com?subject=${encodeURIComponent("בעיה בקוד רישוי — מערכת שעות")}&body=${encodeURIComponent("הקוד שהזנתי: " + key)}`;
       const supportLine = `<br>עדיין תקועים? <a href="${supportMailto}" style="color:inherit; text-decoration:underline;">כתבו לנו ונפתור את זה ידנית</a>.`;
-      const invalidMsg = "קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב." + (data.gumroadMessage ? ` (Gumroad: ${data.gumroadMessage})` : "") + supportLine;
-      note.innerHTML = data.reason === "redeemed-elsewhere" ? "קוד הרישוי הזה כבר שימש לפתיחת חשבון אחר." + supportLine : invalidMsg;
+      const invalidMsg = "קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב." + (data.gumroadMessage ? ` (Gumroad: ${String(data.gumroadMessage).replace(/[&<>"']/g, (c) => "&#" + c.charCodeAt(0) + ";")})` : "") + supportLine;
+      note.innerHTML = data.reason === "redeemed-elsewhere" ? "קוד הרישוי הזה כבר שימש לפתיחת חשבון אחר." + supportLine
+        : data.reason === "refunded" ? "הרכישה הזו בוטלה או הוחזרה, ולכן הקוד כבר לא פעיל." + supportLine
+        : invalidMsg;
       note.className = "unlock-note err";
       return;
     }
@@ -120,7 +113,7 @@ async function verifyScheduleLicense() {
     note.textContent = "נפתח בהצלחה!";
     note.className = "unlock-note ok";
     refreshScheduleUnlockUi();
-    sendSchedulePurchaseReceipt();
+    sendSchedulePurchaseReceipt(key);
   } catch (err) {
     note.textContent = "שגיאת חיבור לשירות האימות. נסו שוב בעוד רגע.";
     note.className = "unlock-note err";

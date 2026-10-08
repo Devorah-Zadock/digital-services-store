@@ -75,7 +75,37 @@ async function resolveSlug(req, supabaseUrl, serviceRoleKey) {
   return resolved && SLUG_PATTERN.test(resolved) ? resolved : null;
 }
 
+// The host this request was actually made to (Vercel keeps the original
+// Host through middleware's rewrite). Customer HTML is arbitrary — it may
+// contain scripts — so it must only ever be served on the customer's OWN
+// origin: <slug>.sites.deskkit.co.il or their connected domain. Served on
+// deskkit.co.il itself (e.g. a direct /api/site-preview?slug=... link) it
+// would run with access to every visitor's DeskKit session.
+const SITE_SUBDOMAIN_HOST = /^([a-z0-9-]{1,63})\.sites\.deskkit\.co\.il$/;
+const OWN_HOST = /^((www\.)?deskkit\.co\.il|sites\.deskkit\.co\.il|localhost|127\.0\.0\.1)$|\.vercel\.app$/;
+
+function requestHost(req) {
+  const raw = String(req.headers.host || req.headers["x-forwarded-host"] || "");
+  return raw.split(",")[0].trim().toLowerCase().replace(/:\d+$/, "");
+}
+
+// true only when the identifier in the query matches the host the page
+// will actually be served on.
+function hostMatchesRequest(req) {
+  const host = requestHost(req);
+  const sub = SITE_SUBDOMAIN_HOST.exec(host);
+  if (sub) return String(req.query.slug || "") === sub[1] && !req.query.customDomain;
+  if (!host || OWN_HOST.test(host)) return false;
+  return String(req.query.customDomain || "").toLowerCase() === host && !req.query.slug;
+}
+
 module.exports = async function handler(req, res) {
+  if (!hostMatchesRequest(req)) {
+    res.setHeader("Cache-Control", "no-store");
+    res.status(404).send("not found");
+    return;
+  }
+
   const supabaseUrl = process.env.SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !serviceRoleKey) {
@@ -128,5 +158,7 @@ module.exports = async function handler(req, res) {
   // live site in their own browser.
   res.setHeader("Cache-Control", "public, max-age=0, s-maxage=60, stale-while-revalidate=600");
   res.setHeader("Content-Type", "text/html; charset=UTF-8");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   res.status(200).send(html);
 };

@@ -34,6 +34,42 @@ function jsonResponse(body: Record<string, unknown>, status = 200) {
 // here, not hunting through the function for every delete call.
 const USER_TABLES = ["site_projects", "schedule_projects", "cv_saves", "quote_saves", "license_redemptions", "usage_events", "profiles"];
 
+const RECENT_SIGN_IN_MS = 15 * 60 * 1000;
+const VERCEL_API_TOKEN = Deno.env.get("VERCEL_API_TOKEN");
+const VERCEL_PROJECT_ID = Deno.env.get("VERCEL_PROJECT_ID");
+const VERCEL_TEAM_ID = Deno.env.get("VERCEL_TEAM_ID");
+
+// Every file path under prefix/, following sub-folders (storage list()
+// returns a folder as an entry with no id) and paging past 1000.
+async function listAllFiles(admin: ReturnType<typeof createClient>, bucket: string, prefix: string, depth = 0): Promise<string[]> {
+  const out: string[] = [];
+  if (depth > 4) return out;
+  for (let offset = 0; ; offset += 1000) {
+    const { data, error } = await admin.storage.from(bucket).list(prefix, { limit: 1000, offset });
+    if (error || !data || !data.length) break;
+    for (const entry of data) {
+      const path = `${prefix}/${entry.name}`;
+      if (entry.id) out.push(path);
+      else out.push(...await listAllFiles(admin, bucket, path, depth + 1));
+    }
+    if (data.length < 1000) break;
+  }
+  return out;
+}
+
+async function removeVercelDomain(domain: string) {
+  if (!VERCEL_API_TOKEN || !VERCEL_PROJECT_ID || !domain) return;
+  try {
+    const url =
+      `https://api.vercel.com/v9/projects/${VERCEL_PROJECT_ID}/domains/${encodeURIComponent(domain)}` +
+      (VERCEL_TEAM_ID ? `?teamId=${encodeURIComponent(VERCEL_TEAM_ID)}` : "");
+    const res = await fetch(url, { method: "DELETE", headers: { Authorization: `Bearer ${VERCEL_API_TOKEN}` } });
+    if (!res.ok && res.status !== 404) console.error("delete-account: Vercel remove-domain failed", domain, res.status);
+  } catch (e) {
+    console.error("delete-account: Vercel remove-domain failed", domain, String(e));
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method not allowed" }, 405);
@@ -50,7 +86,29 @@ Deno.serve(async (req: Request) => {
   if (userErr || !userData.user) return jsonResponse({ error: "invalid or expired session" }, 401);
   const userId = userData.user.id;
 
+  // Deleting everything is irreversible, so it needs a FRESH sign-in, not
+  // just any still-valid session (a session left open on a shared
+  // computer, or a stolen token, must not be enough). The account page
+  // re-asks for the password right before calling this.
+  const lastSignIn = Date.parse(userData.user.last_sign_in_at || "");
+  if (!lastSignIn || Date.now() - lastSignIn > RECENT_SIGN_IN_MS) {
+    return jsonResponse({ error: "please sign in again", reason: "reauth" }, 403);
+  }
+
   try {
+    // Custom domains are attached to DeskKit's Vercel project — detach
+    // them first, so a deleted customer's domain can't be left pointing
+    // at us for someone else to claim.
+    const { data: domainRows } = await admin.from("site_projects").select("custom_domain").eq("user_id", userId).not("custom_domain", "is", null);
+    for (const row of domainRows || []) await removeVercelDomain(String(row.custom_domain));
+
+    // Messages this person sent through the contact/feedback forms are
+    // keyed by email, not user id — removed with the account too.
+    if (userData.user.email) {
+      const { error: msgErr } = await admin.from("contact_messages").delete().eq("email", userData.user.email);
+      if (msgErr) console.error("delete-account: failed to clear contact_messages", msgErr.message);
+    }
+
     for (const table of USER_TABLES) {
       const column = table === "profiles" ? "id" : "user_id";
       const { error } = await admin.from(table).delete().eq(column, userId);
@@ -62,11 +120,13 @@ Deno.serve(async (req: Request) => {
       if (error) console.error(`delete-account: failed to clear ${table}`, error.message);
     }
 
-    // Logo uploads live at logos/<user id>/... — not a table, so not
-    // covered by the loop above.
-    const { data: files } = await admin.storage.from("logos").list(userId);
-    if (files && files.length) {
-      await admin.storage.from("logos").remove(files.map((f) => `${userId}/${f.name}`));
+    // Uploads live at <bucket>/<user id>/... (site images one folder
+    // deeper, per template) — not tables, so not covered by the loop above.
+    for (const bucket of ["logos", "site-images"]) {
+      const paths = await listAllFiles(admin, bucket, userId);
+      for (let i = 0; i < paths.length; i += 100) {
+        await admin.storage.from(bucket).remove(paths.slice(i, i + 100));
+      }
     }
 
     const { error: delErr } = await admin.auth.admin.deleteUser(userId);

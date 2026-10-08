@@ -54,6 +54,28 @@ const corsHeaders = {
 // garbage before ever calling Vercel's API with it.
 const DOMAIN_PATTERN = /^(?!-)[a-z0-9-]{1,63}(?<!-)(\.(?!-)[a-z0-9-]{1,63}(?<!-))+$/i;
 
+const MAX_DOMAINS_PER_USER = 5;
+
+// Never a customer domain: anything under deskkit.co.il (ours), the
+// platforms DeskKit runs on, or a bare IP address.
+function isReservedDomain(domain: string): boolean {
+  if (/^[0-9.]+$/.test(domain)) return true;
+  return ["deskkit.co.il", "vercel.app", "vercel.com", "supabase.co", "supabase.com", "localhost"]
+    .some((r) => domain === r || domain.endsWith("." + r));
+}
+
+async function removeVercelDomain(domain: string) {
+  try {
+    const url =
+      `https://api.vercel.com/v9/projects/${VERCEL_PROJECT_ID}/domains/${encodeURIComponent(domain)}` +
+      (VERCEL_TEAM_ID ? `?teamId=${encodeURIComponent(VERCEL_TEAM_ID)}` : "");
+    const res = await fetch(url, { method: "DELETE", headers: { Authorization: `Bearer ${VERCEL_API_TOKEN}` } });
+    if (!res.ok && res.status !== 404) console.error("Vercel remove-domain failed", domain, res.status);
+  } catch (e) {
+    console.error("Vercel remove-domain failed", domain, String(e));
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") {
@@ -80,18 +102,30 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "missing siteProjectId or domain" }), { status: 400, headers: corsHeaders });
     }
     const cleanDomain = domain.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
-    if (!DOMAIN_PATTERN.test(cleanDomain)) {
+    if (!DOMAIN_PATTERN.test(cleanDomain) || isReservedDomain(cleanDomain)) {
       return new Response(JSON.stringify({ success: false, reason: "invalid" }), { status: 200, headers: corsHeaders });
     }
 
     const { data: project, error: fetchErr } = await admin
       .from("site_projects")
-      .select("id, user_id")
+      .select("id, user_id, custom_domain")
       .eq("id", siteProjectId)
       .maybeSingle();
-    if (fetchErr) return new Response(JSON.stringify({ error: fetchErr.message }), { status: 500, headers: corsHeaders });
+    if (fetchErr) return new Response(JSON.stringify({ error: "lookup failed" }), { status: 500, headers: corsHeaders });
     if (!project || project.user_id !== userId) {
       return new Response(JSON.stringify({ error: "site not found for this account" }), { status: 404, headers: corsHeaders });
+    }
+
+    // A handful of domains per account is plenty for real use, and stops
+    // one account from parking hundreds of names on DeskKit's Vercel project.
+    const { count: domainCount } = await admin
+      .from("site_projects")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .not("custom_domain", "is", null)
+      .neq("id", siteProjectId);
+    if ((domainCount || 0) >= MAX_DOMAINS_PER_USER) {
+      return new Response(JSON.stringify({ success: false, reason: "limit" }), { status: 200, headers: corsHeaders });
     }
 
     const vercelUrl =
@@ -113,10 +147,8 @@ Deno.serve(async (req: Request) => {
       if (code === "domain_already_in_use" || code === "forbidden") {
         return new Response(JSON.stringify({ success: false, reason: "taken" }), { status: 200, headers: corsHeaders });
       }
-      return new Response(
-        JSON.stringify({ error: vercelBody?.error?.message || `Vercel error: ${vercelRes.status}` }),
-        { status: 500, headers: corsHeaders }
-      );
+      console.error("Vercel add-domain failed", vercelRes.status, JSON.stringify(vercelBody).slice(0, 500));
+      return new Response(JSON.stringify({ error: "connecting the domain failed — please try again" }), { status: 500, headers: corsHeaders });
     }
 
     const { error: updateErr } = await admin
@@ -127,8 +159,11 @@ Deno.serve(async (req: Request) => {
       if (updateErr.code === "23505") {
         return new Response(JSON.stringify({ success: false, reason: "taken" }), { status: 200, headers: corsHeaders });
       }
-      return new Response(JSON.stringify({ error: updateErr.message }), { status: 500, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: "saving the domain failed" }), { status: 500, headers: corsHeaders });
     }
+    // The site's previous domain is detached from Vercel, so it can't be
+    // left pointing at DeskKit with nobody owning it.
+    if (project.custom_domain && project.custom_domain !== cleanDomain) await removeVercelDomain(project.custom_domain);
 
     // Both options are always returned, each labeled with the condition
     // it applies to, rather than guessing apex-vs-subdomain from the

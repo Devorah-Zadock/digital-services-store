@@ -107,6 +107,17 @@ function validateCommandResult(raw: unknown, ctx: SiteContext): Record<string, u
   return fallbackUnsupported("הפעולה הזו עדיין לא נתמכת.");
 }
 
+// Hard cap on the request body: the text here goes straight into an
+// OpenAI prompt that DeskKit pays for, so an unbounded body is an
+// unbounded bill. 60k characters is far above any real CV + job ad or
+// site summary.
+const MAX_BODY_CHARS = 60_000;
+async function readJsonCapped(req: Request): Promise<Record<string, unknown> | null> {
+  const raw = await req.text();
+  if (raw.length > MAX_BODY_CHARS) return null;
+  return JSON.parse(raw);
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method not allowed" }, 405);
@@ -124,7 +135,8 @@ Deno.serve(async (req: Request) => {
   if (!OPENAI_API_KEY) return jsonResponse({ error: "AI commands aren't set up yet (OPENAI_API_KEY missing)" }, 500);
 
   try {
-    const body = await req.json();
+    const body = await readJsonCapped(req) as any;
+    if (!body) return jsonResponse({ error: "request too large" }, 413);
     const command = typeof body.command === "string" ? body.command.trim().slice(0, 300) : "";
     const availableTypes = Array.isArray(body.availableTypes) ? body.availableTypes.filter((t: unknown) => typeof t === "string") : [];
     const activeTypes = Array.isArray(body.activeTypes) ? body.activeTypes.filter((t: unknown) => typeof t === "string") : [];
@@ -147,19 +159,20 @@ Deno.serve(async (req: Request) => {
     if (profileErr) return jsonResponse({ error: profileErr.message }, 500);
     const isPro = !!(profile && profile.is_pro);
 
-    const today = new Date().toISOString().slice(0, 10);
-    const usageTable = isPro ? "ai_usage_daily" : "ai_usage";
     const limit = isPro ? PRO_DAILY_LIMIT : FREE_ATTEMPT_LIMIT;
 
-    let usageQuery = admin.from(usageTable).select("count").eq("user_id", userId).eq("tool", TOOL);
-    if (isPro) usageQuery = usageQuery.eq("day", today);
-    const { data: usageRow, error: usageErr } = await usageQuery.maybeSingle();
-    if (usageErr) return jsonResponse({ error: usageErr.message }, 500);
-
-    const currentCount = usageRow ? usageRow.count : 0;
-    if (currentCount >= limit) {
-      return jsonResponse({ limitReached: true, isPro, count: currentCount, limit });
+    // Atomically take one slot BEFORE calling OpenAI (ai_usage_reserve in
+    // supabase/sql/security_hardening.sql) — a read-then-write let parallel
+    // requests all slip past the limit. Handed back below if the call
+    // fails, or if this turns out to be a refusal that's still free.
+    const { data: reserved, error: reserveErr } = await admin.rpc("ai_usage_reserve", { p_user_id: userId, p_tool: TOOL, p_limit: limit, p_daily: isPro });
+    if (reserveErr) return jsonResponse({ error: "usage check failed — please try again" }, 500);
+    if (reserved === null || reserved === undefined) {
+      return jsonResponse({ limitReached: true, isPro, count: limit, limit });
     }
+    const newCount = Number(reserved);
+    let keepSlot = false;
+    const reservedResponse = await (async (): Promise<Response> => {
 
     const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -190,7 +203,8 @@ Deno.serve(async (req: Request) => {
 
     if (!openaiRes.ok) {
       const errText = await openaiRes.text();
-      return jsonResponse({ error: `OpenAI request failed: ${errText.slice(0, 300)}` }, 502);
+      console.error("OpenAI request failed", openaiRes.status, errText.slice(0, 500));
+      return jsonResponse({ error: "AI request failed — please try again" }, 502);
     }
 
     const openaiData = await openaiRes.json();
@@ -204,31 +218,25 @@ Deno.serve(async (req: Request) => {
 
     const result = validateCommandResult(parsed, ctx);
 
-    const onConflict = isPro ? "user_id,tool,day" : "user_id,tool";
-    const bumpUsage = async (tool: string, count: number) => {
-      const row: Record<string, unknown> = { user_id: userId, tool, count, updated_at: new Date().toISOString() };
-      if (isPro) row.day = today;
-      return await admin.from(usageTable).upsert(row, { onConflict });
-    };
-
     if (result.op === "unsupported") {
-      let refusalQuery = admin.from(usageTable).select("count").eq("user_id", userId).eq("tool", REFUSAL_TOOL);
-      if (isPro) refusalQuery = refusalQuery.eq("day", today);
-      const { data: refusalRow, error: refusalErr } = await refusalQuery.maybeSingle();
-      if (refusalErr) return jsonResponse({ error: refusalErr.message }, 500);
-      const refusalCount = refusalRow ? refusalRow.count : 0;
-      if (refusalCount < (isPro ? PRO_DAILY_REFUSAL_LIMIT : FREE_REFUSAL_LIMIT)) {
-        const { error: refusalUpsertErr } = await bumpUsage(REFUSAL_TOOL, refusalCount + 1);
-        if (refusalUpsertErr) return jsonResponse({ error: refusalUpsertErr.message }, 500);
-        return jsonResponse({ result, isPro, count: currentCount, limit });
+      // A refusal is free up to its own (separate) cap: take a refusal
+      // slot atomically, and if that worked hand the normal one back.
+      const { data: refusalSlot, error: refusalErr } = await admin.rpc("ai_usage_reserve", {
+        p_user_id: userId, p_tool: REFUSAL_TOOL, p_limit: isPro ? PRO_DAILY_REFUSAL_LIMIT : FREE_REFUSAL_LIMIT, p_daily: isPro,
+      });
+      if (refusalErr) return jsonResponse({ error: "usage check failed — please try again" }, 500);
+      if (refusalSlot !== null && refusalSlot !== undefined) {
+        return jsonResponse({ result, isPro, count: newCount - 1, limit });
       }
     }
 
-    const newCount = currentCount + 1;
-    const { error: upsertErr } = await bumpUsage(TOOL, newCount);
-    if (upsertErr) return jsonResponse({ error: upsertErr.message }, 500);
-
+    keepSlot = true;
     return jsonResponse({ result, isPro, count: newCount, limit });
+    })().catch((err) => jsonResponse({ error: String(err) }, 500));
+    if (!keepSlot) {
+      await admin.rpc("ai_usage_release", { p_user_id: userId, p_tool: TOOL, p_daily: isPro });
+    }
+    return reservedResponse;
   } catch (err) {
     return jsonResponse({ error: String(err) }, 500);
   }

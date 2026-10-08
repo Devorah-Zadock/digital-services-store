@@ -17,7 +17,7 @@
    legal advice — worth a quick check against your own accountant's
    preferred phrasing before relying on it. */
 function escapeHtmlI(s) {
-  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
 function parseILSI(s) {

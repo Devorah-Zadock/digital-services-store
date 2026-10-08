@@ -42,16 +42,48 @@ async function exportMyData(userId, email) {
   };
 }
 
+/* Sensitive changes (email, password, deleting the account) re-check
+   who's at the keyboard instead of trusting any still-open session: an
+   account with a password must type it again; a Google-only account must
+   have signed in within the last 15 minutes. Signing in with the password
+   here also counts as that fresh sign-in for delete-account's own check. */
+const DK_FRESH_LOGIN_MS = 15 * 60 * 1000;
+const DK_REAUTH_GOOGLE_MSG = "מטעמי אבטחה צריך להתחבר מחדש: התנתקו, התחברו שוב עם Google, וחזרו לכאן תוך 15 דקות.";
+
+function dkHasPassword(user) {
+  const providers = (user && user.app_metadata && user.app_metadata.providers) || [];
+  return providers.includes("email") || ((user && user.identities) || []).some((i) => i.provider === "email");
+}
+
+// Returns an error message, or "" when it's OK to go ahead.
+async function dkReauthenticate(user, password) {
+  if (dkHasPassword(user)) {
+    if (!password) return "יש להזין את הסיסמה הנוכחית.";
+    const captchaToken = typeof dkCaptchaToken === "function" ? await dkCaptchaToken("as-captcha") : undefined;
+    const { error } = await supabaseClient.auth.signInWithPassword({ email: user.email, password, options: { captchaToken } });
+    if (typeof dkCaptchaReset === "function") dkCaptchaReset("as-captcha");
+    if (error && /captcha/i.test(error.message || "")) return "אימות האבטחה נכשל — רעננו את הדף ונסו שוב.";
+    return error ? "הסיסמה הנוכחית שגויה." : "";
+  }
+  const last = Date.parse(user.last_sign_in_at || "");
+  return last && Date.now() - last < DK_FRESH_LOGIN_MS ? "" : DK_REAUTH_GOOGLE_MSG;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   let currentUserEmail = "";
   let currentUserId = "";
+  let currentUser = null;
   supabaseClient.auth.getSession().then(({ data }) => {
     const user = data.session && data.session.user;
     if (!user) return; // require-auth.js already redirects; nothing to do here
+    currentUser = user;
     currentUserEmail = user.email;
     currentUserId = user.id;
     document.getElementById("as-current-email").textContent = user.email;
     document.getElementById("as-delete-email-hint").textContent = user.email;
+    const hasPw = dkHasPassword(user);
+    document.querySelectorAll(".as-current-pw-field").forEach((el) => { el.hidden = !hasPw; });
+    if (hasPw && typeof dkCaptchaMount === "function") dkCaptchaMount("as-captcha");
   });
 
   const exportBtn = document.getElementById("as-export-btn");
@@ -108,7 +140,23 @@ document.addEventListener("DOMContentLoaded", () => {
     confirmBtn.textContent = "מוחקים…";
     deleteErr.textContent = "";
     try {
+      const reauthErr = currentUser ? await dkReauthenticate(currentUser, document.getElementById("as-delete-password").value) : "";
+      if (reauthErr) {
+        deleteErr.textContent = reauthErr;
+        confirmBtn.textContent = "מחיקה סופית";
+        confirmBtn.disabled = false;
+        return;
+      }
       const { data, error } = await supabaseClient.functions.invoke("delete-account", {});
+      if (error && error.context && typeof error.context.json === "function") {
+        const body = await error.context.json().catch(() => null);
+        if (body && body.reason === "reauth") {
+          deleteErr.textContent = dkHasPassword(currentUser) ? "מטעמי אבטחה, נסו שוב עם הסיסמה שלכם." : DK_REAUTH_GOOGLE_MSG;
+          confirmBtn.textContent = "מחיקה סופית";
+          confirmBtn.disabled = false;
+          return;
+        }
+      }
       if (error || !data || !data.success) {
         deleteErr.textContent = "המחיקה נכשלה. נסו שוב, או כתבו לנו ונטפל בזה ידנית.";
         confirmBtn.textContent = "מחיקה סופית";
@@ -132,6 +180,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const msg = document.getElementById("as-email-msg");
     err.textContent = "";
     msg.textContent = "";
+    const reauthErr = currentUser ? await dkReauthenticate(currentUser, document.getElementById("as-email-current-password").value) : "";
+    if (reauthErr) { err.textContent = reauthErr; return; }
     const { error } = await supabaseClient.auth.updateUser({ email: newEmail });
     if (error) { err.textContent = "העדכון נכשל, נסו שוב."; return; }
     msg.textContent = "נשלח מייל אישור לכתובת החדשה — לחצו על הקישור שם כדי לסיים.";
@@ -147,9 +197,19 @@ document.addEventListener("DOMContentLoaded", () => {
     err.textContent = "";
     msg.textContent = "";
     if (pw !== pw2) { err.textContent = "הסיסמאות לא תואמות."; return; }
+    const reauthErr = currentUser ? await dkReauthenticate(currentUser, document.getElementById("as-current-password").value) : "";
+    if (reauthErr) { err.textContent = reauthErr; return; }
     const { error } = await supabaseClient.auth.updateUser({ password: pw });
-    if (error) { err.textContent = "העדכון נכשל, נסו שוב."; return; }
-    msg.textContent = "הסיסמה עודכנה בהצלחה.";
+    if (error) {
+      err.textContent = /weak|leaked|pwned|characters/i.test(error.message || "")
+        ? "הסיסמה חלשה מדי או שהופיעה בדליפת מידע — בחרו סיסמה אחרת (לפחות 8 תווים)."
+        : "העדכון נכשל, נסו שוב.";
+      return;
+    }
+    // Anyone who was signed in elsewhere with the old password is signed
+    // out — the whole point of changing it after a suspected leak.
+    await supabaseClient.auth.signOut({ scope: "others" }).catch(() => {});
+    msg.textContent = "הסיסמה עודכנה בהצלחה. חיבורים במכשירים אחרים נותקו.";
     e.target.reset();
   });
 });

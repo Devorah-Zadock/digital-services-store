@@ -112,32 +112,19 @@ async function finalizeSiteProject() {
    must never block the actual download the customer is waiting for. */
 async function sendPurchaseReceipt() {
   try {
-    const { data } = await supabaseClient.auth.getSession();
-    const sessionEmail = data.session && data.session.user && data.session.user.email;
-    const purchase = typeof lastVerifiedPurchase !== "undefined" ? lastVerifiedPurchase : null;
-    const buyerEmail = (purchase && purchase.email) || sessionEmail;
-    if (!buyerEmail) return;
-
+    // The server takes the recipient, name, amount and test-flag from the
+    // Gumroad-verified purchase stored at redemption — all it needs from
+    // here is which license this receipt is for, and the item line.
+    const licenseInput = document.getElementById("license-input");
+    const licenseKey = licenseInput ? licenseInput.value.trim() : "";
+    if (!licenseKey) return;
     const tplLabel = typeof SITE_TEMPLATES !== "undefined" && SITE_TEMPLATES[siteState.template]
       ? SITE_TEMPLATES[siteState.template].label : siteState.template;
     const bizName = siteState.data && siteState.data.businessName && siteState.data.businessName.trim();
-    const amount = formatGumroadAmount(purchase);
-    // Gumroad's own license-verify response flags a sandbox/test-mode
-    // purchase with purchase.test — real money never changed hands, so
-    // its `price` can legitimately be a throwaway sandbox value instead
-    // of the product's real listed price. A receipt for one of these
-    // must say so loudly: a real-looking "קבלה" (receipt) email with an
-    // unexplained wrong amount is exactly the kind of thing that erodes
-    // trust in every OTHER receipt, even the real ones.
-    const isTest = !!(purchase && purchase.test);
-
     await supabaseClient.functions.invoke("send-receipt", {
       body: {
-        buyerEmail,
-        buyerName: (purchase && purchase.full_name) || bizName || "",
-        itemDescription: `בניית אתר עסקי — ${escapeHtmlS(tplLabel)}${bizName ? ` (${escapeHtmlS(bizName)})` : ""}`,
-        amount,
-        isTest,
+        licenseKey,
+        itemDescription: `בניית אתר עסקי — ${tplLabel}${bizName ? ` (${bizName})` : ""}`,
       },
     });
   } catch (err) {

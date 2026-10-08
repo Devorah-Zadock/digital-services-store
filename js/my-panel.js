@@ -114,6 +114,10 @@ function openPanelAccountMenu(wrap, email) {
   wrap.appendChild(dd);
 
   dd.querySelector(".nav-account-logout").addEventListener("click", () => {
+    const confirmBox = dd.querySelector(".nav-account-confirm");
+    const warn = confirmBox.querySelector(".nav-account-unsaved-warn");
+    if (warn) warn.remove();
+    if (typeof dkAnyUnsavedWork === "function" && dkAnyUnsavedWork()) confirmBox.insertAdjacentHTML("afterbegin", '<p class="nav-account-unsaved-warn">יש לך שינויים שלא נשמרו — הם יאבדו אם תתנתקו בלי לשמור.</p>');
     dd.querySelector(".nav-account-logout").hidden = true;
     dd.querySelector(".nav-account-confirm").hidden = false;
   });
@@ -122,6 +126,23 @@ function openPanelAccountMenu(wrap, email) {
     dd.querySelector(".nav-account-logout").hidden = false;
   });
   dd.querySelector(".nav-confirm-yes").addEventListener("click", async () => {
+    // Local working copies (CV/site drafts with names, phones, emails)
+    // must not stay behind on a shared computer once the owner signs out
+    // — the account's cloud copies are untouched.
+    // Only site drafts, which autosave to the account. CV drafts stay:
+    // the CV builder saves only on an explicit click, so clearing them
+    // could lose work — and both builders require signing in, where
+    // guardLocalDraftOwnership (main.js) already wipes another account's
+    // drafts. The owner marker stays too, so that guard keeps working.
+    // CRM leads are local-only (no account copy) and stay as well.
+    try {
+      const drop = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith("deskkit_sites_data_v1_") || k === "deskkit_sites_last_template")) drop.push(k);
+      }
+      drop.forEach((k) => localStorage.removeItem(k));
+    } catch (_e) { /* storage unavailable */ }
     await supabaseClient.auth.signOut();
     window.location.reload();
   });

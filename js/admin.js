@@ -11,7 +11,19 @@
    owner only). */
 
 function escapeHtml(s) {
-  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+// Only real https:// links ever become clickable in the admin page —
+// published_url is a value that once came from the browser, so anything
+// else (javascript:, data:, odd strings) is shown as plain text instead.
+function dkSafeHttpsUrl(raw) {
+  try {
+    const u = new URL(String(raw || ""));
+    return u.protocol === "https:" ? u.href : "";
+  } catch (_bad) {
+    return "";
+  }
 }
 
 function templateLabel(slug) {
@@ -260,20 +272,24 @@ function messageCardHtml(m) {
   const fromHtml = (m.name || m.email)
     ? `<span class="message-from">${escapeHtml(m.name || "")}${m.name && m.email ? " · " : ""}${m.email ? escapeHtml(m.email) : ""}</span>`
     : (m.form_type === "feedback" ? `<span class="message-from">אורח/ת (לא מחובר/ת)</span>` : "");
+  // Which page it was sent from — useful context ("feedback on the
+  // projects page"), so kept, but as a small tag in the header row.
+  const pageLabel = m.page ? (m.page === "/" || m.page === "/index.html" ? "דף הבית" : m.page.replace(/^\//, "")) : "";
+  const pageHtml = pageLabel ? `<span class="message-page" title="נשלח מתוך ${escapeHtml(m.page)}">${escapeHtml(pageLabel)}</span>` : "";
   return `
     <div class="message-card${unread ? " unread" : ""}" data-mid="${m.id}">
       <div class="message-card-head">
         <span class="message-type">${typeLabel}</span>
         ${fromHtml}
         ${ratingHtml}
+        ${pageHtml}
         <span class="message-date">${dateStr}</span>
+        <span class="message-actions">
+          ${unread ? `<button type="button" class="message-action-btn" data-mark-read="${m.id}" title="סמן כנקרא">✓ נקרא</button>` : ""}
+          <button type="button" class="message-action-btn danger" data-del-msg="${m.id}" title="מחיקה" aria-label="מחיקה">🗑</button>
+        </span>
       </div>
       ${m.message ? `<p class="message-body">${escapeHtml(m.message)}</p>` : ""}
-      ${m.page ? `<p class="message-page">נשלח מתוך: ${escapeHtml(m.page)}</p>` : ""}
-      <div class="message-actions">
-        ${unread ? `<button type="button" class="message-action-btn" data-mark-read="${m.id}">סמן כנקרא</button>` : ""}
-        <button type="button" class="message-action-btn danger" data-del-msg="${m.id}">מחיקה</button>
-      </div>
     </div>`;
 }
 
@@ -1041,7 +1057,7 @@ function renderUserDrawer() {
     body =
       table("אתרים", ["תבנית", "סטטוס", "נוצר", ""], (sites || []).map((s) => `<tr>
           <td>${escapeHtml(templateLabel(s.template))}</td>
-          <td>${s.published_url ? `<a href="${escapeHtml(s.published_url)}" target="_blank" rel="noopener">פורסם ↗</a>` : (s.status === "finalized" ? "שולם" : "טיוטה")}</td>
+          <td>${s.published_url ? (dkSafeHttpsUrl(s.published_url) ? `<a href="${escapeHtml(dkSafeHttpsUrl(s.published_url))}" target="_blank" rel="noopener noreferrer">פורסם ↗</a>` : "פורסם") : (s.status === "finalized" ? "שולם" : "טיוטה")}</td>
           <td class="cx-nowrap">${escapeHtml(fmtDateTime(s.created_at))}</td>
           <td>${canDel ? `<button type="button" class="cx-link-btn danger" data-del-site="${s.id}">מחיקה</button>` : ""}</td></tr>`), "אין אתרים")
       + table("קורות חיים", ["נשמר לאחרונה", ""], (cvs || []).map((c) => `<tr>

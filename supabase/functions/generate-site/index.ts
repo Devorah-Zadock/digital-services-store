@@ -121,6 +121,17 @@ function normalizeGeneratedSite(raw: unknown, userBusinessName: string): Record<
   };
 }
 
+// Hard cap on the request body: the text here goes straight into an
+// OpenAI prompt that DeskKit pays for, so an unbounded body is an
+// unbounded bill. 60k characters is far above any real CV + job ad or
+// site summary.
+const MAX_BODY_CHARS = 60_000;
+async function readJsonCapped(req: Request): Promise<Record<string, unknown> | null> {
+  const raw = await req.text();
+  if (raw.length > MAX_BODY_CHARS) return null;
+  return JSON.parse(raw);
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method not allowed" }, 405);
@@ -138,7 +149,8 @@ Deno.serve(async (req: Request) => {
   if (!OPENAI_API_KEY) return jsonResponse({ error: "AI website generation isn't set up yet (OPENAI_API_KEY missing)" }, 500);
 
   try {
-    const body = await req.json();
+    const body = await readJsonCapped(req) as any;
+    if (!body) return jsonResponse({ error: "request too large" }, 413);
     const businessName = clampStr(body.businessName, 40);
     const businessType = clampStr(body.businessType, 60);
     const description = clampStr(body.description, 600);
@@ -158,19 +170,20 @@ Deno.serve(async (req: Request) => {
     if (profileErr) return jsonResponse({ error: profileErr.message }, 500);
     const isPro = !!(profile && profile.is_pro);
 
-    const today = new Date().toISOString().slice(0, 10);
-    const usageTable = isPro ? "ai_usage_daily" : "ai_usage";
     const limit = isPro ? PRO_DAILY_LIMIT : FREE_ATTEMPT_LIMIT;
 
-    let usageQuery = admin.from(usageTable).select("count").eq("user_id", userId).eq("tool", TOOL);
-    if (isPro) usageQuery = usageQuery.eq("day", today);
-    const { data: usageRow, error: usageErr } = await usageQuery.maybeSingle();
-    if (usageErr) return jsonResponse({ error: usageErr.message }, 500);
-
-    const currentCount = usageRow ? usageRow.count : 0;
-    if (currentCount >= limit) {
-      return jsonResponse({ limitReached: true, isPro, count: currentCount, limit });
+    // Atomically take one slot BEFORE calling OpenAI (ai_usage_reserve in
+    // supabase/sql/security_hardening.sql): a read-then-write here let a
+    // burst of parallel requests all see the same count and all get
+    // through. The slot is handed back below if the call doesn't succeed,
+    // so — as before — only successful attempts count.
+    const { data: reserved, error: reserveErr } = await admin.rpc("ai_usage_reserve", { p_user_id: userId, p_tool: TOOL, p_limit: limit, p_daily: isPro });
+    if (reserveErr) return jsonResponse({ error: "usage check failed — please try again" }, 500);
+    if (reserved === null || reserved === undefined) {
+      return jsonResponse({ limitReached: true, isPro, count: limit, limit });
     }
+    const newCount = Number(reserved);
+    const reservedResponse = await (async (): Promise<Response> => {
 
     const templateListForPrompt = KNOWN_TEMPLATES.map((t) => `${t.key}: ${t.label} (${t.category}) — ${t.desc}`).join("\n");
 
@@ -210,7 +223,8 @@ Deno.serve(async (req: Request) => {
 
     if (!openaiRes.ok) {
       const errText = await openaiRes.text();
-      return jsonResponse({ error: `OpenAI request failed: ${errText.slice(0, 300)}` }, 502);
+      console.error("OpenAI request failed", openaiRes.status, errText.slice(0, 500));
+      return jsonResponse({ error: "AI request failed — please try again" }, 502);
     }
 
     const openaiData = await openaiRes.json();
@@ -224,14 +238,12 @@ Deno.serve(async (req: Request) => {
 
     const site = normalizeGeneratedSite(parsed, businessName);
 
-    const newCount = currentCount + 1;
-    const upsertRow: Record<string, unknown> = { user_id: userId, tool: TOOL, count: newCount, updated_at: new Date().toISOString() };
-    const onConflict = isPro ? "user_id,tool,day" : "user_id,tool";
-    if (isPro) upsertRow.day = today;
-    const { error: upsertErr } = await admin.from(usageTable).upsert(upsertRow, { onConflict });
-    if (upsertErr) return jsonResponse({ error: upsertErr.message }, 500);
-
     return jsonResponse({ site, isPro, count: newCount, limit });
+    })().catch((err) => jsonResponse({ error: String(err) }, 500));
+    if (reservedResponse.status !== 200) {
+      await admin.rpc("ai_usage_release", { p_user_id: userId, p_tool: TOOL, p_daily: isPro });
+    }
+    return reservedResponse;
   } catch (err) {
     return jsonResponse({ error: String(err) }, 500);
   }

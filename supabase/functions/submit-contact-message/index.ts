@@ -34,7 +34,7 @@ const corsHeaders = {
 };
 
 function escapeHtml(s: string): string {
-  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -64,6 +64,9 @@ async function notifyByEmail(row: { form_type: string; name: string | null; emai
     // — the message is already safely stored either way.
   }
 }
+
+const GLOBAL_LIMIT_10_MIN = 100;
+const PER_EMAIL_LIMIT_1_HOUR = 5;
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -101,6 +104,29 @@ Deno.serve(async (req: Request) => {
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+    // Honeypot: the contact form has a hidden field people never see (named
+    // so password managers won't autofill it). Filled = a bot — pretend it
+    // worked, store and send nothing.
+    if (typeof body.hp === "string" && body.hp.trim()) {
+      return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
+    }
+
+    // Flood protection without keeping visitors' IPs: a cap per sender
+    // email per hour, and an overall cap per 10 minutes so a script
+    // can't bury the inbox (and burn the email quota) in one go.
+    const since10m = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const { count: recentAll } = await admin.from("contact_messages").select("id", { count: "exact", head: true }).gte("created_at", since10m);
+    if ((recentAll || 0) >= GLOBAL_LIMIT_10_MIN) {
+      return new Response(JSON.stringify({ error: "too many messages right now — please try again later" }), { status: 429, headers: corsHeaders });
+    }
+    if (email) {
+      const since1h = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      const { count: recentSame } = await admin.from("contact_messages").select("id", { count: "exact", head: true }).eq("email", email).gte("created_at", since1h);
+      if ((recentSame || 0) >= PER_EMAIL_LIMIT_1_HOUR) {
+        return new Response(JSON.stringify({ error: "too many messages — please try again later" }), { status: 429, headers: corsHeaders });
+      }
+    }
+
     // Who left a feedback rating: the widget has no name/email fields, so
     // a rating used to arrive completely anonymous. supabase-js's
     // functions.invoke() sends the signed-in visitor's own session token
@@ -132,7 +158,8 @@ Deno.serve(async (req: Request) => {
     const row = { form_type: formType, name, email, rating, message, page };
     const { error } = await admin.from("contact_messages").insert(row);
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
+      console.error("contact_messages insert failed", error.message);
+      return new Response(JSON.stringify({ error: "saving the message failed" }), { status: 500, headers: corsHeaders });
     }
 
     await notifyByEmail(row);

@@ -4,7 +4,26 @@
    lands back here already authenticated), we send them straight there. */
 
 const params = new URLSearchParams(location.search);
-const redirectTarget = params.get("redirect") || "tools.html";
+
+/* ?redirect= comes from the URL, so anyone can craft it. Only same-origin
+   http(s) pages are allowed — never "javascript:", another site, or a
+   protocol-relative "//evil.com" — otherwise a link to this page could
+   run code on deskkit.co.il (and read the session) or bounce a freshly
+   signed-in user to a phishing page. Anything else falls back to tools. */
+function safeRedirectTarget(raw) {
+  if (!raw) return "tools.html";
+  try {
+    const u = new URL(raw, location.href);
+    if (u.origin !== location.origin || (u.protocol !== "https:" && u.protocol !== "http:")) return "tools.html";
+    if (/^\/api\//i.test(u.pathname)) return "tools.html";
+    // The full, already-checked URL — never just the path: a path like
+    // "//evil.com" (from "/.//evil.com") would be read as another site.
+    return u.href;
+  } catch (_badUrl) {
+    return "tools.html";
+  }
+}
+const redirectTarget = safeRedirectTarget(params.get("redirect"));
 let authMode = "login"; // "login" | "signup"
 
 // Same defensive lookup as js/header.js's dkHeaderLabel: js/i18n.js is
@@ -19,6 +38,13 @@ function dkAcctLabel(key, fallback) {
 
 function setAuthMode(mode) {
   authMode = mode;
+  // 8+ characters for NEW passwords only — existing accounts with an
+  // older, shorter password must still be able to log in.
+  const pwInput = document.getElementById("qa-password");
+  if (pwInput) {
+    if (mode === "signup") { pwInput.minLength = 8; pwInput.autocomplete = "new-password"; }
+    else { pwInput.removeAttribute("minlength"); pwInput.autocomplete = "current-password"; }
+  }
   document.getElementById("qa-auth-err").textContent = "";
   document.getElementById("qa-auth-msg").textContent = "";
   if (mode === "signup") {
@@ -47,7 +73,9 @@ function dkAuthErrorMessage(error, context) {
   const lower = msg.toLowerCase();
   if (lower.includes("invalid login credentials")) return dkAcctLabel("acct_err_invalid_credentials", "פרטי ההתחברות שגויים — בדקו מייל וסיסמה ונסו שוב.");
   if (lower.includes("email not confirmed")) return dkAcctLabel("acct_err_email_not_confirmed", "המייל שלכם עדיין לא אומת — בדקו את תיבת הדואר (כולל תיקיית ספאם) ולחצו על קישור האימות.");
-  if (lower.includes("password should be at least") || lower.includes("password is too short")) return dkAcctLabel("acct_err_password_too_short", "הסיסמה קצרה מדי — נדרשים לפחות 6 תווים.");
+  if (lower.includes("password should be at least") || lower.includes("password is too short")) return dkAcctLabel("acct_err_password_too_short", "הסיסמה קצרה מדי — נדרשים לפחות 8 תווים.");
+  if (lower.includes("pwned") || lower.includes("leaked") || lower.includes("weak") || lower.includes("known to be")) return dkAcctLabel("acct_err_password_weak", "הסיסמה הזו חלשה מדי או שהופיעה בדליפת מידע — בחרו סיסמה אחרת.");
+  if (lower.includes("captcha")) return dkAcctLabel("acct_err_captcha", "אימות האבטחה נכשל — רעננו את הדף ונסו שוב.");
   if (lower.includes("already registered") || lower.includes("already exists") || lower.includes("user already registered")) return dkAcctLabel("acct_err_already_registered", "כתובת המייל הזו כבר רשומה אצלנו — נסו להתחבר במקום להירשם.");
   if (lower.includes("rate limit") || lower.includes("too many requests")) return dkAcctLabel("acct_err_rate_limit", "יותר מדי ניסיונות ברצף — המתינו כמה דקות ונסו שוב.");
   return context === "signup"
@@ -106,9 +134,12 @@ function wireAuth() {
     msg.textContent = "";
     if (!email) { err.textContent = dkAcctLabel("acct_err_email_required", "יש להזין קודם את כתובת המייל למעלה."); return; }
     try {
+      const captchaToken = await dkCaptchaToken("qa-captcha");
       const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
         redirectTo: window.location.origin + window.location.pathname + "?redirect=" + encodeURIComponent(redirectTarget),
+        captchaToken,
       });
+      dkCaptchaReset("qa-captcha");
       msg.textContent = error
         ? dkAcctLabel("acct_err_reset_send_failed", "לא הצלחנו לשלוח את המייל, נסו שוב.")
         : dkAcctLabel("acct_msg_reset_sent", "נשלח מייל לאיפוס סיסמה — תבדקו את תיבת הדואר.");
@@ -136,10 +167,12 @@ function wireAuth() {
     submitBtn.disabled = true;
     try {
       if (authMode === "signup") {
+        const captchaToken = await dkCaptchaToken("qa-captcha");
         const { data, error } = await supabaseClient.auth.signUp({
           email, password,
-          options: { emailRedirectTo: window.location.origin + window.location.pathname + "?redirect=" + encodeURIComponent(redirectTarget) },
+          options: { emailRedirectTo: window.location.origin + window.location.pathname + "?redirect=" + encodeURIComponent(redirectTarget), captchaToken },
         });
+        dkCaptchaReset("qa-captcha");
         if (error) { err.textContent = dkAuthErrorMessage(error, "signup"); return; }
         if (data.session) return; // email confirmation is off — already logged in, onAuthStateChange handles it
         // Supabase's documented anti-enumeration behavior for signUp()
@@ -154,7 +187,9 @@ function wireAuth() {
         }
         showCheckEmail(email);
       } else {
-        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        const captchaToken = await dkCaptchaToken("qa-captcha");
+        const { error } = await supabaseClient.auth.signInWithPassword({ email, password, options: { captchaToken } });
+        dkCaptchaReset("qa-captcha");
         if (error) { err.textContent = dkAuthErrorMessage(error, "login"); return; }
         // onAuthStateChange picks up the new session and redirects onward.
       }
@@ -172,9 +207,14 @@ function wireAuth() {
   });
 }
 
-let isPasswordRecovery = false;
+// A recovery link lands here with type=recovery in the URL. Checked
+// synchronously too: getSession() can resolve before supabase-js fires
+// PASSWORD_RECOVERY, which would otherwise redirect away before the
+// "choose a new password" form ever shows.
+let isPasswordRecovery = /(^|[#&?])type=recovery(&|$)/.test(location.hash) || params.get("type") === "recovery";
 
 document.addEventListener("DOMContentLoaded", () => {
+  dkCaptchaMount("qa-captcha"); // no-op unless CAPTCHA is configured (js/captcha.js)
   wireAuth();
   wireResetPassword();
   setAuthMode("login");
@@ -197,6 +237,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   supabaseClient.auth.getSession().then(({ data }) => {
+    if (data.session && data.session.user && isPasswordRecovery) { showResetPassword(); return; }
     if (data.session && data.session.user && !isPasswordRecovery) window.location.href = redirectTarget;
   });
 });

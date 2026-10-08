@@ -97,6 +97,11 @@ function wireDomainConnectForm(siteProjectId) {
         status.textContent = "הדומיין הזה כבר מחובר במקום אחר. אם הוא שלכם, ודאו שהוא לא עדיין מחובר לאתר/שירות קודם.";
         return;
       }
+      if (data.reason === "limit") {
+        status.className = "domain-connect-status bad";
+        status.textContent = "הגעתם למספר הדומיינים המרבי לחשבון. לעזרה — צרו קשר.";
+        return;
+      }
       if (!data.success) {
         status.className = "domain-connect-status bad";
         status.textContent = "החיבור נכשל. נסו שוב בעוד רגע.";

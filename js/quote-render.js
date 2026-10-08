@@ -11,7 +11,7 @@
    is the catalog metadata (label/category/thumb) quote-app.html's
    picker reads; QUOTE_SKIN_CSS is the actual look. */
 function escapeHtmlQ(s) {
-  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
 /* Fallback VAT rate (%) used only if the business owner leaves the VAT-rate
