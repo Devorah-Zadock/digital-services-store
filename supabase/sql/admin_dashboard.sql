@@ -166,19 +166,23 @@ begin
     last_parts := array_append(last_parts, 'ue.t');
   end if;
 
+  -- Every column is cast to exactly the type admin_list_users declares:
+  -- on a real Supabase project auth.users.email is varchar(255), and
+  -- "return query" refuses any mismatch ("structure of query does not
+  -- match function result type").
   return format($q$
     select
-      cp.id as user_id,
-      cp.user_number,
-      coalesce(au.email, cp.email) as email,
-      nullif(trim(coalesce(au.raw_user_meta_data->>'full_name', au.raw_user_meta_data->>'name', '')), '') as full_name,
-      cp.created_at,
-      au.last_sign_in_at,
-      greatest(%s) as last_active_at,
-      (au.email_confirmed_at is not null) as email_confirmed,
-      (au.banned_until is not null and au.banned_until > now()) as is_suspended,
-      coalesce(cp.is_pro, false) as is_pro,
-      %s as sites_count, %s as cv_count, %s as quotes_count, %s as invoices_count
+      cp.id::uuid as user_id,
+      cp.user_number::bigint as user_number,
+      coalesce(au.email::text, cp.email::text) as email,
+      nullif(trim(coalesce(au.raw_user_meta_data->>'full_name', au.raw_user_meta_data->>'name', '')), '')::text as full_name,
+      cp.created_at::timestamptz as created_at,
+      au.last_sign_in_at::timestamptz as last_sign_in_at,
+      greatest(%s)::timestamptz as last_active_at,
+      (au.email_confirmed_at is not null)::boolean as email_confirmed,
+      (au.banned_until is not null and au.banned_until > now())::boolean as is_suspended,
+      coalesce(cp.is_pro, false)::boolean as is_pro,
+      (%s)::int as sites_count, (%s)::int as cv_count, (%s)::int as quotes_count, (%s)::int as invoices_count
     from public.customer_profiles cp
     left join auth.users au on au.id = cp.id
     %s
@@ -232,7 +236,7 @@ begin
 
   return query execute format($q$
     with base as (%s)
-    select b.*, count(*) over () as total_count
+    select b.*, (count(*) over ())::bigint as total_count
     from base b
     where ($1::text is null
            or b.email ilike $2 or b.full_name ilike $2
