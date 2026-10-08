@@ -73,6 +73,17 @@ document.addEventListener("DOMContentLoaded", () => {
     if (user) {
       scheduleCurrentUserId = user.id;
 
+      // Same as the site builder: whether the solver is unlocked follows
+      // the server's license record, not just a flag in this browser.
+      try {
+        const { data: paid, error: paidErr } = await supabaseClient.rpc("my_license_templates");
+        if (!paidErr && Array.isArray(paid) && typeof SCHEDULE_UNLOCK_KEY !== "undefined") {
+          if (paid.includes("schedule-builder")) localStorage.setItem(SCHEDULE_UNLOCK_KEY, "1");
+          else localStorage.removeItem(SCHEDULE_UNLOCK_KEY);
+          if (typeof refreshScheduleUnlockUi === "function") refreshScheduleUnlockUi();
+        }
+      } catch (_e) { /* offline / not deployed yet — keep the local flag */ }
+
       // Prefills the Gumroad checkout with the signed-in email — most
       // buyers want their receipt/license at the same address anyway, and
       // Gumroad's own field stays a normal, editable input, so anyone who

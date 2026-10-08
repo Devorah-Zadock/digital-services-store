@@ -1105,7 +1105,7 @@ function renderUserDrawer() {
     </div>
     <div class="cx-drawer-tabs" role="tablist">${tabs.map((t) => `<button type="button" role="tab" class="cx-drawer-tab${t.key === dkDrawer.tab ? " active" : ""}" data-drawer-tab="${t.key}" aria-selected="${t.key === dkDrawer.tab}">${escapeHtml(t.label)}</button>`).join("")}</div>
     <div class="cx-drawer-body">${body}
-      <p class="cx-privacy-note">המידע מוצג לצורכי תמיכה וניהול בלבד. כל צפייה ופעולה נרשמות ביומן הניהול.</p>
+      <p class="cx-privacy-note">תזכורת למנהלים: פרטי הלקוח מוצגים לצורכי תמיכה וניהול בלבד, וכל צפייה ופעולה של מנהל/ת כאן נרשמת ב"יומן ניהול" — כנדרש לשמירה על פרטיות הלקוחות. הלקוח עצמו לא רואה את ההודעה הזו.</p>
     </div>`;
 }
 
