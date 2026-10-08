@@ -92,7 +92,15 @@
   body.dk-has-mobile-nav .fab-chat,
   body.dk-has-mobile-nav .fab-feedback { bottom: calc(var(--dk-mnav-h) + 14px); }
   body.dk-has-mobile-nav .fab-a11y { bottom: calc(var(--dk-mnav-h) + 78px); }
-  body.dk-has-mobile-nav .chat-panel { bottom: calc(var(--dk-mnav-h) + 78px); max-height: calc(100vh - var(--dk-mnav-h) - 150px); }
+  body.dk-has-mobile-nav .chat-panel { bottom: calc(var(--dk-mnav-h) + 78px);
+    max-height: calc(100vh - var(--dk-mnav-h) - 100px); max-height: calc(100dvh - var(--dk-mnav-h) - 100px); }
+  /* A phone turned sideways (~360px tall): the space between the
+     floating buttons and the bar was too short for the chat, cutting off
+     its input row — so on short screens it takes the full height,
+     above the bar. */
+  @media (max-height: 500px) {
+    body.dk-has-mobile-nav .chat-panel { top: 12px; bottom: 12px; height: auto; max-height: none; z-index: 4100; }
+  }
   body.dk-has-mobile-nav .upsell-popup-wrap { bottom: calc(var(--dk-mnav-h) + 78px); }
   body.dk-has-mobile-nav .my-panel-reopen, body.dk-has-mobile-nav .my-sites-rail { display: none !important; }
   body.dk-has-mobile-nav.has-sites-rail { padding-inline-start: 0 !important; }
