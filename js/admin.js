@@ -1292,7 +1292,13 @@ function handleSetupError(e) {
    callers can tell "not an admin" (403) apart from "not set up yet"
    (500) apart from any other failure. */
 async function callAdminStats(body) {
-  const { data: sessionData } = await supabaseClient.auth.getSession();
+  let { data: sessionData } = await supabaseClient.auth.getSession();
+  // Right after a sign-in redirect the session can take a moment to be
+  // restored — wait briefly before calling it "not signed in".
+  for (let i = 0; i < 6 && !(sessionData.session && sessionData.session.access_token); i++) {
+    await new Promise((r) => setTimeout(r, 500));
+    ({ data: sessionData } = await supabaseClient.auth.getSession());
+  }
   const token = sessionData.session && sessionData.session.access_token;
   if (!token) {
     const err = new Error("not signed in");
@@ -1376,7 +1382,7 @@ function dkShowAdminLock(me) {
         const code = ex.message;
         err.textContent = code === "bad-password" ? "סיסמת ניהול שגויה."
           : code === "locked" ? "יותר מדי ניסיונות שגויים — הכניסה נעולה ל-15 דקות."
-          : code === "reauth" ? "מטעמי אבטחה, התנתקו והתחברו מחדש לחשבון — ואז קבעו את סיסמת הניהול (תוך 15 דקות מההתחברות)."
+          : code === "not signed in" ? "נראה שההתחברות לחשבון פגה — רעננו את הדף (או התחברו שוב) ונסו שוב."
           : code === "too-short" ? "סיסמת הניהול חייבת לכלול לפחות 10 תווים."
           : "שגיאה: " + code;
         btn.disabled = false;

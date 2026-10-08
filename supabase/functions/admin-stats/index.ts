@@ -507,21 +507,26 @@ async function unlockTokenValid(token: unknown, userId: string): Promise<boolean
 
 // Best-effort heads-up to the admin's own inbox on every unlock, so an
 // unexpected one is noticed. Never blocks the unlock itself.
-async function notifyAdminUnlock(email: string) {
+async function notifyAdmin(email: string, subject: string, htmlBody: string) {
   if (!RESEND_API_KEY || !email) return;
   try {
-    const when = new Date().toLocaleString("he-IL", { timeZone: "Asia/Jerusalem" });
     await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         from: "DeskKit <security@deskkit.co.il>",
         to: [email],
-        subject: "כניסה לאזור הניהול של DeskKit",
-        html: `<div dir="rtl" style="font-family:Arial,sans-serif">נכנסו לאזור הניהול עם החשבון שלך ב-${when}.<br>אם זו לא את/ה — החליפו מיד את סיסמת הניהול ואת סיסמת החשבון.</div>`,
+        subject,
+        html: `<div dir="rtl" style="font-family:Arial,sans-serif">${htmlBody}</div>`,
       }),
     });
   } catch (_e) { /* best effort */ }
+}
+
+function notifyAdminUnlock(email: string) {
+  const when = new Date().toLocaleString("he-IL", { timeZone: "Asia/Jerusalem" });
+  return notifyAdmin(email, "כניסה לאזור הניהול של DeskKit",
+    `נכנסו לאזור הניהול עם החשבון שלך ב-${when}.<br>אם זו לא את/ה — החליפו מיד את סיסמת הניהול ואת סיסמת החשבון.`);
 }
 
 Deno.serve(async (req: Request) => {
@@ -595,13 +600,16 @@ Deno.serve(async (req: Request) => {
         if (check.error) throw check.error;
         if (check.data === "locked") return json({ error: "locked" }, 423);
         if (check.data !== "ok") return json({ error: "bad-password" }, 401);
-      } else {
-        const lastSignIn = Date.parse(userData.user.last_sign_in_at || "");
-        if (!lastSignIn || Date.now() - lastSignIn > 15 * 60 * 1000) return json({ error: "reauth" }, 403);
       }
+      // First-time setup needs no extra step (a forced fresh sign-in was
+      // too much friction with Google log-in); instead the admin is told
+      // by email every time an admin password is set or changed, so one
+      // set by anyone else is noticed right away.
       await audit(admin, actor, "set_admin_password", null);
       const setRes = await admin.rpc("admin_secret_set", { p_email: callerEmail, p_password: newPassword });
       if (setRes.error) throw setRes.error;
+      await notifyAdmin(callerEmail, "נקבעה סיסמת ניהול — DeskKit",
+        `נקבעה (או הוחלפה) סיסמת ניהול לחשבון שלך ב-DeskKit ב-${new Date().toLocaleString("he-IL", { timeZone: "Asia/Jerusalem" })}.<br>אם זו לא את/ה — צרו קשר מיד כדי לאפס אותה.`);
       return json(await makeUnlockToken(actor.id));
     }
 
