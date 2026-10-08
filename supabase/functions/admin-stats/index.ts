@@ -292,6 +292,8 @@ const ROLE_RANK: Record<Role, number> = { support: 1, admin: 2, owner: 3 };
 // Minimum role per action. Anything not listed is rejected.
 const ACTION_MIN_ROLE: Record<string, Role> = {
   "whoami": "support",
+  "unlock": "support",
+  "set-admin-password": "support",
   "summary": "support",
   "list-users": "support",
   "user-detail": "support",
@@ -446,6 +448,82 @@ async function setSuspended(admin: ReturnType<typeof createClient>, userId: stri
   if (error) throw error;
 }
 
+// ---------------------------------------------------------------------
+// Admin password ("second lock"). Signing in proves who you are; every
+// admin action additionally needs a short-lived unlock token, which is
+// only issued for the separate admin password (supabase/sql/
+// admin_unlock.sql). The token is an HMAC over {user id, expiry}, keyed
+// from the service-role secret, so it can't be forged or moved to another
+// account, and it expires by itself.
+const UNLOCK_TTL_MS = 8 * 60 * 60 * 1000;
+const UNLOCK_FREE_ACTIONS = new Set(["whoami", "unlock", "set-admin-password"]);
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+
+function b64url(bytes: Uint8Array): string {
+  let bin = "";
+  bytes.forEach((b) => (bin += String.fromCharCode(b)));
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+let unlockKeyPromise: Promise<CryptoKey> | null = null;
+function unlockKey(): Promise<CryptoKey> {
+  if (!unlockKeyPromise) {
+    unlockKeyPromise = (async () => {
+      const raw = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(SERVICE_ROLE_KEY + ":admin-unlock-v1"));
+      return crypto.subtle.importKey("raw", raw, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+    })();
+  }
+  return unlockKeyPromise;
+}
+
+async function signUnlock(payload: string): Promise<string> {
+  const sig = await crypto.subtle.sign("HMAC", await unlockKey(), new TextEncoder().encode(payload));
+  return b64url(new Uint8Array(sig));
+}
+
+async function makeUnlockToken(userId: string): Promise<{ token: string; expiresAt: number }> {
+  const expiresAt = Date.now() + UNLOCK_TTL_MS;
+  const payload = b64url(new TextEncoder().encode(JSON.stringify({ u: userId, exp: expiresAt })));
+  return { token: payload + "." + (await signUnlock(payload)), expiresAt };
+}
+
+async function unlockTokenValid(token: unknown, userId: string): Promise<boolean> {
+  if (typeof token !== "string" || token.length > 400) return false;
+  const [payload, sig] = token.split(".");
+  if (!payload || !sig) return false;
+  const expected = await signUnlock(payload);
+  if (expected.length !== sig.length) return false;
+  let diff = 0;
+  for (let i = 0; i < sig.length; i++) diff |= sig.charCodeAt(i) ^ expected.charCodeAt(i);
+  if (diff !== 0) return false;
+  try {
+    const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
+    const { u, exp } = JSON.parse(json);
+    return u === userId && typeof exp === "number" && exp > Date.now();
+  } catch (_e) {
+    return false;
+  }
+}
+
+// Best-effort heads-up to the admin's own inbox on every unlock, so an
+// unexpected one is noticed. Never blocks the unlock itself.
+async function notifyAdminUnlock(email: string) {
+  if (!RESEND_API_KEY || !email) return;
+  try {
+    const when = new Date().toLocaleString("he-IL", { timeZone: "Asia/Jerusalem" });
+    await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: "DeskKit <security@deskkit.co.il>",
+        to: [email],
+        subject: "כניסה לאזור הניהול של DeskKit",
+        html: `<div dir="rtl" style="font-family:Arial,sans-serif">נכנסו לאזור הניהול עם החשבון שלך ב-${when}.<br>אם זו לא את/ה — החליפו מיד את סיסמת הניהול ואת סיסמת החשבון.</div>`,
+      }),
+    });
+  } catch (_e) { /* best effort */ }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
@@ -480,7 +558,52 @@ Deno.serve(async (req: Request) => {
     if (!minRole) return json({ error: "unknown action" }, 400);
     if (ROLE_RANK[role] < ROLE_RANK[minRole]) return json({ error: "forbidden", requiredRole: minRole }, 403);
 
-    if (action === "whoami") return json({ email: callerEmail, role });
+    const { data: secretStatus } = await admin.rpc("admin_secret_status", { p_email: callerEmail });
+    const adminPassword = secretStatus === "set" ? "set" : "unset";
+    const unlocked = adminPassword === "set" && await unlockTokenValid(body.adminToken, actor.id);
+    if (!UNLOCK_FREE_ACTIONS.has(action) && !unlocked) {
+      return json({ error: "admin-locked", adminPassword }, 401);
+    }
+
+    if (action === "whoami") return json({ email: callerEmail, role, adminPassword, unlocked });
+
+    // Exchange the admin password for an unlock token (8 hours).
+    if (action === "unlock") {
+      const result = await admin.rpc("admin_secret_check", { p_email: callerEmail, p_password: String(body.password || "") });
+      if (result.error) throw result.error;
+      if (result.data === "unset") return json({ error: "not-set" }, 409);
+      if (result.data === "locked") {
+        await audit(admin, actor, "admin_unlock_locked", null);
+        return json({ error: "locked" }, 423);
+      }
+      if (result.data !== "ok") {
+        await audit(admin, actor, "admin_unlock_failed", null);
+        return json({ error: "bad-password" }, 401);
+      }
+      await audit(admin, actor, "admin_unlock", null);
+      await notifyAdminUnlock(callerEmail);
+      return json(await makeUnlockToken(actor.id));
+    }
+
+    // Set (first time) or change the admin password. First time needs a
+    // fresh sign-in (within 15 minutes); changing needs the current one.
+    if (action === "set-admin-password") {
+      const newPassword = String(body.newPassword || "");
+      if (newPassword.length < 10) return json({ error: "too-short" }, 400);
+      if (adminPassword === "set") {
+        const check = await admin.rpc("admin_secret_check", { p_email: callerEmail, p_password: String(body.currentPassword || "") });
+        if (check.error) throw check.error;
+        if (check.data === "locked") return json({ error: "locked" }, 423);
+        if (check.data !== "ok") return json({ error: "bad-password" }, 401);
+      } else {
+        const lastSignIn = Date.parse(userData.user.last_sign_in_at || "");
+        if (!lastSignIn || Date.now() - lastSignIn > 15 * 60 * 1000) return json({ error: "reauth" }, 403);
+      }
+      await audit(admin, actor, "set_admin_password", null);
+      const setRes = await admin.rpc("admin_secret_set", { p_email: callerEmail, p_password: newPassword });
+      if (setRes.error) throw setRes.error;
+      return json(await makeUnlockToken(actor.id));
+    }
 
     if (action === "summary") {
       // Retention housekeeping on each dashboard load: the privacy policy
