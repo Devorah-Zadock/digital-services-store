@@ -99,7 +99,7 @@ async function verifyScheduleLicense() {
       // not just "try again" with nowhere left to go. Prefills the email
       // with exactly the key they tried, so following up doesn't start
       // from scratch.
-      const supportMailto = `mailto:digital.dz.studio@gmail.com?subject=${encodeURIComponent("בעיה בקוד רישוי — מערכת שעות")}&body=${encodeURIComponent("הקוד שהזנתי: " + key)}`;
+      const supportMailto = `mailto:${["digital.dz.studio", "gmail.com"].join("@")}?subject=${encodeURIComponent("בעיה בקוד רישוי — מערכת שעות")}&body=${encodeURIComponent("הקוד שהזנתי: " + key)}`;
       const supportLine = `<br>עדיין תקועים? <a href="${supportMailto}" style="color:inherit; text-decoration:underline;">כתבו לנו ונפתור את זה ידנית</a>.`;
       const invalidMsg = "קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב." + (data.gumroadMessage ? ` (Gumroad: ${String(data.gumroadMessage).replace(/[&<>"']/g, (c) => "&#" + c.charCodeAt(0) + ";")})` : "") + supportLine;
       note.innerHTML = data.reason === "redeemed-elsewhere" ? "קוד הרישוי הזה כבר שימש לפתיחת חשבון אחר." + supportLine

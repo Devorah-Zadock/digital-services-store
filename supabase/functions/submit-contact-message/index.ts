@@ -65,6 +65,22 @@ async function notifyByEmail(row: { form_type: string; name: string | null; emai
   }
 }
 
+const TURNSTILE_SECRET_KEY = Deno.env.get("TURNSTILE_SECRET_KEY") || "";
+
+async function turnstileOk(token: string): Promise<boolean> {
+  try {
+    const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ secret: TURNSTILE_SECRET_KEY, response: token }),
+    });
+    const data = await res.json();
+    return !!data.success;
+  } catch (_e) {
+    return false;
+  }
+}
+
 const GLOBAL_LIMIT_10_MIN = 100;
 const PER_EMAIL_LIMIT_1_HOUR = 5;
 
@@ -109,6 +125,16 @@ Deno.serve(async (req: Request) => {
     // worked, store and send nothing.
     if (typeof body.hp === "string" && body.hp.trim()) {
       return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
+    }
+
+    // Invisible Cloudflare Turnstile check — enforced once the
+    // TURNSTILE_SECRET_KEY secret exists (until then the forms don't send
+    // a token, see js/captcha.js). No puzzle is ever shown to people.
+    if (TURNSTILE_SECRET_KEY) {
+      const captchaToken = typeof body.captchaToken === "string" ? body.captchaToken : "";
+      if (!captchaToken || !(await turnstileOk(captchaToken))) {
+        return new Response(JSON.stringify({ error: "security check failed — please refresh and try again" }), { status: 400, headers: corsHeaders });
+      }
     }
 
     // Flood protection without keeping visitors' IPs: a cap per sender

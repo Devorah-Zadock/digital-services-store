@@ -185,8 +185,8 @@ const CHAT_FAQ = [
     aEn: "Your draft is saved automatically in the browser as you work, and after signing up in the cloud too — you can keep editing from any device via \"My projects\".",
     link: { href: "projects.html", label: "לפרויקטים שלי", labelEn: "My projects" } },
   { kw: ["צור קשר", "יצירת קשר", "קשר", "מייל", "email", "contact", "בעיה", "תקלה", "באג", "bug", "לא עובד"],
-    a: "אפשר לכתוב לנו דרך עמוד צור קשר או ישירות ל-digital.dz.studio@gmail.com, ונחזור אליכם בהקדם.",
-    aEn: "You can write to us through the Contact page or directly at digital.dz.studio@gmail.com, and we'll get back to you soon.",
+    a: "אפשר לכתוב לנו דרך עמוד צור קשר או ישירות למייל שמופיע בתחתית העמוד, ונחזור אליכם בהקדם.",
+    aEn: "You can write to us through the Contact page or directly at the email address shown at the bottom of the page, and we'll get back to you soon.",
     link: { href: "contact.html", label: "לעמוד צור קשר", labelEn: "Go to the Contact page" } },
   { kw: ["קטלוג", "מוצרים", "תבניות", "products", "templates"],
     a: "כל התבניות — קורות חיים, מצגות וגיליונות Excel — נמצאות בקטלוג, מסונן לפי קטגוריה.",
@@ -423,6 +423,8 @@ function injectFeedbackWidget() {
         <p class="widget-sub">${dkWidgetsT("דירוג קצר עוזר לנו להשתפר — לוקח חצי דקה.", "A quick rating helps us improve — takes half a minute.")}</p>
         <div class="star-row" id="star-row">${[1, 2, 3, 4, 5].map((n) => `<button type="button" class="star" data-star="${n}" aria-label="${n} ${dkWidgetsT("כוכבים", "stars")}">★</button>`).join("")}</div>
         <textarea id="feedback-text" rows="3" placeholder="${dkWidgetsT("רוצים להוסיף עוד משהו? (לא חובה)", "Want to add anything else? (optional)")}"></textarea>
+        <div id="feedback-captcha"></div>
+        <div aria-hidden="true" style="position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; opacity:0; pointer-events:none;"><label>Leave empty <input type="text" id="feedback-hp-check" tabindex="-1" autocomplete="off"></label></div>
         <button type="button" class="btn btn-gold" id="feedback-submit" style="width:100%;">${dkWidgetsT("שליחת משוב", "Send feedback")}</button>
         <div class="widget-note" id="feedback-note"></div>
       </div>
@@ -438,7 +440,10 @@ function injectFeedbackWidget() {
 
   const overlay = document.getElementById("feedback-overlay");
   const closeFeedback = () => overlay.classList.remove("open");
-  document.getElementById("feedback-fab").addEventListener("click", () => overlay.classList.add("open"));
+  document.getElementById("feedback-fab").addEventListener("click", () => {
+    overlay.classList.add("open");
+    if (typeof dkCaptchaMount === "function") dkCaptchaMount("feedback-captcha"); // no-op while off
+  });
   document.getElementById("feedback-close").addEventListener("click", closeFeedback);
   overlay.addEventListener("click", (e) => { if (e.target === overlay) closeFeedback(); });
 
@@ -448,7 +453,7 @@ function injectFeedbackWidget() {
     const text = document.getElementById("feedback-text").value.trim();
 
     if (typeof supabaseClient === "undefined") {
-      const mailHref = `mailto:digital.dz.studio@gmail.com?subject=${encodeURIComponent(dkWidgetsT("משוב על האתר — " + rating + " כוכבים", "Site feedback — " + rating + " stars"))}&body=${encodeURIComponent(text)}`;
+      const mailHref = `mailto:${["digital.dz.studio", "gmail.com"].join("@")}?subject=${encodeURIComponent(dkWidgetsT("משוב על האתר — " + rating + " כוכבים", "Site feedback — " + rating + " stars"))}&body=${encodeURIComponent(text)}`;
       note.innerHTML = dkWidgetsT(
         `תודה! טופס המשוב האוטומטי עוד לא מחובר — אם תרצו, אפשר <a href="${mailHref}">לשלוח לנו את זה במייל</a>.`,
         `Thanks! The automatic feedback form isn't connected yet — if you'd like, you can <a href="${mailHref}">send it to us by email</a> instead.`
@@ -459,9 +464,11 @@ function injectFeedbackWidget() {
     note.textContent = dkWidgetsT("שולח…", "Sending…");
     note.className = "widget-note";
     try {
+      const captchaToken = typeof dkCaptchaToken === "function" ? await dkCaptchaToken("feedback-captcha") : undefined;
       const { data, error } = await supabaseClient.functions.invoke("submit-contact-message", {
-        body: { rating, message: text, formType: "feedback", page: location.pathname },
+        body: { rating, message: text, formType: "feedback", page: location.pathname, hp: (document.getElementById("feedback-hp-check") || {}).value || "", captchaToken },
       });
+      if (typeof dkCaptchaReset === "function") dkCaptchaReset("feedback-captcha");
       if (error || !data || data.error) throw new Error((data && data.error) || "bad response");
       note.textContent = dkWidgetsT("תודה על המשוב!", "Thanks for the feedback!");
       note.className = "widget-note ok";
