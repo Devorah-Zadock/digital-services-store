@@ -75,8 +75,8 @@ Deno.serve(async (req: Request) => {
     const body = await req.json();
     const formType = body.formType === "feedback" ? "feedback" : "contact";
     const message = String(body.message || "").trim().slice(0, 5000);
-    const name = body.name ? String(body.name).trim().slice(0, 200) : null;
-    const email = body.email ? String(body.email).trim().slice(0, 300) : null;
+    let name = body.name ? String(body.name).trim().slice(0, 200) : null;
+    let email = body.email ? String(body.email).trim().slice(0, 300) : null;
     const page = body.page ? String(body.page).trim().slice(0, 300) : null;
     let rating: number | null = null;
     if (body.rating !== undefined && body.rating !== null) {
@@ -100,6 +100,35 @@ Deno.serve(async (req: Request) => {
     }
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // Who left a feedback rating: the widget has no name/email fields, so
+    // a rating used to arrive completely anonymous. supabase-js's
+    // functions.invoke() sends the signed-in visitor's own session token
+    // as the Authorization header; when it resolves to a real user, the
+    // account's email/name are recorded — taken from the verified
+    // session, never from the request body, so nobody can file feedback
+    // under someone else's address. A logged-out visitor's token is just
+    // the public anon key, which getUser() rejects: the rating simply
+    // stays anonymous, as before. Still never required — the function
+    // keeps working for visitors without an account.
+    if (formType === "feedback") {
+      name = null;
+      email = null;
+      const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "").trim();
+      if (token) {
+        try {
+          const { data: userData } = await admin.auth.getUser(token);
+          const user = userData && userData.user;
+          if (user) {
+            email = user.email || null;
+            const meta = (user.user_metadata || {}) as Record<string, unknown>;
+            const fullName = meta.full_name || meta.name;
+            name = typeof fullName === "string" && fullName.trim() ? fullName.trim().slice(0, 200) : null;
+          }
+        } catch (_e) { /* anonymous rating — fine */ }
+      }
+    }
+
     const row = { form_type: formType, name, email, rating, message, page };
     const { error } = await admin.from("contact_messages").insert(row);
     if (error) {
