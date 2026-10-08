@@ -20,7 +20,7 @@
 }
 .dk-header-cta:hover { background: var(--primary-dark); transform: translateY(-1px); }
 /* Confirmed-live bug: below the breakpoint where .brand goes
-   position:absolute (css/style.css's own 940px rule) and the slide-in
+   position:absolute (css/style.css's own 1180px rule) and the slide-in
    nav takes over, .nav-end-group still had to fit this CTA pill AND
    the login/"Sign in" pill AND (since the EN toggle rollout) the
    lang-toggle pill, all at once, in a row already narrower than their
@@ -32,6 +32,14 @@
    does, so nothing is actually lost by not showing both at once. */
 @media (max-width: 760px) {
   .dk-header-cta { display: none; }
+}
+/* Just above the 1180px burger breakpoint, the full English nav row plus
+   this pill plus "Sign in" + EN ran ~30px past the right edge (measured
+   at 1181-1220px). Hebrew labels are shorter and fit. The page's own
+   hero CTA covers the same action, so the pill simply sits out that
+   narrow band in English. */
+@media (min-width: 1181px) and (max-width: 1240px) {
+  html[dir="ltr"] .dk-header-cta { display: none; }
 }
 .dk-header-bell {
   display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px;
@@ -72,7 +80,20 @@
 }
 @media (max-width: 760px) {
   .dk-mobile-nav { display: block; }
-  body.dk-has-mobile-nav { padding-bottom: 64px; }
+  body.dk-has-mobile-nav { padding-bottom: 76px; --dk-mnav-h: calc(76px + env(safe-area-inset-bottom, 0px)); }
+  /* The bottom bar (z-index 4000, ~75px tall) sat on top of everything
+     anchored to the bottom edge: the cookie notice's "הבנתי" button was
+     hidden under it — so the notice could never be dismissed on a phone
+     — and since the floating buttons stay hidden while that notice is
+     up (css/style.css, body.cookie-notice-active .fab), the chat and
+     feedback buttons effectively never appeared; when they did, they
+     were under the bar too. Lift all of them above it. */
+  body.dk-has-mobile-nav .cookie-notice { bottom: var(--dk-mnav-h); }
+  body.dk-has-mobile-nav .fab-chat,
+  body.dk-has-mobile-nav .fab-feedback { bottom: calc(var(--dk-mnav-h) + 14px); }
+  body.dk-has-mobile-nav .fab-a11y { bottom: calc(var(--dk-mnav-h) + 78px); }
+  body.dk-has-mobile-nav .chat-panel { bottom: calc(var(--dk-mnav-h) + 78px); max-height: calc(100vh - var(--dk-mnav-h) - 150px); }
+  body.dk-has-mobile-nav .upsell-popup-wrap { bottom: calc(var(--dk-mnav-h) + 78px); }
   body.dk-has-mobile-nav .my-panel-reopen, body.dk-has-mobile-nav .my-sites-rail { display: none !important; }
   body.dk-has-mobile-nav.has-sites-rail { padding-inline-start: 0 !important; }
 }
@@ -520,8 +541,12 @@ html[dir="ltr"] .dk-home-hero-visual {
   --dk-hero-shift-cap: 420px;
   transform: translateX(var(--dk-hero-shift));
 }
+.dk-home-hero-visual > picture { display: block; }
+/* Hidden until the photo it's drawn onto has loaded (index.html sets
+   .is-loaded from the <img>'s onload) — see the markup's own comment. */
+.dk-home-hero-visual:not(.is-loaded) .dk-home-hero-screen-overlay { visibility: hidden; }
 .dk-home-hero-laptop-img {
-  width: 100%; display: block;
+  width: 100%; height: auto; aspect-ratio: 1024 / 946; display: block;
   filter: drop-shadow(0 25px 35px rgba(0, 0, 0, .12)) drop-shadow(0 8px 10px rgba(0, 0, 0, .08));
   /* Decorative only (aria-hidden) — without this, the image's full
      rectangular box (transparent PNG areas included) sits on top of

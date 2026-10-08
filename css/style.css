@@ -305,7 +305,7 @@ body.has-sites-rail header.site {
 .brand-desk { font-weight: 700; }
 .brand-kit { font-weight: 400; color: #0E8C8C; }
 .nav-end-group { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
-@media (min-width: 941px) {
+@media (min-width: 1181px) {
   .brand { order: 3; }
   .nav-links { order: 2; }
   .nav-end-group { order: 1; }
@@ -327,7 +327,7 @@ body.has-sites-rail header.site {
      LTR, which cancels the flip direction introduces and keeps both
      on the same physical side in either language. */
 }
-@media (min-width: 941px) {
+@media (min-width: 1181px) {
   html[dir="ltr"] .brand { order: 1; }
   html[dir="ltr"] .nav-end-group { order: 3; }
 }
@@ -359,8 +359,14 @@ html[dir="ltr"] .brand { flex-direction: row; }
    layout bug, a header one. Moving to the mobile nav (already a
    working, already-styled slide-in panel, see the matching 860px→940px
    change below) a bit earlier removes that squeeze band entirely
-   rather than trying to fit more words into less room. */
-@media (max-width: 940px) {
+   rather than trying to fit more words into less room.
+   Raised again 940px -> 1180px: on the pages with the full 9-link nav,
+   the row needs ~1140px in English, so between ~941-1150px "Build a
+   Site" wrapped onto three lines and the login/EN group was pushed past
+   the right edge of the screen (measured: a landscape tablet / small
+   laptop at 1024px lost the language toggle entirely). The slide-in
+   panel covers that whole band now. */
+@media (max-width: 1180px) {
   /* justify-content:flex-end — confirmed live this was still needed:
      taking .brand out of flow (below) frees up the space, but with no
      justify-content override .nav's default flex-start simply packs
@@ -387,6 +393,11 @@ html[dir="ltr"] .brand { flex-direction: row; }
   padding: 8px 14px; border-radius: 999px; transition: background .15s ease, opacity .15s ease;
 }
 .nav-links a:hover { background: rgba(20, 184, 166, .08); opacity: 1; }
+/* Never break a label like "Build a Site" across lines; just above the
+   1180px burger breakpoint the full English row is tight, so the pill
+   padding narrows a little there instead. */
+.nav-links a { white-space: nowrap; }
+@media (min-width: 1181px) and (max-width: 1320px) { .nav-links a { padding-inline: 9px; } }
 .nav-links a.active { opacity: 1; }
 /* The current page's own tab — a small turquoise underline under just
    that link, so it's obvious at a glance which page you're on regardless
@@ -1671,7 +1682,7 @@ html[dir="rtl"] body.dk-app-sidebar-mounted .upsell-popup-wrap {
    separate from the grid/hero/banner rules above on purpose: those are
    unrelated to the nav squeeze this fixes, so there's no reason to move
    their own breakpoint along with it. */
-@media (max-width: 940px) {
+@media (max-width: 1180px) {
   /* translateX(-100%) only hides this off-canvas correctly in RTL: the
      panel rests at inset-inline-end:0, which is the PHYSICAL LEFT edge
      in RTL (direction:rtl, the site's default) but the PHYSICAL RIGHT
