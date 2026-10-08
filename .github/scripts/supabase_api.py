@@ -107,10 +107,12 @@ if __name__ == "__main__":
         auth_show()
     elif cmd == "auth-errors":
         minutes = int(sys.argv[2]) if len(sys.argv) > 2 else 60
-        start = (datetime.datetime.utcnow() - datetime.timedelta(minutes=minutes)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        start = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=minutes)).strftime("%Y-%m-%dT%H:%M:%SZ")
         sql = "select timestamp, event_message from auth_logs order by timestamp desc limit 300"
-        res = call("GET", "/analytics/endpoints/logs.all?" + urllib.parse.urlencode({"sql": sql, "iso_timestamp_start": start})) or {}
-        rows = res.get("result") or []
+        res = call("GET", "/analytics/endpoints/logs?" + urllib.parse.urlencode({"sql": sql, "iso_timestamp_start": start})) or {}
+        rows = res.get("result") or res.get("data") or []
+        if res.get("error"):
+            print("logs API error:", str(res.get("error"))[:500])
         print(f"{len(rows)} auth log lines in the last {minutes} minutes (errors/warnings, redacted):")
         scrub = lambda t: re.sub(r"[\w.+-]+@[\w-]+\.[\w.-]+", "<email>", re.sub(r"\b\d{1,3}(\.\d{1,3}){3}\b", "<ip>", str(t)))
         for r in rows:
