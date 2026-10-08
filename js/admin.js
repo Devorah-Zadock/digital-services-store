@@ -1,13 +1,14 @@
 /* Private admin page: gated by real Supabase Auth (same login as the rest
-   of the site) plus a server-side admin-email allowlist checked inside
-   the admin-stats Edge Function — see that file for the actual
-   enforcement. This page only decides what to *show*; a visitor who
-   isn't signed in as an allow-listed admin gets 401/403 straight from
-   the server no matter what this client-side code does, so there's no
-   secret in this file to protect. The "הודעות" tab below reads from
-   contact_messages via admin-stats' list-messages/mark-message-read/
-   delete-message actions — the permanent replacement for Formspree,
-   whose free tier silently dropped anything older than 30 days. */
+   of the site) plus server-side admin ROLES checked inside the admin-stats
+   Edge Function — see that file for the actual enforcement. This page
+   only decides what to *show*; every request is re-checked server-side
+   (401/403 for anyone without the needed role), so there's no secret in
+   this file to protect.
+
+   Tabs: לקוחות (server-paged customer list + details drawer) · הודעות
+   (contact form + feedback, from contact_messages) · תבניות (template
+   usage charts) · יומן ניהול (audit log, admin+) · הרשאות (admin roles,
+   owner only). */
 
 function escapeHtml(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -177,9 +178,8 @@ const ACTIVITY_FILTER_TABS = [
    the way the search/sort/page state above already does. */
 let dkAdminActivityFilter = {};
 
-function renderCustomerStats(data) {
+function renderTemplateStats(data) {
   const summary = document.getElementById("stats-summary");
-  const table = document.getElementById("stats-users-table");
 
   const siteProjectCount = Object.values(data.templateCounts).reduce((a, b) => a + b, 0);
   const finalizedCount = Object.values(data.finalizedTemplateCounts).reduce((a, b) => a + b, 0);
@@ -240,277 +240,6 @@ function renderCustomerStats(data) {
 
   renderKpiChart("kpi-chart-canvas", kpiItems);
 
-  // Kept across refreshes/deletes (not re-declared here) so a search
-  // term, sort column or page the admin already picked survives a
-  // "רענון נתונים" click or a row delete instead of resetting every time.
-  dkAdminRawUsers = data.users;
-  dkAdminPage = Math.min(dkAdminPage, Math.max(1, Math.ceil(dkAdminFilteredUsers().length / DK_ADMIN_PAGE_SIZE)));
-  renderUsersTable();
-}
-
-let dkAdminRawUsers = [];
-let dkAdminSearchQuery = "";
-let dkAdminSortKey = "createdAt";
-let dkAdminSortDir = "desc";
-let dkAdminPage = 1;
-const DK_ADMIN_PAGE_SIZE = 50;
-
-const DK_ADMIN_SORTERS = {
-  email: (u) => (u.email || u.id || "").toLowerCase(),
-  createdAt: (u) => (u.createdAt ? new Date(u.createdAt).getTime() : 0),
-  sites: (u) => u.sites.length,
-  downloads: (u) => u.downloads || 0,
-};
-
-function dkAdminFilteredUsers() {
-  const q = dkAdminSearchQuery.trim().toLowerCase();
-  const filtered = q ? dkAdminRawUsers.filter((u) => (u.email || u.id || "").toLowerCase().includes(q)) : dkAdminRawUsers;
-  const sorter = DK_ADMIN_SORTERS[dkAdminSortKey] || DK_ADMIN_SORTERS.createdAt;
-  const sorted = filtered.slice().sort((a, b) => {
-    const av = sorter(a), bv = sorter(b);
-    const cmp = av < bv ? -1 : av > bv ? 1 : 0;
-    return dkAdminSortDir === "asc" ? cmp : -cmp;
-  });
-  return sorted;
-}
-
-/* One user's detail panel: a 6-tile Usage Dashboard up top (at-a-glance
-   counts per core product), then a filtered + color-badged Activity
-   Log (the real per-event history), then a compact management section
-   for the two destructive admin actions this page supports (deleting a
-   site or a saved CV). Replaces the old loose quickcounts text, five
-   separate mini-tables and flat usage-log bullet list — confirmed ask:
-   a "normal, professional, visual" structure instead of long text lines
-   that stop being scannable once there are real customers to look
-   through. usage/activity both come straight from the server
-   (supabase/functions/admin-stats/index.ts) — see its own ActivityEntry
-   comment for why there's no "/Y" quota and no fabricated delete rows. */
-function userDetailPanelHtml(u) {
-  const activity = u.activity || [];
-  const filterKey = dkAdminActivityFilter[u.id] || "all";
-  const filtered = filterKey === "all" ? activity : activity.filter((e) => e.kind === filterKey);
-  const tabsHtml = ACTIVITY_FILTER_TABS.map((t) =>
-    `<button type="button" class="activity-filter-btn${t.key === filterKey ? " active" : ""}" data-activity-tab="${t.key}" data-uid="${u.id}">${escapeHtml(t.label)}</button>`
-  ).join("");
-  const rowsHtml = filtered.length
-    ? filtered.map(activityRowHtml).join("")
-    : `<tr><td colspan="4">${activity.length ? "אין פעילות מהסוג הזה" : "אין תיעוד פעילות"}</td></tr>`;
-
-  const sitesRows = u.sites.length
-    ? u.sites.map((s) => `<tr><td>${escapeHtml(templateLabel(s.template))}</td><td>${s.status === "finalized" ? "✓ שולם והורד" : "טיוטה"}</td><td><button type="button" class="stats-del-btn" data-del="site:${s.id}" title="מחיקת האתר הזה">✕</button></td></tr>`).join("")
-    : `<tr><td colspan="3">אין אתרים</td></tr>`;
-  const cvRows = u.usedCvBuilder
-    ? `<tr><td>נשמרו קורות חיים</td><td><button type="button" class="stats-del-btn" data-del="cv:${u.id}" title="מחיקת קורות החיים">✕</button></td></tr>`
-    : `<tr><td colspan="2">לא נעשה שימוש</td></tr>`;
-
-  return `
-    <h4 class="user-detail-main-h">סיכום צריכה</h4>
-    ${usageDashboardHtml(u.usage)}
-    <h4 class="user-detail-main-h">יומן פעילות</h4>
-    <div class="activity-filter-tabs">${tabsHtml}</div>
-    <div class="stats-table-wrap activity-log-wrap">
-      <table class="stats-table activity-log-table">
-        <thead><tr><th>תאריך ושעה</th><th>מוצר</th><th>פעולה</th><th>פריט</th></tr></thead>
-        <tbody>${rowsHtml}</tbody>
-      </table>
-    </div>
-    <h4 class="user-detail-main-h">ניהול</h4>
-    <div class="user-detail-manage-grid">
-      <div class="user-detail-group"><h4>אתרים</h4>
-        <table class="stats-table"><thead><tr><th>תבנית</th><th>סטטוס</th><th></th></tr></thead><tbody>${sitesRows}</tbody></table>
-      </div>
-      <div class="user-detail-group"><h4>קורות חיים</h4>
-        <table class="stats-table"><tbody>${cvRows}</tbody></table>
-      </div>
-    </div>`;
-}
-
-/* Delegated like the other stats-users-table handlers below — re-renders
-   just the one panel whose tab was clicked (looked up fresh from
-   dkAdminRawUsers), so the row stays open and every other open panel is
-   untouched. */
-function handleActivityFilterClick(e) {
-  const btn = e.target.closest("[data-activity-tab]");
-  if (!btn) return;
-  dkAdminActivityFilter[btn.dataset.uid] = btn.dataset.activityTab;
-  const u = dkAdminRawUsers.find((x) => x.id === btn.dataset.uid);
-  if (!u) return;
-  const panel = btn.closest(".user-detail-panel");
-  if (panel) panel.innerHTML = userDetailPanelHtml(u);
-}
-
-function dkAdminSortArrow(key) {
-  if (key !== dkAdminSortKey) return `<span class="sort-arrow">↕</span>`;
-  return `<span class="sort-arrow">${dkAdminSortDir === "asc" ? "↑" : "↓"}</span>`;
-}
-
-function renderUsersTable() {
-  const table = document.getElementById("stats-users-table");
-  const countEl = document.getElementById("stats-result-count");
-  const pager = document.getElementById("stats-pagination");
-  if (!table) return;
-
-  const filtered = dkAdminFilteredUsers();
-  const totalPages = Math.max(1, Math.ceil(filtered.length / DK_ADMIN_PAGE_SIZE));
-  dkAdminPage = Math.min(Math.max(1, dkAdminPage), totalPages);
-  const start = (dkAdminPage - 1) * DK_ADMIN_PAGE_SIZE;
-  const pageUsers = filtered.slice(start, start + DK_ADMIN_PAGE_SIZE);
-
-  if (countEl) {
-    countEl.textContent = dkAdminSearchQuery
-      ? `${filtered.length} מתוך ${dkAdminRawUsers.length} משתמשים`
-      : `${dkAdminRawUsers.length} משתמשים`;
-  }
-
-  const userRows = pageUsers
-    .map((u) => {
-      const i = dkAdminRawUsers.indexOf(u);
-      const date = u.createdAt ? new Date(u.createdAt).toLocaleString("he-IL", { dateStyle: "short", timeStyle: "short" }) : "—";
-      const email = u.email || u.id;
-
-      return `
-        <tr class="user-row" data-uidx="${i}">
-          <td><span class="user-row-toggle">›</span></td>
-          <td>${escapeHtml(email)}</td>
-          <td>${date}</td>
-          <td><div class="usage-summary-row">${usageSummaryRowHtml(u.usage)}</div></td>
-        </tr>
-        <tr class="user-detail-row" data-uidx="${i}" hidden>
-          <td colspan="4"><div class="user-detail-panel">${userDetailPanelHtml(u)}</div></td>
-        </tr>`;
-    })
-    .join("");
-
-  table.innerHTML = `
-    <table class="stats-table">
-      <thead><tr>
-        <th></th>
-        <th class="sortable${dkAdminSortKey === "email" ? " sort-active" : ""}" data-sort="email">מייל ${dkAdminSortArrow("email")}</th>
-        <th class="sortable${dkAdminSortKey === "createdAt" ? " sort-active" : ""}" data-sort="createdAt">תאריך ושעת הרשמה ${dkAdminSortArrow("createdAt")}</th>
-        <th>סך הכל נכסים</th>
-      </tr></thead>
-      <tbody>${userRows || `<tr><td colspan="4">${dkAdminSearchQuery ? "לא נמצאו משתמשים תואמים" : "עדיין אין משתמשים"}</td></tr>`}</tbody>
-    </table>`;
-
-  if (pager) {
-    pager.innerHTML = totalPages > 1
-      ? `<button type="button" id="stats-page-prev" ${dkAdminPage <= 1 ? "disabled" : ""}>→ הקודם</button>
-         <span>עמוד ${dkAdminPage} מתוך ${totalPages}</span>
-         <button type="button" id="stats-page-next" ${dkAdminPage >= totalPages ? "disabled" : ""}>הבא ←</button>`
-      : "";
-    const prevBtn = document.getElementById("stats-page-prev");
-    const nextBtn = document.getElementById("stats-page-next");
-    if (prevBtn) prevBtn.addEventListener("click", () => { dkAdminPage -= 1; renderUsersTable(); });
-    if (nextBtn) nextBtn.addEventListener("click", () => { dkAdminPage += 1; renderUsersTable(); });
-  }
-}
-
-function handleUsersTableHeaderClick(e) {
-  const th = e.target.closest("th.sortable");
-  if (!th) return;
-  const key = th.dataset.sort;
-  if (dkAdminSortKey === key) {
-    dkAdminSortDir = dkAdminSortDir === "asc" ? "desc" : "asc";
-  } else {
-    dkAdminSortKey = key;
-    dkAdminSortDir = "asc";
-  }
-  dkAdminPage = 1;
-  renderUsersTable();
-}
-
-function handleUserRowToggle(e) {
-  const row = e.target.closest(".user-row");
-  if (!row) return;
-  const idx = row.dataset.uidx;
-  const detail = document.querySelector(`.user-detail-row[data-uidx="${idx}"]`);
-  if (!detail) return;
-  detail.hidden = !detail.hidden;
-  row.classList.toggle("open", !detail.hidden);
-}
-
-/* The caller's own session access token goes in Authorization — the Edge
-   Function verifies it's a real signed-in user and checks their email
-   against its own ADMIN_EMAILS allowlist server-side. res.status is
-   attached to the thrown error so callers can tell "not an admin" (403)
-   apart from "admin-stats isn't set up yet" (500) apart from any other
-   failure. */
-async function callAdminStats(body) {
-  const { data: sessionData } = await supabaseClient.auth.getSession();
-  const token = sessionData.session && sessionData.session.access_token;
-  if (!token) {
-    const err = new Error("not signed in");
-    err.status = 401;
-    throw err;
-  }
-  const res = await fetch(SUPABASE_URL + "/functions/v1/admin-stats", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: "Bearer " + token, apikey: SUPABASE_ANON_KEY },
-    body: JSON.stringify(body),
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    const err = new Error(data.error || String(res.status));
-    err.status = res.status;
-    throw err;
-  }
-  return data;
-}
-
-function showAccessDenied() {
-  document.getElementById("admin-gate").style.display = "none";
-  document.getElementById("admin-panel").style.display = "none";
-  document.getElementById("admin-denied").style.display = "";
-}
-
-async function loadCustomerStats() {
-  const btn = document.getElementById("stats-load-btn");
-  const err = document.getElementById("stats-err");
-  err.textContent = "";
-  btn.disabled = true;
-  btn.textContent = "טוענים...";
-  try {
-    const data = await callAdminStats({ action: "stats" });
-    renderCustomerStats(data);
-  } catch (e) {
-    if (e.status === 401 || e.status === 403) {
-      showAccessDenied();
-      return;
-    }
-    if (e.message === "ADMIN_EMAILS not configured") {
-      document.getElementById("stats-card").style.display = "none";
-      document.getElementById("stats-setup-card").style.display = "";
-      return;
-    }
-    err.textContent = "שגיאה בטעינת הנתונים: " + e.message;
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "רענון נתונים";
-  }
-}
-
-/* Deletion is admin-only reach into another customer's data — worth a
-   real confirmation, not a silent click. The Edge Function returns fresh
-   stats right after the delete, so the table re-renders from that
-   response instead of firing a second round-trip. */
-async function handleStatsDeleteClick(e) {
-  const btn = e.target.closest("[data-del]");
-  if (!btn) return;
-  const [kind, id] = btn.dataset.del.split(":");
-  const label = kind === "cv" ? "את קורות החיים של הלקוח הזה" : "את האתר הזה של הלקוח";
-  if (!confirm(`למחוק ${label}? הפעולה בלתי הפיכה.`)) return;
-  const err = document.getElementById("stats-err");
-  err.textContent = "";
-  btn.disabled = true;
-  try {
-    const data = kind === "cv"
-      ? await callAdminStats({ action: "delete-cv", userId: id })
-      : await callAdminStats({ action: "delete-site", siteId: id });
-    renderCustomerStats(data);
-  } catch (e2) {
-    err.textContent = "שגיאה במחיקה: " + e2.message;
-    btn.disabled = false;
-  }
 }
 
 /* One card per contact-form/feedback-widget submission — unread ones
@@ -611,76 +340,1072 @@ async function handleMessagesListClick(e) {
   }
 }
 
-/* Three top-level tabs (הודעות / לקוחות / תבניות) instead of numbered
-   stacked sections — "לקוחות" and "תבניות" both live inside the same
-   #panel-stats (they share one data fetch, one error message and one
-   refresh button) and just toggle which of its two inner views shows. */
-function wireAdminTopTabs() {
-  const tabs = {
-    feedback: { btn: document.getElementById("toptab-feedback"), panel: document.getElementById("panel-feedback") },
-    customers: { btn: document.getElementById("toptab-customers"), panel: document.getElementById("panel-stats") },
-    templates: { btn: document.getElementById("toptab-templates"), panel: document.getElementById("panel-stats") },
+/* =====================================================================
+   Customers dashboard ("לקוחות"), audit log ("יומן ניהול") and admin
+   roles ("הרשאות").
+   Everything is server-paged: the browser only ever holds one page of
+   customers (25–100 rows) plus whichever single customer's details are
+   open. Search, filters, sorting and pagination all run in Postgres
+   (supabase/sql/admin_dashboard.sql → admin_list_users) via the
+   admin-stats Edge Function, which also enforces the role behind every
+   action — this file only hides what the signed-in role can't use.
+   ===================================================================== */
+
+let dkAdminRole = null; // "owner" | "admin" | "support"
+const DK_ROLE_RANK = { support: 1, admin: 2, owner: 3 };
+function dkCan(minRole) { return dkAdminRole && DK_ROLE_RANK[dkAdminRole] >= DK_ROLE_RANK[minRole]; }
+
+const DK_ROLE_LABELS = { owner: "בעלים", admin: "מנהל/ת", support: "תמיכה (צפייה בלבד)" };
+
+function fmtDateTime(iso) {
+  return iso ? new Date(iso).toLocaleString("he-IL", { dateStyle: "short", timeStyle: "short" }) : "—";
+}
+const DK_RTF = (typeof Intl !== "undefined" && Intl.RelativeTimeFormat) ? new Intl.RelativeTimeFormat("he", { numeric: "auto" }) : null;
+function fmtRelative(iso) {
+  if (!iso) return "—";
+  const diffSec = (new Date(iso).getTime() - Date.now()) / 1000;
+  const abs = Math.abs(diffSec);
+  if (!DK_RTF) return fmtDateTime(iso);
+  if (abs < 60) return "עכשיו";
+  if (abs < 3600) return DK_RTF.format(Math.round(diffSec / 60), "minute");
+  if (abs < 86400) return DK_RTF.format(Math.round(diffSec / 3600), "hour");
+  if (abs < 86400 * 30) return DK_RTF.format(Math.round(diffSec / 86400), "day");
+  if (abs < 86400 * 365) return DK_RTF.format(Math.round(diffSec / (86400 * 30)), "month");
+  return DK_RTF.format(Math.round(diffSec / (86400 * 365)), "year");
+}
+function fmtNum(n) { return Number(n || 0).toLocaleString("he-IL"); }
+function initialsOf(u) {
+  const src = (u.name || u.email || "?").trim();
+  const parts = src.split(/[\s@._-]+/).filter(Boolean);
+  return ((parts[0] || "?")[0] + (parts[1] ? parts[1][0] : "")).toUpperCase();
+}
+
+/* ---------- toast + confirm dialog ---------- */
+
+function dkToast(msg, kind) {
+  const box = document.getElementById("cx-toasts");
+  if (!box) return;
+  const el = document.createElement("div");
+  el.className = "cx-toast" + (kind ? " " + kind : "");
+  el.textContent = msg;
+  box.appendChild(el);
+  setTimeout(() => el.classList.add("out"), 3600);
+  setTimeout(() => el.remove(), 4000);
+}
+
+/* Promise-based confirmation for sensitive actions. opts:
+   { title, body, confirmLabel, danger, reason: "required"|"optional"|null,
+     typeToConfirm: string|null }  → resolves {reason} or null (cancelled). */
+function dkConfirm(opts) {
+  return new Promise((resolve) => {
+    const wrap = document.createElement("div");
+    wrap.className = "cx-modal-backdrop";
+    wrap.innerHTML = `
+      <div class="cx-modal" role="dialog" aria-modal="true" aria-labelledby="cx-modal-title">
+        <h3 id="cx-modal-title">${escapeHtml(opts.title)}</h3>
+        <div class="cx-modal-body">${opts.body || ""}</div>
+        ${opts.reason ? `<label class="cx-field-label">סיבה ${opts.reason === "required" ? "(חובה — תישמר ביומן הניהול)" : "(לא חובה)"}</label>
+          <textarea class="cx-input" id="cx-modal-reason" rows="2" maxlength="500"></textarea>` : ""}
+        ${opts.typeToConfirm ? `<label class="cx-field-label">כדי לאשר, הקלידו: <b dir="ltr">${escapeHtml(opts.typeToConfirm)}</b></label>
+          <input class="cx-input" id="cx-modal-type" dir="ltr" autocomplete="off">` : ""}
+        <div class="cx-modal-actions">
+          <button type="button" class="cx-btn" data-cx-cancel>ביטול</button>
+          <button type="button" class="cx-btn ${opts.danger ? "cx-btn-danger" : "cx-btn-primary"}" data-cx-ok>${escapeHtml(opts.confirmLabel || "אישור")}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(wrap);
+    const ok = wrap.querySelector("[data-cx-ok]");
+    const reasonEl = wrap.querySelector("#cx-modal-reason");
+    const typeEl = wrap.querySelector("#cx-modal-type");
+    const validate = () => {
+      let valid = true;
+      if (opts.reason === "required" && reasonEl && !reasonEl.value.trim()) valid = false;
+      if (opts.typeToConfirm && typeEl && typeEl.value.trim().toLowerCase() !== opts.typeToConfirm.toLowerCase()) valid = false;
+      ok.disabled = !valid;
+    };
+    [reasonEl, typeEl].forEach((el) => el && el.addEventListener("input", validate));
+    validate();
+    const close = (val) => { wrap.remove(); document.removeEventListener("keydown", onKey); resolve(val); };
+    const onKey = (e) => { if (e.key === "Escape") close(null); };
+    document.addEventListener("keydown", onKey);
+    wrap.addEventListener("click", (e) => { if (e.target === wrap) close(null); });
+    wrap.querySelector("[data-cx-cancel]").addEventListener("click", () => close(null));
+    ok.addEventListener("click", () => close({ reason: reasonEl ? reasonEl.value.trim() : "" }));
+    (typeEl || reasonEl || ok).focus();
+  });
+}
+
+/* ---------- state ---------- */
+
+const CX_COLUMNS = [
+  { key: "number", label: "#", sort: "user_number", always: true },
+  { key: "name", label: "שם", sort: "full_name", def: true },
+  { key: "email", label: "אימייל", sort: "email", def: true },
+  { key: "createdAt", label: "תאריך הרשמה", sort: "created_at", def: true },
+  { key: "lastActiveAt", label: "פעילות אחרונה", sort: "last_active_at", def: true },
+  { key: "status", label: "סטטוס", def: true },
+  { key: "plan", label: "סוג חשבון", def: true },
+  { key: "docs", label: "אתרים / מסמכים", sort: "docs", def: true },
+  { key: "lastSignInAt", label: "כניסה אחרונה", def: false },
+  { key: "id", label: "מזהה משתמש", def: false },
+];
+const CX_COLS_KEY = "dk_admin_cx_columns_v1";
+
+const cx = {
+  page: 1, pageSize: 25, total: 0, users: [],
+  sort: "created_at", dir: "desc",
+  filters: { search: "", status: "", plan: "", activity: "", from: "", to: "" },
+  selected: new Map(), // id -> user (current-session selection, across pages)
+  cols: null,
+  loading: false, reqSeq: 0,
+};
+
+function cxLoadCols() {
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(CX_COLS_KEY) || "null"); } catch (e) { /* ignore */ }
+  const set = new Set(Array.isArray(saved) ? saved : CX_COLUMNS.filter((c) => c.def || c.always).map((c) => c.key));
+  CX_COLUMNS.forEach((c) => { if (c.always) set.add(c.key); });
+  cx.cols = set;
+}
+function cxSaveCols() { try { localStorage.setItem(CX_COLS_KEY, JSON.stringify([...cx.cols])); } catch (e) { /* ignore */ } }
+
+function cxFilterBody() {
+  const f = cx.filters;
+  return {
+    search: f.search || undefined, status: f.status || undefined, plan: f.plan || undefined,
+    activity: f.activity || undefined,
+    from: f.from ? new Date(f.from).toISOString() : undefined,
+    to: f.to ? new Date(f.to).toISOString() : undefined,
+    sort: cx.sort, dir: cx.dir,
   };
-  const innerCustomers = document.getElementById("stats-tab-customers");
-  const innerCharts = document.getElementById("stats-tab-charts");
+}
+function cxFiltersActive() {
+  const f = cx.filters;
+  return !!(f.search || f.status || f.plan || f.activity || f.from || f.to);
+}
 
-  function activate(key) {
-    Object.entries(tabs).forEach(([k, t]) => t.btn.classList.toggle("active", k === key));
-    document.getElementById("panel-feedback").style.display = key === "feedback" ? "" : "none";
-    document.getElementById("panel-stats").style.display = key === "feedback" ? "none" : "";
-    if (key !== "feedback") {
-      innerCustomers.style.display = key === "customers" ? "" : "none";
-      innerCharts.style.display = key === "templates" ? "" : "none";
+/* ---------- KPIs ---------- */
+
+async function cxLoadSummary() {
+  const box = document.getElementById("cx-kpis");
+  try {
+    const { summary } = await callAdminStats({ action: "summary" });
+    const s = summary || {};
+    const cards = [
+      { label: "סה״כ משתמשים", value: s.total, sub: `${fmtNum(s.new_30d)} הצטרפו ב-30 יום`, filter: null },
+      { label: "חדשים · 7 ימים", value: s.new_7d, sub: "לפי תאריך הרשמה", filter: { from: new Date(Date.now() - 7 * 864e5) } },
+      { label: "פעילים · 7 ימים", value: s.active_7d, sub: `${fmtNum(s.active_30d)} פעילים ב-30 יום`, filter: { activity: "active7" } },
+      { label: "Pro", value: s.pro, sub: "חשבונות בתשלום", filter: { plan: "pro" } },
+      { label: "מושעים", value: s.suspended, sub: `${fmtNum(s.unconfirmed)} עם מייל לא מאומת`, filter: { status: "suspended" } },
+    ];
+    box.innerHTML = cards.map((c, i) => `
+      <button type="button" class="cx-kpi" data-kpi="${i}">
+        <span class="cx-kpi-label">${escapeHtml(c.label)}</span>
+        <span class="cx-kpi-value">${fmtNum(c.value)}</span>
+        <span class="cx-kpi-sub">${escapeHtml(c.sub)}</span>
+      </button>`).join("");
+    box.querySelectorAll("[data-kpi]").forEach((btn) => btn.addEventListener("click", () => {
+      const c = cards[Number(btn.dataset.kpi)];
+      cx.filters = { search: "", status: "", plan: "", activity: "", from: "", to: "" };
+      if (c.filter) {
+        if (c.filter.from) cx.filters.from = toLocalInput(c.filter.from);
+        Object.assign(cx.filters, Object.fromEntries(Object.entries(c.filter).filter(([k]) => k !== "from")));
+      }
+      cx.page = 1;
+      cxSyncToolbar();
+      cxLoadUsers();
+    }));
+  } catch (e) {
+    if (handleSetupError(e)) return;
+    box.innerHTML = `<p class="cx-error">לא הצלחנו לטעון את הסיכום: ${escapeHtml(e.message)}</p>`;
+  }
+}
+
+function toLocalInput(d) {
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/* ---------- table ---------- */
+
+async function cxLoadUsers() {
+  const seq = ++cx.reqSeq;
+  cx.loading = true;
+  document.getElementById("cx-table-wrap").classList.add("is-loading");
+  try {
+    const data = await callAdminStats({ action: "list-users", page: cx.page, pageSize: cx.pageSize, ...cxFilterBody() });
+    if (seq !== cx.reqSeq) return; // a newer request already replaced this one
+    cx.users = data.users || [];
+    cx.total = data.total || 0;
+    cxRenderTable();
+  } catch (e) {
+    if (seq !== cx.reqSeq) return;
+    if (handleSetupError(e)) return;
+    document.getElementById("cx-table-wrap").innerHTML = `<p class="cx-error">שגיאה בטעינת הלקוחות: ${escapeHtml(e.message)}</p>`;
+  } finally {
+    if (seq === cx.reqSeq) {
+      cx.loading = false;
+      document.getElementById("cx-table-wrap").classList.remove("is-loading");
     }
-    // Chart.js sizes each canvas from its container's current width, so a
-    // chart built while its tab was hidden (display:none => 0 width)
-    // needs an explicit resize once that tab actually becomes visible.
-    if (key === "templates" && kpiChartInstance) kpiChartInstance.resize();
+  }
+}
+
+function statusBadge(u) {
+  if (u.suspended) return `<span class="cx-badge cx-badge-red">מושעה</span>`;
+  if (!u.emailConfirmed) return `<span class="cx-badge cx-badge-amber">מייל לא אומת</span>`;
+  return `<span class="cx-badge cx-badge-green">פעיל</span>`;
+}
+function planBadge(u) {
+  return u.pro ? `<span class="cx-badge cx-badge-violet">Pro</span>` : `<span class="cx-badge cx-badge-grey">Free</span>`;
+}
+function docsCell(u) {
+  const c = u.counts || {};
+  const total = (c.sites || 0) + (c.cv || 0) + (c.quotes || 0) + (c.invoices || 0);
+  const title = `אתרים ${c.sites || 0} · קורות חיים ${c.cv || 0} · הצעות מחיר ${c.quotes || 0} · חשבוניות ${c.invoices || 0}`;
+  return `<span class="cx-docs" title="${escapeHtml(title)}"><b>${total}</b>
+    <span class="cx-docs-split">🌐${c.sites || 0} · 📄${c.cv || 0} · 📋${c.quotes || 0} · 🧾${c.invoices || 0}</span></span>`;
+}
+
+function cxCell(key, u) {
+  switch (key) {
+    case "number": return `<td class="cx-num">#${u.number}</td>`;
+    case "name": return `<td class="cx-name"><span class="cx-avatar">${escapeHtml(initialsOf(u))}</span><span>${u.name ? escapeHtml(u.name) : `<span class="cx-muted">ללא שם</span>`}</span></td>`;
+    case "email": return `<td class="cx-email" dir="ltr">${escapeHtml(u.email || "—")}</td>`;
+    case "createdAt": return `<td class="cx-nowrap">${escapeHtml(fmtDateTime(u.createdAt))}</td>`;
+    case "lastActiveAt": return `<td class="cx-nowrap" title="${escapeHtml(fmtDateTime(u.lastActiveAt))}">${escapeHtml(fmtRelative(u.lastActiveAt))}</td>`;
+    case "lastSignInAt": return `<td class="cx-nowrap" title="${escapeHtml(fmtDateTime(u.lastSignInAt))}">${escapeHtml(fmtRelative(u.lastSignInAt))}</td>`;
+    case "status": return `<td>${statusBadge(u)}</td>`;
+    case "plan": return `<td>${planBadge(u)}</td>`;
+    case "docs": return `<td>${docsCell(u)}</td>`;
+    case "id": return `<td class="cx-mono" dir="ltr" title="${escapeHtml(u.id)}">${escapeHtml(String(u.id).slice(0, 8))}…</td>`;
+    default: return "<td></td>";
+  }
+}
+
+function cxRenderTable() {
+  const wrap = document.getElementById("cx-table-wrap");
+  const cols = CX_COLUMNS.filter((c) => cx.cols.has(c.key));
+  const canBulk = dkCan("admin");
+  const allOnPage = cx.users.length && cx.users.every((u) => cx.selected.has(u.id));
+  const head = `<tr>
+      ${canBulk ? `<th class="cx-check"><input type="checkbox" id="cx-check-all" aria-label="בחירת כל השורות בעמוד" ${allOnPage ? "checked" : ""}></th>` : ""}
+      ${cols.map((c) => c.sort
+        ? `<th class="cx-sortable${cx.sort === c.sort ? " is-sorted" : ""}" data-sort="${c.sort}">${escapeHtml(c.label)} <span class="cx-sort-arrow">${cx.sort === c.sort ? (cx.dir === "asc" ? "↑" : "↓") : "↕"}</span></th>`
+        : `<th>${escapeHtml(c.label)}</th>`).join("")}
+      <th class="cx-actions-col"><span class="cx-sr">פעולות</span></th>
+    </tr>`;
+  const rows = cx.users.map((u) => `
+    <tr class="cx-row${cx.selected.has(u.id) ? " is-selected" : ""}" data-uid="${u.id}">
+      ${canBulk ? `<td class="cx-check"><input type="checkbox" data-select="${u.id}" aria-label="בחירה" ${cx.selected.has(u.id) ? "checked" : ""}></td>` : ""}
+      ${cols.map((c) => cxCell(c.key, u)).join("")}
+      <td class="cx-actions-col"><button type="button" class="cx-icon-btn" data-menu="${u.id}" aria-label="פעולות">⋯</button></td>
+    </tr>`).join("");
+  const colspan = cols.length + (canBulk ? 2 : 1);
+  wrap.innerHTML = `<table class="cx-table">
+      <thead>${head}</thead>
+      <tbody>${rows || `<tr><td colspan="${colspan}" class="cx-empty">${cxFiltersActive() ? "לא נמצאו לקוחות שתואמים לחיפוש/לסינון." : "עדיין אין לקוחות."}</td></tr>`}</tbody>
+    </table>`;
+  cxRenderFooter();
+  cxRenderBulkBar();
+  document.getElementById("cx-clear-filters").hidden = !cxFiltersActive();
+}
+
+function cxRenderFooter() {
+  const foot = document.getElementById("cx-footer");
+  const pages = Math.max(1, Math.ceil(cx.total / cx.pageSize));
+  const from = cx.total ? (cx.page - 1) * cx.pageSize + 1 : 0;
+  const to = Math.min(cx.total, cx.page * cx.pageSize);
+  const nums = [];
+  const add = (n) => { if (n >= 1 && n <= pages && !nums.includes(n)) nums.push(n); };
+  [1, cx.page - 1, cx.page, cx.page + 1, pages].forEach(add);
+  nums.sort((a, b) => a - b);
+  let pager = "";
+  nums.forEach((n, i) => {
+    if (i && n - nums[i - 1] > 1) pager += `<span class="cx-ellipsis">…</span>`;
+    pager += `<button type="button" class="cx-page${n === cx.page ? " is-current" : ""}" data-page="${n}" ${n === cx.page ? 'aria-current="page"' : ""}>${n}</button>`;
+  });
+  foot.innerHTML = `
+    <span class="cx-range">מציג ${fmtNum(from)}–${fmtNum(to)} מתוך ${fmtNum(cx.total)}</span>
+    <label class="cx-pagesize">שורות בעמוד
+      <select id="cx-pagesize" class="cx-select cx-select-sm">${[25, 50, 100].map((n) => `<option value="${n}" ${n === cx.pageSize ? "selected" : ""}>${n}</option>`).join("")}</select>
+    </label>
+    <div class="cx-pager">
+      <button type="button" class="cx-page" data-page="${cx.page - 1}" ${cx.page <= 1 ? "disabled" : ""} aria-label="הקודם">›</button>
+      ${pager}
+      <button type="button" class="cx-page" data-page="${cx.page + 1}" ${cx.page >= pages ? "disabled" : ""} aria-label="הבא">‹</button>
+    </div>`;
+}
+
+function cxRenderBulkBar() {
+  const bar = document.getElementById("cx-bulkbar");
+  const n = cx.selected.size;
+  bar.hidden = !n;
+  if (!n) return;
+  bar.innerHTML = `
+    <span class="cx-bulk-count">נבחרו ${fmtNum(n)}</span>
+    <button type="button" class="cx-btn cx-btn-sm" data-bulk="suspend">השעיה</button>
+    <button type="button" class="cx-btn cx-btn-sm" data-bulk="unsuspend">ביטול השעיה</button>
+    ${dkCan("owner") ? `<button type="button" class="cx-btn cx-btn-sm" data-bulk="export">ייצוא הנבחרים</button>` : ""}
+    <button type="button" class="cx-link-btn" data-bulk="clear">ניקוי בחירה</button>`;
+}
+
+/* ---------- toolbar ---------- */
+
+function cxSyncToolbar() {
+  const f = cx.filters;
+  document.getElementById("cx-search").value = f.search;
+  document.getElementById("cx-filter-status").value = f.status;
+  document.getElementById("cx-filter-plan").value = f.plan;
+  document.getElementById("cx-filter-activity").value = f.activity;
+  document.getElementById("cx-filter-from").value = f.from;
+  document.getElementById("cx-filter-to").value = f.to;
+  const dateBtn = document.getElementById("cx-date-btn");
+  dateBtn.classList.toggle("is-active", !!(f.from || f.to));
+  dateBtn.querySelector("span").textContent = (f.from || f.to)
+    ? `${f.from ? fmtDateTime(new Date(f.from).toISOString()) : "…"} – ${f.to ? fmtDateTime(new Date(f.to).toISOString()) : "…"}`
+    : "תאריך הרשמה";
+}
+
+function cxRenderColumnsMenu() {
+  const menu = document.getElementById("cx-cols-menu");
+  menu.innerHTML = CX_COLUMNS.filter((c) => !c.always).map((c) => `
+    <label class="cx-menu-check"><input type="checkbox" data-col="${c.key}" ${cx.cols.has(c.key) ? "checked" : ""}> ${escapeHtml(c.label)}</label>`).join("")
+    + `<button type="button" class="cx-link-btn" id="cx-cols-reset">ברירת מחדל</button>`;
+}
+
+function togglePopover(id, anchor) {
+  const pop = document.getElementById(id);
+  const willOpen = pop.hidden;
+  document.querySelectorAll(".cx-popover").forEach((p) => { p.hidden = true; });
+  pop.hidden = !willOpen;
+  if (willOpen && anchor) anchor.setAttribute("aria-expanded", "true");
+}
+
+let cxSearchTimer = null;
+function wireCustomersToolbar() {
+  const search = document.getElementById("cx-search");
+  search.addEventListener("input", () => {
+    clearTimeout(cxSearchTimer);
+    cxSearchTimer = setTimeout(() => { cx.filters.search = search.value.trim(); cx.page = 1; cxLoadUsers(); }, 300);
+  });
+  [["cx-filter-status", "status"], ["cx-filter-plan", "plan"], ["cx-filter-activity", "activity"]].forEach(([id, key]) => {
+    document.getElementById(id).addEventListener("change", (e) => { cx.filters[key] = e.target.value; cx.page = 1; cxLoadUsers(); });
+  });
+  document.getElementById("cx-date-btn").addEventListener("click", (e) => { e.stopPropagation(); togglePopover("cx-date-pop", e.currentTarget); });
+  document.getElementById("cx-date-apply").addEventListener("click", () => {
+    cx.filters.from = document.getElementById("cx-filter-from").value;
+    cx.filters.to = document.getElementById("cx-filter-to").value;
+    document.getElementById("cx-date-pop").hidden = true;
+    cx.page = 1; cxSyncToolbar(); cxLoadUsers();
+  });
+  document.getElementById("cx-date-clear").addEventListener("click", () => {
+    cx.filters.from = ""; cx.filters.to = "";
+    document.getElementById("cx-date-pop").hidden = true;
+    cx.page = 1; cxSyncToolbar(); cxLoadUsers();
+  });
+  document.getElementById("cx-cols-btn").addEventListener("click", (e) => { e.stopPropagation(); cxRenderColumnsMenu(); togglePopover("cx-cols-menu", e.currentTarget); });
+  document.getElementById("cx-cols-menu").addEventListener("change", (e) => {
+    const key = e.target.dataset.col;
+    if (!key) return;
+    if (e.target.checked) cx.cols.add(key); else cx.cols.delete(key);
+    cxSaveCols(); cxRenderTable();
+  });
+  document.getElementById("cx-cols-menu").addEventListener("click", (e) => {
+    if (e.target.id !== "cx-cols-reset") return;
+    try { localStorage.removeItem(CX_COLS_KEY); } catch (err) { /* ignore */ }
+    cxLoadCols(); cxRenderColumnsMenu(); cxRenderTable();
+  });
+  document.querySelectorAll(".cx-popover").forEach((p) => p.addEventListener("click", (e) => e.stopPropagation()));
+  document.addEventListener("click", () => {
+    document.querySelectorAll(".cx-popover").forEach((p) => { p.hidden = true; });
+    cxCloseRowMenu();
+  });
+  document.getElementById("cx-clear-filters").addEventListener("click", () => {
+    cx.filters = { search: "", status: "", plan: "", activity: "", from: "", to: "" };
+    cx.page = 1; cxSyncToolbar(); cxLoadUsers();
+  });
+  document.getElementById("cx-refresh").addEventListener("click", () => { cxLoadSummary(); cxLoadUsers(); });
+  const exportBtn = document.getElementById("cx-export");
+  exportBtn.hidden = !dkCan("owner");
+  exportBtn.addEventListener("click", () => cxExport(null));
+
+  const wrap = document.getElementById("cx-table-wrap");
+  wrap.addEventListener("click", (e) => {
+    const th = e.target.closest("th[data-sort]");
+    if (th) {
+      const key = th.dataset.sort;
+      if (cx.sort === key) cx.dir = cx.dir === "asc" ? "desc" : "asc";
+      else { cx.sort = key; cx.dir = key === "email" || key === "full_name" ? "asc" : "desc"; }
+      cx.page = 1; cxLoadUsers(); return;
+    }
+    const menuBtn = e.target.closest("[data-menu]");
+    if (menuBtn) { e.stopPropagation(); cxOpenRowMenu(menuBtn, cx.users.find((u) => u.id === menuBtn.dataset.menu)); return; }
+    if (e.target.closest("input[type=checkbox]")) return;
+    const row = e.target.closest("tr[data-uid]");
+    if (row) openUserDrawer(row.dataset.uid);
+  });
+  wrap.addEventListener("change", (e) => {
+    if (e.target.id === "cx-check-all") {
+      cx.users.forEach((u) => { if (e.target.checked) cx.selected.set(u.id, u); else cx.selected.delete(u.id); });
+      cxRenderTable(); return;
+    }
+    const id = e.target.dataset.select;
+    if (!id) return;
+    const u = cx.users.find((x) => x.id === id);
+    if (e.target.checked) cx.selected.set(id, u); else cx.selected.delete(id);
+    e.target.closest("tr").classList.toggle("is-selected", e.target.checked);
+    cxRenderBulkBar();
+  });
+  document.getElementById("cx-footer").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-page]");
+    if (!b || b.disabled) return;
+    cx.page = Number(b.dataset.page); cxLoadUsers();
+    document.getElementById("panel-customers").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  document.getElementById("cx-footer").addEventListener("change", (e) => {
+    if (e.target.id !== "cx-pagesize") return;
+    cx.pageSize = Number(e.target.value); cx.page = 1; cxLoadUsers();
+  });
+  document.getElementById("cx-bulkbar").addEventListener("click", (e) => {
+    const op = e.target.closest("[data-bulk]") && e.target.closest("[data-bulk]").dataset.bulk;
+    if (!op) return;
+    if (op === "clear") { cx.selected.clear(); cxRenderTable(); return; }
+    if (op === "export") { cxExport([...cx.selected.keys()]); return; }
+    cxBulk(op);
+  });
+}
+
+/* ---------- per-row actions menu ---------- */
+
+function cxUserActions(u) {
+  const items = [{ key: "open", label: "פרטי לקוח" }];
+  if (dkCan("admin")) {
+    items.push({ key: "reset", label: "שליחת קישור לאיפוס סיסמה" });
+    items.push(u.suspended ? { key: "unsuspend", label: "ביטול השעיה" } : { key: "suspend", label: "השעיית חשבון" });
+  }
+  if (dkCan("owner")) {
+    items.push(u.pro ? { key: "revoke-pro", label: "ביטול Pro" } : { key: "grant-pro", label: "הענקת Pro" });
+  }
+  items.push({ key: "copy-id", label: "העתקת מזהה משתמש" });
+  if (dkCan("owner")) items.push({ key: "delete", label: "מחיקת החשבון…", danger: true, sep: true });
+  return items;
+}
+
+function cxCloseRowMenu() {
+  const m = document.getElementById("cx-row-menu");
+  if (m) m.remove();
+}
+
+function cxOpenRowMenu(anchor, u) {
+  cxCloseRowMenu();
+  if (!u) return;
+  const menu = document.createElement("div");
+  menu.id = "cx-row-menu";
+  menu.className = "cx-menu";
+  menu.setAttribute("role", "menu");
+  menu.innerHTML = cxUserActions(u).map((it) =>
+    `${it.sep ? '<div class="cx-menu-sep"></div>' : ""}<button type="button" role="menuitem" class="cx-menu-item${it.danger ? " danger" : ""}" data-act="${it.key}">${escapeHtml(it.label)}</button>`
+  ).join("");
+  document.body.appendChild(menu);
+  const r = anchor.getBoundingClientRect();
+  const mw = menu.offsetWidth;
+  menu.style.top = `${window.scrollY + r.bottom + 4}px`;
+  menu.style.left = `${Math.max(8, Math.min(window.scrollX + r.left, window.scrollX + document.documentElement.clientWidth - mw - 8))}px`;
+  menu.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const act = e.target.closest("[data-act]");
+    if (!act) return;
+    cxCloseRowMenu();
+    cxRunUserAction(act.dataset.act, u);
+  });
+}
+
+function userLabel(u) { return `#${u.number} · ${u.name ? u.name + " · " : ""}${u.email || ""}`; }
+
+async function cxRunUserAction(act, u, afterChange) {
+  const done = async (msg) => {
+    dkToast(msg, "ok");
+    cxLoadSummary(); cxLoadUsers();
+    if (afterChange) afterChange();
+    // Keep an open details drawer in sync with what just changed.
+    if (dkDrawer.userId === u.id && act !== "delete") {
+      const tab = dkDrawer.tab;
+      await openUserDrawer(u.id);
+      dkDrawer.tab = tab; if (dkDrawer.data) renderUserDrawer();
+    }
+  };
+  try {
+    if (act === "open") return openUserDrawer(u.id);
+    if (act === "copy-id") {
+      await navigator.clipboard.writeText(u.id);
+      return dkToast("המזהה הועתק", "ok");
+    }
+    if (act === "reset") {
+      const ok = await dkConfirm({ title: "שליחת קישור לאיפוס סיסמה", body: `<p>יישלח מייל לאיפוס סיסמה אל <b dir="ltr">${escapeHtml(u.email)}</b>. הסיסמה הנוכחית לא משתנה עד שהלקוח בוחר חדשה.</p>`, confirmLabel: "שליחה" });
+      if (!ok) return;
+      await callAdminStats({ action: "send-password-reset", userId: u.id });
+      return dkToast("המייל לאיפוס נשלח", "ok");
+    }
+    if (act === "suspend") {
+      const ok = await dkConfirm({ title: "השעיית חשבון", danger: true, reason: "required", confirmLabel: "השעיה",
+        body: `<p>${escapeHtml(userLabel(u))}</p><p>הלקוח לא יוכל להתחבר עד ביטול ההשעיה. התוכן שלו לא נמחק, ואתר שכבר פורסם נשאר באוויר.</p>` });
+      if (!ok) return;
+      await callAdminStats({ action: "suspend-user", userId: u.id, reason: ok.reason });
+      return done("החשבון הושעה");
+    }
+    if (act === "unsuspend") {
+      const ok = await dkConfirm({ title: "ביטול השעיה", reason: "optional", confirmLabel: "ביטול ההשעיה", body: `<p>${escapeHtml(userLabel(u))}</p><p>הלקוח יוכל להתחבר שוב.</p>` });
+      if (!ok) return;
+      await callAdminStats({ action: "unsuspend-user", userId: u.id, reason: ok.reason });
+      return done("ההשעיה בוטלה");
+    }
+    if (act === "grant-pro" || act === "revoke-pro") {
+      const grant = act === "grant-pro";
+      const ok = await dkConfirm({ title: grant ? "הענקת Pro" : "ביטול Pro", reason: "optional", confirmLabel: grant ? "הענקה" : "ביטול Pro",
+        body: `<p>${escapeHtml(userLabel(u))}</p><p>${grant ? "החשבון יקבל את יכולות ה-Pro מיד, בלי תשלום." : "החשבון יחזור לחשבון רגיל (Free)."}</p>` });
+      if (!ok) return;
+      await callAdminStats({ action: "set-pro", userId: u.id, isPro: grant, reason: ok.reason });
+      return done(grant ? "Pro הוענק" : "Pro בוטל");
+    }
+    if (act === "delete") {
+      const ok = await dkConfirm({ title: "מחיקת חשבון לצמיתות", danger: true, reason: "required", typeToConfirm: u.email, confirmLabel: "מחיקה לצמיתות",
+        body: `<p>${escapeHtml(userLabel(u))}</p>
+               <p><b>הפעולה בלתי הפיכה.</b> החשבון וכל התוכן שלו (אתרים, קורות חיים, הצעות מחיר, חשבוניות, לוגו) יימחקו לצמיתות — בדיוק כמו מחיקה שהלקוח מבצע בעצמו.</p>
+               <p class="cx-muted">אם הלקוח הנפיק חשבוניות, הוא חייב לשמור עותק לפי חוק. כדאי לוודא שהוריד אותן לפני המחיקה.</p>` });
+      if (!ok) return;
+      await callAdminStats({ action: "delete-account", userId: u.id, confirmEmail: u.email, reason: ok.reason });
+      closeUserDrawer();
+      cx.selected.delete(u.id);
+      return done("החשבון נמחק");
+    }
+  } catch (e) {
+    dkToast("הפעולה נכשלה: " + e.message, "err");
+  }
+}
+
+async function cxBulk(op) {
+  const users = [...cx.selected.values()].filter(Boolean);
+  if (users.length > 100) return dkToast("אפשר לבצע פעולה מרוכזת על עד 100 לקוחות בכל פעם.", "err");
+  const suspend = op === "suspend";
+  const ok = await dkConfirm({
+    title: suspend ? `השעיית ${users.length} חשבונות` : `ביטול השעיה ל-${users.length} חשבונות`,
+    danger: suspend, reason: suspend ? "required" : "optional", confirmLabel: suspend ? "השעיה" : "ביטול השעיה",
+    body: `<p>${suspend ? "הלקוחות הנבחרים לא יוכלו להתחבר עד ביטול ההשעיה." : "הלקוחות הנבחרים יוכלו להתחבר שוב."}</p>
+           <ul class="cx-modal-list">${users.slice(0, 8).map((u) => `<li>${escapeHtml(userLabel(u))}</li>`).join("")}${users.length > 8 ? `<li>ועוד ${users.length - 8}…</li>` : ""}</ul>`,
+  });
+  if (!ok) return;
+  try {
+    const res = await callAdminStats({ action: "bulk", op, userIds: users.map((u) => u.id), reason: ok.reason });
+    dkToast(`בוצע עבור ${res.done}${res.skipped && res.skipped.length ? ` · ${res.skipped.length} דולגו (חשבונות מנהלים / החשבון שלך)` : ""}`, "ok");
+    cx.selected.clear();
+    cxLoadSummary(); cxLoadUsers();
+  } catch (e) {
+    dkToast("הפעולה נכשלה: " + e.message, "err");
+  }
+}
+
+/* CSV export — owner only (server-enforced). Only the columns shown in
+   the table, never document contents; every export is written to the
+   audit log with its filters and row count. Cells starting with = + - @
+   are prefixed so a spreadsheet never runs them as formulas. */
+async function cxExport(userIds) {
+  const ok = await dkConfirm({
+    title: "ייצוא לקוחות ל-CSV",
+    body: `<p>${userIds ? `ייצוא ${userIds.length} הלקוחות שנבחרו.` : `ייצוא כל ${fmtNum(cx.total)} הלקוחות שתואמים לסינון הנוכחי.`}</p>
+           <p class="cx-muted">הקובץ מכיל מידע אישי (שמות ואימיילים). שמרו אותו במקום מאובטח, אל תעבירו אותו לגורם שלא צריך אותו, ומחקו אותו כשסיימתם. הייצוא נרשם ביומן הניהול.</p>`,
+    confirmLabel: "ייצוא",
+  });
+  if (!ok) return;
+  try {
+    const body = userIds ? { action: "export-users", userIds, sort: cx.sort, dir: cx.dir } : { action: "export-users", ...cxFilterBody() };
+    // The server hands rows out in batches; keep asking until a short batch.
+    const users = [];
+    const btn = document.getElementById("cx-export");
+    btn.disabled = true;
+    try {
+      for (;;) {
+        const res = await callAdminStats({ ...body, offset: users.length });
+        users.push(...(res.users || []));
+        btn.textContent = `⬇ ${fmtNum(users.length)} / ${fmtNum(res.total || users.length)}`;
+        if (!res.users || res.users.length < (res.batch || 5000)) break;
+      }
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "⬇ ייצוא CSV";
+    }
+    const header = ["מספר לקוח", "שם", "אימייל", "תאריך הרשמה", "פעילות אחרונה", "סטטוס", "סוג חשבון", "אתרים", "קורות חיים", "הצעות מחיר", "חשבוניות"];
+    const safe = (v) => {
+      let s = v == null ? "" : String(v);
+      if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+      return `"${s.replace(/"/g, '""')}"`;
+    };
+    const lines = [header.map(safe).join(",")].concat((users || []).map((u) => [
+      u.number, u.name || "", u.email || "", fmtDateTime(u.createdAt), fmtDateTime(u.lastActiveAt),
+      u.suspended ? "מושעה" : (u.emailConfirmed ? "פעיל" : "מייל לא אומת"), u.pro ? "Pro" : "Free",
+      u.counts.sites, u.counts.cv, u.counts.quotes, u.counts.invoices,
+    ].map(safe).join(",")));
+    const blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `deskkit-customers-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    dkToast(`יוצאו ${fmtNum((users || []).length)} לקוחות`, "ok");
+  } catch (e) {
+    dkToast("הייצוא נכשל: " + e.message, "err");
+  }
+}
+
+/* ---------- user details drawer ---------- */
+
+let dkDrawer = { userId: null, data: null, tab: "overview", activityFilter: "all" };
+
+const AUDIT_ACTION_LABELS = {
+  view_user: "צפייה בפרטי לקוח", export_users: "ייצוא לקוחות", suspend_user: "השעיית חשבון",
+  unsuspend_user: "ביטול השעיה", send_password_reset: "שליחת איפוס סיסמה", grant_pro: "הענקת Pro",
+  revoke_pro: "ביטול Pro", delete_account: "מחיקת חשבון", delete_site: "מחיקת אתר", delete_cv: "מחיקת קורות חיים",
+  delete_message: "מחיקת הודעה", set_admin_role: "עדכון הרשאת מנהל", remove_admin: "הסרת מנהל",
+};
+
+function closeUserDrawer() {
+  const d = document.getElementById("cx-drawer");
+  d.classList.remove("open");
+  d.setAttribute("aria-hidden", "true");
+  document.getElementById("cx-drawer-backdrop").hidden = true;
+  dkDrawer.userId = null;
+}
+
+async function openUserDrawer(userId) {
+  const d = document.getElementById("cx-drawer");
+  dkDrawer = { userId, data: null, tab: "overview", activityFilter: "all" };
+  d.innerHTML = `<div class="cx-drawer-loading"><div class="admin-gate-spinner"></div></div>`;
+  d.classList.add("open");
+  d.setAttribute("aria-hidden", "false");
+  document.getElementById("cx-drawer-backdrop").hidden = false;
+  try {
+    const data = await callAdminStats({ action: "user-detail", userId });
+    if (dkDrawer.userId !== userId) return;
+    dkDrawer.data = data;
+    renderUserDrawer();
+  } catch (e) {
+    d.innerHTML = `<div class="cx-drawer-head"><button type="button" class="cx-icon-btn" data-drawer-close aria-label="סגירה">✕</button></div><p class="cx-error" style="padding:20px;">לא הצלחנו לטעון את פרטי הלקוח: ${escapeHtml(e.message)}</p>`;
+  }
+}
+
+function dl(rows) {
+  return `<dl class="cx-dl">${rows.map(([k, v]) => `<dt>${escapeHtml(k)}</dt><dd>${v}</dd>`).join("")}</dl>`;
+}
+
+function renderUserDrawer() {
+  const d = document.getElementById("cx-drawer");
+  const { user: u, sites, cvs, quotes, invoices, activity, auditEntries } = dkDrawer.data;
+  const docCount = (sites || []).length + (cvs || []).length + (quotes || []).length + (invoices || []).length;
+  const tabs = [
+    { key: "overview", label: "סקירה" },
+    { key: "docs", label: `מסמכים (${docCount})` },
+    { key: "activity", label: "פעילות" },
+  ];
+  if (dkCan("admin")) tabs.push({ key: "audit", label: "יומן ניהול" });
+
+  let body = "";
+  if (dkDrawer.tab === "overview") {
+    body = `
+      <h4 class="cx-h4">פרטי חשבון</h4>
+      ${dl([
+        ["מספר לקוח", `#${u.number}`],
+        ["מזהה משתמש", `<span class="cx-mono" dir="ltr">${escapeHtml(u.id)}</span> <button type="button" class="cx-link-btn" data-copy="${escapeHtml(u.id)}">העתקה</button>`],
+        ["אימייל", `<span dir="ltr">${escapeHtml(u.email || "—")}</span> ${u.emailConfirmed ? `<span class="cx-badge cx-badge-green">מאומת</span>` : `<span class="cx-badge cx-badge-amber">לא אומת</span>`}`],
+        ["שם", u.name ? escapeHtml(u.name) : `<span class="cx-muted">לא הוזן</span>`],
+        ["סטטוס", statusBadge(u)],
+        ["סוג חשבון", planBadge(u)],
+      ])}
+      <h4 class="cx-h4">זמנים</h4>
+      ${dl([
+        ["הצטרפות", escapeHtml(fmtDateTime(u.createdAt))],
+        ["כניסה אחרונה", `${escapeHtml(fmtDateTime(u.lastSignInAt))} <span class="cx-muted">(${escapeHtml(fmtRelative(u.lastSignInAt))})</span>`],
+        ["פעילות אחרונה", `${escapeHtml(fmtDateTime(u.lastActiveAt))} <span class="cx-muted">(${escapeHtml(fmtRelative(u.lastActiveAt))})</span>`],
+      ])}
+      <h4 class="cx-h4">שימוש</h4>
+      <div class="usage-dashboard">${[
+        ["🌐", "אתרים", u.counts.sites], ["📄", "קורות חיים", u.counts.cv],
+        ["📋", "הצעות מחיר", u.counts.quotes], ["🧾", "חשבוניות", u.counts.invoices],
+      ].map(([i, l, c]) => `<div class="usage-tile${c ? "" : " usage-tile-empty"}"><span class="usage-tile-icon">${i}</span><span class="usage-tile-count">${c || 0}</span><span class="usage-tile-label">${l}</span></div>`).join("")}</div>`;
+  } else if (dkDrawer.tab === "docs") {
+    const canDel = dkCan("admin");
+    const table = (title, headers, rows, empty) => `
+      <h4 class="cx-h4">${title}</h4>
+      <div class="cx-mini-wrap"><table class="cx-mini">
+        <thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead>
+        <tbody>${rows.length ? rows.join("") : `<tr><td colspan="${headers.length}" class="cx-muted">${empty}</td></tr>`}</tbody>
+      </table></div>`;
+    body =
+      table("אתרים", ["תבנית", "סטטוס", "נוצר", ""], (sites || []).map((s) => `<tr>
+          <td>${escapeHtml(templateLabel(s.template))}</td>
+          <td>${s.published_url ? `<a href="${escapeHtml(s.published_url)}" target="_blank" rel="noopener">פורסם ↗</a>` : (s.status === "finalized" ? "שולם" : "טיוטה")}</td>
+          <td class="cx-nowrap">${escapeHtml(fmtDateTime(s.created_at))}</td>
+          <td>${canDel ? `<button type="button" class="cx-link-btn danger" data-del-site="${s.id}">מחיקה</button>` : ""}</td></tr>`), "אין אתרים")
+      + table("קורות חיים", ["נשמר לאחרונה", ""], (cvs || []).map((c) => `<tr>
+          <td class="cx-nowrap">${escapeHtml(fmtDateTime(c.updated_at || c.created_at))}</td>
+          <td>${canDel && c.id ? `<button type="button" class="cx-link-btn danger" data-del-cv="${c.id}">מחיקה</button>` : ""}</td></tr>`), "אין קורות חיים שמורים")
+      + table("הצעות מחיר", ["סגנון", "עודכנה"], (quotes || []).map((q) => `<tr>
+          <td>${escapeHtml(q.template ? quoteTemplateLabel(q.template) : "—")}</td>
+          <td class="cx-nowrap">${escapeHtml(fmtDateTime(q.updated_at || q.created_at))}</td></tr>`), "אין הצעות מחיר")
+      + table("חשבוניות וקבלות", ["סוג", "מספר", "סטטוס", "תאריך"], (invoices || []).map((i) => `<tr>
+          <td>${escapeHtml(INVOICE_DOC_TYPE_LABELS[i.doc_type] || i.doc_type)}</td>
+          <td>${i.number ? escapeHtml(String(i.number)) : "—"}</td>
+          <td>${i.status === "issued" ? "הופקה" : "טיוטה"}</td>
+          <td class="cx-nowrap">${escapeHtml(fmtDateTime(i.issued_at || i.created_at))}</td></tr>`), "אין חשבוניות")
+      + `<p class="cx-muted cx-small">מוצגים פרטי זיהוי בלבד (סוג, סטטוס, תאריכים) — לא תוכן המסמכים. הצעות מחיר וחשבוניות לא נמחקות מכאן (חשבונית שהופקה נשמרת לפי חוק).</p>`;
+  } else if (dkDrawer.tab === "activity") {
+    const filterKey = dkDrawer.activityFilter;
+    const list = filterKey === "all" ? activity : activity.filter((e) => e.kind === filterKey);
+    body = `
+      <div class="activity-filter-tabs">${ACTIVITY_FILTER_TABS.map((t) => `<button type="button" class="activity-filter-btn${t.key === filterKey ? " active" : ""}" data-act-filter="${t.key}">${escapeHtml(t.label)}</button>`).join("")}</div>
+      <div class="cx-mini-wrap"><table class="cx-mini">
+        <thead><tr><th>תאריך ושעה</th><th>מוצר</th><th>פעולה</th><th>פריט</th></tr></thead>
+        <tbody>${list.length ? list.map(activityRowHtml).join("") : `<tr><td colspan="4" class="cx-muted">${activity.length ? "אין פעילות מהסוג הזה" : "אין תיעוד פעילות"}</td></tr>`}</tbody>
+      </table></div>`;
+  } else if (dkDrawer.tab === "audit") {
+    body = `<div class="cx-mini-wrap"><table class="cx-mini">
+        <thead><tr><th>זמן</th><th>מנהל/ת</th><th>פעולה</th><th>פרטים</th></tr></thead>
+        <tbody>${(auditEntries || []).length ? auditEntries.map((a) => `<tr>
+          <td class="cx-nowrap">${escapeHtml(fmtDateTime(a.created_at))}</td>
+          <td dir="ltr">${escapeHtml(a.admin_email)}</td>
+          <td>${escapeHtml(AUDIT_ACTION_LABELS[a.action] || a.action)}</td>
+          <td>${escapeHtml(auditDetailsText(a.details))}</td></tr>`).join("") : `<tr><td colspan="4" class="cx-muted">אין פעולות ניהול על הלקוח הזה</td></tr>`}</tbody>
+      </table></div>`;
   }
 
-  tabs.feedback.btn.addEventListener("click", () => activate("feedback"));
-  tabs.customers.btn.addEventListener("click", () => activate("customers"));
-  tabs.templates.btn.addEventListener("click", () => activate("templates"));
+  d.innerHTML = `
+    <div class="cx-drawer-head">
+      <span class="cx-avatar cx-avatar-lg">${escapeHtml(initialsOf(u))}</span>
+      <div class="cx-drawer-title">
+        <h3>${u.name ? escapeHtml(u.name) : `<bdi dir="ltr">${escapeHtml(u.email || "")}</bdi>`} <span class="cx-num">#${u.number}</span></h3>
+        ${u.name ? `<p dir="ltr">${escapeHtml(u.email || "")}</p>` : ""}
+        <div class="cx-drawer-badges">${statusBadge(u)} ${planBadge(u)}</div>
+      </div>
+      <button type="button" class="cx-btn cx-btn-sm" data-drawer-menu>פעולות ▾</button>
+      <button type="button" class="cx-icon-btn" data-drawer-close aria-label="סגירה">✕</button>
+    </div>
+    <div class="cx-drawer-tabs" role="tablist">${tabs.map((t) => `<button type="button" role="tab" class="cx-drawer-tab${t.key === dkDrawer.tab ? " active" : ""}" data-drawer-tab="${t.key}" aria-selected="${t.key === dkDrawer.tab}">${escapeHtml(t.label)}</button>`).join("")}</div>
+    <div class="cx-drawer-body">${body}
+      <p class="cx-privacy-note">המידע מוצג לצורכי תמיכה וניהול בלבד. כל צפייה ופעולה נרשמות ביומן הניהול.</p>
+    </div>`;
 }
 
-function showCustomerStatsCard() {
-  document.getElementById("stats-setup-card").style.display = "none";
-  document.getElementById("stats-card").style.display = "";
-  document.getElementById("stats-load-btn").addEventListener("click", loadCustomerStats);
-  document.getElementById("stats-users-table").addEventListener("click", handleStatsDeleteClick);
-  document.getElementById("stats-users-table").addEventListener("click", handleUserRowToggle);
-  document.getElementById("stats-users-table").addEventListener("click", handleUsersTableHeaderClick);
-  document.getElementById("stats-users-table").addEventListener("click", handleActivityFilterClick);
-  const searchInput = document.getElementById("stats-search");
-  if (searchInput) {
-    searchInput.addEventListener("input", () => {
-      dkAdminSearchQuery = searchInput.value;
-      dkAdminPage = 1;
-      renderUsersTable();
-    });
+function auditDetailsText(details) {
+  if (!details || typeof details !== "object") return "";
+  const parts = [];
+  if (details.reason) parts.push(`סיבה: ${details.reason}`);
+  if (details.rows != null) parts.push(`${details.rows} שורות`);
+  if (details.email) parts.push(details.email);
+  if (details.role) parts.push(DK_ROLE_LABELS[details.role] || details.role);
+  if (details.template) parts.push(templateLabel(details.template));
+  if (details.bulk) parts.push("פעולה מרוכזת");
+  if (details.filters) {
+    const f = Object.entries(details.filters).filter(([, v]) => v != null && v !== "").map(([k, v]) => `${k}=${v}`);
+    if (f.length) parts.push("סינון: " + f.join(", "));
   }
-  loadCustomerStats();
+  return parts.join(" · ");
 }
 
-function showMessagesCard() {
-  document.getElementById("messages-list").addEventListener("click", handleMessagesListClick);
-  document.getElementById("messages-refresh-btn").addEventListener("click", loadMessages);
-  loadMessages();
+function wireUserDrawer() {
+  const d = document.getElementById("cx-drawer");
+  document.getElementById("cx-drawer-backdrop").addEventListener("click", closeUserDrawer);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && dkDrawer.userId && !document.querySelector(".cx-modal-backdrop")) closeUserDrawer(); });
+  d.addEventListener("click", async (e) => {
+    if (e.target.closest("[data-drawer-close]")) return closeUserDrawer();
+    const tab = e.target.closest("[data-drawer-tab]");
+    if (tab) { dkDrawer.tab = tab.dataset.drawerTab; return renderUserDrawer(); }
+    const af = e.target.closest("[data-act-filter]");
+    if (af) { dkDrawer.activityFilter = af.dataset.actFilter; return renderUserDrawer(); }
+    const copy = e.target.closest("[data-copy]");
+    if (copy) { try { await navigator.clipboard.writeText(copy.dataset.copy); dkToast("הועתק", "ok"); } catch (err) { /* ignore */ } return; }
+    const menuBtn = e.target.closest("[data-drawer-menu]");
+    if (menuBtn && dkDrawer.data) {
+      e.stopPropagation();
+      const u = dkDrawer.data.user;
+      cxOpenRowMenu(menuBtn, u);
+      // Inside the drawer, "פרטי לקוח" is where we already are.
+      const open = document.querySelector('#cx-row-menu [data-act="open"]');
+      if (open) open.remove();
+      return;
+    }
+    const delSite = e.target.closest("[data-del-site]");
+    const delCv = e.target.closest("[data-del-cv]");
+    if (delSite || delCv) {
+      const isSite = !!delSite;
+      const ok = await dkConfirm({ title: isSite ? "מחיקת אתר" : "מחיקת קורות חיים", danger: true, reason: "optional", confirmLabel: "מחיקה לצמיתות",
+        body: `<p>${escapeHtml(userLabel(dkDrawer.data.user))}</p><p>${isSite ? "האתר יימחק לצמיתות מהחשבון של הלקוח." : "קורות החיים האלה יימחקו לצמיתות מהחשבון של הלקוח."} הפעולה בלתי הפיכה.</p>` });
+      if (!ok) return;
+      try {
+        await callAdminStats(isSite ? { action: "delete-site", siteId: delSite.dataset.delSite } : { action: "delete-cv", cvId: delCv.dataset.delCv });
+        dkToast("נמחק", "ok");
+        const uid = dkDrawer.userId;
+        await openUserDrawer(uid);
+        dkDrawer.tab = "docs"; renderUserDrawer();
+        cxLoadUsers();
+      } catch (err) {
+        dkToast("המחיקה נכשלה: " + err.message, "err");
+      }
+    }
+  });
 }
 
-function showPanel() {
+/* ---------- audit log tab ---------- */
+
+const audit = { page: 1, pageSize: 50, total: 0, filterAction: "", filterAdmin: "", filterUserNumber: "" };
+
+async function loadAuditLog() {
+  const wrap = document.getElementById("audit-table-wrap");
+  wrap.classList.add("is-loading");
+  try {
+    const data = await callAdminStats({ action: "audit-log", page: audit.page, pageSize: audit.pageSize,
+      filterAction: audit.filterAction || undefined, filterAdmin: audit.filterAdmin || undefined, filterUserNumber: audit.filterUserNumber || undefined });
+    audit.total = data.total || 0;
+    const rows = (data.entries || []).map((a) => `<tr>
+      <td class="cx-nowrap">${escapeHtml(fmtDateTime(a.created_at))}</td>
+      <td dir="ltr">${escapeHtml(a.admin_email)}</td>
+      <td>${escapeHtml(DK_ROLE_LABELS[a.admin_role] || a.admin_role || "")}</td>
+      <td>${escapeHtml(AUDIT_ACTION_LABELS[a.action] || a.action)}</td>
+      <td>${a.target_user_id ? `<button type="button" class="cx-link-btn" data-open-user="${a.target_user_id}">#${a.target_user_number ?? "?"}</button>` : "—"}</td>
+      <td>${escapeHtml(auditDetailsText(a.details))}</td></tr>`).join("");
+    wrap.innerHTML = `<table class="cx-table cx-table-plain">
+      <thead><tr><th>זמן</th><th>מנהל/ת</th><th>תפקיד</th><th>פעולה</th><th>לקוח</th><th>פרטים</th></tr></thead>
+      <tbody>${rows || `<tr><td colspan="6" class="cx-empty">אין רשומות.</td></tr>`}</tbody></table>`;
+    const pages = Math.max(1, Math.ceil(audit.total / audit.pageSize));
+    document.getElementById("audit-footer").innerHTML = `
+      <span class="cx-range">${fmtNum(audit.total)} רשומות · עמוד ${audit.page} מתוך ${pages}</span>
+      <div class="cx-pager">
+        <button type="button" class="cx-page" data-audit-page="${audit.page - 1}" ${audit.page <= 1 ? "disabled" : ""}>›</button>
+        <button type="button" class="cx-page" data-audit-page="${audit.page + 1}" ${audit.page >= pages ? "disabled" : ""}>‹</button>
+      </div>`;
+  } catch (e) {
+    if (handleSetupError(e)) return;
+    wrap.innerHTML = `<p class="cx-error">שגיאה בטעינת היומן: ${escapeHtml(e.message)}</p>`;
+  } finally {
+    wrap.classList.remove("is-loading");
+  }
+}
+
+function wireAuditLog() {
+  const sel = document.getElementById("audit-filter-action");
+  sel.innerHTML = `<option value="">כל הפעולות</option>` + Object.entries(AUDIT_ACTION_LABELS).map(([k, v]) => `<option value="${k}">${escapeHtml(v)}</option>`).join("");
+  sel.addEventListener("change", () => { audit.filterAction = sel.value; audit.page = 1; loadAuditLog(); });
+  let t = null;
+  document.getElementById("audit-filter-admin").addEventListener("input", (e) => { clearTimeout(t); t = setTimeout(() => { audit.filterAdmin = e.target.value.trim(); audit.page = 1; loadAuditLog(); }, 400); });
+  document.getElementById("audit-filter-user").addEventListener("input", (e) => { clearTimeout(t); t = setTimeout(() => { audit.filterUserNumber = e.target.value.replace(/\D/g, ""); audit.page = 1; loadAuditLog(); }, 400); });
+  document.getElementById("audit-refresh").addEventListener("click", loadAuditLog);
+  document.getElementById("audit-footer").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-audit-page]");
+    if (!b || b.disabled) return;
+    audit.page = Number(b.dataset.auditPage); loadAuditLog();
+  });
+  document.getElementById("audit-table-wrap").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-open-user]");
+    if (b) openUserDrawer(b.dataset.openUser);
+  });
+}
+
+/* ---------- admins / permissions tab (owner) ---------- */
+
+async function loadAdmins() {
+  const wrap = document.getElementById("admins-table-wrap");
+  try {
+    const { owners, admins } = await callAdminStats({ action: "list-admins" });
+    const ownerRows = (owners || []).map((email) => `<tr><td dir="ltr">${escapeHtml(email)}</td><td>${DK_ROLE_LABELS.owner}</td><td class="cx-muted">מוגדר ב-ADMIN_EMAILS</td><td></td></tr>`).join("");
+    const adminRows = (admins || []).map((a) => `<tr>
+      <td dir="ltr">${escapeHtml(a.email)}</td>
+      <td><select class="cx-select cx-select-sm" data-role-for="${escapeHtml(a.email)}">${["support", "admin", "owner"].map((r) => `<option value="${r}" ${r === a.role ? "selected" : ""}>${DK_ROLE_LABELS[r]}</option>`).join("")}</select></td>
+      <td class="cx-muted">${escapeHtml(fmtDateTime(a.created_at))}${a.created_by ? ` · ${escapeHtml(a.created_by)}` : ""}</td>
+      <td><button type="button" class="cx-link-btn danger" data-remove-admin="${escapeHtml(a.email)}">הסרה</button></td></tr>`).join("");
+    wrap.innerHTML = `<table class="cx-table cx-table-plain"><thead><tr><th>אימייל</th><th>תפקיד</th><th>נוסף</th><th></th></tr></thead><tbody>${ownerRows}${adminRows}</tbody></table>`;
+  } catch (e) {
+    if (handleSetupError(e)) return;
+    wrap.innerHTML = `<p class="cx-error">שגיאה: ${escapeHtml(e.message)}</p>`;
+  }
+}
+
+function wireAdmins() {
+  document.getElementById("admin-add-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("admin-add-email").value.trim();
+    const role = document.getElementById("admin-add-role").value;
+    const ok = await dkConfirm({ title: "הוספת מנהל/ת", confirmLabel: "הוספה",
+      body: `<p>ל-<b dir="ltr">${escapeHtml(email)}</b> תינתן הרשאת <b>${escapeHtml(DK_ROLE_LABELS[role])}</b> לאזור הניהול, כולל גישה לפרטי הלקוחות.</p><p class="cx-muted">תנו הרשאה רק למי שצריך אותה לצורך העבודה, ובתפקיד המצומצם ביותר שמספיק.</p>` });
+    if (!ok) return;
+    try {
+      await callAdminStats({ action: "set-admin-role", email, role });
+      document.getElementById("admin-add-email").value = "";
+      dkToast("נוסף", "ok"); loadAdmins();
+    } catch (err) { dkToast("נכשל: " + err.message, "err"); }
+  });
+  const wrap = document.getElementById("admins-table-wrap");
+  wrap.addEventListener("change", async (e) => {
+    const email = e.target.dataset.roleFor;
+    if (!email) return;
+    try { await callAdminStats({ action: "set-admin-role", email, role: e.target.value }); dkToast("ההרשאה עודכנה", "ok"); }
+    catch (err) { dkToast("נכשל: " + err.message, "err"); loadAdmins(); }
+  });
+  wrap.addEventListener("click", async (e) => {
+    const email = e.target.dataset && e.target.dataset.removeAdmin;
+    if (!email) return;
+    const ok = await dkConfirm({ title: "הסרת הרשאה", danger: true, confirmLabel: "הסרה", body: `<p>ל-<b dir="ltr">${escapeHtml(email)}</b> לא תהיה יותר גישה לאזור הניהול.</p>` });
+    if (!ok) return;
+    try { await callAdminStats({ action: "remove-admin", email }); dkToast("ההרשאה הוסרה", "ok"); loadAdmins(); }
+    catch (err) { dkToast("נכשל: " + err.message, "err"); }
+  });
+}
+
+/* ---------- setup notice (admin_dashboard.sql not run yet) ---------- */
+
+function handleSetupError(e) {
+  const msg = String(e && e.message || "");
+  if (!/admin_list_users|admin_dashboard_summary|admin_audit_log|admin_users|user_number|run supabase\/sql\/admin_dashboard\.sql/i.test(msg)) return false;
+  document.getElementById("cx-setup-card").hidden = false;
+  return true;
+}
+
+/* ---------- server calls ---------- */
+
+/* The caller's own session access token goes in Authorization — the Edge
+   Function verifies it's a real signed-in user and resolves their admin
+   role server-side. res.status is attached to the thrown error so
+   callers can tell "not an admin" (403) apart from "not set up yet"
+   (500) apart from any other failure. */
+async function callAdminStats(body) {
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const token = sessionData.session && sessionData.session.access_token;
+  if (!token) {
+    const err = new Error("not signed in");
+    err.status = 401;
+    throw err;
+  }
+  const res = await fetch(SUPABASE_URL + "/functions/v1/admin-stats", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + token, apikey: SUPABASE_ANON_KEY },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    const err = new Error(data.error || String(res.status));
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+}
+
+function showAccessDenied() {
+  document.getElementById("admin-gate").style.display = "none";
+  document.getElementById("admin-panel").style.display = "none";
+  document.getElementById("admin-denied").style.display = "";
+}
+
+/* ---------- "תבניות" tab ---------- */
+
+let templateStatsLoaded = false;
+async function loadTemplateStats() {
+  const err = document.getElementById("stats-err");
+  const btn = document.getElementById("stats-load-btn");
+  err.textContent = "";
+  btn.disabled = true;
+  btn.textContent = "טוענים...";
+  try {
+    const data = await callAdminStats({ action: "template-stats" });
+    renderTemplateStats(data);
+    templateStatsLoaded = true;
+  } catch (e) {
+    err.textContent = "שגיאה בטעינת הנתונים: " + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "רענון נתונים";
+  }
+}
+
+/* ---------- top-level tabs ---------- */
+
+const DK_TABS = [
+  { key: "customers", minRole: "support" },
+  { key: "feedback", minRole: "support" },
+  { key: "templates", minRole: "support" },
+  { key: "audit", minRole: "admin" },
+  { key: "admins", minRole: "owner" },
+];
+const dkTabLoaded = {};
+
+function activateTab(key) {
+  DK_TABS.forEach((t) => {
+    const btn = document.getElementById("toptab-" + t.key);
+    const panel = document.getElementById("panel-" + t.key);
+    if (btn) { btn.classList.toggle("active", t.key === key); btn.setAttribute("aria-selected", String(t.key === key)); }
+    if (panel) panel.hidden = t.key !== key;
+  });
+  if (!dkTabLoaded[key]) {
+    dkTabLoaded[key] = true;
+    if (key === "feedback") loadMessages();
+    if (key === "templates") loadTemplateStats();
+    if (key === "audit") loadAuditLog();
+    if (key === "admins") loadAdmins();
+  }
+  // Chart.js sizes each canvas from its container's current width, so a
+  // chart built while its tab was hidden needs a resize once visible.
+  if (key === "templates" && kpiChartInstance) kpiChartInstance.resize();
+}
+
+function wireAdminTopTabs() {
+  DK_TABS.forEach((t) => {
+    const btn = document.getElementById("toptab-" + t.key);
+    if (!btn) return;
+    btn.hidden = !dkCan(t.minRole);
+    btn.addEventListener("click", () => activateTab(t.key));
+  });
+}
+
+async function showPanel() {
+  // Role first: it decides which tabs and actions exist at all. A 401/403
+  // here is the server saying this account isn't an admin.
+  try {
+    const me = await callAdminStats({ action: "whoami" });
+    dkAdminRole = me.role;
+    document.getElementById("admin-role-pill").textContent = `${me.email} · ${DK_ROLE_LABELS[me.role] || me.role}`;
+  } catch (e) {
+    if (e.status === 401 || e.status === 403) { showAccessDenied(); return; }
+    if (e.message === "ADMIN_EMAILS not configured") {
+      document.getElementById("admin-gate").style.display = "none";
+      document.getElementById("admin-panel").style.display = "";
+      document.getElementById("stats-setup-card").hidden = false;
+      return;
+    }
+    document.querySelector("#admin-gate p").textContent = "שגיאה: " + e.message;
+    return;
+  }
   document.getElementById("admin-gate").style.display = "none";
   document.getElementById("admin-panel").style.display = "";
+  cxLoadCols();
   wireAdminTopTabs();
-  showMessagesCard();
-  showCustomerStatsCard();
+  wireCustomersToolbar();
+  wireUserDrawer();
+  if (dkCan("admin")) wireAuditLog();
+  if (dkCan("owner")) wireAdmins();
+  document.getElementById("messages-list").addEventListener("click", handleMessagesListClick);
+  document.getElementById("messages-refresh-btn").addEventListener("click", loadMessages);
+  document.getElementById("stats-load-btn").addEventListener("click", loadTemplateStats);
+  activateTab("customers");
+  cxSyncToolbar();
+  cxLoadSummary();
+  cxLoadUsers();
+  // Unread-messages count on the tab, without opening it.
+  callAdminStats({ action: "list-messages" }).then((d) => {
+    const unread = (d.messages || []).filter((m) => !m.read_at).length;
+    const badge = document.getElementById("toptab-feedback-count");
+    if (badge) { badge.textContent = unread ? String(unread) : ""; badge.hidden = !unread; }
+  }).catch(() => {});
 }
 
 /* Real Supabase Auth gate: not signed in at all → straight to the normal
    login page (same as every other gated tool on this site). Signed in →
-   render the panel and let loadCustomerStats's own 401/403 handling
-   (showAccessDenied, above) catch a signed-in-but-not-an-admin account —
-   that's the server-enforced check; this is just routing. */
+   showPanel() asks the server for this account's admin role; that's the
+   server-enforced check, this is just routing. */
 document.addEventListener("DOMContentLoaded", () => {
   supabaseClient.auth.getSession().then(({ data }) => {
     const user = data.session && data.session.user;
