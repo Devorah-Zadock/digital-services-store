@@ -84,3 +84,19 @@ revoke all on function public.admin_secret_check(text, text) from public, anon, 
 grant execute on function public.admin_secret_status(text) to service_role;
 grant execute on function public.admin_secret_set(text, text) to service_role;
 grant execute on function public.admin_secret_check(text, text) to service_role;
+
+-- Version of the admin password (changes whenever it's set/changed).
+-- Unlock tokens carry it, so changing the password instantly signs every
+-- other admin session out — the "it wasn't me" response. NULL = not set.
+create or replace function public.admin_secret_version(p_email text)
+returns text
+language sql
+stable
+set search_path = ''
+as $$
+  select (extract(epoch from updated_at) * 1000)::bigint::text
+  from public.admin_secrets where email = lower(p_email);
+$$;
+
+revoke all on function public.admin_secret_version(text) from public, anon, authenticated;
+grant execute on function public.admin_secret_version(text) to service_role;

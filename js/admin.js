@@ -451,6 +451,58 @@ function dkConfirm(opts) {
   });
 }
 
+/* ---------- change admin password ----------
+   Needs the current admin password. Changing it signs every other admin
+   session out at once (the server ties unlock tokens to the password's
+   version) — the thing to do after an unexpected "someone entered the
+   admin area" email. */
+function dkChangeAdminPassword() {
+  const wrap = document.createElement("div");
+  wrap.className = "cx-modal-backdrop";
+  wrap.innerHTML = `
+    <div class="cx-modal" role="dialog" aria-modal="true" aria-labelledby="cx-pw-title">
+      <h3 id="cx-pw-title">שינוי סיסמת ניהול</h3>
+      <div class="cx-modal-body"><p class="cx-muted">אחרי השינוי, כל מי שמחובר כרגע לאזור הניהול עם הסיסמה הקודמת — בכל מכשיר — ינותק מיד.</p></div>
+      <label class="cx-field-label">סיסמת הניהול הנוכחית</label>
+      <input type="password" class="cx-input" id="cx-pw-cur" autocomplete="current-password">
+      <label class="cx-field-label">סיסמת ניהול חדשה (לפחות 10 תווים)</label>
+      <input type="password" class="cx-input" id="cx-pw-new" autocomplete="new-password">
+      <label class="cx-field-label">אימות הסיסמה החדשה</label>
+      <input type="password" class="cx-input" id="cx-pw-new2" autocomplete="new-password">
+      <div id="cx-pw-err" style="color:#B23333; font-size:13px; min-height:18px; margin-top:6px;"></div>
+      <div class="cx-modal-actions">
+        <button type="button" class="cx-btn" data-cx-cancel>ביטול</button>
+        <button type="button" class="cx-btn cx-btn-primary" id="cx-pw-ok">שמירה</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+  const close = () => wrap.remove();
+  wrap.addEventListener("click", (e) => { if (e.target === wrap) close(); });
+  wrap.querySelector("[data-cx-cancel]").addEventListener("click", close);
+  const err = wrap.querySelector("#cx-pw-err");
+  const okBtn = wrap.querySelector("#cx-pw-ok");
+  wrap.querySelector("#cx-pw-cur").focus();
+  okBtn.addEventListener("click", async () => {
+    const cur = wrap.querySelector("#cx-pw-cur").value;
+    const pw = wrap.querySelector("#cx-pw-new").value;
+    err.textContent = "";
+    if (pw.length < 10) { err.textContent = "הסיסמה החדשה חייבת לכלול לפחות 10 תווים."; return; }
+    if (pw !== wrap.querySelector("#cx-pw-new2").value) { err.textContent = "הסיסמאות החדשות לא תואמות."; return; }
+    okBtn.disabled = true;
+    try {
+      const t = await callAdminStats({ action: "set-admin-password", currentPassword: cur, newPassword: pw });
+      dkSetUnlockToken(t);
+      close();
+      dkToast("סיסמת הניהול הוחלפה. כל החיבורים האחרים לאזור הניהול נותקו.", "ok");
+    } catch (ex) {
+      err.textContent = ex.message === "bad-password" ? "סיסמת הניהול הנוכחית שגויה."
+        : ex.message === "locked" ? "יותר מדי ניסיונות שגויים — נעול ל-15 דקות."
+        : "השמירה נכשלה: " + ex.message;
+      okBtn.disabled = false;
+    }
+  });
+}
+
 /* ---------- state ---------- */
 
 const CX_COLUMNS = [
@@ -1471,6 +1523,8 @@ async function showPanel() {
     }
     dkAdminRole = me.role;
     document.getElementById("admin-role-pill").textContent = `${me.email} · ${DK_ROLE_LABELS[me.role] || me.role}`;
+    const changePwBtn = document.getElementById("admin-change-pw");
+    if (changePwBtn) changePwBtn.addEventListener("click", dkChangeAdminPassword);
   } catch (e) {
     if (e.status === 401 || e.status === 403) { showAccessDenied(); return; }
     if (e.message === "ADMIN_EMAILS not configured") {

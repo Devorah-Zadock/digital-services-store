@@ -481,13 +481,15 @@ async function signUnlock(payload: string): Promise<string> {
   return b64url(new Uint8Array(sig));
 }
 
-async function makeUnlockToken(userId: string): Promise<{ token: string; expiresAt: number }> {
+// v = the admin password's version: changing the password makes every
+// token issued before it invalid at once (signs other sessions out).
+async function makeUnlockToken(userId: string, version: string): Promise<{ token: string; expiresAt: number }> {
   const expiresAt = Date.now() + UNLOCK_TTL_MS;
-  const payload = b64url(new TextEncoder().encode(JSON.stringify({ u: userId, exp: expiresAt })));
+  const payload = b64url(new TextEncoder().encode(JSON.stringify({ u: userId, exp: expiresAt, v: version })));
   return { token: payload + "." + (await signUnlock(payload)), expiresAt };
 }
 
-async function unlockTokenValid(token: unknown, userId: string): Promise<boolean> {
+async function unlockTokenValid(token: unknown, userId: string, version: string): Promise<boolean> {
   if (typeof token !== "string" || token.length > 400) return false;
   const [payload, sig] = token.split(".");
   if (!payload || !sig) return false;
@@ -498,8 +500,8 @@ async function unlockTokenValid(token: unknown, userId: string): Promise<boolean
   if (diff !== 0) return false;
   try {
     const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
-    const { u, exp } = JSON.parse(json);
-    return u === userId && typeof exp === "number" && exp > Date.now();
+    const { u, exp, v } = JSON.parse(json);
+    return u === userId && v === version && typeof exp === "number" && exp > Date.now();
   } catch (_e) {
     return false;
   }
@@ -526,7 +528,12 @@ async function notifyAdmin(email: string, subject: string, htmlBody: string) {
 function notifyAdminUnlock(email: string) {
   const when = new Date().toLocaleString("he-IL", { timeZone: "Asia/Jerusalem" });
   return notifyAdmin(email, "כניסה לאזור הניהול של DeskKit",
-    `נכנסו לאזור הניהול עם החשבון שלך ב-${when}.<br>אם זו לא את/ה — החליפו מיד את סיסמת הניהול ואת סיסמת החשבון.`);
+    `נכנסו לאזור הניהול עם החשבון שלך ב-${when}.<br><br>` +
+    `<b>אם זו את/ה — אין צורך לעשות דבר.</b><br><br>` +
+    `<b>אם זו לא את/ה:</b><ol style="margin:6px 0;padding-inline-start:20px;">` +
+    `<li>היכנסו לאזור הניהול ולחצו "שינוי סיסמת ניהול" — זה מנתק מיד כל מי שנכנס עם הסיסמה הקודמת.</li>` +
+    `<li>התנתקו מהאתר (התנתקות מנתקת את החשבון בכל המכשירים), ואז החליפו את סיסמת חשבון ה-Google / סיסמת החשבון באתר.</li>` +
+    `<li>צרו קשר כדי שנבדוק ביומן הניהול מה בוצע.</li></ol>`);
 }
 
 Deno.serve(async (req: Request) => {
@@ -563,9 +570,9 @@ Deno.serve(async (req: Request) => {
     if (!minRole) return json({ error: "unknown action" }, 400);
     if (ROLE_RANK[role] < ROLE_RANK[minRole]) return json({ error: "forbidden", requiredRole: minRole }, 403);
 
-    const { data: secretStatus } = await admin.rpc("admin_secret_status", { p_email: callerEmail });
-    const adminPassword = secretStatus === "set" ? "set" : "unset";
-    const unlocked = adminPassword === "set" && await unlockTokenValid(body.adminToken, actor.id);
+    const { data: secretVersion } = await admin.rpc("admin_secret_version", { p_email: callerEmail });
+    const adminPassword = secretVersion ? "set" : "unset";
+    const unlocked = adminPassword === "set" && await unlockTokenValid(body.adminToken, actor.id, String(secretVersion));
     if (!UNLOCK_FREE_ACTIONS.has(action) && !unlocked) {
       return json({ error: "admin-locked", adminPassword }, 401);
     }
@@ -587,7 +594,7 @@ Deno.serve(async (req: Request) => {
       }
       await audit(admin, actor, "admin_unlock", null);
       await notifyAdminUnlock(callerEmail);
-      return json(await makeUnlockToken(actor.id));
+      return json(await makeUnlockToken(actor.id, String(secretVersion)));
     }
 
     // Set (first time) or change the admin password. First time needs a
@@ -610,7 +617,8 @@ Deno.serve(async (req: Request) => {
       if (setRes.error) throw setRes.error;
       await notifyAdmin(callerEmail, "נקבעה סיסמת ניהול — DeskKit",
         `נקבעה (או הוחלפה) סיסמת ניהול לחשבון שלך ב-DeskKit ב-${new Date().toLocaleString("he-IL", { timeZone: "Asia/Jerusalem" })}.<br>אם זו לא את/ה — צרו קשר מיד כדי לאפס אותה.`);
-      return json(await makeUnlockToken(actor.id));
+      const { data: newVersion } = await admin.rpc("admin_secret_version", { p_email: callerEmail });
+      return json(await makeUnlockToken(actor.id, String(newVersion)));
     }
 
     if (action === "summary") {
