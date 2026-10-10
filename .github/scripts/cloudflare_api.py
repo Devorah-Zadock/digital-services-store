@@ -11,6 +11,8 @@ are public anyway (anyone can look up a domain's DNS) — never tokens.
   cloudflare_api.py prepare     webmail/ftp back to "DNS only", as they were
   cloudflare_api.py smoke       compare every page Vercel serves today with
                                 what Cloudflare serves (counts/mismatches only)
+  cloudflare_api.py live        after the switch: the real addresses answer
+                                from Cloudflare with the expected pages
   cloudflare_api.py switch      serve deskkit.co.il + customer sites from
                                 Cloudflare (routes + proxied records)
   cloudflare_api.py rollback    undo "switch": everything back to Vercel
@@ -198,6 +200,10 @@ def cmd_smoke():
             old_path = "" if page == "index" else page
             s1, b1 = http_get(f"https://{row['slug']}.sites.{ZONE_NAME}/{old_path}")
             s2, b2 = http_get(f"{sites}/?site={row['slug']}&page={page}")
+            if s2 != 200 and s1 != 200:
+                print(f"  note: a {page} page is unavailable on both Vercel and Cloudflare (as before) — "
+                      f"has project {row.get('has_project')}")
+                continue
             if s2 != 200:
                 problems += 1
                 slug = row["slug"] or ""
@@ -219,6 +225,33 @@ def cmd_smoke():
     if problems:
         sys.exit(f"{problems} problem(s) — do not switch yet")
     print("smoke test passed")
+
+
+def cmd_live():
+    problems = 0
+    for path in ("", "sites.html", "account.html", "robots.txt"):
+        req = urllib.request.Request(f"https://{ZONE_NAME}/{path}", headers={"User-Agent": "deskkit-smoke-test"})
+        try:
+            with urllib.request.urlopen(req, timeout=60) as res:
+                server = res.headers.get("server", "")
+                ok = res.status == 200 and "cloudflare" in server.lower()
+        except Exception as e:  # noqa: BLE001
+            ok, server = False, type(e).__name__
+        print(f"  {'OK  ' if ok else 'FAIL'} https://{ZONE_NAME}/{path} (server: {server})")
+        problems += 0 if ok else 1
+    s, _ = http_get(f"https://www.{ZONE_NAME}/")
+    print(f"  {'OK  ' if s == 200 else 'FAIL'} www → deskkit.co.il")
+    problems += 0 if s == 200 else 1
+    rows = [r for r in published_slugs() if r.get("has_project")]
+    good = 0
+    for row in rows:
+        st, body = http_get(f"https://{row['slug']}.{ZONE_NAME}/")
+        good += 1 if st == 200 and body else 0
+    print(f"  customer sites on the new address: {good}/{len(rows)} answer")
+    problems += len(rows) - good
+    if problems:
+        sys.exit(f"{problems} problem(s) on the live addresses — consider 'rollback'")
+    print("live check passed")
 
 
 def cmd_switch():
@@ -267,7 +300,7 @@ def cmd_rollback():
 
 
 if __name__ == "__main__":
-    cmds = {"subdomain": cmd_subdomain, "status": cmd_status, "smoke": cmd_smoke, "prepare": cmd_prepare, "switch": cmd_switch, "rollback": cmd_rollback}
+    cmds = {"subdomain": cmd_subdomain, "status": cmd_status, "smoke": cmd_smoke, "live": cmd_live, "prepare": cmd_prepare, "switch": cmd_switch, "rollback": cmd_rollback}
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
     if cmd not in cmds:
         sys.exit(__doc__)
