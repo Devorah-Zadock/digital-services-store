@@ -48,12 +48,14 @@ export default function middleware(request) {
   const host = (request.headers.get("host") || "").toLowerCase();
   const url = new URL(request.url);
 
+  // Customer sites moved to Cloudflare at <slug>.deskkit.co.il (see
+  // cloudflare/sites). Old <slug>.sites.deskkit.co.il links still reach
+  // Vercel through the "sites" DNS delegation — send them to the new
+  // address permanently.
   const subdomainMatch = SUBDOMAIN_PATTERN.exec(host);
   if (subdomainMatch) {
-    const destination = new URL("/api/site-preview", url);
-    destination.searchParams.set("slug", subdomainMatch[1]);
-    destination.searchParams.set("path", url.pathname);
-    return new Response(null, { headers: { "x-middleware-rewrite": destination.toString() } });
+    const target = `https://${subdomainMatch[1].toLowerCase()}.deskkit.co.il${url.pathname}${url.search}`;
+    return new Response(null, { status: 301, headers: { Location: target, "Cache-Control": "public, max-age=3600" } });
   }
 
   if (host && !OWN_HOST_PATTERN.test(host)) {

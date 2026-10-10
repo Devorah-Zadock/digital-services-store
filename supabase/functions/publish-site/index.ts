@@ -5,7 +5,7 @@
 //
 // As of 2026-09-25: self-hosted on DeskKit's own infrastructure —
 // Supabase (hosted_site_pages) + Vercel (api/site-preview.js,
-// middleware.js) — at https://<slug>.sites.deskkit.co.il/. No external
+// cloudflare/sites) — at https://<slug>.deskkit.co.il/. No external
 // host, no shared deploy-credit limit of any kind (that's what the
 // whole migration was for — see the Netlify-outage postmortem this
 // replaced). Before this it deployed to Netlify; that whole path is
@@ -273,7 +273,7 @@ Deno.serve(async (req: Request) => {
         .upsert({ slug, site_project_id: siteProjectId, pages: watermarkedPages, updated_at: new Date().toISOString() });
       if (upsertErr) return jsonResponse({ error: upsertErr.message }, 500);
 
-      const selfHostedUrl = "https://" + slug + ".sites.deskkit.co.il/";
+      const selfHostedUrl = "https://" + slug + ".deskkit.co.il/";
       const { error: publishUpdateErr } = await admin
         .from("site_projects")
         .update({ published_url: selfHostedUrl, published_at: new Date().toISOString() })

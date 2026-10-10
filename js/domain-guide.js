@@ -19,7 +19,7 @@ function openDomainGuide(siteProjectId) {
     <div class="domain-guide-modal" role="dialog" aria-modal="true" aria-labelledby="domain-guide-title">
       <button type="button" class="domain-guide-close" id="domain-guide-close" aria-label="סגירה">✕</button>
       <h2 id="domain-guide-title">רוצים כתובת אתר משלכם?</h2>
-      <p class="lead">האתר שלכם כרגע באוויר עם כתובת חינמית (בסיומת <bdi>sites.deskkit.co.il</bdi>). אם כבר יש לכם דומיין משלכם (או קניתם אחד חדש) — מזינים אותו כאן ומחברים אותו ישירות.</p>
+      <p class="lead">האתר שלכם כרגע באוויר עם כתובת חינמית (בסיומת <bdi>deskkit.co.il</bdi>). אם כבר יש לכם דומיין משלכם (או קניתם אחד חדש) — מזינים אותו כאן ומחברים אותו ישירות.</p>
 
       <div id="domain-connect-form">
         <div class="domain-connect-row">
