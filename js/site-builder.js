@@ -1554,7 +1554,7 @@ function renderPublishClaimedScreen(url, selfHosted, slug) {
       <div style="font-size:12.5px; color:var(--grey); margin-top:4px;">שימו לב: אחרי השינוי, הכתובת הנוכחית תפסיק לעבוד — כדאי לעדכן אותה בכל מקום ששיתפתם.</div>
       <div style="display:flex; align-items:center; gap:8px; background:var(--white); border:2px solid #DDE4E1; border-radius:10px; padding:8px 12px; margin-top:8px;">
         <input type="text" id="slug-rename-input" placeholder="my-business-name" dir="ltr" autocomplete="off" style="flex:1; border:none; outline:none; font-family:inherit; font-size:14px; direction:ltr; text-align:left; background:transparent;">
-        <span style="color:var(--grey); font-size:13px; white-space:nowrap;">.sites.deskkit.co.il</span>
+        <span style="color:var(--grey); font-size:13px; white-space:nowrap;">.deskkit.co.il</span>
       </div>
       <div id="slug-rename-status" style="margin-top:6px; font-size:13px; font-weight:600; min-height:18px;"></div>
       <div id="slug-rename-suggestions" style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;"></div>
@@ -1614,7 +1614,7 @@ function wireSlugRenameUI() {
     }
     if (data.available) {
       status.style.color = "#1E7A4C";
-      status.textContent = "✓ פנוי: " + data.slug + ".sites.deskkit.co.il";
+      status.textContent = "✓ פנוי: " + data.slug + ".deskkit.co.il";
       checkedAvailableSlug = data.slug;
       confirmBtn.disabled = false;
       return;
@@ -1660,7 +1660,7 @@ function wireSlugRenameUI() {
       confirmBtn.textContent = original;
       return;
     }
-    renderPublishClaimedScreen("https://" + data.slug + ".sites.deskkit.co.il/", true, data.slug);
+    renderPublishClaimedScreen("https://" + data.slug + ".deskkit.co.il/", true, data.slug);
   });
 }
 
