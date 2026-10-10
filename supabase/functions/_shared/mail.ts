@@ -7,8 +7,9 @@
 // and nobody can unsubscribe somebody else by guessing.
 
 export const SITE = "https://deskkit.co.il";
-export const FROM = "DeskKit <noreply@deskkit.co.il>";
-// Replies reach the same inbox as contact-form messages.
+export const FROM = "DeskKit <hello@deskkit.co.il>";
+// Not "noreply": the emails invite people to answer, and every reply
+// (reply_to) reaches the same inbox as contact-form messages.
 export const REPLY_TO = Deno.env.get("CONTACT_NOTIFY_EMAIL") || "digital.dz.studio@gmail.com";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

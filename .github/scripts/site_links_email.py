@@ -85,7 +85,7 @@ def email_html(slugs):
 
 def send(key, to, slugs):
     body = json.dumps({
-        "from": "DeskKit <noreply@deskkit.co.il>",
+        "from": "DeskKit <hello@deskkit.co.il>",
         "reply_to": os.environ.get("CONTACT_NOTIFY_EMAIL") or "digital.dz.studio@gmail.com",
         "to": [to], "subject": SUBJECT, "html": email_html(slugs),
     }).encode()

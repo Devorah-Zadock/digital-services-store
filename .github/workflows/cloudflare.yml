@@ -18,13 +18,15 @@ on:
   push:
     branches: [main]
     paths-ignore: ["supabase/**", ".github/workflows/backup.yml", ".github/workflows/supabase-deploy.yml"]
+  schedule:
+    - cron: "41 */3 * * *"   # website visit statistics → admin area, every 3 hours
   workflow_dispatch:
     inputs:
       task:
         description: "What to do"
         type: choice
         default: deploy
-        options: [deploy, status, smoke, prepare, switch, live, rollback, drop-vercel]
+        options: [deploy, status, smoke, prepare, switch, live, rollback, drop-vercel, visits]
 
 permissions:
   contents: read
@@ -69,6 +71,10 @@ jobs:
         working-directory: cloudflare/sites
         run: npx --yes wrangler@4 deploy
 
+      - name: Website visits → admin area (scheduled)
+        if: github.event_name == 'schedule'
+        run: python3 .github/scripts/cloudflare_api.py visits
+
       - name: Status / DNS task
-        if: always() && (github.event_name == 'push' || inputs.task != '')
+        if: always() && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.task != ''))
         run: python3 .github/scripts/cloudflare_api.py ${{ github.event_name == 'push' && 'status' || (inputs.task == 'deploy' && 'status' || inputs.task) }}
