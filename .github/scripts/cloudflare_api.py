@@ -143,7 +143,7 @@ def published_slugs():
     token = os.environ.get("SUPABASE_ACCESS_TOKEN", "").strip()
     req = urllib.request.Request(
         "https://api.supabase.com/v1/projects/vafkjsetlrpaczsmqvqs/database/query", method="POST",
-        data=json.dumps({"query": "select slug, (pages ? 'about') as about, (pages ? 'contact') as contact from public.hosted_site_pages"}).encode(),
+        data=json.dumps({"query": "select slug, (pages ? 'about') as about, (pages ? 'contact') as contact, (site_project_id is not null) as has_project from public.hosted_site_pages"}).encode(),
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json", "User-Agent": "deskkit-smoke-test"})
     with urllib.request.urlopen(req, timeout=60) as res:
         return json.loads(res.read().decode())
@@ -200,6 +200,10 @@ def cmd_smoke():
             s2, b2 = http_get(f"{sites}/?site={row['slug']}&page={page}")
             if s2 != 200:
                 problems += 1
+                slug = row["slug"] or ""
+                shape_ok = bool(__import__("re").fullmatch(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?", slug))
+                print(f"  SITE FAIL: {page} page — cloudflare {s2}, vercel {s1}; "
+                      f"slug length {len(slug)}, valid shape {shape_ok}, has project {row.get('has_project')}")
                 continue
             if s1 != 200:
                 vercel_broken += 1  # Cloudflare serves it, Vercel didn't
