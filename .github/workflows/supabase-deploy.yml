@@ -22,7 +22,7 @@ on:
         description: "What to do"
         type: choice
         default: check-live
-        options: [check-live, deploy-functions, run-sql, auth-settings, turnstile-enable, turnstile-disable, auth-errors, smtp-resend, auth-templates, admin-lockdown, admin-reset]
+        options: [check-live, deploy-functions, run-sql, auth-settings, turnstile-enable, turnstile-disable, auth-errors, smtp-resend, auth-templates, admin-lockdown, admin-reset, site-links-email-dry, site-links-email]
       sql_files:
         description: "run-sql: space-separated SQL files"
         default: ""
@@ -104,3 +104,11 @@ jobs:
       - name: Admin area emergency (lockdown / reset)
         if: github.event_name == 'workflow_dispatch' && (inputs.task == 'admin-lockdown' || inputs.task == 'admin-reset')
         run: python3 .github/scripts/supabase_api.py ${{ inputs.task }}
+
+      # One-time: tell every owner of a published site its new address
+      # (each owner at most once; the log shows counts only).
+      - name: Email site owners their new site address
+        if: github.event_name == 'workflow_dispatch' && (inputs.task == 'site-links-email-dry' || inputs.task == 'site-links-email')
+        env:
+          RESEND_SMTP_KEY: ${{ secrets.RESEND_SMTP_KEY }}
+        run: python3 .github/scripts/site_links_email.py ${{ inputs.task == 'site-links-email' && 'send' || 'dry-run' }}

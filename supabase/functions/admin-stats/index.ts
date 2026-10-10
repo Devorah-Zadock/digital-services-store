@@ -30,6 +30,7 @@
 // Dashboard → Edge Functions → New Function).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { layout, sendBatch, sendMail, textToHtml, unsubHeaders, unsubLinks, type Mail } from "../_shared/mail.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -315,6 +316,11 @@ const ACTION_MIN_ROLE: Record<string, Role> = {
   "list-admins": "owner",
   "set-admin-role": "owner",
   "remove-admin": "owner",
+  "metrics": "support",
+  "mail-overview": "owner",
+  "mail-test": "owner",
+  "mail-create": "owner",
+  "mail-send-batch": "owner",
 };
 
 const EXPORT_BATCH = 5000;
@@ -326,6 +332,26 @@ const SITE_URL = (Deno.env.get("SITE_URL") || "https://deskkit.co.il").replace(/
 const ACCOUNT_TABLES = ["site_projects", "schedule_projects", "cv_saves", "quote_saves", "license_redemptions", "usage_events", "profiles"];
 
 type Actor = { id: string; email: string; role: Role };
+
+// ---- Owner's update emails ("דיוור") ----
+const MAIL_BATCH = 25;
+
+// Israeli law (חוק התקשורת, סעיף 30א) requires an advertising email's
+// subject to start with "פרסומת"; the owner ticks whether it's one.
+function mailDraft(body: Record<string, unknown>): { subject: string; body: string; isAd: boolean } | { error: string } {
+  const rawSubject = typeof body.subject === "string" ? body.subject.trim() : "";
+  const text = typeof body.body === "string" ? body.body.trim() : "";
+  if (!rawSubject || rawSubject.length > 150) return { error: "subject" };
+  if (!text || text.length > 20000) return { error: "body" };
+  const isAd = body.isAd !== false;
+  const subject = isAd && !/^פרסומת/.test(rawSubject) ? "פרסומת: " + rawSubject : rawSubject;
+  return { subject, body: text, isAd };
+}
+
+async function campaignHtml(text: string, userId: string): Promise<string> {
+  const { page } = await unsubLinks(userId);
+  return layout(textToHtml(text), { unsubscribeUrl: page, why: "קיבלת את המייל הזה כי יש לך חשבון ב-DeskKit ונרשמת לעדכונים." });
+}
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -463,6 +489,7 @@ const UNLOCK_TTL_MS = 2 * 60 * 60 * 1000;
 const STEP_UP_ACTIONS = new Set([
   "set-pro", "delete-account", "export-users", "set-admin-role", "remove-admin",
   "suspend-user", "unsuspend-user", "bulk", "delete-site", "delete-cv",
+  "mail-create",
 ]);
 const UNLOCK_FREE_ACTIONS = new Set(["whoami", "unlock", "set-admin-password"]);
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
@@ -851,6 +878,74 @@ Deno.serve(async (req: Request) => {
       const { error } = await admin.from("contact_messages").delete().eq("id", body.messageId);
       if (error) throw error;
       return json({ success: true });
+    }
+
+    // ---- "מדדים" tab: totals and trends, counts only ----
+    if (action === "metrics") {
+      const { data, error } = await admin.rpc("admin_metrics");
+      if (error) throw error;
+      return json({ metrics: data });
+    }
+
+    // ---- "דיוור" tab: updates to everyone on the list ----
+    if (action === "mail-overview") {
+      const [{ data: audience, error: aErr }, { data: campaigns, error: cErr }] = await Promise.all([
+        admin.rpc("email_campaign_audience"),
+        admin.from("email_campaigns").select("id, kind, subject, is_ad, created_by, created_at, finished_at").order("created_at", { ascending: false }).limit(20),
+      ]);
+      if (aErr) throw aErr;
+      if (cErr) throw cErr;
+      const withCounts = await Promise.all((campaigns || []).map(async (c) => {
+        const { count } = await admin.from("email_sends").select("user_id", { count: "exact", head: true }).eq("campaign_id", c.id);
+        return { ...c, sent: count || 0 };
+      }));
+      return json({ audience: audience || 0, campaigns: withCounts });
+    }
+
+    if (action === "mail-test" || action === "mail-create") {
+      const draft = mailDraft(body);
+      if ("error" in draft) return json({ error: draft.error }, 400);
+      if (action === "mail-test") {
+        const html = await campaignHtml(draft.body, actor.id);
+        const ok = await sendMail({ to: callerEmail, subject: "[ניסיון] " + draft.subject, html });
+        if (!ok) return json({ error: "send-failed" }, 502);
+        return json({ success: true, to: callerEmail });
+      }
+      const { data: created, error } = await admin.from("email_campaigns")
+        .insert({ kind: "update", subject: draft.subject, body: draft.body, is_ad: draft.isAd, created_by: callerEmail })
+        .select("id").single();
+      if (error) throw error;
+      await audit(admin, actor, "mail_campaign_create", null, { campaignId: created.id, subject: draft.subject });
+      return json({ campaignId: created.id });
+    }
+
+    // Sends the next few emails of a campaign. The admin page calls this
+    // again and again until nothing is left; if the email provider's
+    // daily quota runs out it stops, and the same button continues later
+    // — every address gets each campaign at most once (email_sends).
+    if (action === "mail-send-batch") {
+      if (typeof body.campaignId !== "string") return json({ error: "missing campaignId" }, 400);
+      const { data: camp, error: cErr } = await admin.from("email_campaigns").select("id, kind, subject, body, finished_at").eq("id", body.campaignId).maybeSingle();
+      if (cErr) throw cErr;
+      if (!camp || camp.kind !== "update") return json({ error: "not found" }, 404);
+      const { data: recipients, error: rErr } = await admin.rpc("email_campaign_recipients", { p_campaign: camp.id, p_limit: MAIL_BATCH });
+      if (rErr) throw rErr;
+      const list = (recipients || []) as { user_id: string; email: string }[];
+      if (!list.length) {
+        if (!camp.finished_at) await admin.from("email_campaigns").update({ finished_at: new Date().toISOString() }).eq("id", camp.id);
+        return json({ status: "done", sent: 0, remaining: 0 });
+      }
+      const mails: Mail[] = await Promise.all(list.map(async (r) => ({
+        to: r.email, subject: camp.subject, html: await campaignHtml(camp.body, r.user_id), headers: await unsubHeaders(r.user_id),
+      })));
+      const result = await sendBatch(mails);
+      if (result !== "ok") return json({ status: result, sent: 0 });
+      const { error: sErr } = await admin.from("email_sends").upsert(list.map((r) => ({ campaign_id: camp.id, user_id: r.user_id })), { onConflict: "campaign_id,user_id", ignoreDuplicates: true });
+      if (sErr) throw sErr;
+      const { data: left } = await admin.rpc("email_campaign_recipients", { p_campaign: camp.id, p_limit: 1 });
+      const remaining = (left || []).length;
+      if (!remaining) await admin.from("email_campaigns").update({ finished_at: new Date().toISOString() }).eq("id", camp.id);
+      return json({ status: remaining ? "more" : "done", sent: list.length });
     }
 
     // ---- Single-document deletes ----

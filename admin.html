@@ -265,6 +265,31 @@
   .cx-input-narrow { width: 120px; }
   textarea.cx-input { width: 100%; resize: vertical; }
 
+  /* מדדים / דיוור */
+  .mt-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; }
+  @media (max-width: 900px) { .mt-grid { grid-template-columns: minmax(0, 1fr); } }
+  .mt-pad { padding: 18px 20px; }
+  .mt-h { font-size: 15px; margin: 0 0 12px; color: var(--ink-dark); }
+  .mt-label { display: block; font-size: 13px; font-weight: 600; color: var(--grey); margin: 10px 0 4px; }
+  .mt-input { width: 100%; box-sizing: border-box; font: inherit; font-size: 14.5px; padding: 10px 12px; border: 1px solid #DADFDD; border-radius: 10px; background: #fff; }
+  textarea.mt-input { resize: vertical; line-height: 1.6; }
+  .mt-check { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: var(--grey); margin: 12px 0; line-height: 1.5; }
+  .mt-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .mt-status { margin-top: 12px; font-size: 14px; font-weight: 600; }
+  .mt-big { font-size: 34px; font-weight: 800; color: var(--ink-dark); font-variant-numeric: tabular-nums; }
+  .mt-note { font-size: 12.5px; line-height: 1.6; margin: 6px 0 0; }
+  .mt-row { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid #EEF2F1; font-size: 13.5px; }
+  .mt-row:last-child { border-bottom: 0; }
+  .mt-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 16px; }
+  .mt-bars { display: flex; align-items: flex-end; gap: 3px; height: 120px; padding-top: 6px; direction: ltr; }
+  .mt-bar { flex: 1; background: #14B8A6; border-radius: 3px 3px 0 0; min-height: 2px; position: relative; }
+  .mt-bar:hover { background: #0F766E; }
+  .mt-bars-axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--grey); margin-top: 4px; direction: ltr; }
+  .mt-meter { height: 8px; background: #EEF2F1; border-radius: 99px; overflow: hidden; margin: 6px 0 2px; }
+  .mt-meter > span { display: block; height: 100%; background: #14B8A6; border-radius: 99px; }
+  .mt-meter.warn > span { background: #F79009; }
+  .mt-meter.bad > span { background: #F04438; }
+  .cx-kpi.mt-static { cursor: default; }
   .cx-kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
   .cx-kpi { font-family: inherit; text-align: start; background: #fff; border: 1px solid #E6EBE9; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 4px; cursor: pointer; transition: border-color .15s, box-shadow .15s; min-height: 96px; }
   .cx-kpi:hover { border-color: #C9D3CF; box-shadow: 0 4px 14px rgba(16,40,32,.06); }
@@ -454,8 +479,10 @@
     </div>
     <nav class="admin-toptabs" role="tablist" aria-label="אזורי ניהול">
       <button type="button" class="admin-toptab active" id="toptab-customers" role="tab">לקוחות</button>
+      <button type="button" class="admin-toptab" id="toptab-metrics" role="tab">מדדים</button>
       <button type="button" class="admin-toptab" id="toptab-feedback" role="tab">הודעות <span class="cx-tab-count" id="toptab-feedback-count" hidden></span></button>
       <button type="button" class="admin-toptab" id="toptab-templates" role="tab">תבניות</button>
+      <button type="button" class="admin-toptab" id="toptab-mail" role="tab" hidden>דיוור</button>
       <button type="button" class="admin-toptab" id="toptab-audit" role="tab" hidden>יומן ניהול</button>
       <button type="button" class="admin-toptab" id="toptab-admins" role="tab" hidden>הרשאות</button>
     </nav>
@@ -555,6 +582,48 @@
       <div class="messages-toolbar"><span id="messages-result-count" class="stats-result-count"></span></div>
       <div id="messages-err" style="color:#B23; font-size:13px; min-height:16px;"></div>
       <div id="messages-list"></div>
+    </div>
+  </section>
+
+  <!-- ===== מדדים ===== -->
+  <section class="admin-section" id="panel-metrics" hidden>
+    <div class="cx-head">
+      <div><h2>מדדים</h2><p class="cx-sub">תמונת מצב של כל השירות · מספרים בלבד, בלי פרטים אישיים</p></div>
+      <div class="cx-head-actions"><button type="button" class="cx-btn" id="metrics-refresh">↻ רענון</button></div>
+    </div>
+    <div id="metrics-body"><div class="cx-kpis"><div class="cx-kpi cx-skeleton"></div><div class="cx-kpi cx-skeleton"></div><div class="cx-kpi cx-skeleton"></div><div class="cx-kpi cx-skeleton"></div><div class="cx-kpi cx-skeleton"></div></div></div>
+  </section>
+
+  <!-- ===== דיוור ===== -->
+  <section class="admin-section" id="panel-mail" hidden>
+    <div class="cx-head">
+      <div><h2>דיוור</h2><p class="cx-sub">עדכון במייל לכל מי שרשום לרשימת העדכונים</p></div>
+      <div class="cx-head-actions"><button type="button" class="cx-btn" id="mail-refresh">↻ רענון</button></div>
+    </div>
+    <div class="mt-grid">
+      <div class="cx-card mt-pad">
+        <h3 class="mt-h">הודעה חדשה</h3>
+        <form id="mail-form">
+          <label class="mt-label" for="mail-subject">נושא</label>
+          <input type="text" id="mail-subject" class="mt-input" maxlength="140" required placeholder="למשל: חדש ב-DeskKit — תבניות אתר חדשות">
+          <label class="mt-label" for="mail-body">תוכן</label>
+          <textarea id="mail-body" class="mt-input" rows="12" maxlength="20000" required placeholder="כותבים כרגיל. שורה ריקה = פסקה חדשה. קישורים שמתחילים ב-https:// יהפכו ללחיצים."></textarea>
+          <label class="mt-check"><input type="checkbox" id="mail-is-ad" checked> זו הודעה שיווקית (מבצע, פרסום מוצר) — יתווסף "פרסומת:" לתחילת הנושא, כפי שהחוק דורש</label>
+          <div class="mt-actions">
+            <button type="button" class="cx-btn" id="mail-test-btn">שליחת ניסיון אליי</button>
+            <button type="submit" class="cx-btn cx-btn-primary" id="mail-send-btn">שליחה לכל הרשימה</button>
+          </div>
+          <div class="mt-status" id="mail-status"></div>
+        </form>
+      </div>
+      <div class="cx-card mt-pad">
+        <h3 class="mt-h">רשימת העדכונים</h3>
+        <div id="mail-audience" class="mt-big">—</div>
+        <p class="cx-muted mt-note">נמענים פעילים: חשבונות מאושרים, לא מושעים, שלא הסירו את עצמם. כל מייל כולל קישור הסרה בלחיצה אחת.</p>
+        <p class="cx-muted mt-note">מגבלת המסלול החינמי של Resend: 100 מיילים ביום, 3,000 בחודש. אם המכסה נגמרת באמצע — השליחה נעצרת, ולחיצה על "המשך שליחה" למחרת ממשיכה בדיוק מאיפה שנעצרה. אף אחד לא יקבל את אותה הודעה פעמיים.</p>
+        <h3 class="mt-h" style="margin-top:18px;">הודעות אחרונות</h3>
+        <div id="mail-history"></div>
+      </div>
     </div>
   </section>
 
@@ -670,9 +739,9 @@
 <script src="js/products-data.js?v=7"></script>
 <script src="js/main.js?v=6"></script>
 <script src="js/vendor/supabase-js-2.116.0.js"></script>
-<script src="js/supabase-config.js"></script>
+<script src="js/supabase-config.js?v=2"></script>
 <script src="js/nav-auth.js?v=4"></script>
-<script src="js/admin.js?v=28"></script>
+<script src="js/admin.js?v=29"></script>
 <script src="js/contact-email.js?v=1"></script>
 </body>
 </html>
