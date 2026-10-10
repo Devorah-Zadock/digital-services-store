@@ -372,8 +372,15 @@ def cmd_db_download_latest(folder):
 
 def cmd_restore(folder, db_url):
     # Same order Supabase documents for restoring into a fresh project.
+    # roles.sql also carries platform-level role settings (e.g.
+    # log_min_messages) that only Supabase itself may set; those fail on a
+    # local copy without affecting any data, so roles load leniently and
+    # only the schema + data load must succeed in full.
+    res = subprocess.run(["psql", db_url, "-X", "-q", "-f", os.path.join(folder, "roles.sql")],
+                         capture_output=True, text=True)
+    skipped = sum(1 for line in res.stderr.splitlines() if "ERROR" in line)
+    print(f"roles loaded ({skipped} platform-only settings skipped)")
     args = ["psql", db_url, "-X", "-q", "-v", "ON_ERROR_STOP=1", "--single-transaction",
-            "--file", os.path.join(folder, "roles.sql"),
             "--file", os.path.join(folder, "schema.sql"),
             "--command", "SET session_replication_role = replica",
             "--file", os.path.join(folder, "data.sql")]
