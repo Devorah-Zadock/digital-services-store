@@ -180,10 +180,20 @@ select coalesce(json_object_agg(t, n), '{}'::json) from (
 """
 
 
+POOLER_HOST = "aws-1-eu-west-1.pooler.supabase.com"
+
+
 def live_db():
+    # Preferred: just the database password (SUPABASE_DB_PASSWORD) — the
+    # rest of the session-pooler address is fixed for this project, and
+    # building it here avoids hand-editing a long URL.
+    password = os.environ.get("SUPABASE_DB_PASSWORD", "")
+    if password.strip():
+        user = urllib.parse.quote(f"postgres.{PROJECT_REF}", safe="")
+        return f"postgresql://{user}:{urllib.parse.quote(password.strip(), safe='')}@{POOLER_HOST}:5432/postgres"
     url = os.environ.get("SUPABASE_DB_URL", "").strip()
     if not url.startswith("postgres"):
-        fail("SUPABASE_DB_URL secret is missing or not a postgresql:// URL.")
+        fail("database secret missing: set SUPABASE_DB_PASSWORD (or SUPABASE_DB_URL).")
     return url
 
 
@@ -398,10 +408,15 @@ def cmd_restore_compare(folder, db_url):
 
 def cmd_alert(message):
     key = os.environ.get("RESEND_API_KEY", "").strip()
-    if not key or not os.environ.get("SUPABASE_DB_URL"):
-        print("alert not sent (no Resend key or database URL)")
+    if not key:
+        print("alert not sent (no Resend key)")
         return
-    owners = psql_json(live_db(), "select coalesce(json_agg(email), '[]'::json) from public.admin_users where role = 'owner'") or []
+    try:
+        owners = psql_json(live_db(), "select coalesce(json_agg(email), '[]'::json) from public.admin_users where role = 'owner'") or []
+    except SystemExit:
+        # The database itself may be what failed — fall back to the owner
+        # address kept as a secret, if there is one.
+        owners = [os.environ["BACKUP_ALERT_EMAIL"]] if os.environ.get("BACKUP_ALERT_EMAIL") else []
     if not owners:
         print("alert not sent (no owner email)")
         return

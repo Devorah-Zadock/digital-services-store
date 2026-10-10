@@ -9,7 +9,9 @@
 # never runs for pull requests, so outside code can't reach the secrets.
 #
 # GitHub secrets (Settings → Secrets and variables → Actions):
-#   SUPABASE_DB_URL      Supabase → Connect → Direct → Session pooler URI
+#   SUPABASE_DB_PASSWORD the database password (Supabase → Project Settings →
+#                        Database); SUPABASE_DB_URL (full session-pooler URI)
+#                        also works and is used only when the password isn't set
 #   R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY   Cloudflare R2 token
 #   BACKUP_PASSPHRASE    encrypts every file; keep a copy offline — without
 #                        it the backups cannot be opened
@@ -46,6 +48,7 @@ env:
   PROJECT_REF: vafkjsetlrpaczsmqvqs
   R2_BUCKET: deskkit-backups
   SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+  SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
   R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
   R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
   R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
@@ -84,9 +87,11 @@ jobs:
           # On failure show only the last lines, with emails/IPs/URLs removed.
           dk_err() { echo "::error::$1 dump failed"; tail -n 5 err.txt | sed -E 's#postgres(ql)?://[^ ]+#<db-url>#g; s/[[:alnum:]._%+-]+@[[:alnum:].-]+/<email>/g; s/[0-9]{1,3}(\.[0-9]{1,3}){3}/<ip>/g'; }
           python3 "$GITHUB_WORKSPACE/.github/scripts/backup_tool.py" counts counts.json
-          supabase db dump --db-url "$SUPABASE_DB_URL" -f roles.sql --role-only > /dev/null 2> err.txt || { dk_err roles; exit 1; }
-          supabase db dump --db-url "$SUPABASE_DB_URL" -f schema.sql > /dev/null 2> err.txt || { dk_err schema; exit 1; }
-          supabase db dump --db-url "$SUPABASE_DB_URL" -f data.sql --use-copy --data-only > /dev/null 2> err.txt || { dk_err data; exit 1; }
+          DB_URL="$(python3 -c 'import sys; sys.path.insert(0, "'"$GITHUB_WORKSPACE"'/.github/scripts"); import backup_tool; print(backup_tool.live_db())')"
+          echo "::add-mask::$DB_URL"
+          supabase db dump --db-url "$DB_URL" -f roles.sql --role-only > /dev/null 2> err.txt || { dk_err roles; exit 1; }
+          supabase db dump --db-url "$DB_URL" -f schema.sql > /dev/null 2> err.txt || { dk_err schema; exit 1; }
+          supabase db dump --db-url "$DB_URL" -f data.sql --use-copy --data-only > /dev/null 2> err.txt || { dk_err data; exit 1; }
           rm -f err.txt
           echo "database dumped"
 
