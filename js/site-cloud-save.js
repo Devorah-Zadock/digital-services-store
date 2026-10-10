@@ -24,6 +24,8 @@ let siteIsFinalized = false;
 // PUBLISH_LIMIT for where the actual cap is enforced (server-side —
 // this is display-only, never trust it for the real check).
 let sitePublishCount = 0;
+// The live address once this project has been published (null before).
+let sitePublishedUrl = null;
 
 /* Autosave: a refresh with no manual save used to lose everything typed
    in since the last click of "שמירה" — confirmed live. Every edit inside
@@ -173,6 +175,7 @@ document.addEventListener("DOMContentLoaded", () => {
       siteCurrentUserId = null;
       siteProjectId = null;
       sitePublishCount = 0;
+      sitePublishedUrl = null;
       siteIsFinalized = false;
       if (typeof freshSiteData === "function" && siteState.template) {
         siteState.data = freshSiteData(siteState.template);
@@ -247,12 +250,14 @@ document.addEventListener("DOMContentLoaded", () => {
           siteProjectId = row.id;
           siteIsFinalized = row.status === "finalized";
           sitePublishCount = row.publish_count || 0;
+          sitePublishedUrl = row.published_url || null;
           siteState.template = row.template;
           siteState.data = row.data;
           ensurePagesShape(siteState.data);
           if (siteIsFinalized) localStorage.setItem(currentUnlockKey(), "1");
           if (typeof showWizard === "function") showWizard();
           if (typeof refreshUnlockUI === "function") refreshUnlockUI();
+          if (typeof updatePublishButtonLabel === "function") updatePublishButtonLabel();
           if (siteIsFinalized) applyFinalizedLockUI();
         } else if (urlTemplate) {
           // A template with no saved project yet — a fresh, separate
@@ -260,6 +265,8 @@ document.addEventListener("DOMContentLoaded", () => {
           // new row instead of touching any other template's project.
           siteProjectId = null;
           sitePublishCount = 0;
+          sitePublishedUrl = null;
+          if (typeof updatePublishButtonLabel === "function") updatePublishButtonLabel();
           siteIsFinalized = false;
           // The synchronous loadSiteState() call (before this account was
           // even known) reads a localStorage cache keyed only by template,
@@ -283,6 +290,7 @@ document.addEventListener("DOMContentLoaded", () => {
           // account.
           siteProjectId = null;
           sitePublishCount = 0;
+          sitePublishedUrl = null;
           siteIsFinalized = false;
           siteState.data = freshSiteData(siteState.template);
           if (typeof showWizard === "function") showWizard();
