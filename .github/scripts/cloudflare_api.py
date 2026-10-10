@@ -250,6 +250,13 @@ def cmd_live():
             ok, server = False, type(e).__name__
         print(f"  {'OK  ' if ok else 'FAIL'} https://{ZONE_NAME}/{path} (server: {server})")
         problems += 0 if ok else 1
+    # What Cloudflare adds to pages on its own (zone features).
+    _, body = http_get(f"https://{ZONE_NAME}/")
+    text = body.decode(errors="replace")
+    for name, marker in (("Cloudflare Web Analytics beacon", "cloudflareinsights.com"),
+                         ("email address obfuscation", "email-decode"),
+                         ("Rocket Loader", "rocket-loader"), ("Zaraz", "zaraz")):
+        print(f"  injected by Cloudflare — {name}: {'yes' if marker in text else 'no'}")
     s, _ = http_get(f"https://www.{ZONE_NAME}/")
     print(f"  {'OK  ' if s == 200 else 'FAIL'} www → deskkit.co.il")
     problems += 0 if s == 200 else 1
