@@ -54,6 +54,10 @@ jobs:
         if: github.event_name == 'push' || inputs.task == 'deploy'
         run: cloudflare/web/build.sh
 
+      - name: Make sure the account has a workers.dev test address
+        if: github.event_name == 'push' || inputs.task == 'deploy'
+        run: python3 .github/scripts/cloudflare_api.py subdomain
+
       - name: Deploy the main site (deskkit-web)
         if: github.event_name == 'push' || inputs.task == 'deploy'
         working-directory: cloudflare/web
