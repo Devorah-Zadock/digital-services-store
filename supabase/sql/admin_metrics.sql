@@ -28,7 +28,7 @@ declare
   licenses jsonb := '[]'::jsonb;
   downloads jsonb := '[]'::jsonb;
   storage_info jsonb := '[]'::jsonb;
-  visits jsonb := null;
+  v_visits jsonb := null;
 begin
   -- New accounts per day, last 30 days (days with none included as 0).
   select coalesce(jsonb_agg(jsonb_build_object('d', d::date, 'n', coalesce(c.n, 0)) order by d), '[]'::jsonb)
@@ -88,11 +88,11 @@ begin
       'pageviews_30d', coalesce((select sum(pageviews) from public.site_visits_daily where day > current_date - 30), 0),
       'top', (select data from public.site_visits_top where id = 1),
       'updated_at', (select max(updated_at) from public.site_visits_daily))
-      into visits;
+      into v_visits;
   end if;
 
   result := jsonb_build_object(
-    'visits', visits,
+    'visits', v_visits,
     'generated_at', now(),
     'users', public.admin_dashboard_summary(),
     'signups_daily', signups,

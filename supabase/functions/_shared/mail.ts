@@ -7,10 +7,7 @@
 // and nobody can unsubscribe somebody else by guessing.
 
 export const SITE = "https://deskkit.co.il";
-export const FROM = "DeskKit <hello@deskkit.co.il>";
-// Not "noreply": the emails invite people to answer, and every reply
-// (reply_to) reaches the same inbox as contact-form messages.
-export const REPLY_TO = Deno.env.get("CONTACT_NOTIFY_EMAIL") || "digital.dz.studio@gmail.com";
+export const FROM = "DeskKit <noreply@deskkit.co.il>";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -90,7 +87,7 @@ export function layout(bodyHtml: string, opts: { unsubscribeUrl?: string; why?: 
     <div style="padding:26px 24px 10px;color:#111827;font-size:16px;line-height:1.7;text-align:right;">${bodyHtml}</div>
     <div style="padding:14px 24px 22px;color:#667085;font-size:12.5px;line-height:1.6;border-top:1px solid #EEF2F1;text-align:right;">
       ${esc(why)}${unsub}<br>
-      יש שאלה? פשוט עונים למייל הזה, או כותבים לנו ב<a href="${SITE}/contact.html" style="color:#667085;">עמוד יצירת הקשר</a>.
+      זהו מייל אוטומטי ואין צורך להשיב עליו. יש שאלה? כתבו לנו ב<a href="${SITE}/contact.html" style="color:#667085;">עמוד יצירת הקשר</a>.
     </div>
   </div>
 </div></body></html>`;
@@ -108,7 +105,7 @@ export async function sendMail(m: Mail): Promise<boolean> {
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: FROM, reply_to: REPLY_TO, to: [m.to], subject: m.subject, html: m.html, headers: m.headers }),
+    body: JSON.stringify({ from: FROM, to: [m.to], subject: m.subject, html: m.html, headers: m.headers }),
   });
   return res.ok;
 }
@@ -121,7 +118,7 @@ export async function sendBatch(mails: Mail[]): Promise<"ok" | "quota" | "error"
   const res = await fetch("https://api.resend.com/emails/batch", {
     method: "POST",
     headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify(mails.map((m) => ({ from: FROM, reply_to: REPLY_TO, to: [m.to], subject: m.subject, html: m.html, headers: m.headers }))),
+    body: JSON.stringify(mails.map((m) => ({ from: FROM, to: [m.to], subject: m.subject, html: m.html, headers: m.headers }))),
   });
   if (res.ok) return "ok";
   return res.status === 429 ? "quota" : "error";
