@@ -37,13 +37,18 @@ function notFound() {
   });
 }
 
+// "no-transform" keeps Cloudflare's zone features (e.g. the Web Analytics
+// beacon it adds to DeskKit's own pages) out of customers' sites — their
+// pages are served exactly as published.
 function siteHeaders(extra) {
-  return {
+  const headers = {
     "Content-Type": "text/html; charset=UTF-8",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "strict-origin-when-cross-origin",
     ...extra,
   };
+  if (headers["Cache-Control"]) headers["Cache-Control"] += ", no-transform";
+  return headers;
 }
 
 async function loadPage(env, slug, page) {
