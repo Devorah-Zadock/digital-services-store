@@ -261,10 +261,13 @@ def cmd_live():
     print(f"  {'OK  ' if s == 200 else 'FAIL'} www → deskkit.co.il")
     problems += 0 if s == 200 else 1
     rows = [r for r in published_slugs() if r.get("has_project")]
-    good = 0
+    good = injected = 0
     for row in rows:
         st, body = http_get(f"https://{row['slug']}.{ZONE_NAME}/")
         good += 1 if st == 200 and body else 0
+        injected += 1 if b"cloudflareinsights.com" in body else 0
+    print(f"  customer sites with Cloudflare's analytics beacon: {injected} (should be 0)")
+    problems += injected
     print(f"  customer sites on the new address: {good}/{len(rows)} answer")
     problems += len(rows) - good
     if problems:
