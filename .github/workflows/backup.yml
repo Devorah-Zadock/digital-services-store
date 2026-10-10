@@ -71,7 +71,7 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq postgresql-client gnupg > /dev/null
-          pip install --quiet --disable-pip-version-check boto3
+          python3 -m pip install --quiet --disable-pip-version-check --user --upgrade --break-system-packages boto3 botocore
 
       - name: Check secrets and connections
         run: python3 .github/scripts/backup_tool.py check
@@ -129,7 +129,7 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq postgresql-client gnupg > /dev/null
-          pip install --quiet --disable-pip-version-check boto3
+          python3 -m pip install --quiet --disable-pip-version-check --user --upgrade --break-system-packages boto3 botocore
 
       - name: Download and decrypt the latest backup
         run: python3 .github/scripts/backup_tool.py db-download-latest "$RUNNER_TEMP/restore"

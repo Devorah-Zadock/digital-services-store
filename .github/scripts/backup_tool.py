@@ -76,9 +76,18 @@ def r2():
         aws_access_key_id=os.environ.get("R2_ACCESS_KEY_ID", "").strip(),
         aws_secret_access_key=os.environ.get("R2_SECRET_ACCESS_KEY", "").strip(),
         region_name="auto",
-        config=Config(signature_version="s3v4", request_checksum_calculation="when_required",
-                      response_checksum_validation="when_required", retries={"max_attempts": 5}),
+        config=r2_config(Config),
     )
+
+
+def r2_config(Config):
+    # Newer botocore sends checksums R2 doesn't accept unless told not to;
+    # older botocore doesn't know these options at all.
+    try:
+        return Config(signature_version="s3v4", request_checksum_calculation="when_required",
+                      response_checksum_validation="when_required", retries={"max_attempts": 5})
+    except TypeError:
+        return Config(signature_version="s3v4", retries={"max_attempts": 5})
 
 
 def bucket_name():
@@ -423,6 +432,11 @@ def main():
         sys.exit(__doc__)
     try:
         table[cmd](*args)
+    except SystemExit:
+        raise
+    except Exception as e:  # noqa: BLE001 — never let a traceback print data
+        print(f"::error::{cmd} failed: {type(e).__name__}: {scrub(e)}")
+        sys.exit(1)
     finally:
         if PASSFILE and os.path.exists(PASSFILE):
             os.remove(PASSFILE)
