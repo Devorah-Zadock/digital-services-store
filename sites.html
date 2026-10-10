@@ -33,7 +33,7 @@
 <link rel="stylesheet" href="css/style.css?v=102">
 <link rel="stylesheet" href="css/builder.css?v=22">
 <link rel="stylesheet" href="css/builder-shell.css?v=12">
-<link rel="stylesheet" href="css/deskkit-ui.css?v=48">
+<link rel="stylesheet" href="css/deskkit-ui.css?v=49">
 <style>
   .services-item { border: 1px solid #EDEFEE; border-radius: 8px; padding: 12px; margin-bottom: 12px; display: grid; gap: 8px; }
   .services-item-head { display: flex; justify-content: space-between; align-items: center; }
@@ -474,17 +474,24 @@
                now: removing the small "נבנה ב-DeskKit" tag. Same
                buy-link/license-input elements as before, just no longer
                a gate in front of publishing itself. -->
-          <!-- Kept low-key on purpose: a collapsed, price-free line, so
-               the first thing people see after publishing is their live
-               site, not a payment ask. The price is inside, one click away. -->
-          <details id="watermark-upsell" class="dk-details dk-upsell-quiet" style="margin-top:16px;">
-            <summary>הסרת התגית "נבנה ב-DeskKit" מהאתר</summary>
-            <div class="unlock-box" style="margin-top:10px;">
-            <p style="margin:0 0 10px; font-size:13px; color:var(--text-muted, #555);">בתחתית האתר מופיעה תגית קטנה "נבנה ב-DeskKit". אפשר להסיר אותה בתשלום חד-פעמי, בלי מנוי.</p>
+          <!-- The Pro upgrade: a clear, inviting card with a real button,
+               but no price in the face of someone who just published —
+               the price is in "מה כלול בשדרוג?" and on the Gumroad page. -->
+          <div id="watermark-upsell" class="unlock-box dk-pro-card" style="margin-top:18px;">
+            <div class="dk-pro-head">
+              <span class="dk-pro-chip">PRO</span>
+              <p class="dk-pro-title">האתר שלכם — המותג שלכם בלבד</p>
+            </div>
+            <p class="dk-pro-sub">הסירו את התגית "נבנה ב-DeskKit" ותנו ללקוחות לראות רק את העסק שלכם.</p>
+            <ul class="dk-pro-perks">
+              <li>מראה נקי ומקצועי, בלי פרסום של אף אחד אחר</li>
+              <li>תשלום חד-פעמי — בלי מנוי ובלי הפתעות</li>
+              <li>ההסרה מיידית, עם קבלה למייל</li>
+            </ul>
             <div id="buy-new-block">
-              <a href="#" id="buy-link" target="_blank" rel="noopener" class="dk-btn dk-btn-primary" style="width:100%; box-sizing:border-box; text-align:center; display:block; margin-bottom:10px;">הסרת התגית — 199 ₪ חד-פעמי</a>
+              <a href="#" id="buy-link" target="_blank" rel="noopener" class="dk-btn dk-btn-primary dk-pro-btn">✨ שדרוג לאתר נקי — הסרת התגית</a>
               <details class="dk-details">
-                <summary>מה בדיוק קונים, וממי?</summary>
+                <summary>מה כלול בשדרוג?</summary>
                 <div class="host-info-box">
                   הסרת תגית DeskKit, חד-פעמית, לאתר שבניתם כרגע — <b>199 ₪, תשלום חד-פעמי, ללא מנוי</b>. המוכר: דבורה צדוק (DeskKit), עוסק פטור. התשלום עצמו מעובד באופן מאובטח דרך Gumroad, ותקבלו קבלה למייל. התוכנה פועלת באופן אוטומטי לחלוטין וללא תמיכה אנושית/טלפונית — המחיר הנמוך מתאפשר הודות לשירות עצמי מלא (Self-Service).
                 </div>
@@ -496,12 +503,13 @@
                 עקב עומס זמני אצל ספק האחסון שלנו, אפשרות הרכישה סגורה זמנית. אנו מתנצלים על אי הנוחות. יש לכם כבר קוד רישוי ממייל קודם? אפשר להזין אותו למטה כרגיל.
               </div>
             </div>
-            <p style="margin:12px 0 6px; font-size:12.5px; color:var(--text-muted, #555);">כבר רכשתם? הזינו את קוד הרישוי מהמייל:</p>
-            <input type="text" id="license-input" placeholder="קוד רישוי (מהמייל של הרכישה)" dir="ltr">
-            <div class="unlock-note" id="license-note"></div>
-            <button type="button" class="dk-btn dk-btn-ghost" id="verify-btn" style="width:100%;">אימות והסרת התגית</button>
-            </div>
-          </details>
+            <details class="dk-details dk-pro-license">
+              <summary>כבר רכשתם? הזינו קוד רישוי</summary>
+              <input type="text" id="license-input" placeholder="קוד רישוי (מהמייל של הרכישה)" dir="ltr" style="margin-top:8px;">
+              <div class="unlock-note" id="license-note"></div>
+              <button type="button" class="dk-btn dk-btn-ghost" id="verify-btn" style="width:100%;">אימות והסרת התגית</button>
+            </details>
+          </div>
           <div id="watermark-removed" class="unlock-box" style="display:none; margin-top:18px; text-align:center; color:var(--success); font-weight:700;">
             ✓ האתר שלכם מתפרסם בלי תגית DeskKit
           </div>
@@ -645,7 +653,7 @@
      downloadable code export, only a published, DeskKit-managed site.
      See js/site-builder.js's own comment on downloadSiteZip() for the
      removed implementation. -->
-<script src="js/site-builder.js?v=64"></script>
+<script src="js/site-builder.js?v=65"></script>
 <script>window.deferReveal = true;</script>
 <script src="js/vendor/supabase-js-2.116.0.js"></script>
 <script src="js/supabase-config.js"></script>

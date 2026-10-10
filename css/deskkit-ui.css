@@ -979,5 +979,19 @@ html[dir="ltr"] .dk-home-hero-visual {
 .dk-automate-flow { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 26px 0; font-size: 13px; font-weight: 700; color: var(--primary-dark); }
 .dk-automate-flow span.sep { color: var(--text-muted); font-weight: 400; }
 
-/* Publish modal: the watermark-removal offer is a quiet, collapsed line. */
-.dk-upsell-quiet summary { color: var(--text-muted); font-weight: 600; }
+/* Publish modal: the Pro (watermark-removal) card. */
+.dk-pro-card { border: 1px solid #E8D9A8; border-radius: 14px; padding: 16px; background: linear-gradient(180deg, #FFFBEF 0%, #FFFFFF 100%); }
+.dk-pro-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.dk-pro-chip {
+  font-size: 11px; font-weight: 800; letter-spacing: .06em; color: #fff;
+  background: linear-gradient(135deg, #D4A72C, #B8860B); padding: 3px 8px; border-radius: 999px;
+}
+.dk-pro-title { margin: 0; font-size: 15px; font-weight: 800; color: var(--text); }
+.dk-pro-sub { margin: 0 0 10px; font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+.dk-pro-perks { list-style: none; margin: 0 0 14px; padding: 0; font-size: 13px; color: var(--text); }
+.dk-pro-perks li { padding: 3px 0; }
+.dk-pro-perks li::before { content: "✓"; color: var(--success, #12A38A); font-weight: 800; margin-inline-end: 6px; }
+.dk-pro-btn { width: 100%; box-sizing: border-box; text-align: center; display: block; margin-bottom: 6px; }
+.dk-btn.dk-pro-btn { background: linear-gradient(135deg, #D4A72C, #B8860B); border-color: #B8860B; color: #fff; }
+.dk-btn.dk-pro-btn:hover { background: linear-gradient(135deg, #C99A22, #A87A08); color: #fff; }
+.dk-pro-license { margin-top: 12px; }

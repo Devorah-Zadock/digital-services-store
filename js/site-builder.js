@@ -1704,6 +1704,9 @@ function refreshUnlockUI() {
   const pausedNotice = document.getElementById("hosting-paused");
   if (buyBlock) buyBlock.style.display = SITE_HOSTING_PAUSED ? "none" : "";
   if (pausedNotice) pausedNotice.style.display = SITE_HOSTING_PAUSED ? "" : "none";
+  // With buying paused, entering an existing code is the only action left.
+  const licenseBox = document.querySelector("#watermark-upsell .dk-pro-license");
+  if (licenseBox && SITE_HOSTING_PAUSED) licenseBox.open = true;
 }
 
 /* Verification itself happens server-side, in the redeem-license Edge
