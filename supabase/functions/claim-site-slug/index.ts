@@ -43,6 +43,9 @@ const RESERVED_SLUGS = new Set([
   "store", "help", "support", "docs", "status", "cdn", "static", "assets",
   "dev", "staging", "test", "demo", "beta", "deskkit", "supabase",
   "netlify", "vercel", "billing", "account", "login", "signup", "root",
+  // Names DeskKit itself uses as deskkit.co.il subdomains (customer sites
+  // now live at <slug>.deskkit.co.il — see cloudflare/sites/index.js).
+  "webmail", "send", "rsend", "sites", "smtp", "imap", "pop", "assets", "auth",
 ]);
 const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])?$/;
 

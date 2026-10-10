@@ -36,6 +36,9 @@ const RESERVED_SLUGS = new Set([
   "store", "help", "support", "docs", "status", "cdn", "static", "assets",
   "dev", "staging", "test", "demo", "beta", "deskkit", "supabase",
   "netlify", "vercel", "billing", "account", "login", "signup", "root",
+  // Names DeskKit itself uses as deskkit.co.il subdomains (customer sites
+  // now live at <slug>.deskkit.co.il — see cloudflare/sites/index.js).
+  "webmail", "send", "rsend", "sites", "smtp", "imap", "pop", "assets", "auth",
 ]);
 
 // Same shape as every real slug this function will ever create: lowercase

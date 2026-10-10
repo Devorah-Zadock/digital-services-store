@@ -1,0 +1,15 @@
+# Customer sites: <slug>.deskkit.co.il and www → deskkit.co.il redirect.
+# Deployed by .github/workflows/cloudflare.yml. Routes are attached by that
+# workflow's "switch" task, not here, so a deploy never changes routing.
+name = "deskkit-sites"
+main = "index.js"
+compatibility_date = "2026-09-01"
+workers_dev = true
+
+[vars]
+SUPABASE_URL = "https://vafkjsetlrpaczsmqvqs.supabase.co"
+# Public by design (the same key every visitor's browser already gets in
+# js/supabase-config.js); it can only call public_site_page().
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZhZmtqc2V0bHJwYWN6c21xdnFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NTkwMjAsImV4cCI6MjEwMzMzNTAyMH0.DNYdVBg05E2zZVmA0-SChoXGQ6_gHyBta0nJC4exzxk"
+# Allows <worker>.workers.dev/?site=<slug> for testing before the switch.
+ALLOW_PREVIEW = "1"
