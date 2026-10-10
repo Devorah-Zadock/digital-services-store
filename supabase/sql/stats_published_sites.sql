@@ -21,8 +21,7 @@ select metric, n from (
   select 5, 'published_last_30_days', count(*)::int
     from public.hosted_site_pages where updated_at > now() - interval '30 days'
   union all
-  select 6, 'sites_with_custom_domain', count(*)::int
-    from public.site_projects where custom_domain is not null
+  select 6, 'saved_sites_total', count(*)::int from public.site_projects
   union all
   select 7, 'hosted_pages_without_project', count(*)::int
     from public.hosted_site_pages where site_project_id is null
