@@ -220,6 +220,17 @@ def cmd_smoke():
             else:
                 problems += 1
                 print(f"  SITE MISMATCH: a {page} page differs ({len(b1)} B vs {len(b2)} B)")
+                if problems == 1:
+                    # Show what differs, once, with emails/phones/URLs masked.
+                    import difflib
+                    import re as _re
+                    a = b2.decode(errors="replace").splitlines()
+                    b = b1.decode(errors="replace").splitlines()
+                    for line in list(difflib.unified_diff(a, b, lineterm="", n=0))[2:12]:
+                        line = _re.sub(r"[\w.+-]+@[\w-]+\.[\w.-]+", "<email>", line)
+                        line = _re.sub(r"https?://[^\s\"'<>]+", lambda m: m.group(0) if "cloudflare" in m.group(0) or "cdn-cgi" in m.group(0) else "<url>", line)
+                        line = _re.sub(r"\d{6,}", "<num>", line)
+                        print("    " + line[:300])
     print(f"customer sites: {len(rows)} sites, {pages_ok}/{pages_total} pages served correctly by Cloudflare"
           f" ({vercel_broken} of them were not reachable on Vercel)")
     if problems:
