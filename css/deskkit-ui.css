@@ -978,3 +978,6 @@ html[dir="ltr"] .dk-home-hero-visual {
 .dk-automate-example { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; margin: 24px 0; font-size: 14.5px; color: var(--text); text-align: start; }
 .dk-automate-flow { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 26px 0; font-size: 13px; font-weight: 700; color: var(--primary-dark); }
 .dk-automate-flow span.sep { color: var(--text-muted); font-weight: 400; }
+
+/* Publish modal: the watermark-removal offer is a quiet, collapsed line. */
+.dk-upsell-quiet summary { color: var(--text-muted); font-weight: 600; }

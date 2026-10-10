@@ -327,6 +327,13 @@ document.addEventListener("DOMContentLoaded", () => {
     // window.print()/@media print path, which kept producing a 2-page,
     // UI-bleeding export in real browsers (see that function's own
     // comment for the full root cause).
+    // Every download also saves the CV to the account first, so nothing
+    // a person downloaded is ever lost (and it shows up in "My CVs").
+    // A failed save never blocks the download itself.
+    try {
+      if (typeof cvbshellSaveNow === "function" && document.getElementById("cvbshell-top-status")) await cvbshellSaveNow();
+      else if (typeof saveCvNow === "function") await saveCvNow();
+    } catch (_e) { /* download anyway */ }
     await downloadCvPdf();
     if (window.showUpsellBanner) {
       showUpsellBanner("מעבר לקורות החיים המרשימים שבניתם, הגיע הזמן שגם לעסק שלכם יהיה אתר תדמית יפהפה.", "רוצה להיראות עוד יותר מקצועי?");
