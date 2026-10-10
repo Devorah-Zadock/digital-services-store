@@ -16,6 +16,8 @@ are public anyway (anyone can look up a domain's DNS) — never tokens.
   cloudflare_api.py switch      serve deskkit.co.il + customer sites from
                                 Cloudflare (routes + proxied records)
   cloudflare_api.py rollback    undo "switch": everything back to Vercel
+  cloudflare_api.py drop-vercel remove the last DNS records pointing to Vercel
+                                (the old *.sites.deskkit.co.il delegation)
 """
 import json
 import os
@@ -320,8 +322,46 @@ def cmd_rollback():
     print("rolled back: DNS points to Vercel again (as before the switch)")
 
 
+VERCEL_APEX_IP = "216.198.79.1"
+
+
+def cmd_drop_vercel():
+    """After the switch the Workers answer deskkit.co.il and www, so the
+    Vercel addresses behind those records are never used — replace them
+    with Cloudflare's placeholder (100::, proxied), add the new record
+    before removing the old one, and drop the *.sites delegation."""
+    z = zone()
+    recs = records(z["id"])
+    for host in (ZONE_NAME, f"www.{ZONE_NAME}"):
+        old = [r for r in recs if r["name"] == host and r["type"] in ("A", "CNAME")
+               and ("vercel" in r["content"].lower() or r["content"] == VERCEL_APEX_IP)]
+        if not old:
+            continue
+        has_placeholder = any(r["name"] == host and r["type"] == "AAAA" for r in recs)
+        if old[0]["type"] == "CNAME":
+            # A CNAME can't sit beside other records: swap it.
+            call("DELETE", f"/zones/{z['id']}/dns_records/{old[0]['id']}")
+            if not has_placeholder:
+                call("POST", f"/zones/{z['id']}/dns_records",
+                     {"type": "AAAA", "name": host, "content": "100::", "proxied": True, "ttl": 1, "comment": "served by Cloudflare Workers"})
+        else:
+            if not has_placeholder:
+                call("POST", f"/zones/{z['id']}/dns_records",
+                     {"type": "AAAA", "name": host, "content": "100::", "proxied": True, "ttl": 1, "comment": "served by Cloudflare Workers"})
+            for r in old:
+                call("DELETE", f"/zones/{z['id']}/dns_records/{r['id']}")
+        print(f"  {host}: now Cloudflare only (Vercel address removed)")
+    removed = 0
+    for r in records(z["id"]):
+        if "vercel" in r["content"].lower():
+            call("DELETE", f"/zones/{z['id']}/dns_records/{r['id']}")
+            print(f"  removed {r['type']} {r['name']} -> {r['content']}")
+            removed += 1
+    print(f"done: no DNS record points to Vercel any more ({removed} more removed)")
+
+
 if __name__ == "__main__":
-    cmds = {"subdomain": cmd_subdomain, "status": cmd_status, "smoke": cmd_smoke, "live": cmd_live, "prepare": cmd_prepare, "switch": cmd_switch, "rollback": cmd_rollback}
+    cmds = {"subdomain": cmd_subdomain, "status": cmd_status, "smoke": cmd_smoke, "live": cmd_live, "prepare": cmd_prepare, "switch": cmd_switch, "drop-vercel": cmd_drop_vercel, "rollback": cmd_rollback}
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
     if cmd not in cmds:
         sys.exit(__doc__)
