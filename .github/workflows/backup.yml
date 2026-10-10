@@ -1,0 +1,165 @@
+# Nightly encrypted backup of everything customers keep in DeskKit — the
+# whole database (accounts, sites, published pages, CVs, quotes, invoices,
+# licenses…) and every uploaded image/logo — to a private Cloudflare R2
+# bucket, plus a monthly test that the backup really restores.
+#
+# Only reads from the live system; never writes to it. This repository is
+# public: logs show counts and statuses only (see .github/scripts/
+# backup_tool.py), nothing is stored as a GitHub artifact, and the job
+# never runs for pull requests, so outside code can't reach the secrets.
+#
+# GitHub secrets (Settings → Secrets and variables → Actions):
+#   SUPABASE_DB_URL      Supabase → Connect → Direct → Session pooler URI
+#   R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY   Cloudflare R2 token
+#   BACKUP_PASSPHRASE    encrypts every file; keep a copy offline — without
+#                        it the backups cannot be opened
+#   RESEND_SMTP_KEY      (already set) emails the owner if a run fails
+#
+# To restore by hand: download db/<date>/*.gpg from R2, decrypt each with
+#   gpg --decrypt file.gpg > file
+# and follow Supabase's "restore to a new project" guide (roles.sql,
+# schema.sql, then data.sql). Images: files/manifest.json.gpg maps every
+# original path to its encrypted copy under files/v/.
+
+name: Backup
+
+on:
+  schedule:
+    - cron: "17 0 * * *"   # nightly, ~02:17–03:17 Israel time
+    - cron: "43 1 3 * *"   # monthly restore test, the 3rd of each month
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "What to run"
+        type: choice
+        default: backup-and-test
+        options: [backup-and-test, backup, restore-test]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+env:
+  PROJECT_REF: vafkjsetlrpaczsmqvqs
+  R2_BUCKET: deskkit-backups
+  SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+  R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+  R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+  R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+  BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+  RESEND_API_KEY: ${{ secrets.RESEND_SMTP_KEY }}
+
+jobs:
+  backup:
+    if: >-
+      github.repository == 'Devorah-Zadock/digital-services-store' && (
+        (github.event_name == 'workflow_dispatch' && inputs.task != 'restore-test') ||
+        github.event.schedule == '17 0 * * *')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Install tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client gnupg > /dev/null
+          pip install --quiet --disable-pip-version-check boto3
+
+      - name: Check secrets and connections
+        run: python3 .github/scripts/backup_tool.py check
+
+      - name: Dump the database
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/db"
+          cd "$RUNNER_TEMP/db"
+          # On failure show only the last lines, with emails/IPs/URLs removed.
+          dk_err() { echo "::error::$1 dump failed"; tail -n 5 err.txt | sed -E 's#postgres(ql)?://[^ ]+#<db-url>#g; s/[[:alnum:]._%+-]+@[[:alnum:].-]+/<email>/g; s/[0-9]{1,3}(\.[0-9]{1,3}){3}/<ip>/g'; }
+          python3 "$GITHUB_WORKSPACE/.github/scripts/backup_tool.py" counts counts.json
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f roles.sql --role-only > /dev/null 2> err.txt || { dk_err roles; exit 1; }
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f schema.sql > /dev/null 2> err.txt || { dk_err schema; exit 1; }
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f data.sql --use-copy --data-only > /dev/null 2> err.txt || { dk_err data; exit 1; }
+          rm -f err.txt
+          echo "database dumped"
+
+      - name: Encrypt and upload the database backup
+        run: python3 .github/scripts/backup_tool.py db-upload "$RUNNER_TEMP/db"
+
+      - name: Back up images and logos
+        run: python3 .github/scripts/backup_tool.py files-backup
+
+      - name: Remove old backups
+        run: python3 .github/scripts/backup_tool.py db-prune
+
+      - name: Delete local copies
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/db"
+
+      - name: Email the owner if the backup failed
+        if: failure()
+        run: python3 .github/scripts/backup_tool.py alert "הגיבוי הלילי של DeskKit נכשל."
+
+  restore-test:
+    needs: backup
+    if: >-
+      always() && github.repository == 'Devorah-Zadock/digital-services-store' &&
+      needs.backup.result != 'failure' && needs.backup.result != 'cancelled' && (
+        (github.event_name == 'workflow_dispatch' && inputs.task != 'backup') ||
+        github.event.schedule == '43 1 3 * *')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      TEST_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Install tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client gnupg > /dev/null
+          pip install --quiet --disable-pip-version-check boto3
+
+      - name: Download and decrypt the latest backup
+        run: python3 .github/scripts/backup_tool.py db-download-latest "$RUNNER_TEMP/restore"
+
+      - name: Start an empty, throwaway Supabase database
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/local"
+          cd "$RUNNER_TEMP/local"
+          supabase init --force < /dev/null > /dev/null 2>&1
+          major="$(cat "$RUNNER_TEMP/restore/server_major")"
+          if [ -n "$major" ]; then sed -i "s/^major_version = .*/major_version = $major/" supabase/config.toml; fi
+          supabase start -x realtime,imgproxy,kong,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor,mailpit > start.log 2>&1 || { tail -n 15 start.log; exit 1; }
+          echo "test database started (Postgres $major)"
+
+      - name: Restore the backup into it
+        run: python3 .github/scripts/backup_tool.py restore "$RUNNER_TEMP/restore" "$TEST_DB_URL"
+
+      - name: Compare restored data with the backup
+        run: python3 .github/scripts/backup_tool.py restore-compare "$RUNNER_TEMP/restore" "$TEST_DB_URL"
+
+      - name: Check the image backups
+        run: python3 .github/scripts/backup_tool.py files-verify
+
+      - name: Clean up
+        if: always()
+        run: |
+          (cd "$RUNNER_TEMP/local" 2>/dev/null && supabase stop --no-backup > /dev/null 2>&1) || true
+          rm -rf "$RUNNER_TEMP/restore" "$RUNNER_TEMP/local"
+
+      - name: Email the owner if the restore test failed
+        if: failure()
+        run: python3 .github/scripts/backup_tool.py alert "בדיקת השחזור החודשית של הגיבוי נכשלה."
