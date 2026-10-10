@@ -9,6 +9,8 @@ are public anyway (anyone can look up a domain's DNS) — never tokens.
                                 test address (needed before the first deploy)
   cloudflare_api.py status      zone status, nameservers, DNS records, routes
   cloudflare_api.py prepare     webmail/ftp back to "DNS only", as they were
+  cloudflare_api.py smoke       compare every page Vercel serves today with
+                                what Cloudflare serves (counts/mismatches only)
   cloudflare_api.py switch      serve deskkit.co.il + customer sites from
                                 Cloudflare (routes + proxied records)
   cloudflare_api.py rollback    undo "switch": everything back to Vercel
@@ -125,6 +127,96 @@ def cmd_prepare():
     print("done" if changed else "nothing to change")
 
 
+def http_get(url):
+    req = urllib.request.Request(url, headers={"User-Agent": "deskkit-smoke-test"})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as res:
+            return res.status, res.read()
+    except urllib.error.HTTPError as e:
+        return e.code, b""
+    except Exception:  # noqa: BLE001
+        return 0, b""
+
+
+def published_slugs():
+    # Slugs only, via the Supabase Management API; never printed.
+    token = os.environ.get("SUPABASE_ACCESS_TOKEN", "").strip()
+    req = urllib.request.Request(
+        "https://api.supabase.com/v1/projects/vafkjsetlrpaczsmqvqs/database/query", method="POST",
+        data=json.dumps({"query": "select slug, (pages ? 'about') as about, (pages ? 'contact') as contact from public.hosted_site_pages"}).encode(),
+        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json", "User-Agent": "deskkit-smoke-test"})
+    with urllib.request.urlopen(req, timeout=60) as res:
+        return json.loads(res.read().decode())
+
+
+def cmd_smoke():
+    acct = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "").strip()
+    sub = (call("GET", f"/accounts/{acct}/workers/subdomain", ok404=True) or {}).get("subdomain")
+    if not sub:
+        sys.exit("no workers.dev address yet — run a deploy first")
+    web = f"https://{WEB_WORKER}.{sub}.workers.dev"
+    sites = f"https://{SITES_WORKER}.{sub}.workers.dev"
+    problems = 0
+
+    # 1. Main site: every top-level page and a sample of assets.
+    root = os.path.join(os.path.dirname(__file__), "..", "..")
+    files = sorted(f for f in os.listdir(root) if f.endswith(".html")) + ["", "robots.txt", "sitemap.xml",
+                                                                         "css/deskkit-ui.css", "js/main.js", "favicon.svg"]
+    same = 0
+    for f in files:
+        s1, b1 = http_get(f"https://{ZONE_NAME}/{f}")
+        s2, b2 = http_get(f"{web}/{f}")
+        if s1 == s2 == 200 and b1 == b2:
+            same += 1
+        else:
+            problems += 1
+            print(f"  MAIN MISMATCH /{f}: vercel {s1} ({len(b1)} B) vs cloudflare {s2} ({len(b2)} B)")
+    print(f"main site: {same}/{len(files)} pages identical")
+
+    # 2. Security headers on the Cloudflare copy.
+    req = urllib.request.Request(f"{web}/account.html", headers={"User-Agent": "deskkit-smoke-test"})
+    with urllib.request.urlopen(req, timeout=60) as res:
+        h = {k.lower(): v for k, v in res.headers.items()}
+    for name in ("x-content-type-options", "x-frame-options", "content-security-policy", "strict-transport-security"):
+        if name not in h:
+            problems += 1
+            print(f"  missing header on Cloudflare: {name}")
+    if "no-store" not in h.get("cache-control", ""):
+        problems += 1
+        print("  account.html is not no-store on Cloudflare")
+    print("security headers: checked")
+
+    # 3. Customer sites: each published page, old address on Vercel vs the
+    #    new Worker. Totals only — no slugs in the (public) log.
+    rows = published_slugs()
+    pages_ok = pages_total = vercel_broken = 0
+    for row in rows:
+        for page, enabled in (("index", True), ("about", row.get("about")), ("contact", row.get("contact"))):
+            if not enabled:
+                continue
+            pages_total += 1
+            old_path = "" if page == "index" else page
+            s1, b1 = http_get(f"https://{row['slug']}.sites.{ZONE_NAME}/{old_path}")
+            s2, b2 = http_get(f"{sites}/?site={row['slug']}&page={page}")
+            if s2 != 200:
+                problems += 1
+                continue
+            if s1 != 200:
+                vercel_broken += 1  # Cloudflare serves it, Vercel didn't
+                pages_ok += 1
+                continue
+            if b1 == b2:
+                pages_ok += 1
+            else:
+                problems += 1
+                print(f"  SITE MISMATCH: a {page} page differs ({len(b1)} B vs {len(b2)} B)")
+    print(f"customer sites: {len(rows)} sites, {pages_ok}/{pages_total} pages served correctly by Cloudflare"
+          f" ({vercel_broken} of them were not reachable on Vercel)")
+    if problems:
+        sys.exit(f"{problems} problem(s) — do not switch yet")
+    print("smoke test passed")
+
+
 def cmd_switch():
     z = zone()
     if z["status"] != "active":
@@ -171,7 +263,7 @@ def cmd_rollback():
 
 
 if __name__ == "__main__":
-    cmds = {"subdomain": cmd_subdomain, "status": cmd_status, "prepare": cmd_prepare, "switch": cmd_switch, "rollback": cmd_rollback}
+    cmds = {"subdomain": cmd_subdomain, "status": cmd_status, "smoke": cmd_smoke, "prepare": cmd_prepare, "switch": cmd_switch, "rollback": cmd_rollback}
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
     if cmd not in cmds:
         sys.exit(__doc__)
