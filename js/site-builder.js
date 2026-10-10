@@ -1383,6 +1383,15 @@ function removeServiceItem(idx) {
    Netlify Drop by hand. "ייצוא קובצי האתר" above (paid accounts only,
    under "אפשרויות נוספות") stays as a secondary way to keep a portable
    copy — publishing itself is still the one primary action. */
+// First publish: "פרסום — קבלת קישור חי"; after that the site already has
+// its address, so the button just says "פרסום".
+function updatePublishButtonLabel() {
+  const btn = document.getElementById("publish-site-btn");
+  if (!btn || btn.disabled) return;
+  const published = typeof sitePublishedUrl !== "undefined" && !!sitePublishedUrl;
+  btn.textContent = published ? "פרסום" : "פרסום — קבלת קישור חי";
+}
+
 async function publishSite() {
   const btn = document.getElementById("publish-site-btn");
   const note = document.getElementById("publish-note");
@@ -1498,6 +1507,7 @@ async function publishSite() {
       `;
       document.getElementById("publish-claim-btn").addEventListener("click", () => renderPublishClaimedScreen(data.url), { once: true });
     } else {
+      if (typeof sitePublishedUrl !== "undefined") sitePublishedUrl = data.url;
       renderPublishClaimedScreen(data.url, data.selfHosted, data.slug);
     }
   } catch (err) {
@@ -1505,6 +1515,7 @@ async function publishSite() {
   } finally {
     btn.disabled = false;
     btn.textContent = originalLabel;
+    updatePublishButtonLabel();
   }
 }
 
