@@ -77,7 +77,7 @@ def email_html(slugs):
       <p style="margin:0 0 4px;">תודה שבחרת ב-DeskKit,<br>צוות DeskKit</p>
     </div>
     <div style="padding:14px 24px 22px;color:#667085;font-size:12.5px;line-height:1.6;border-top:1px solid #EEF2F1;text-align:right;">
-      זו הודעת שירות על אתר שפרסמת ב-DeskKit. יש שאלה? פשוט עונים למייל הזה.
+      זו הודעת שירות אוטומטית על אתר שפרסמת ב-DeskKit.
     </div>
   </div>
 </div></body></html>"""
@@ -85,8 +85,7 @@ def email_html(slugs):
 
 def send(key, to, slugs):
     body = json.dumps({
-        "from": "DeskKit <hello@deskkit.co.il>",
-        "reply_to": os.environ.get("CONTACT_NOTIFY_EMAIL") or "digital.dz.studio@gmail.com",
+        "from": "DeskKit <noreply@deskkit.co.il>",
         "to": [to], "subject": SUBJECT, "html": email_html(slugs),
     }).encode()
     req = urllib.request.Request("https://api.resend.com/emails", data=body, method="POST", headers={
