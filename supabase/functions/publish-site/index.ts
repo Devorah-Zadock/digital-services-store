@@ -55,11 +55,28 @@ const DESKKIT_WATERMARK_ID = "deskkit-badge";
 function stripClientWatermark(html: string): string {
   return html.replace(new RegExp(`<a id="${DESKKIT_WATERMARK_ID}"[\\s\\S]*?<\\/a>\\s*`, "i"), "");
 }
+// The badge gets a fresh random id on every publish and all its styling
+// inline with !important — inline !important outranks any stylesheet rule
+// a page could carry, and a random id can't be targeted in advance — so
+// CSS added to the page can't hide it. (Removing it with the page's own
+// JavaScript would still be possible; rendering pages on the server from
+// the saved data is the complete fix.)
+const BADGE_STYLE = [
+  "all:initial", "position:fixed", "bottom:14px", "inset-inline-start:14px", "z-index:2147483647",
+  "display:inline-block", "visibility:visible", "opacity:1", "transform:none", "clip-path:none",
+  "filter:none", "width:auto", "height:auto", "margin:0", "background:rgba(20,20,20,.86)", "color:#fff",
+  "font:600 12px/1.4 Heebo,Arial,sans-serif", "padding:7px 14px", "border-radius:20px",
+  "box-shadow:0 4px 14px rgba(0,0,0,.25)", "text-decoration:none", "direction:rtl", "cursor:pointer",
+  "pointer-events:auto",
+].map((rule) => rule + " !important").join(";");
+
 function applyWatermark(html: string, isPaid: boolean): string {
   const stripped = stripClientWatermark(html);
   if (isPaid) return stripped;
-  const badge = `<a id="${DESKKIT_WATERMARK_ID}" href="https://deskkit.co.il" target="_blank" rel="noopener" style="position:fixed;bottom:14px;inset-inline-start:14px;z-index:999999;background:rgba(20,20,20,.86);color:#fff;font-family:Heebo,Arial,sans-serif;font-size:12px;font-weight:600;padding:7px 14px;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,.25);text-decoration:none;">נבנה ב-DeskKit ✨</a>`;
-  return stripped.includes("</body>") ? stripped.replace("</body>", badge + "</body>") : stripped + badge;
+  const id = "dk" + crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+  const badge = `<a id="${id}" href="https://deskkit.co.il/?ref=badge" target="_blank" rel="noopener" style="${BADGE_STYLE}">נבנה ב-DeskKit ✨</a>`;
+  const at = stripped.lastIndexOf("</body>");
+  return at === -1 ? stripped + badge : stripped.slice(0, at) + badge + stripped.slice(at);
 }
 
 /* siteProjectId doubles as Netlify's `session_id` — the same value goes
@@ -208,11 +225,14 @@ Deno.serve(async (req: Request) => {
     // "you must have paid for this template" — the one place that
     // matters, since it's the one place that actually spends a Netlify
     // deploy credit.
+    // A website license belongs to ONE site (supabase/sql/
+    // license_per_site.sql). A purchase from before that change which
+    // couldn't be bound to a site still counts for its template, as it did.
     const { data: license, error: licenseErr } = await admin
       .from("license_redemptions")
       .select("license_key")
       .eq("user_id", userId)
-      .eq("template", project.template)
+      .or(`site_project_id.eq.${project.id},and(site_project_id.is.null,template.eq.${project.template})`)
       .limit(1)
       .maybeSingle();
     if (licenseErr) return jsonResponse({ error: licenseErr.message }, 500);

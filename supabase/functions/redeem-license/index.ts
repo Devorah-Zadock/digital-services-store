@@ -98,6 +98,9 @@ Deno.serve(async (req: Request) => {
     const licenseKey = typeof body.licenseKey === "string" ? body.licenseKey.trim().slice(0, 200) : "";
     const productId = typeof body.productId === "string" ? body.productId.trim() : "";
     const template = typeof body.template === "string" ? body.template.trim() : "";
+    // Website licenses belong to ONE site (see supabase/sql/
+    // license_per_site.sql); the schedule builder has no site.
+    const siteProjectId = typeof body.siteProjectId === "string" ? body.siteProjectId.trim() : "";
     if (!licenseKey || !productId || !template) {
       return new Response(JSON.stringify({ error: "missing licenseKey, productId or template" }), {
         status: 400,
@@ -109,6 +112,17 @@ Deno.serve(async (req: Request) => {
     // other seller's product — could be redeemed as any site template.
     if (!productAllowsTemplate(productId, template)) {
       return new Response(JSON.stringify({ success: false, reason: "invalid" }), { status: 200, headers: corsHeaders });
+    }
+
+    const isSiteProduct = productId === SITE_PRODUCT_ID;
+    if (isSiteProduct) {
+      if (!/^[0-9a-f-]{36}$/i.test(siteProjectId)) {
+        return new Response(JSON.stringify({ success: false, reason: "save-first" }), { status: 200, headers: corsHeaders });
+      }
+      const { data: site } = await admin.from("site_projects").select("id, user_id").eq("id", siteProjectId).maybeSingle();
+      if (!site || site.user_id !== userId) {
+        return new Response(JSON.stringify({ error: "site not found for this account" }), { status: 404, headers: corsHeaders });
+      }
     }
 
     // Confirmed twice in real testing: a license verified within the
@@ -159,7 +173,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: existing, error: selectErr } = await admin
       .from("license_redemptions")
-      .select("user_id, template")
+      .select("user_id, template, site_project_id")
       .eq("license_key", licenseKey)
       .maybeSingle();
     if (selectErr) {
@@ -173,17 +187,51 @@ Deno.serve(async (req: Request) => {
           headers: corsHeaders,
         });
       }
-      if (existing.template !== template) {
+      if (isSiteProduct) {
+        if (existing.site_project_id && existing.site_project_id !== siteProjectId) {
+          // This key already removed the badge from another site of theirs.
+          return new Response(JSON.stringify({ success: false, reason: "different-site" }), {
+            status: 200,
+            headers: corsHeaders,
+          });
+        }
+        if (!existing.site_project_id) {
+          // A purchase from before per-site licenses that never got bound
+          // to a site: bind it to this one now (unless this site already
+          // has its own license).
+          const { error: bindErr } = await admin
+            .from("license_redemptions")
+            .update({ site_project_id: siteProjectId, template })
+            .eq("license_key", licenseKey)
+            .is("site_project_id", null);
+          if (bindErr && bindErr.code !== "23505") {
+            return new Response(JSON.stringify({ error: bindErr.message }), { status: 500, headers: corsHeaders });
+          }
+        }
+      } else if (existing.template !== template) {
         return new Response(JSON.stringify({ success: false, reason: "different-template" }), {
           status: 200,
           headers: corsHeaders,
         });
       }
-      // Same account, same template — a harmless re-verify.
+      // Same account, same site/template — a harmless re-verify.
       return new Response(JSON.stringify({ success: true, purchase: gumroadData.purchase || null }), {
         status: 200,
         headers: corsHeaders,
       });
+    }
+
+    if (isSiteProduct) {
+      // This site is already paid for (another key) — don't use up a second
+      // purchase on it; tell the buyer instead.
+      const { data: sitePaid } = await admin
+        .from("license_redemptions")
+        .select("license_key")
+        .eq("site_project_id", siteProjectId)
+        .maybeSingle();
+      if (sitePaid) {
+        return new Response(JSON.stringify({ success: true, alreadyPaid: true }), { status: 200, headers: corsHeaders });
+      }
     }
 
     // Insert is the atomic claim: license_key is the table's primary key, so
@@ -192,7 +240,11 @@ Deno.serve(async (req: Request) => {
     // of both requests reading "no existing row" and both succeeding.
     const { error: insertErr } = await admin
       .from("license_redemptions")
-      .insert({ license_key: licenseKey, product_id: productId, user_id: userId, template, purchase: receiptFields(purchaseInfo) });
+      .insert({
+        license_key: licenseKey, product_id: productId, user_id: userId, template,
+        site_project_id: isSiteProduct ? siteProjectId : null,
+        purchase: receiptFields(purchaseInfo),
+      });
     if (insertErr) {
       if (insertErr.code === "23505") {
         return new Response(JSON.stringify({ success: false, reason: "redeemed-elsewhere" }), {
