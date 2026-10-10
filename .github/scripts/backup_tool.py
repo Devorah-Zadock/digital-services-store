@@ -418,12 +418,14 @@ def cmd_alert(message):
     if not key:
         print("alert not sent (no Resend key)")
         return
+    # BACKUP_ALERT_EMAIL (a secret) always gets it; owners listed in
+    # admin_users too, when the database is reachable.
+    owners = [os.environ["BACKUP_ALERT_EMAIL"].strip()] if os.environ.get("BACKUP_ALERT_EMAIL", "").strip() else []
     try:
-        owners = psql_json(live_db(), "select coalesce(json_agg(email), '[]'::json) from public.admin_users where role = 'owner'") or []
+        owners += psql_json(live_db(), "select coalesce(json_agg(email), '[]'::json) from public.admin_users where role = 'owner'") or []
     except SystemExit:
-        # The database itself may be what failed — fall back to the owner
-        # address kept as a secret, if there is one.
-        owners = [os.environ["BACKUP_ALERT_EMAIL"]] if os.environ.get("BACKUP_ALERT_EMAIL") else []
+        pass  # the database itself may be what failed
+    owners = sorted({o.lower() for o in owners if o})
     if not owners:
         print("alert not sent (no owner email)")
         return

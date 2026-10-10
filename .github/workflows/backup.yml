@@ -16,6 +16,7 @@
 #   BACKUP_PASSPHRASE    encrypts every file; keep a copy offline — without
 #                        it the backups cannot be opened
 #   RESEND_SMTP_KEY      (already set) emails the owner if a run fails
+#   BACKUP_ALERT_EMAIL   the address that gets that email
 #
 # To restore by hand: download db/<date>/*.gpg from R2, decrypt each with
 #   gpg --decrypt file.gpg > file
@@ -54,6 +55,7 @@ env:
   R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
   BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
   RESEND_API_KEY: ${{ secrets.RESEND_SMTP_KEY }}
+  BACKUP_ALERT_EMAIL: ${{ secrets.BACKUP_ALERT_EMAIL }}
 
 jobs:
   backup:
