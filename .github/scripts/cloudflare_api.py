@@ -5,6 +5,8 @@ Needs CLOUDFLARE_API_TOKEN (Workers + Zone DNS edit) and
 CLOUDFLARE_ACCOUNT_ID as GitHub secrets. Prints only DNS/zone facts that
 are public anyway (anyone can look up a domain's DNS) — never tokens.
 
+  cloudflare_api.py subdomain   make sure the account has a workers.dev
+                                test address (needed before the first deploy)
   cloudflare_api.py status      zone status, nameservers, DNS records, routes
   cloudflare_api.py prepare     webmail/ftp back to "DNS only", as they were
   cloudflare_api.py switch      serve deskkit.co.il + customer sites from
@@ -84,6 +86,28 @@ def cmd_status():
               f"https://{SITES_WORKER}.{sub['subdomain']}.workers.dev")
 
 
+def cmd_subdomain():
+    acct = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "").strip()
+    if not acct:
+        sys.exit("CLOUDFLARE_ACCOUNT_ID secret is not set.")
+    cur = call("GET", f"/accounts/{acct}/workers/subdomain", ok404=True)
+    if cur and cur.get("subdomain"):
+        print(f"workers.dev address: {cur['subdomain']}.workers.dev")
+        return
+    for name in ("deskkit", "deskkit-co-il", "deskkit-il", "deskkit-sites-il"):
+        token = os.environ["CLOUDFLARE_API_TOKEN"].strip()
+        req = urllib.request.Request(f"{API}/accounts/{acct}/workers/subdomain", method="PUT",
+                                     data=json.dumps({"subdomain": name}).encode(),
+                                     headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
+        try:
+            urllib.request.urlopen(req, timeout=60).read()
+            print(f"registered workers.dev address: {name}.workers.dev")
+            return
+        except urllib.error.HTTPError as e:
+            print(f"  {name}.workers.dev not available (HTTP {e.code})")
+    sys.exit("could not register a workers.dev address")
+
+
 def set_proxied(zone_id, rec, proxied):
     if bool(rec.get("proxied")) == proxied:
         return False
@@ -147,7 +171,7 @@ def cmd_rollback():
 
 
 if __name__ == "__main__":
-    cmds = {"status": cmd_status, "prepare": cmd_prepare, "switch": cmd_switch, "rollback": cmd_rollback}
+    cmds = {"subdomain": cmd_subdomain, "status": cmd_status, "prepare": cmd_prepare, "switch": cmd_switch, "rollback": cmd_rollback}
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
     if cmd not in cmds:
         sys.exit(__doc__)
