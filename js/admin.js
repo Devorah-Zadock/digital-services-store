@@ -1053,6 +1053,7 @@ const AUDIT_ACTION_LABELS = {
   delete_message: "מחיקת הודעה", set_admin_role: "עדכון הרשאת מנהל", remove_admin: "הסרת מנהל",
   admin_unlock: "כניסה לאזור הניהול", admin_unlock_failed: "סיסמת ניהול שגויה", admin_unlock_locked: "ניסיון כניסה בזמן נעילה",
   set_admin_password: "קביעת סיסמת ניהול", admin_confirm_failed: "אישור פעולה נכשל (סיסמה שגויה)",
+  mail_campaign_create: "שליחת דיוור",
 };
 
 function closeUserDrawer() {
@@ -1365,6 +1366,7 @@ function handleSetupError(e) {
 const DK_STEP_UP_ACTIONS = new Set([
   "set-pro", "delete-account", "export-users", "set-admin-role", "remove-admin",
   "suspend-user", "unsuspend-user", "bulk", "delete-site", "delete-cv",
+  "mail-create",
 ]);
 
 // Asks for the admin password again before a sensitive action. Resolves
@@ -1512,6 +1514,227 @@ function showAccessDenied() {
   document.getElementById("admin-denied").style.display = "";
 }
 
+/* ---------- "מדדים" tab ---------- */
+
+const MT_PRODUCT_LABELS = { "NUyzNlvxdpU_49TE5nk9fg==": "אתר (הסרת תגית)", "K122yL6VSdTui67Be5ZiYw==": "מערכת שעות" };
+const MT_TOOL_LABELS = {
+  cv: "קורות חיים", quote: "הצעות מחיר", deck: "מצגות", xlsx: "גליונות",
+  "ai-rewrite": "שכתוב טקסט", "ats-check": "בדיקת ATS", "generate-invoice": "יצירת חשבונית", "generate-quote": "יצירת הצעת מחיר",
+  "generate-site": "יצירת אתר", "site-ai-command": "עריכת אתר בפקודה", "site-ai-command-refused": "פקודות אתר שנחסמו",
+  "site-ai-director": "עוזר אתר", "site-ai-review": "בדיקת אתר",
+};
+// Free-plan limits, for the "how close are we" bars.
+const MT_LIMITS = { dbBytes: 500 * 1024 * 1024, storageBytes: 1024 * 1024 * 1024, mailDay: 100, mailMonth: 3000 };
+
+function fmtBytes(n) {
+  n = Number(n || 0);
+  if (n < 1024 * 1024) return (n / 1024).toFixed(0) + " KB";
+  if (n < 1024 * 1024 * 1024) return (n / 1024 / 1024).toFixed(1) + " MB";
+  return (n / 1024 / 1024 / 1024).toFixed(2) + " GB";
+}
+
+function mtKpi(label, value, sub) {
+  return `<div class="cx-kpi mt-static"><span class="cx-kpi-label">${escapeHtml(label)}</span><span class="cx-kpi-value">${escapeHtml(value)}</span>${sub ? `<span class="cx-kpi-sub">${escapeHtml(sub)}</span>` : ""}</div>`;
+}
+
+function mtMeter(label, used, limit, usedText, limitText) {
+  const pct = limit ? Math.min(100, Math.round((Number(used || 0) / limit) * 100)) : 0;
+  const cls = pct >= 90 ? "bad" : pct >= 70 ? "warn" : "";
+  return `<div style="margin-bottom:12px;"><div class="mt-row" style="border:0;padding:0;"><span>${escapeHtml(label)}</span><span class="cx-muted">${escapeHtml(usedText)} מתוך ${escapeHtml(limitText)} · ${pct}%</span></div><div class="mt-meter ${cls}"><span style="width:${pct}%"></span></div></div>`;
+}
+
+function mtBars(series) {
+  const max = Math.max(1, ...series.map((x) => Number(x.n || 0)));
+  const bars = series.map((x) => `<div class="mt-bar" style="height:${Math.max(2, Math.round((Number(x.n || 0) / max) * 100))}%" title="${escapeHtml(x.d)}: ${fmtNum(x.n)}"></div>`).join("");
+  const first = series[0] ? series[0].d.slice(5).split("-").reverse().join("/") : "";
+  const last = series.length ? series[series.length - 1].d.slice(5).split("-").reverse().join("/") : "";
+  return `<div class="mt-bars">${bars}</div><div class="mt-bars-axis"><span>${first}</span><span>${last}</span></div>`;
+}
+
+function mtCard(title, inner) {
+  return `<div class="cx-card mt-pad"><h3 class="mt-h">${escapeHtml(title)}</h3>${inner}</div>`;
+}
+
+function mtRows(rows, emptyMsg) {
+  if (!rows.length) return `<p class="cx-muted" style="font-size:13px;">${escapeHtml(emptyMsg || "אין עדיין נתונים.")}</p>`;
+  return rows.map(([k, v]) => `<div class="mt-row"><span>${escapeHtml(k)}</span><b>${escapeHtml(v)}</b></div>`).join("");
+}
+
+function renderMetrics(m) {
+  const u = m.users || {};
+  const sites = m.sites || {};
+  const docs = m.docs || {};
+  const ai = m.ai || {};
+  const mail = m.mail || {};
+  const signups30 = (m.signups_daily || []).reduce((a, x) => a + Number(x.n || 0), 0);
+  const licenses = m.licenses || [];
+  const licTotal = licenses.reduce((a, l) => a + Number(l.total || 0), 0);
+  const lic30 = licenses.reduce((a, l) => a + Number(l.last_30d || 0), 0);
+  const storageBytes = (m.storage || []).reduce((a, b) => a + Number(b.bytes || 0), 0);
+
+  const kpis = `<div class="cx-kpis">
+    ${mtKpi("משתמשים", fmtNum(u.total), `+${fmtNum(m.new_today)} היום · +${fmtNum(u.new_7d)} השבוע`)}
+    ${mtKpi("פעילים ב-7 ימים", fmtNum(u.active_7d), `${fmtNum(u.active_30d)} ב-30 יום`)}
+    ${mtKpi("אתרים באוויר", fmtNum(sites.published), `${fmtNum(sites.saved)} אתרים שמורים`)}
+    ${mtKpi("רכישות (רישיונות)", fmtNum(licTotal), `${fmtNum(lic30)} ב-30 יום`)}
+    ${mtKpi("שימוש ב-AI", fmtNum(ai.calls_30d), `ב-30 יום · ${fmtNum(ai.users_30d)} משתמשים`)}
+  </div>`;
+
+  const cards = [
+    mtCard(`הרשמות — 30 ימים אחרונים (${fmtNum(signups30)})`, mtBars(m.signups_daily || [])),
+    mtCard(`שימוש ב-AI — 30 ימים (${fmtNum(ai.calls_30d)})`, mtBars(ai.daily || []) +
+      `<div style="margin-top:10px;">${mtRows((ai.by_tool || []).map((t) => [MT_TOOL_LABELS[t.tool] || t.tool, fmtNum(t.n)]), "עוד לא היה שימוש ב-AI החודש.")}</div>`),
+    mtCard("מה נוצר באתר", mtRows([
+      ["אתרים שמורים", fmtNum(sites.saved) + ` (+${fmtNum(sites.saved_30d)} ב-30 יום)`],
+      ["אתרים מפורסמים", fmtNum(sites.published) + ` (${fmtNum(sites.published_30d)} עודכנו ב-30 יום)`],
+      ["קורות חיים", fmtNum(docs.cvs)],
+      ["הצעות מחיר", fmtNum(docs.quotes)],
+      ["חשבוניות", fmtNum(docs.invoices) + ` (${fmtNum(docs.invoices_issued)} הופקו)`],
+      ["מערכות שעות", fmtNum(docs.schedules)],
+    ])),
+    mtCard("רכישות לפי מוצר", mtRows(licenses.map((l) => [MT_PRODUCT_LABELS[l.product] || "מוצר אחר", `${fmtNum(l.total)} (${fmtNum(l.last_30d)} ב-30 יום)`]), "עוד אין רכישות.")),
+    mtCard("הורדות — 30 ימים", mtRows((m.downloads_30d || []).map((d) => [MT_TOOL_LABELS[d.kind] || d.kind, fmtNum(d.n)]), "אין הורדות ב-30 הימים האחרונים.")),
+    mtCard("חשבונות", mtRows([
+      ["חשבונות Pro", fmtNum(u.pro)],
+      ["לא אישרו מייל", fmtNum(u.unconfirmed)],
+      ["מושעים", fmtNum(u.suspended)],
+      ["חדשים ב-30 יום", fmtNum(u.new_30d)],
+      ["הודעות ב-30 יום", fmtNum(m.messages_30d)],
+    ])),
+    mtCard("מיילים", mtRows([
+      ["רשומים לעדכונים", fmtNum(mail.subscribed)],
+      ["הסירו את עצמם", fmtNum(mail.unsubscribed)],
+      ["מיילי ברוכים הבאים (30 יום)", fmtNum(mail.welcomes_30d)],
+      ["דיוור שנשלח היום", fmtNum(mail.sent_today)],
+      ["דיוור שנשלח ב-30 יום", fmtNum(mail.sent_30d)],
+    ])),
+    mtCard("ניצול המסלולים החינמיים",
+      mtMeter("מסד נתונים (Supabase)", m.db_bytes, MT_LIMITS.dbBytes, fmtBytes(m.db_bytes), "500 MB") +
+      mtMeter("קבצים ותמונות (Supabase)", storageBytes, MT_LIMITS.storageBytes, fmtBytes(storageBytes), "1 GB") +
+      mtMeter("דיוור היום (Resend)", mail.sent_today, MT_LIMITS.mailDay, fmtNum(mail.sent_today), "100") +
+      `<p class="cx-muted mt-note">ב-70% הפס נצבע כתום, וב-90% אדום. זה הסימן לחשוב על שדרוג או ניקוי.</p>`),
+  ].join("");
+
+  document.getElementById("metrics-body").innerHTML = kpis + `<div class="mt-cards">${cards}</div>` +
+    `<p class="cx-muted mt-note" style="margin-top:12px;">עודכן: ${escapeHtml(fmtDateTime(m.generated_at))}. ביקורים באתר (צפיות ומבקרים): Cloudflare ← Analytics &amp; Logs ← Web Analytics.</p>`;
+}
+
+async function loadMetrics() {
+  const body = document.getElementById("metrics-body");
+  const btn = document.getElementById("metrics-refresh");
+  btn.disabled = true;
+  try {
+    const { metrics } = await callAdminStats({ action: "metrics" });
+    renderMetrics(metrics || {});
+  } catch (e) {
+    if (handleSetupError(e)) return;
+    body.innerHTML = `<p class="cx-error">שגיאה בטעינת המדדים: ${escapeHtml(e.message)}</p>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* ---------- "דיוור" tab (owner) ---------- */
+
+const mailState = { audience: 0, sending: false };
+
+function mailStatus(text, kind) {
+  const el = document.getElementById("mail-status");
+  el.textContent = text || "";
+  el.style.color = kind === "err" ? "#B42318" : kind === "ok" ? "#067647" : "var(--ink-dark)";
+}
+
+async function loadMailOverview() {
+  const hist = document.getElementById("mail-history");
+  try {
+    const d = await callAdminStats({ action: "mail-overview" });
+    mailState.audience = d.audience || 0;
+    document.getElementById("mail-audience").textContent = fmtNum(mailState.audience);
+    const rows = (d.campaigns || []).filter((c) => c.kind === "update");
+    hist.innerHTML = rows.length ? rows.map((c) => `<div class="mt-row">
+        <span><b>${escapeHtml(c.subject)}</b><br><span class="cx-muted" style="font-size:12px;">${escapeHtml(fmtDateTime(c.created_at))} · נשלח ל-${fmtNum(c.sent)}</span></span>
+        ${c.finished_at ? `<span class="cx-muted" style="white-space:nowrap;">✓ הושלם</span>` : `<button type="button" class="cx-btn" data-mail-continue="${escapeHtml(c.id)}">המשך שליחה</button>`}
+      </div>`).join("") : `<p class="cx-muted" style="font-size:13px;">עוד לא נשלחו הודעות.</p>`;
+  } catch (e) {
+    if (handleSetupError(e)) return;
+    hist.innerHTML = `<p class="cx-error">שגיאה: ${escapeHtml(e.message)}</p>`;
+  }
+}
+
+function mailDraftFromForm() {
+  return {
+    subject: document.getElementById("mail-subject").value.trim(),
+    body: document.getElementById("mail-body").value.trim(),
+    isAd: document.getElementById("mail-is-ad").checked,
+  };
+}
+
+// Sends batch after batch until done, or until the daily quota stops it.
+async function mailRunCampaign(campaignId) {
+  if (mailState.sending) return;
+  mailState.sending = true;
+  const sendBtn = document.getElementById("mail-send-btn");
+  sendBtn.disabled = true;
+  let total = 0;
+  try {
+    for (let i = 0; i < 400; i++) {
+      const r = await callAdminStats({ action: "mail-send-batch", campaignId });
+      total += r.sent || 0;
+      if (r.status === "done") { mailStatus(`✓ נשלח! ${fmtNum(total)} מיילים יצאו בסבב הזה.`, "ok"); break; }
+      if (r.status === "quota") { mailStatus(`נשלחו ${fmtNum(total)} מיילים, ואז נגמרה המכסה היומית של Resend. מחר לוחצים "המשך שליחה" ברשימה מימין — זה ימשיך מאיפה שנעצר.`, "err"); break; }
+      if (r.status === "error") { mailStatus(`נשלחו ${fmtNum(total)}. שליחה נכשלה בשלב הזה — אפשר ללחוץ "המשך שליחה" כדי לנסות שוב.`, "err"); break; }
+      mailStatus(`שולחים… ${fmtNum(total)} עד עכשיו`);
+      await new Promise((res) => setTimeout(res, 700));
+    }
+  } catch (e) {
+    mailStatus("השליחה נעצרה: " + e.message + ' · אפשר ללחוץ "המשך שליחה".', "err");
+  } finally {
+    mailState.sending = false;
+    sendBtn.disabled = false;
+    loadMailOverview();
+  }
+}
+
+function wireMail() {
+  document.getElementById("mail-refresh").addEventListener("click", loadMailOverview);
+  document.getElementById("mail-test-btn").addEventListener("click", async () => {
+    const d = mailDraftFromForm();
+    if (!d.subject || !d.body) { mailStatus("חסר נושא או תוכן.", "err"); return; }
+    const btn = document.getElementById("mail-test-btn");
+    btn.disabled = true;
+    try {
+      const r = await callAdminStats({ action: "mail-test", ...d });
+      mailStatus(`✓ מייל ניסיון נשלח אל ${r.to}. כדאי לבדוק איך הוא נראה לפני השליחה לכולם.`, "ok");
+    } catch (e) {
+      mailStatus("שליחת הניסיון נכשלה: " + e.message, "err");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+  document.getElementById("mail-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (mailState.sending) return;
+    const d = mailDraftFromForm();
+    if (!d.subject || !d.body) { mailStatus("חסר נושא או תוכן.", "err"); return; }
+    const subjectShown = d.isAd && !/^פרסומת/.test(d.subject) ? "פרסומת: " + d.subject : d.subject;
+    const ok = await dkConfirm({ title: "שליחה לכל הרשימה", confirmLabel: "שליחה",
+      body: `<p>ההודעה <b>"${escapeHtml(subjectShown)}"</b> תישלח ל-<b>${fmtNum(mailState.audience)}</b> נמענים.</p><p class="cx-muted">אי אפשר לבטל מייל אחרי שנשלח. כדאי לשלוח קודם ניסיון לעצמך.</p>` });
+    if (!ok) return;
+    try {
+      const { campaignId } = await callAdminStats({ action: "mail-create", ...d });
+      document.getElementById("mail-subject").value = "";
+      document.getElementById("mail-body").value = "";
+      await mailRunCampaign(campaignId);
+    } catch (err) {
+      if (!err.cancelled) mailStatus("השליחה לא התחילה: " + err.message, "err");
+    }
+  });
+  document.getElementById("mail-history").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-mail-continue]");
+    if (b) mailRunCampaign(b.dataset.mailContinue);
+  });
+}
+
 /* ---------- "תבניות" tab ---------- */
 
 let templateStatsLoaded = false;
@@ -1537,6 +1760,8 @@ async function loadTemplateStats() {
 
 const DK_TABS = [
   { key: "customers", minRole: "support" },
+  { key: "metrics", minRole: "support" },
+  { key: "mail", minRole: "owner" },
   { key: "feedback", minRole: "support" },
   { key: "templates", minRole: "support" },
   { key: "audit", minRole: "admin" },
@@ -1554,6 +1779,8 @@ function activateTab(key) {
   if (!dkTabLoaded[key]) {
     dkTabLoaded[key] = true;
     if (key === "feedback") loadMessages();
+    if (key === "metrics") loadMetrics();
+    if (key === "mail") loadMailOverview();
     if (key === "templates") loadTemplateStats();
     if (key === "audit") loadAuditLog();
     if (key === "admins") loadAdmins();
@@ -1614,7 +1841,8 @@ async function showPanel() {
   wireCustomersToolbar();
   wireUserDrawer();
   if (dkCan("admin")) wireAuditLog();
-  if (dkCan("owner")) wireAdmins();
+  if (dkCan("owner")) { wireAdmins(); wireMail(); }
+  document.getElementById("metrics-refresh").addEventListener("click", loadMetrics);
   document.getElementById("messages-list").addEventListener("click", handleMessagesListClick);
   document.getElementById("messages-refresh-btn").addEventListener("click", loadMessages);
   document.getElementById("stats-load-btn").addEventListener("click", loadTemplateStats);

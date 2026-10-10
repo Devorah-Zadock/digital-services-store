@@ -69,6 +69,43 @@ async function dkReauthenticate(user, password) {
   return last && Date.now() - last < DK_FRESH_LOGIN_MS ? "" : DK_REAUTH_GOOGLE_MSG;
 }
 
+// "עדכונים במייל": on/off for the owner's update emails
+// (supabase/functions/email-preferences).
+async function dkMailPref(session, body) {
+  const res = await fetch(SUPABASE_URL + "/functions/v1/email-preferences", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + session.access_token, apikey: SUPABASE_ANON_KEY },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(String(res.status));
+  return res.json();
+}
+
+function dkLoadMailPref(session) {
+  const toggle = document.getElementById("as-mail-toggle");
+  const msg = document.getElementById("as-mail-msg");
+  if (!toggle || !session) return;
+  dkMailPref(session, { action: "status" }).then((d) => {
+    toggle.checked = !!d.subscribed;
+    toggle.disabled = false;
+  }).catch(() => { msg.textContent = "לא הצלחנו לטעון את ההגדרה כרגע."; });
+  toggle.addEventListener("change", async () => {
+    toggle.disabled = true;
+    msg.textContent = "";
+    try {
+      const { data } = await supabaseClient.auth.getSession();
+      const d = await dkMailPref(data.session, { action: "set", subscribed: toggle.checked });
+      toggle.checked = !!d.subscribed;
+      msg.textContent = d.subscribed ? "נרשמת לעדכונים ✓" : "הוסרת מרשימת העדכונים ✓";
+    } catch (e) {
+      toggle.checked = !toggle.checked;
+      msg.textContent = "השינוי לא נשמר, נסו שוב.";
+    } finally {
+      toggle.disabled = false;
+    }
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   let currentUserEmail = "";
   let currentUserId = "";
@@ -84,6 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const hasPw = dkHasPassword(user);
     document.querySelectorAll(".as-current-pw-field").forEach((el) => { el.hidden = !hasPw; });
     if (hasPw && typeof dkCaptchaMount === "function") dkCaptchaMount("as-captcha");
+    dkLoadMailPref(data.session);
   });
 
   const exportBtn = document.getElementById("as-export-btn");

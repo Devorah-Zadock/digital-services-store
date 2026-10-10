@@ -16,12 +16,12 @@
 </script>
 <style>html.lang-pending body { visibility: hidden; }</style>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title data-i18n="contact_title">צור קשר — DeskKit</title>
+<title>הסרה מרשימת העדכונים — DeskKit</title>
+<meta name="robots" content="noindex">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="description" content="יש שאלה? דברו איתנו.">
-<link rel="canonical" href="https://deskkit.co.il/contact.html">
+<meta name="description" content="ניהול קבלת עדכונים במייל מ-DeskKit.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
@@ -41,43 +41,24 @@
       <a href="products.html?type=deck" data-i18n="nav_decks">מצגות</a>
       <a href="products.html?type=xlsx" data-i18n="nav_xlsx">גליונות</a>
       <a href="about.html" data-i18n="nav_about">אודות</a>
-      <a href="contact.html" class="active" data-i18n="nav_contact">צור קשר</a>
+      <a href="contact.html" data-i18n="nav_contact">צור קשר</a>
     </div>
     <div class="nav-end-group">
       <a href="account.html?redirect=tools.html" id="nav-login-link" class="nav-login nav-login-pending" data-i18n="nav_login">כניסה</a>
-      <button type="button" id="lang-toggle" class="lang-toggle" aria-label="Switch language">EN</button>
     </div>
     <button class="burger" aria-label="תפריט">☰</button>
   </nav>
 </header>
 
-<section class="hero" style="padding:60px 24px 70px;">
-  <h1 style="font-size:34px;" data-i18n="contact_h1">יש שאלה? אני כאן.</h1>
-  <p class="lead" data-i18n="contact_lead">אם יש לכם שאלה לפני רכישה, נתקלתם בבעיה או פשוט רוצים לדעת עוד — אפשר לפנות אליי ואחזור אליכם בהקדם.</p>
-</section>
-
-<section>
-  <div class="container">
-    <form class="contact-form" id="contact-form">
-      <!-- Honeypot: invisible to people, bots fill every field. -->
-      <div aria-hidden="true" style="position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; opacity:0; pointer-events:none;"><label>Leave empty <input type="text" name="dk_hp_check" id="dk-hp-check" tabindex="-1" autocomplete="off"></label></div>
-      <div class="field">
-        <label for="name" data-i18n="contact_name">שם מלא</label>
-        <input id="name" name="name" type="text" required>
-      </div>
-      <div class="field">
-        <label for="email" data-i18n="contact_email">אימייל</label>
-        <input id="email" name="email" type="email" required>
-      </div>
-      <div class="field">
-        <label for="message" data-i18n="contact_message">הודעה</label>
-        <textarea id="message" name="message" required></textarea>
-      </div>
-      <button type="submit" class="btn btn-gold" id="contact-submit-btn" data-i18n="contact_submit">שליחה</button>
-      <div class="widget-note" id="contact-form-note"></div>
-      <div id="contact-captcha"></div>
-    </form>
-    <p class="center" style="color:var(--grey); font-size:14px; margin-top:18px;"><span data-i18n="contact_direct">אפשר גם ישירות במייל: </span><a class="dk-email" href="contact.html" style="color:var(--ink); font-weight:600;">צרו קשר</a></p>
+<section style="padding:70px 24px 90px;">
+  <div class="container" style="max-width:560px;">
+    <div class="admin-card" id="unsub-card" style="background:#fff;border:1px solid var(--border,#E5E7EB);border-radius:16px;padding:32px 26px;text-align:center;">
+      <div id="unsub-icon" style="font-size:42px;margin-bottom:8px;">✉️</div>
+      <h1 id="unsub-title" style="font-size:26px;margin-bottom:10px;">רגע אחד…</h1>
+      <p id="unsub-text" style="font-size:16px;color:var(--grey);margin-bottom:20px;">בודקים את הקישור.</p>
+      <button type="button" class="btn btn-teal" id="unsub-btn" hidden style="min-width:220px;"></button>
+      <p style="font-size:13.5px;color:var(--grey);margin-top:22px;">את ההגדרה הזו אפשר לשנות בכל עת גם ב<a href="account-settings.html" style="color:var(--ink);font-weight:600;">החשבון שלי</a>. הודעות חשובות על החשבון עצמו (למשל שינוי כתובת של אתר שפרסמתם) ימשיכו להגיע.</p>
+    </div>
   </div>
 </section>
 
@@ -133,12 +114,8 @@
 <script src="js/header.js?v=5"></script>
 <script src="js/create-chooser.js?v=4"></script>
 <script src="js/mobile-nav.js?v=2"></script>
-<script src="js/domain-guide.js?v=5"></script>
 <script src="js/main.js?v=6"></script>
-<script src="js/captcha.js?v=3"></script>
-<script src="js/widgets.js?v=18"></script>
-<script src="js/effects.js"></script>
-<script src="js/i18n.js?v=34"></script>
 <script src="js/contact-email.js?v=1"></script>
+<script src="js/unsubscribe.js?v=1"></script>
 </body>
 </html>
