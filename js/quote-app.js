@@ -272,6 +272,13 @@ function wireQuoteFormQA() {
   });
 
   document.getElementById("quote-download-btn").addEventListener("click", async () => {
+    // Save to the account before every download (never blocks it).
+    try {
+      if (typeof quoteCurrentUserId !== "undefined" && quoteCurrentUserId) {
+        if (typeof quoteBshellSaveNow === "function" && document.getElementById("qbshell-top-status")) await quoteBshellSaveNow();
+        else if (typeof saveQuoteNow === "function") await saveQuoteNow();
+      }
+    } catch (_e) { /* download anyway */ }
     await downloadQuotePdf();
     if (window.showUpsellBanner) {
       showUpsellBanner("במקום רק לשלוח הצעות מחיר ב-PDF, הגיע הזמן שיהיה לעסק שלך אתר תדמית יפהפה.", "רוצה להיראות עוד יותר מקצועי?");
