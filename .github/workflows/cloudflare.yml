@@ -24,7 +24,7 @@ on:
         description: "What to do"
         type: choice
         default: deploy
-        options: [deploy, status, smoke, prepare, switch, live, rollback]
+        options: [deploy, status, smoke, prepare, switch, live, rollback, drop-vercel]
 
 permissions:
   contents: read

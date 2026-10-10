@@ -17,7 +17,8 @@ DNS/routing only changes through its manual tasks:
 - `status` — zone status, nameservers, DNS records, routes
 - `prepare` — keep webmail/ftp/mail "DNS only"
 - `switch` — proxy deskkit.co.il + www, add `*.deskkit.co.il`, attach routes
-- `rollback` — undo `switch` (DNS points to Vercel again)
+- `rollback` — undo `switch` (only meaningful while Vercel still existed)
+- `drop-vercel` — remove every DNS record that still pointed to Vercel
 
-Old `<slug>.sites.deskkit.co.il` addresses stay delegated to Vercel, which
-only redirects them to the new address during the transition.
+Vercel is no longer used. The old `<slug>.sites.deskkit.co.il` addresses
+were retired with it; every site lives at `<slug>.deskkit.co.il`.
