@@ -22,7 +22,7 @@ on:
         description: "What to do"
         type: choice
         default: check-live
-        options: [check-live, deploy-functions, run-sql, auth-settings, turnstile-enable, turnstile-disable, auth-errors, smtp-resend, auth-templates, admin-lockdown, admin-reset, site-links-email-dry, site-links-email]
+        options: [check-live, deploy-functions, run-sql, auth-settings, turnstile-enable, turnstile-disable, auth-errors, smtp-resend, auth-templates, admin-lockdown, admin-reset, site-links-email-dry, site-links-email, staging-check, staging-create]
       sql_files:
         description: "run-sql: space-separated SQL files"
         default: ""
@@ -99,6 +99,10 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && (inputs.task == 'smtp-resend' || inputs.task == 'auth-templates')
         env:
           RESEND_SMTP_KEY: ${{ secrets.RESEND_SMTP_KEY }}
+        run: python3 .github/scripts/supabase_api.py ${{ inputs.task }}
+
+      - name: Test project (read-only check / create free)
+        if: github.event_name == 'workflow_dispatch' && (inputs.task == 'staging-check' || inputs.task == 'staging-create')
         run: python3 .github/scripts/supabase_api.py ${{ inputs.task }}
 
       - name: Admin area emergency (lockdown / reset)

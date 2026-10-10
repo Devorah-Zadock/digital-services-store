@@ -16,6 +16,12 @@ personal access token, stored as a GitHub Actions secret) and PROJECT_REF.
   supabase_api.py admin-lockdown     emergency: lock the admin area for 30 days,
                                      void every admin unlock and sign all admins
                                      out everywhere
+  supabase_api.py staging-check      read-only: plan of each organization and how many
+                                     projects it has (no names), to see whether a free
+                                     test project can be added
+  supabase_api.py staging-create     create the free test project "deskkit-staging"
+                                     — refuses unless its organization is on the free
+                                     plan and has room for another free project
   supabase_api.py admin-reset        recovery: delete the admin passwords and sign
                                      all admins out everywhere, so the owner can
                                      log in again and set a new one
@@ -108,6 +114,54 @@ def run_sql(files):
         print(f"OK: {f}")
 
 
+ROOT_API = "https://api.supabase.com/v1"
+STAGING_NAME = "deskkit-staging"
+FREE_PROJECT_LIMIT = 2  # Supabase: 2 active free projects per account
+
+
+def root_call(method, path, body=None):
+    """Account-level Management API (organizations, projects)."""
+    data = json.dumps(body).encode() if body is not None else None
+    req = urllib.request.Request(ROOT_API + path, data=data, method=method, headers={
+        "Authorization": "Bearer " + TOKEN, "Content-Type": "application/json", "User-Agent": "deskkit-deploy"})
+    try:
+        with urllib.request.urlopen(req, timeout=120) as res:
+            raw = res.read().decode()
+            return json.loads(raw) if raw else None
+    except urllib.error.HTTPError as e:
+        sys.exit(f"{method} {path} failed: HTTP {e.code} {e.read().decode()[:400]}")
+
+
+def staging_facts():
+    projects = root_call("GET", "/projects") or []
+    orgs = root_call("GET", "/organizations") or []
+    live = next((p for p in projects if p.get("id") == REF or p.get("ref") == REF), None)
+    live_org = live.get("organization_id") if live else None
+    facts = []
+    for o in orgs:
+        detail = root_call("GET", f"/organizations/{o.get('slug') or o.get('id')}") or {}
+        mine = [p for p in projects if p.get("organization_id") in (o.get("id"), o.get("slug"))]
+        active = [p for p in mine if str(p.get("status", "")).upper().startswith("ACTIVE")]
+        facts.append({
+            "org": o, "plan": str(detail.get("plan") or o.get("plan") or "unknown").lower(),
+            "projects": len(mine), "active": len(active), "is_live_org": o.get("id") == live_org or o.get("slug") == live_org,
+            "has_staging": any(p.get("name") == STAGING_NAME for p in mine),
+        })
+    return facts, live
+
+
+def staging_check():
+    facts, live = staging_facts()
+    total_active_free = sum(f["active"] for f in facts if f["plan"] == "free")
+    print(f"organizations: {len(facts)}; live project found: {'yes' if live else 'no'}"
+          + (f" (region {live.get('region')})" if live else ""))
+    for i, f in enumerate(facts, 1):
+        print(f"  org {i}: plan={f['plan']} projects={f['projects']} active={f['active']}"
+              f"{' [live project here]' if f['is_live_org'] else ''}{' [test project exists]' if f['has_staging'] else ''}")
+    print(f"active projects on free plans: {total_active_free} of {FREE_PROJECT_LIMIT} allowed")
+    return facts, live, total_active_free
+
+
 def auth_show():
     cfg = call("GET", "/config/auth") or {}
     for k in AUTH_FIELDS:
@@ -190,6 +244,28 @@ if __name__ == "__main__":
             status = m.get("status") or m.get("code") or ""
             if level in ("error", "warning") or (isinstance(status, int) and status >= 400) or m.get("error"):
                 print(" | ".join(scrub(x) for x in [m.get("time", r.get("timestamp")), level, m.get("method", ""), m.get("path", ""), status, m.get("error_code", ""), m.get("error", ""), m.get("msg", "")]))
+    elif cmd == "staging-check":
+        staging_check()
+    elif cmd == "staging-create":
+        import secrets
+        facts, live, total_active_free = staging_check()
+        target = next((f for f in facts if f["is_live_org"]), None)
+        if not target or not live:
+            sys.exit("Could not find the live project's organization — nothing created.")
+        if target["has_staging"]:
+            sys.exit("A test project already exists — nothing created.")
+        if target["plan"] != "free":
+            sys.exit(f"The organization is on the '{target['plan']}' plan, where a new project is billed — nothing created.")
+        if total_active_free >= FREE_PROJECT_LIMIT:
+            sys.exit("No room for another free project — nothing created.")
+        res = root_call("POST", "/projects", {
+            "name": STAGING_NAME, "organization_id": target["org"].get("id"),
+            "region": live.get("region") or "eu-west-1",
+            # Never stored or printed: SQL runs through the Management API
+            # token, and it can be reset in the dashboard if ever needed.
+            "db_pass": secrets.token_urlsafe(32),
+        }) or {}
+        print(f"test project created: name={STAGING_NAME} status={res.get('status')} (free plan, empty — no tables, no users)")
     elif cmd in ("admin-lockdown", "admin-reset"):
         # Prints only counts — no emails reach the (public) workflow log.
         rows = call("POST", "/database/query", {"query": ADMIN_LOCKDOWN_SQL if cmd == "admin-lockdown" else ADMIN_RESET_SQL})
