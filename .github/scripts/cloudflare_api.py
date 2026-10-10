@@ -18,6 +18,10 @@ are public anyway (anyone can look up a domain's DNS) — never tokens.
   cloudflare_api.py rollback    undo "switch": everything back to Vercel
   cloudflare_api.py drop-vercel remove the last DNS records pointing to Vercel
                                 (the old *.sites.deskkit.co.il delegation)
+  cloudflare_api.py visits      copy the main site's visit statistics (Cloudflare
+                                Web Analytics, last 30 days) into the database
+                                for the admin area's "מדדים" tab (needs the
+                                token to also have Account Analytics: Read)
 """
 import json
 import os
@@ -360,8 +364,72 @@ def cmd_drop_vercel():
     print(f"done: no DNS record points to Vercel any more ({removed} more removed)")
 
 
+GRAPHQL_VISITS = """
+query V($a: String!, $s: Date!, $e: Date!) { viewer { accounts(filter: {accountTag: $a}) {
+  daily: rumPageloadEventsAdaptiveGroups(limit: 100, filter: {date_geq: $s, date_leq: $e}, orderBy: [date_ASC]) { count sum { visits } dimensions { date } }
+  pages: rumPageloadEventsAdaptiveGroups(limit: 10, filter: {date_geq: $s, date_leq: $e}, orderBy: [count_DESC]) { count dimensions { requestPath } }
+  refs: rumPageloadEventsAdaptiveGroups(limit: 10, filter: {date_geq: $s, date_leq: $e}, orderBy: [sum_visits_DESC]) { sum { visits } dimensions { refererHost } }
+  countries: rumPageloadEventsAdaptiveGroups(limit: 8, filter: {date_geq: $s, date_leq: $e}, orderBy: [sum_visits_DESC]) { sum { visits } dimensions { countryName } }
+  devices: rumPageloadEventsAdaptiveGroups(limit: 5, filter: {date_geq: $s, date_leq: $e}, orderBy: [sum_visits_DESC]) { sum { visits } dimensions { deviceType } }
+} } }
+"""
+
+
+def supabase_sql(query):
+    token = os.environ.get("SUPABASE_ACCESS_TOKEN", "").strip()
+    req = urllib.request.Request(
+        "https://api.supabase.com/v1/projects/vafkjsetlrpaczsmqvqs/database/query", method="POST",
+        data=json.dumps({"query": query}).encode(),
+        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json", "User-Agent": "deskkit-visits"})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as res:
+            return json.loads(res.read().decode() or "null")
+    except urllib.error.HTTPError as e:
+        sys.exit(f"database write failed: HTTP {e.code} {e.read().decode()[:300]}")
+
+
+def cmd_visits():
+    """Anonymous, aggregate numbers only (no IPs, no people). The public
+    log prints totals only."""
+    import datetime
+    token = os.environ.get("CLOUDFLARE_API_TOKEN", "").strip()
+    account = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "").strip()
+    end = datetime.date.today()
+    start = end - datetime.timedelta(days=29)
+    req = urllib.request.Request(API + "/graphql", method="POST",
+                                 data=json.dumps({"query": GRAPHQL_VISITS, "variables": {"a": account, "s": start.isoformat(), "e": end.isoformat()}}).encode(),
+                                 headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as res:
+            out = json.loads(res.read().decode())
+    except urllib.error.HTTPError as e:
+        sys.exit(f"Cloudflare analytics failed: HTTP {e.code} {e.read().decode()[:400]}")
+    if out.get("errors"):
+        msg = "; ".join(str(x.get("message", ""))[:200] for x in out["errors"])
+        sys.exit("Cloudflare analytics refused: " + msg +
+                 "\n→ Cloudflare → My Profile → API Tokens → edit the DeskKit token → add the permission"
+                 " Account → Account Analytics → Read → Continue → Update token.")
+    acct = ((out.get("data") or {}).get("viewer") or {}).get("accounts") or [{}]
+    acct = acct[0] if acct else {}
+    daily = [{"day": g["dimensions"]["date"], "pageviews": g["count"], "visits": g["sum"]["visits"]} for g in acct.get("daily") or []]
+    top = {
+        "pages": [{"k": g["dimensions"]["requestPath"], "n": g["count"]} for g in acct.get("pages") or []],
+        "refs": [{"k": g["dimensions"]["refererHost"] or "", "n": g["sum"]["visits"]} for g in acct.get("refs") or []],
+        "countries": [{"k": g["dimensions"]["countryName"] or "", "n": g["sum"]["visits"]} for g in acct.get("countries") or []],
+        "devices": [{"k": g["dimensions"]["deviceType"] or "", "n": g["sum"]["visits"]} for g in acct.get("devices") or []],
+    }
+    lit = lambda v: "'" + json.dumps(v, ensure_ascii=False).replace("'", "''") + "'::jsonb"
+    supabase_sql(f"""
+      insert into public.site_visits_daily (day, pageviews, visits, updated_at)
+      select day, pageviews, visits, now() from jsonb_to_recordset({lit(daily)}) as x(day date, pageviews int, visits int)
+      on conflict (day) do update set pageviews = excluded.pageviews, visits = excluded.visits, updated_at = now();
+      insert into public.site_visits_top (id, data, updated_at) values (1, {lit(top)}, now())
+      on conflict (id) do update set data = excluded.data, updated_at = now();""")
+    print(f"visits saved: {len(daily)} days, {sum(d['visits'] for d in daily)} visits, {sum(d['pageviews'] for d in daily)} page views (last 30 days)")
+
+
 if __name__ == "__main__":
-    cmds = {"subdomain": cmd_subdomain, "status": cmd_status, "smoke": cmd_smoke, "live": cmd_live, "prepare": cmd_prepare, "switch": cmd_switch, "drop-vercel": cmd_drop_vercel, "rollback": cmd_rollback}
+    cmds = {"subdomain": cmd_subdomain, "status": cmd_status, "smoke": cmd_smoke, "live": cmd_live, "prepare": cmd_prepare, "switch": cmd_switch, "drop-vercel": cmd_drop_vercel, "rollback": cmd_rollback, "visits": cmd_visits}
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
     if cmd not in cmds:
         sys.exit(__doc__)

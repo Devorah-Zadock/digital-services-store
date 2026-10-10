@@ -1580,7 +1580,24 @@ function renderMetrics(m) {
     ${mtKpi("שימוש ב-AI", fmtNum(ai.calls_30d), `ב-30 יום · ${fmtNum(ai.users_30d)} משתמשים`)}
   </div>`;
 
+  const v = m.visits || null;
+  const vt = (v && v.top) || {};
+  const DEVICE_LABELS = { desktop: "מחשב", mobile: "נייד", tablet: "טאבלט" };
+  const PAGE_LABELS = { "/": "דף הבית", "/index.html": "דף הבית" };
+  const visitsCard = v && v.updated_at
+    ? `<div class="cx-card mt-pad" style="grid-column:1/-1;"><h3 class="mt-h">ביקורים באתר — 30 ימים (${fmtNum(v.visits_30d)} ביקורים · ${fmtNum(v.pageviews_30d)} צפיות בדפים)</h3>
+        <div class="mt-row" style="border:0;padding:0 0 6px;"><span class="cx-muted">היום: <b>${fmtNum(v.visits_today)}</b> · 7 ימים: <b>${fmtNum(v.visits_7d)}</b></span><span class="cx-muted" style="font-size:12px;">עודכן ${escapeHtml(fmtRelative(v.updated_at))}</span></div>
+        ${mtBars(v.daily || [])}
+        <div class="mt-cards" style="margin-top:14px;">
+          <div><h4 class="mt-h" style="font-size:13.5px;">דפים נצפים</h4>${mtRows((vt.pages || []).map((x) => [PAGE_LABELS[x.k] || x.k, fmtNum(x.n)]))}</div>
+          <div><h4 class="mt-h" style="font-size:13.5px;">מאיפה הגיעו</h4>${mtRows((vt.refs || []).map((x) => [x.k || "ישירות / לא ידוע", fmtNum(x.n)]))}</div>
+          <div><h4 class="mt-h" style="font-size:13.5px;">מדינות</h4>${mtRows((vt.countries || []).map((x) => [x.k === "IL" ? "ישראל" : (x.k || "לא ידוע"), fmtNum(x.n)]))}</div>
+          <div><h4 class="mt-h" style="font-size:13.5px;">מכשירים</h4>${mtRows((vt.devices || []).map((x) => [DEVICE_LABELS[x.k] || x.k || "לא ידוע", fmtNum(x.n)]))}</div>
+        </div></div>`
+    : mtCard("ביקורים באתר", `<p class="cx-muted" style="font-size:13px;">הנתונים עוד לא הגיעו מ-Cloudflare. הם מתעדכנים אוטומטית כל 3 שעות.</p>`);
+
   const cards = [
+    visitsCard,
     mtCard(`הרשמות — 30 ימים אחרונים (${fmtNum(signups30)})`, mtBars(m.signups_daily || [])),
     mtCard(`שימוש ב-AI — 30 ימים (${fmtNum(ai.calls_30d)})`, mtBars(ai.daily || []) +
       `<div style="margin-top:10px;">${mtRows((ai.by_tool || []).map((t) => [MT_TOOL_LABELS[t.tool] || t.tool, fmtNum(t.n)]), "עוד לא היה שימוש ב-AI החודש.")}</div>`),
@@ -1616,7 +1633,7 @@ function renderMetrics(m) {
   ].join("");
 
   document.getElementById("metrics-body").innerHTML = kpis + `<div class="mt-cards">${cards}</div>` +
-    `<p class="cx-muted mt-note" style="margin-top:12px;">עודכן: ${escapeHtml(fmtDateTime(m.generated_at))}. ביקורים באתר (צפיות ומבקרים): Cloudflare ← Analytics &amp; Logs ← Web Analytics.</p>`;
+    `<p class="cx-muted mt-note" style="margin-top:12px;">עודכן: ${escapeHtml(fmtDateTime(m.generated_at))}. נתוני הביקורים מגיעים מ-Cloudflare Web Analytics — אנונימיים, בלי עוגיות.</p>`;
 }
 
 async function loadMetrics() {
