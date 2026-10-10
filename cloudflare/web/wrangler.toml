@@ -2,11 +2,13 @@
 # static files are free and unlimited on Cloudflare. The workflow copies
 # the public files into ./dist before deploying (see build.sh).
 name = "deskkit-web"
+main = "index.js"
 compatibility_date = "2026-09-01"
 workers_dev = true
 
 [assets]
 directory = "./dist"
+binding = "ASSETS"
 # Keep URLs exactly as on Vercel: /about.html stays /about.html (no
 # redirect to /about), and / serves index.html.
 html_handling = "none"
