@@ -205,19 +205,20 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
-      // The server's record of which templates this account paid for is
-      // the truth (it's what publish-site uses for the badge): the local
-      // "unlocked" flags are synced to it — set for every paid template,
-      // cleared for any other — so a purchase made on another device
-      // shows as paid here, and a hand-set flag doesn't.
+      // The server's record of which SITES this account paid for is the
+      // truth (it's what publish-site uses for the badge): the local
+      // "unlocked" flags are synced to it — set for every paid site,
+      // cleared for anything else (including the old per-template flags)
+      // — so a purchase made on another device shows as paid here, and a
+      // hand-set flag doesn't.
       try {
-        const { data: paid, error: paidErr } = await supabaseClient.rpc("my_license_templates");
+        const { data: paid, error: paidErr } = await supabaseClient.rpc("my_licensed_sites");
         if (!paidErr && Array.isArray(paid)) {
-          const paidSet = new Set(paid);
-          paidSet.forEach((tpl) => localStorage.setItem(SITE_UNLOCK_KEY + "_" + tpl, "1"));
+          const keep = new Set(paid.map((id) => SITE_UNLOCK_KEY + "_site_" + id));
+          keep.forEach((k) => localStorage.setItem(k, "1"));
           for (let i = localStorage.length - 1; i >= 0; i--) {
             const k = localStorage.key(i);
-            if (k && k.startsWith(SITE_UNLOCK_KEY + "_") && !paidSet.has(k.slice(SITE_UNLOCK_KEY.length + 1))) localStorage.removeItem(k);
+            if (k && k.startsWith(SITE_UNLOCK_KEY + "_") && !keep.has(k)) localStorage.removeItem(k);
           }
         }
       } catch (_e) { /* offline / not deployed yet — keep local flags as they are */ }
@@ -254,7 +255,6 @@ document.addEventListener("DOMContentLoaded", () => {
           siteState.template = row.template;
           siteState.data = row.data;
           ensurePagesShape(siteState.data);
-          if (siteIsFinalized) localStorage.setItem(currentUnlockKey(), "1");
           if (typeof showWizard === "function") showWizard();
           if (typeof refreshUnlockUI === "function") refreshUnlockUI();
           if (typeof updatePublishButtonLabel === "function") updatePublishButtonLabel();

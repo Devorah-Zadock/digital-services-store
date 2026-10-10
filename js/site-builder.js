@@ -29,11 +29,13 @@ const SITE_UNLOCK_KEY = "deskkit_sites_unlocked_" + SITE_GUMROAD_CONFIG.productI
    kind of "pause new purchases" response — see hosting-paused's markup
    in sites.html, still there and still wired to this flag. */
 const SITE_HOSTING_PAUSED = false;
-/* Scoped per template, not just per product: unlocking one site must not
-   silently unlock a download of a totally different template later —
-   each template is its own purchase (see site-cloud-save.js). */
+/* Scoped per SITE: a license removes the badge from the one site it was
+   redeemed for (supabase/sql/license_per_site.sql). Synced from the server
+   in site-cloud-save.js; before a project is saved there is nothing to
+   unlock yet. */
 function currentUnlockKey() {
-  return SITE_UNLOCK_KEY + "_" + siteState.template;
+  const id = typeof siteProjectId !== "undefined" && siteProjectId ? siteProjectId : "unsaved";
+  return SITE_UNLOCK_KEY + "_site_" + id;
 }
 /* Persists the customer's own form input (business name, services, etc.) in
    their browser, so returning to edit or re-download later doesn't mean
@@ -1754,12 +1756,15 @@ async function verifySiteLicense() {
   note.textContent = "בודקים...";
   note.className = "unlock-note";
   try {
+    // The license is bound to this site, so the site must exist first.
+    if (typeof siteProjectId !== "undefined" && !siteProjectId && typeof saveSiteNow === "function") await saveSiteNow();
     const { data, error } = await supabaseClient.functions.invoke("redeem-license", {
       body: {
         licenseKey: key,
         productId: SITE_GUMROAD_CONFIG.productId,
         userId: siteCurrentUserId,
         template: siteState.template,
+        siteProjectId: typeof siteProjectId !== "undefined" ? siteProjectId : null,
       },
     });
     if (error || !data) {
@@ -1775,8 +1780,10 @@ async function verifySiteLicense() {
       const supportMailto = `mailto:${["digital.dz.studio", "gmail.com"].join("@")}?subject=${encodeURIComponent("בעיה בקוד רישוי — בניית אתר")}&body=${encodeURIComponent("הקוד שהזנתי: " + key)}`;
       const supportLine = `<br>עדיין תקועים? <a href="${supportMailto}" style="color:inherit; text-decoration:underline;">כתבו לנו ונפתור את זה ידנית</a>.`;
       const invalidMsg = "קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב." + (data.gumroadMessage ? ` (Gumroad: ${escapeHtmlS(data.gumroadMessage)})` : "") + supportLine;
-      note.innerHTML = data.reason === "redeemed-elsewhere" || data.reason === "different-template"
-        ? "קוד הרישוי הזה כבר שימש לפתיחת אתר אחר. לתבנית נוספת נדרשת רכישה נפרדת." + supportLine
+      note.innerHTML = data.reason === "redeemed-elsewhere" || data.reason === "different-template" || data.reason === "different-site"
+        ? "קוד הרישוי הזה כבר הסיר את התגית מאתר אחר. כל רכישה מסירה את התגית מאתר אחד — לאתר נוסף נדרשת רכישה נפרדת." + supportLine
+        : data.reason === "save-first"
+          ? "האתר עוד לא נשמר. שמרו את האתר ונסו שוב." + supportLine
         : data.reason === "refunded"
           ? "הרכישה הזו בוטלה או הוחזרה, ולכן הקוד כבר לא פעיל." + supportLine
           : invalidMsg;
