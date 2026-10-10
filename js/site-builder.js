@@ -691,15 +691,22 @@ function closeAllTextStylePopovers(root) {
    site keeps its existing base64 images exactly as they are.
    Namespaced "<user id>/<template>/<name>.<ext>" — same convention the
    "logos" bucket already uses (invoice-app.js/quote-app.js) — so RLS can
-   enforce one customer can never touch another's files, and so a user
-   with more than one template/project never collides between them. */
+   enforce one customer can never touch another's files.
+   Each upload gets its own file name under the project's own folder
+   ("<user id>/<project id>/<name>-<time>.<ext>"). The old fixed
+   "<user id>/<template>/hero.<ext>" meant two sites of the same person on
+   the same template shared one hero file — uploading a picture in one
+   silently replaced it in the other, live site included. Files already
+   uploaded under the old names stay where they are and keep working. */
 async function uploadSiteImage(file, name) {
   const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
-  const path = `${siteCurrentUserId}/${siteState.template}/${name}.${ext}`;
-  const { error } = await supabaseClient.storage.from("site-images").upload(path, file, { upsert: true });
+  const folder = (typeof siteProjectId !== "undefined" && siteProjectId) ? siteProjectId : "draft-" + siteState.template;
+  const unique = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const path = `${siteCurrentUserId}/${folder}/${name}-${unique}.${ext}`;
+  const { error } = await supabaseClient.storage.from("site-images").upload(path, file, { upsert: false });
   if (error) return null;
   const { data } = supabaseClient.storage.from("site-images").getPublicUrl(path);
-  return data.publicUrl + "?t=" + Date.now();
+  return data.publicUrl;
 }
 
 function renderPhotoPreview() {
