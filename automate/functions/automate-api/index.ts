@@ -71,6 +71,12 @@ Deno.serve(async (req: Request) => {
     const body = await req.json().catch(() => ({}));
     const action = String(body.action || "");
 
+    // Pilot gate: on the live site Automate opens to approved accounts first.
+    const { data: access } = await db.rpc("automate_setting", { p_key: "access" });
+    const allowed = access?.mode === "open" ||
+      (Array.isArray(access?.emails) && access.emails.map((e: string) => String(e).toLowerCase()).includes(String(user.email || "").toLowerCase()));
+    if (!allowed) return json({ error: "not-in-pilot" }, 403);
+
     if (action === "overview") {
       const [autos, profile, usage, alerts] = await Promise.all([
         must(db.from("automations").select("id, template_key, status, config, pack, last_run_at, consecutive_failures, created_at").eq("user_id", uid)),

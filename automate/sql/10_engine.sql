@@ -45,7 +45,10 @@ insert into public.automate_settings (key, value) values
   ('email_caps', '{"automation_daily": 30}'),
   -- Client-facing emails wait outside these hours (Israel time); owner
   -- alerts are sent any time.
-  ('quiet_hours', '{"start": 21, "end": 8, "shabbat": true}')
+  ('quiet_hours', '{"start": 21, "end": 8, "shabbat": true}'),
+  -- Who may use Automate. Live starts as a pilot ("allowlist"); staging
+  -- opens it to every test account (95_staging_settings.sql).
+  ('access', '{"mode": "allowlist", "emails": []}')
 on conflict (key) do nothing;
 
 -- v1 → v2: a whole business pack plus review requests must fit.

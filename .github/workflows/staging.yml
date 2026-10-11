@@ -72,7 +72,7 @@ jobs:
 
       - name: Automate database (staging)
         if: inputs.task == 'setup' || inputs.task == 'deploy' || inputs.task == 'deploy-and-test'
-        run: python3 .github/scripts/staging.py sql automate/sql/10_engine.sql automate/sql/90_staging_test_helpers.sql
+        run: python3 .github/scripts/staging.py sql automate/sql/10_engine.sql automate/sql/90_staging_test_helpers.sql automate/sql/95_staging_settings.sql
 
       - name: Secrets (safe mail mode), auth and schedule (staging)
         if: inputs.task != 'status'

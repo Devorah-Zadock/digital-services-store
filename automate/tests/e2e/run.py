@@ -160,7 +160,7 @@ def wait_until(fn_, timeout=20):
 
 # ---------------------------------------------------------------- tests
 def main():
-    saved = {k: get_setting(k) for k in ("kill_switch", "plan_limits", "email_caps", "quiet_hours")}
+    saved = {k: get_setting(k) for k in ("kill_switch", "plan_limits", "email_caps", "quiet_hours", "access")}
     set_setting("kill_switch", {"on": False})
     set_setting("quiet_hours", {"start": 0, "end": 0, "shabbat": False})   # tests run at any hour
     set_setting("email_caps", {"automation_daily": 1000})
@@ -465,6 +465,14 @@ def run_tests(a, b):
     check("T16 history lists only the owner's runs with steps", st == 200 and h["runs"] and all(r_["id"] for r_ in h["runs"]) and h["steps"])
     st, h = api(b, "history", limit=100)
     check("T16 B's history has none of A's", st == 200 and not any(r_["template_key"] == "lead_autopilot" for r_ in h["runs"]))
+    # ---- T17 pilot gate (how the live site opens gradually)
+    set_setting("access", {"mode": "allowlist", "emails": [b["email"]]})
+    st_a, _ = api(a, "overview")
+    st_b, _ = api(b, "overview")
+    check("T17 pilot: an account not on the list is refused", st_a == 403)
+    check("T17 pilot: an account on the list gets in", st_b == 200)
+    set_setting("access", {"mode": "open", "emails": []})
+
     real = rows("automation_messages?status=eq.sent&select=id")
     check("T00 not a single email was really sent from staging", real == [])
 

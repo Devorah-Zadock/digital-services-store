@@ -61,6 +61,7 @@
     const json = await res.json().catch(() => ({}));
     if (!res.ok) {
       const code = String(json.error || res.status);
+      if (code === "not-in-pilot") throw new Error("PILOT");
       const missing = code.startsWith("missing:") ? "חסרה הגדרה: " + code.slice(8) : null;
       throw new Error(missing || ERRORS[code] || "משהו השתבש. נסו שוב.");
     }
@@ -531,7 +532,12 @@
     const { data } = await supabaseClient.auth.getSession();
     if (!data.session) { location.href = "account.html?redirect=automate.html"; return; }
     S.session = data.session; S.user = data.session.user;
-    try { await loadOverview(); } catch (err) { $("au-gate").innerHTML = `<p>${esc(err.message)}</p>`; return; }
+    try { await loadOverview(); } catch (err) {
+      $("au-gate").innerHTML = err.message === "PILOT"
+        ? `<h1 style="font-family:Rubik,Heebo,sans-serif;">DeskKit Automate — בקרוב ✨</h1><p>אוטומציות שעובדות בשבילך ברקע: פניות שלא נופלות, הצעות מחיר שלא נשכחות, גבייה בלי מבוכה.</p><p>אנחנו פותחים את זה בהדרגה. נעדכן אותך במייל כשיגיע תורך.</p>`
+        : `<p>${esc(err.message)}</p>`;
+      return;
+    }
     $("au-gate").hidden = true; $("au-main").hidden = false;
     await refresh(false);
     showTab();
