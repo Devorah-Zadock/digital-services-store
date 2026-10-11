@@ -21,11 +21,22 @@ Nothing below has been done on the live site. Each step is reversible.
 ## 3. Pilot with the owner's own account
 - `MAIL_MODE=live`, `MAIL_ALLOWLIST=<owner's addresses only>` — real emails only to the owner.
 - Add the owner to `access.emails`. Use it for real for a few days.
-- Admin area: an "Automate" card (kill switch, today's emails, failures).
+- Admin area → "Automate" tab (built and tested on staging): status, today's emails vs cap,
+  failures, system alerts, and the emergency stop (owner only, asks for the admin password).
+  Until step 1 runs on live it shows "Automate עוד לא הופעל".
 
-## 4. Website contact form
-- Add the contact-form block to the site templates (posts to `lead-intake`, Turnstile on).
-- Off by default per site; the owner turns it on.
+## 4. Website contact form ("השאירו פרטים")
+- Built: one shared form in every template (js/site-templates.js, siteLeadFormHtml),
+  a switch in the builder's site settings, off by default. It appears only where
+  `DK_AUTOMATE_ENABLED = true` (today: staging web only) — on live nothing renders,
+  and existing sites' HTML is byte-for-byte unchanged (checked for every template).
+- To enable on live: set `DK_AUTOMATE_ENABLED = true` in js/supabase-config.js.
+- BEFORE that, decide the spam check: live has `TURNSTILE_SECRET_KEY` set (for the
+  DeskKit contact page), so `lead-intake` would demand a Turnstile token the form does
+  not send yet. Either add the Turnstile widget to the form (the site key must allow
+  `*.deskkit.co.il`), or give lead-intake its own secret name. Honeypot + per-site
+  rate limit (20/hour) work either way.
+- The owner republishes a site after turning the switch on.
 
 ## 5. Gradual opening
 - Add pilot customers to `access.emails`; remove `MAIL_ALLOWLIST`.

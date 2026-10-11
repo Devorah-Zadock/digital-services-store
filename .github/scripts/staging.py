@@ -123,6 +123,9 @@ def cmd_secrets():
         {"name": "AUTOMATE_PUBLIC_URL", "value": WEB_URL},
         # Staging never sends real email: anything but "live" = simulated.
         {"name": "MAIL_MODE", "value": "sink"},
+        # Like live, the admin function needs an owner list to exist; on
+        # staging it names no real person (test admins are added per run).
+        {"name": "ADMIN_EMAILS", "value": "owner@staging.invalid"},
     ])
     with open(os.environ["GITHUB_ENV"], "a") as f:
         f.write(f"STG_CRON_SECRET={cron}\n")

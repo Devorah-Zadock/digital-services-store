@@ -943,6 +943,20 @@ function bshellPropsHtmlForSettings() {
       </div>
       <p class="bshell-settings-field-hint">כבוי כברירת מחדל. מופיע קטן בפינה הימנית העליונה של כל עמודי האתר.</p>
     </div>
+${(typeof DK_AUTOMATE_ENABLED !== "undefined" && DK_AUTOMATE_ENABLED === true) ? `
+    <div class="bshell-settings-group">
+      <div class="bshell-props-field">
+        <div class="bshell-toggle-row">
+          <label class="bshell-props-label" style="margin:0;" for="bshell-set-leadform">טופס "השאירו פרטים"</label>
+          <label class="bshell-switch">
+            <input type="checkbox" id="bshell-set-leadform"${d.leadForm === true ? " checked" : ""}>
+            <span class="bshell-switch-track"></span>
+            <span class="bshell-switch-thumb"></span>
+          </label>
+        </div>
+      </div>
+      <p class="bshell-settings-field-hint">כבוי כברירת מחדל. מוסיף לאתר כפתור "השאירו פרטים". כל פנייה נכנסת ל-DeskKit Automate כליד חדש, ואם הפעלת את "טיפול בליד חדש" — הלקוח מקבל מענה אוטומטי ואת/ה התראה. אחרי ההפעלה צריך לפרסם את האתר מחדש.</p>
+    </div>` : ""}
 
     <div class="bshell-settings-group">
       <div class="bshell-settings-group-title">פרטי קשר</div>
@@ -1275,6 +1289,16 @@ function bshellWireSettingsProps() {
     bsdEl.addEventListener("change", () => {
       bshellSnapshot();
       d.showBsd = bsdEl.checked;
+      bshellRenderCanvas();
+      bshellScheduleSave();
+    });
+  }
+
+  const leadFormEl = document.getElementById("bshell-set-leadform");
+  if (leadFormEl) {
+    leadFormEl.addEventListener("change", () => {
+      bshellSnapshot();
+      if (leadFormEl.checked) d.leadForm = true; else delete d.leadForm;
       bshellRenderCanvas();
       bshellScheduleSave();
     });

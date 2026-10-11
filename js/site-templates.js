@@ -448,6 +448,87 @@ function searchScriptHtml() {
   </script>`;
 }
 
+/* "השאירו פרטים" — the site's contact form for DeskKit Automate. Off unless
+   the owner turns it on (d.leadForm) AND Automate is enabled for this
+   DeskKit environment (DK_AUTOMATE_ENABLED) — so nothing changes on any
+   existing site. One floating button + a small dialog, the same on every
+   template (no per-template layout to break), opposite the WhatsApp
+   button. The enquiry goes to the lead-intake function, which finds the
+   site's owner from the site's own address (<slug>.deskkit.co.il), never
+   from anything the visitor sends. In the builder's preview nothing is
+   sent. */
+function siteLeadFormConfig(d) {
+  const on = d && d.leadForm === true && typeof DK_AUTOMATE_ENABLED !== "undefined" && DK_AUTOMATE_ENABLED === true;
+  if (!on || typeof SUPABASE_URL === "undefined") return null;
+  return { endpoint: SUPABASE_URL + "/functions/v1/lead-intake", accent: d.primaryColor || "#0F766E", biz: (d.businessName || "").trim() };
+}
+function siteLeadFormHtml(cfg) {
+  const accent = /^#[0-9a-f]{3,8}$/i.test(cfg.accent) ? cfg.accent : "#0F766E";
+  const to = cfg.biz ? escapeHtmlS(cfg.biz) : "בעל/ת העסק";
+  return `<style>
+  .dk-lead-btn { position:fixed; bottom:22px; inset-inline-start:22px; z-index:2147482000; background:${accent}; color:#fff; border:0; border-radius:999px; padding:13px 20px; font-family:inherit; font-size:15px; font-weight:700; line-height:1; box-shadow:0 8px 24px rgba(0,0,0,.22); cursor:pointer; }
+  .dk-lead-wrap { position:fixed; inset:0; z-index:2147482500; background:rgba(15,23,42,.5); display:none; align-items:flex-end; justify-content:center; padding:12px; }
+  .dk-lead-wrap.open { display:flex; }
+  .dk-lead { background:#fff; color:#111; width:100%; max-width:420px; border-radius:18px; padding:22px 20px 18px; box-shadow:0 20px 60px rgba(0,0,0,.3); font-family:inherit; text-align:start; max-height:calc(100vh - 24px); overflow-y:auto; }
+  @media (min-width:600px) { .dk-lead-wrap { align-items:center; } }
+  .dk-lead h2 { margin:0 0 4px; font-size:20px; } .dk-lead p { margin:0 0 14px; font-size:13.5px; color:#555; }
+  .dk-lead label { display:block; font-size:13px; font-weight:600; margin:10px 0 4px; }
+  .dk-lead input, .dk-lead textarea { width:100%; box-sizing:border-box; border:1px solid #ccd; border-radius:10px; padding:10px 12px; font:inherit; font-size:16px; background:#fff; color:#111; }
+  .dk-lead textarea { min-height:80px; resize:vertical; }
+  .dk-lead .dk-lead-hp { position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden; }
+  .dk-lead-send { margin-top:14px; width:100%; background:${accent}; color:#fff; border:0; border-radius:12px; padding:13px; font:inherit; font-size:16px; font-weight:700; cursor:pointer; }
+  .dk-lead-send[disabled] { opacity:.6; cursor:default; }
+  .dk-lead-close { float:inline-end; background:#f1f3f5; border:0; width:32px; height:32px; border-radius:50%; font-size:15px; cursor:pointer; color:#333; }
+  .dk-lead-msg { margin-top:10px; font-size:14px; } .dk-lead-msg.err { color:#B42318; } .dk-lead-msg.ok { color:#067647; font-weight:600; }
+  .dk-lead-note { margin-top:10px; font-size:11.5px; color:#777; line-height:1.5; }
+  </style>
+  <button type="button" class="dk-lead-btn" id="dk-lead-open">✉ השאירו פרטים</button>
+  <div class="dk-lead-wrap" id="dk-lead-wrap" role="dialog" aria-modal="true" aria-labelledby="dk-lead-title">
+    <form class="dk-lead" id="dk-lead-form" novalidate>
+      <button type="button" class="dk-lead-close" id="dk-lead-close" aria-label="סגירה">✕</button>
+      <h2 id="dk-lead-title">השאירו פרטים</h2>
+      <p>ונחזור אליכם בהקדם.</p>
+      <label for="dk-lead-name">שם</label><input id="dk-lead-name" name="name" autocomplete="name" maxlength="200" required>
+      <label for="dk-lead-phone">טלפון</label><input id="dk-lead-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="40" dir="ltr">
+      <label for="dk-lead-email">מייל</label><input id="dk-lead-email" name="email" type="email" autocomplete="email" maxlength="254" dir="ltr">
+      <label for="dk-lead-message">במה אפשר לעזור? (לא חובה)</label><textarea id="dk-lead-message" name="message" maxlength="2000"></textarea>
+      <div class="dk-lead-hp" aria-hidden="true"><label>אתר<input name="website" tabindex="-1" autocomplete="off"></label></div>
+      <button type="submit" class="dk-lead-send">שליחה</button>
+      <div class="dk-lead-msg" id="dk-lead-msg" role="status" aria-live="polite"></div>
+      <div class="dk-lead-note">הפרטים יגיעו ל${to} בלבד, כדי לחזור אליכם.</div>
+    </form>
+  </div>
+  <script>
+  (function () {
+    var wrap = document.getElementById("dk-lead-wrap"), form = document.getElementById("dk-lead-form"), msg = document.getElementById("dk-lead-msg");
+    function open(o) { wrap.classList.toggle("open", o); if (o) document.getElementById("dk-lead-name").focus(); }
+    document.getElementById("dk-lead-open").onclick = function () { open(true); };
+    document.getElementById("dk-lead-close").onclick = function () { open(false); };
+    wrap.addEventListener("click", function (e) { if (e.target === wrap) open(false); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") open(false); });
+    function say(t, cls) { msg.textContent = t; msg.className = "dk-lead-msg " + (cls || ""); }
+    var m = location.hostname.match(/^([a-z0-9-]+)\\.deskkit\\.co\\.il$/);
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var f = form.elements, body = { site: m ? m[1] : "", name: f.name.value.trim(), phone: f.phone.value.trim(), email: f.email.value.trim(), message: f.message.value.trim(), website: f.website.value };
+      if (!body.name) return say("נא למלא שם.", "err");
+      if (!body.phone && !body.email) return say("נא להשאיר טלפון או מייל, כדי שנוכל לחזור אליכם.", "err");
+      if (!m) return say("זו תצוגה מקדימה — באתר שפורסם הטופס ישלח את הפרטים.", "ok");
+      var btn = form.querySelector(".dk-lead-send"); btn.disabled = true; say("שולחים…");
+      fetch(${JSON.stringify(cfg.endpoint)}, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (r) {
+          if (r.ok) { form.reset(); say("תודה! הפרטים התקבלו ונחזור אליכם בהקדם.", "ok"); return; }
+          var e = r.j && r.j.error;
+          say(e === "phone" ? "מספר הטלפון לא נראה תקין." : e === "email" ? "כתובת המייל לא נראית תקינה." : e === "busy" ? "נשלחו הרבה פניות בזמן קצר — נסו שוב מאוחר יותר." : e === "captcha" ? "האימות נכשל. רעננו את הדף ונסו שוב." : "השליחה לא הצליחה. נסו שוב בעוד רגע.", "err");
+        })
+        .catch(function () { say("אין חיבור כרגע. נסו שוב בעוד רגע.", "err"); })
+        .then(function () { btn.disabled = false; });
+    });
+  })();
+  </script>`;
+}
+
 /* head.showBsd (d.showBsd, opt-in from either builder) adds a small בס"ד
    in the page's top-right corner on every template — one place here
    instead of per template, same reasoning as copyrightLineHtml(). It
@@ -466,7 +547,7 @@ ${siteFontImport(head.fontFamily)}
 </head>
 <body>
 ${head.showBsd ? `<div class="site-bsd" style="position:absolute; top:6px; right:10px; z-index:2147483000; font-size:11px; line-height:1.4; color:#333; background:rgba(255,255,255,.85); padding:1px 6px; border-radius:6px; pointer-events:none;">בס"ד</div>` : ""}
-${body}
+${body}${head.lead ? "\n" + siteLeadFormHtml(head.lead) : ""}
 ${heroSlideshowScript()}
 ${scrollRevealScript()}
 </body>
@@ -674,7 +755,7 @@ function renderLocalServiceSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${rail}${topbar}${main}${footer}`).replace("<body>", '<body class="ls-body">');
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd, lead: siteLeadFormConfig(d) }, `${rail}${topbar}${main}${footer}`).replace("<body>", '<body class="ls-body">');
 }
 
 /* ---------- Template 2: freelancer / consultant ---------- */
@@ -804,7 +885,7 @@ function renderFreelancerSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${navBar}${main}${footer}`);
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd, lead: siteLeadFormConfig(d) }, `${navBar}${main}${footer}`);
 }
 
 /* ---------- Template 3: small catalog / shop ---------- */
@@ -932,7 +1013,7 @@ function renderCatalogSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${nav}${main}${footer}`);
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd, lead: siteLeadFormConfig(d) }, `${nav}${main}${footer}`);
 }
 
 /* ---------- Template 4: modern gallery / editorial ---------- */
@@ -1096,7 +1177,7 @@ function renderGallerySite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${header}${main}${footer}`);
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd, lead: siteLeadFormConfig(d) }, `${header}${main}${footer}`);
 }
 
 /* ---------- Template 5: bold / neo-brutalist ---------- */
@@ -1241,7 +1322,7 @@ function renderBoldSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${header}${main}${footer}`);
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd, lead: siteLeadFormConfig(d) }, `${header}${main}${footer}`);
 }
 
 /* ---------- Template 6: elegant split-hero (events / boutique) ---------- */
@@ -1425,7 +1506,7 @@ function renderElegantSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${header}${main}${footer}`);
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd, lead: siteLeadFormConfig(d) }, `${header}${main}${footer}`);
 }
 
 /* ---------- Template 7: process / how-we-work ---------- */
@@ -1587,7 +1668,7 @@ function renderProcessSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${header}${main}${footer}`);
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd, lead: siteLeadFormConfig(d) }, `${header}${main}${footer}`);
 }
 
 /* ---------- Template 8: creative portfolio (personal) ---------- */
@@ -1738,7 +1819,7 @@ function renderPortfolioSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${header}${main}${footer}`);
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd, lead: siteLeadFormConfig(d) }, `${header}${main}${footer}`);
 }
 
 /* ---------- Template 9: boutique shop with a featured item (shop) ---------- */
@@ -1907,7 +1988,7 @@ function renderBoutiqueSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${nav}${main}${footer}`);
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd, lead: siteLeadFormConfig(d) }, `${nav}${main}${footer}`);
 }
 
 /* ---------- Template 10: dark luxury (events / boutique) ---------- */
@@ -2053,7 +2134,7 @@ function renderNoirSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${header}${main}${footer}`).replace("<body>", '<body class="nr-body">');
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd, lead: siteLeadFormConfig(d) }, `${header}${main}${footer}`).replace("<body>", '<body class="nr-body">');
 }
 
 /* Reveal-on-scroll — originally built for the studio template only
@@ -2264,7 +2345,7 @@ function renderStudioSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${rail}${main}${footer}`).replace("<body>", '<body class="ag-body">');
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd, lead: siteLeadFormConfig(d) }, `${rail}${main}${footer}`).replace("<body>", '<body class="ag-body">');
 }
 
 /* ---------- Template 12: bento grid (modular, apple-widget style) ---------- */
@@ -2480,7 +2561,7 @@ function renderBentoSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${header}${main}${footer}`);
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd, lead: siteLeadFormConfig(d) }, `${header}${main}${footer}`);
 }
 
 /* ---------- Template 13: cinematic dark (glassmorphism, mouse-glow) ---------- */
@@ -2652,7 +2733,7 @@ function renderCinematicSite(d, page) {
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
   const glowDiv = `<div class="cd-glow" id="cd-glow"></div>`;
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${glowDiv}${header}${main}${footer}${glowScript}`).replace("<body>", '<body class="cd-body">');
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd, lead: siteLeadFormConfig(d) }, `${glowDiv}${header}${main}${footer}${glowScript}`).replace("<body>", '<body class="cd-body">');
 }
 
 /* ---------- Template 14: neo-brutalism (bold color blocks, arcade press) ---------- */
@@ -2808,7 +2889,7 @@ function renderBrutalSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${header}${main}${footer}`).replace("<body>", '<body class="br-body">');
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd, lead: siteLeadFormConfig(d) }, `${header}${main}${footer}`).replace("<body>", '<body class="br-body">');
 }
 
 /* ---------- Template 15: neon future (cyberpunk agency) ---------- */
@@ -3054,7 +3135,7 @@ function renderNeonSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${meshDiv}${header}${main}${footer}${cursorScript}${splitScript}`).replace("<body>", '<body class="nf-body">');
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd, lead: siteLeadFormConfig(d) }, `${meshDiv}${header}${main}${footer}${cursorScript}${splitScript}`).replace("<body>", '<body class="nf-body">');
 }
 
 /* ---------- Template 16: organized chaos (fashion / artist portfolio) ---------- */
@@ -3264,7 +3345,7 @@ function renderChaosSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${header}${main}${footer}`).replace("<body>", '<body class="oc-body">');
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd, lead: siteLeadFormConfig(d) }, `${header}${main}${footer}`).replace("<body>", '<body class="oc-body">');
 }
 
 /* ---------- Template 17: 3D minimalist luxury (architects / real estate) ---------- */
@@ -3470,7 +3551,7 @@ function renderLuxurySite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${iris}${header}${main}${footer}`).replace("<body>", '<body class="lx-body">');
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd, lead: siteLeadFormConfig(d) }, `${iris}${header}${main}${footer}`).replace("<body>", '<body class="lx-body">');
 }
 
 /* ---------- Template 18: playground (physics-based, playful) ----------
@@ -3787,7 +3868,7 @@ function renderPlaygroundSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `אודות — ${dd.businessName}`, contact: `יצירת קשר — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd }, `${header}${main}${footer}`).replace("<body>", '<body class="pg-body">');
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd, lead: siteLeadFormConfig(d) }, `${header}${main}${footer}`).replace("<body>", '<body class="pg-body">');
 }
 
 const SITE_CATEGORIES = [

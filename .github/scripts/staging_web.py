@@ -21,6 +21,9 @@ s = re.sub(r'const SUPABASE_ANON_KEY = "[^"]+";', f'const SUPABASE_ANON_KEY = "{
 assert url in s and anon in s, "could not point the site at staging"
 # The live site's welcome email doesn't exist on staging — don't call it.
 s = s.replace("(function dkWelcomeOnce() {", "(function dkWelcomeOnce() { return;", 1)
+# Automate's site features (the "השאירו פרטים" form switch) show only here
+# until the owner approves them for the live site.
+s += "\nvar DK_AUTOMATE_ENABLED = true;\n"
 s += """
 /* STAGING ribbon */
 (function () {
