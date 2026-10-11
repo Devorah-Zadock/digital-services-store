@@ -1878,3 +1878,64 @@ html[dir="rtl"] body.dk-app-sidebar-mounted .upsell-popup-wrap {
 .ats-upgrade-card { background: var(--ice); border-radius: 12px; padding: 20px; text-align: center; }
 .ats-upgrade-card p { font-size: 13.5px; color: var(--dark); line-height: 1.8; margin: 0 0 16px; }
 .ats-upgrade-btn { display: block; width: 100%; box-sizing: border-box; text-align: center; }
+
+/* ============ Phone/tablet header + slide-in menu ============
+   Mobile audit (360-768px), three real problems:
+   1. .brand is position:absolute below 1180px (css/style.css), so nothing
+      stopped the signed-in email in .nav-end-group from running underneath
+      the DeskKit logo at 360px. The start padding now reserves the logo's
+      own width, and the end group may shrink (email ellipsis) instead.
+   2. The slide-in panel lives inside header.site (z-index 50, and its
+      backdrop-filter makes it the panel's containing block), so the cookie
+      notice (z-index 250) painted over the menu. The header is lifted
+      while the menu is open, with a real backdrop under it.
+   3. The panel was 220px wide with its links centered vertically in the
+      full height - full-width rows from the top read as a proper menu. */
+@media (max-width: 1180px) {
+  header.site .nav { padding-inline-start: 168px; }
+  header.site .nav-end-group { flex-shrink: 1; min-width: 0; gap: 10px; }
+  header.site .nav-account-wrap { min-width: 0; }
+  header.site .nav-login { min-width: 0; }
+  header.site .nav-login-email { min-width: 0; }
+  header.site .burger { flex-shrink: 0; margin-inline-start: 6px; padding: 4px 6px; line-height: 1; }
+  header.site:has(.nav-links.open) { z-index: 300; }
+  header.site .nav-links {
+    justify-content: flex-start; align-items: stretch; gap: 2px;
+    width: min(300px, 84vw); box-sizing: border-box; padding: 14px 12px;
+    overflow-y: auto; overscroll-behavior: contain;
+    height: calc(100vh - 68px); height: calc(100dvh - 68px - var(--dk-mnav-h, 0px));
+    visibility: hidden; transition: transform .2s ease, visibility 0s linear .2s;
+  }
+  header.site .nav-links.open { visibility: visible; transition: transform .2s ease; }
+  header.site .nav-links a {
+    display: block; padding: 12px 14px; border-radius: 10px; font-size: 16px; text-align: start;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0;
+  }
+  header.site .nav-links a.active { background: rgba(20, 184, 166, .10); }
+  header.site .nav-links a.active::after { inset-inline: 0 auto; top: 10px; bottom: 10px; width: 3px; height: auto; }
+  .dk-nav-backdrop { display: block; position: fixed; inset: 0; z-index: 290; background: rgba(15, 23, 42, .35); opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+  .dk-nav-backdrop.open { opacity: 1; pointer-events: auto; }
+}
+@media (min-width: 1181px) { .dk-nav-backdrop { display: none; } }
+/* Narrow phones: the full email cannot fit beside the logo, EN and the
+   menu button, so the signed-in control becomes a round account button
+   (same dropdown, which shows the full email; the bottom bar's "חשבון"
+   tab also leads there). */
+@media (max-width: 480px) {
+  header.site .nav { padding-inline-start: 150px; }
+  header.site .nav-login:has(.nav-login-email) {
+    width: 36px; height: 36px; padding: 0; justify-content: center; border-radius: 50%;
+    border: 1px solid #DCE9E4; background: var(--white, #fff); color: var(--ink-dark, #12211D);
+  }
+  header.site .nav-login-email { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+/* Bottom bar labels stay on one line on the narrowest phones. */
+.dk-mobile-nav-item { white-space: nowrap; min-width: 0; }
+/* Shared popup (.domain-guide-modal): the close button is pinned to the
+   start corner, so a heading placed right after it ran underneath it on
+   narrow phones (seen on the create chooser: the "?" sat under the ✕). */
+.domain-guide-close + h2 { padding-inline-start: 40px; }
+@media (max-width: 480px) {
+  .domain-guide-overlay { padding: 12px; }
+  .domain-guide-modal { padding: 26px 20px; }
+}

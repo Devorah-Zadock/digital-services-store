@@ -106,8 +106,24 @@ document.addEventListener("DOMContentLoaded", () => {
   const burger = document.querySelector(".burger");
   const links = document.querySelector(".nav-links");
   if (burger && links) {
-    burger.addEventListener("click", () => links.classList.toggle("open"));
-    links.querySelectorAll("a").forEach((a) => a.addEventListener("click", () => links.classList.remove("open")));
+    // A real backdrop element (not a box-shadow overlay): a tap outside
+    // the panel lands on it and only closes the menu, instead of falling
+    // through to whatever page link happened to sit underneath.
+    const backdrop = document.createElement("div");
+    backdrop.className = "dk-nav-backdrop";
+    document.body.appendChild(backdrop);
+    burger.setAttribute("aria-expanded", "false");
+    const setOpen = (open) => {
+      links.classList.toggle("open", open);
+      backdrop.classList.toggle("open", open);
+      burger.setAttribute("aria-expanded", open ? "true" : "false");
+    };
+    burger.addEventListener("click", () => setOpen(!links.classList.contains("open")));
+    backdrop.addEventListener("click", () => setOpen(false));
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && links.classList.contains("open")) setOpen(false); });
+    // Delegated: js/header.js re-renders these links (innerHTML) after the
+    // auth check, which dropped any per-link listeners attached here.
+    links.addEventListener("click", (e) => { if (e.target.closest("a")) setOpen(false); });
   }
 
   // Used to just redirect to mailto:, silently — which does nothing at

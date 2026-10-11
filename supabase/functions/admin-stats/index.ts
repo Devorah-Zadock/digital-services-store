@@ -631,7 +631,11 @@ Deno.serve(async (req: Request) => {
     if (!minRole) return json({ error: "unknown action" }, 400);
     if (ROLE_RANK[role] < ROLE_RANK[minRole]) return json({ error: "forbidden", requiredRole: minRole }, 403);
 
-    const { data: secretVersion } = await admin.rpc("admin_secret_version", { p_email: callerEmail });
+    // A failed lookup must never look like "no admin password yet": that
+    // showed the set-up screen on another device and would have let a new
+    // password be set without the current one. Fail closed instead.
+    const { data: secretVersion, error: versionErr } = await admin.rpc("admin_secret_version", { p_email: callerEmail });
+    if (versionErr) return json({ error: "try-again" }, 503);
     const adminPassword = secretVersion ? "set" : "unset";
     const unlocked = adminPassword === "set" && await unlockTokenValid(body.adminToken, actor.id, String(secretVersion));
     if (!UNLOCK_FREE_ACTIONS.has(action) && !unlocked) {
@@ -678,6 +682,12 @@ Deno.serve(async (req: Request) => {
     if (action === "set-admin-password") {
       const newPassword = String(body.newPassword || "");
       if (newPassword.length < 10) return json({ error: "too-short" }, 400);
+      // Re-check from the table itself: first-time setup only when there
+      // really is no admin password for this account.
+      if (adminPassword === "unset") {
+        const { data: status, error: statusErr } = await admin.rpc("admin_secret_status", { p_email: callerEmail });
+        if (statusErr || status !== "unset") return json({ error: "try-again" }, 503);
+      }
       if (adminPassword === "set") {
         const check = await admin.rpc("admin_secret_check", { p_email: callerEmail, p_password: String(body.currentPassword || "") });
         if (check.error) throw check.error;

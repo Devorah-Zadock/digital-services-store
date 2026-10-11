@@ -1471,6 +1471,9 @@ function dkShowAdminLock(me) {
       <p style="margin-bottom:14px;">${isSetup
         ? "שלב אבטחה נוסף: בחרו <b>סיסמת ניהול</b> — סיסמה נפרדת שתידרש בכל כניסה לאזור הניהול, בנוסף להתחברות לחשבון. אל תשתמשו בסיסמה של המייל או של החשבון."
         : "להמשך, הקלידו את <b>סיסמת הניהול</b> שלכם."}</p>
+      <p style="margin:-6px 0 14px; font-size:13px; color:var(--grey);">מחובר/ת כ: <b dir="ltr">${escapeHtml(me.email || "")}</b>${isSetup
+        ? "<br>לכל חשבון מנהל יש סיסמת ניהול משלו. אם כבר בחרת סיסמת ניהול — כנראה שבמכשיר הזה נכנסת עם חשבון אחר: התנתקי והתחברי עם החשבון שבו בחרת אותה."
+        : ""}</p>
       <form id="dk-lock-form" style="text-align:right;">
         <input type="password" id="dk-lock-pw" class="cx-input" autocomplete="${isSetup ? "new-password" : "current-password"}" placeholder="סיסמת ניהול" style="width:100%; margin-bottom:8px;" required>
         ${isSetup ? `<input type="password" id="dk-lock-pw2" class="cx-input" autocomplete="new-password" placeholder="אימות סיסמת ניהול" style="width:100%; margin-bottom:6px;" required>
@@ -1501,6 +1504,7 @@ function dkShowAdminLock(me) {
           : code === "locked" ? "יותר מדי ניסיונות שגויים — הכניסה נעולה ל-15 דקות."
           : code === "not signed in" ? "נראה שההתחברות לחשבון פגה — רעננו את הדף (או התחברו שוב) ונסו שוב."
           : code === "too-short" ? "סיסמת הניהול חייבת לכלול לפחות 10 תווים."
+          : code === "try-again" ? "תקלה זמנית בבדיקה. רעננו את הדף ונסו שוב."
           : "שגיאה: " + code;
         btn.disabled = false;
       }
@@ -1847,7 +1851,9 @@ async function showPanel() {
     if (spinner) spinner.hidden = true;
     // "unknown action" = the server still runs an older admin-stats that
     // predates "whoami", i.e. the Edge Function wasn't redeployed yet.
-    document.querySelector("#admin-gate p").textContent = e.message === "unknown action"
+    document.querySelector("#admin-gate p").textContent = e.message === "try-again"
+      ? "תקלה זמנית בבדיקת ההרשאה. רעננו את הדף בעוד רגע."
+      : e.message === "unknown action"
       ? "פונקציית השרת admin-stats עדיין בגרסה הישנה. צריך לפרוס אותה מחדש ב-Supabase (Edge Functions → admin-stats) ואז לרענן את הדף."
       : "שגיאה: " + e.message;
     return;
