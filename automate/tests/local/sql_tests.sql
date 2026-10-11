@@ -97,9 +97,9 @@ do $$ declare before int; after int; begin
 end $$;
 
 -- invoice tracking: only own, issued invoices
-insert into public.invoice_saves (id, user_id, status, number) values
-  ('00000000-0000-0000-0000-0000000000f1', '00000000-0000-0000-0000-00000000000b', 'issued', 7),
-  ('00000000-0000-0000-0000-0000000000f2', '00000000-0000-0000-0000-00000000000a', 'draft', null);
+insert into public.invoice_saves (id, user_id, doc_type, status, number, data, issued_at) values
+  ('00000000-0000-0000-0000-0000000000f1', '00000000-0000-0000-0000-00000000000b', 'invoice_receipt', 'issued', 7, '{"recipientName": "בדיקה"}', now()),
+  ('00000000-0000-0000-0000-0000000000f2', '00000000-0000-0000-0000-00000000000a', 'invoice_receipt', 'draft', null, '{}', null);
 set role authenticated;
 set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000a';
 set request.jwt.claim.role = 'authenticated';
