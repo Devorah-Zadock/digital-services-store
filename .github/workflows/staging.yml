@@ -1,0 +1,127 @@
+# DeskKit Automate — the STAGING environment (free Supabase project
+# "deskkit-staging" + the web app at deskkit-staging-web.deskkit.workers.dev).
+#
+# Never touches the live site or the live data. The live database is only
+# READ here, for its structure (no rows) in "setup". Every staging command
+# refuses to run if it can't find the staging project by name.
+#
+#   setup            copy the live STRUCTURE to staging, then deploy
+#   deploy           Automate SQL + functions + web app to staging
+#   test             end-to-end tests on staging (simulated email only)
+#   deploy-and-test  both
+#   status           counts only
+name: Staging (Automate)
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "What to do"
+        type: choice
+        default: deploy-and-test
+        options: [setup, deploy, test, deploy-and-test, status]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging
+  cancel-in-progress: false
+
+env:
+  SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+  PROJECT_REF: vafkjsetlrpaczsmqvqs
+
+jobs:
+  staging:
+    if: github.repository == 'Devorah-Zadock/digital-services-store'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Unit tests (engine logic)
+        run: deno test automate/tests/unit
+
+      - name: Connect to the staging project
+        run: python3 .github/scripts/staging.py env
+
+      - uses: supabase/setup-cli@v1
+        if: inputs.task != 'status'
+        with:
+          version: latest
+
+      - name: Copy the live STRUCTURE to staging (no data)
+        if: inputs.task == 'setup'
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          DB_URL="$(python3 -c 'import sys; sys.path.insert(0, ".github/scripts"); import backup_tool; print(backup_tool.live_db())')"
+          echo "::add-mask::$DB_URL"
+          supabase db dump --db-url "$DB_URL" -f "$RUNNER_TEMP/schema.sql" > /dev/null 2>&1 || { echo "::error::schema dump failed"; exit 1; }
+          python3 .github/scripts/staging.py reset-schema "$RUNNER_TEMP/schema.sql"
+          rm -f "$RUNNER_TEMP/schema.sql"
+
+      - name: Automate database (staging)
+        if: inputs.task == 'setup' || inputs.task == 'deploy' || inputs.task == 'deploy-and-test'
+        run: python3 .github/scripts/staging.py sql automate/sql/10_engine.sql automate/sql/90_staging_test_helpers.sql
+
+      - name: Secrets (safe mail mode), auth and schedule (staging)
+        if: inputs.task != 'status'
+        run: |
+          python3 .github/scripts/staging.py secrets
+          python3 .github/scripts/staging.py auth
+          python3 .github/scripts/staging.py cron
+
+      - name: Automate functions (staging)
+        if: inputs.task == 'setup' || inputs.task == 'deploy' || inputs.task == 'deploy-and-test'
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/stg/supabase/functions"
+          cp -r automate/functions/. "$RUNNER_TEMP/stg/supabase/functions/"
+          supabase functions deploy --project-ref "$STG_REF" --workdir "$RUNNER_TEMP/stg" --no-verify-jwt --use-api
+
+      - uses: actions/setup-node@v4
+        if: inputs.task == 'setup' || inputs.task == 'deploy' || inputs.task == 'deploy-and-test'
+        with:
+          node-version: 22
+
+      - name: Web app (staging)
+        if: inputs.task == 'setup' || inputs.task == 'deploy' || inputs.task == 'deploy-and-test'
+        run: |
+          set -euo pipefail
+          cloudflare/web/build.sh
+          cp -r automate/web/. cloudflare/web/dist/
+          python3 .github/scripts/staging_web.py cloudflare/web/dist
+          mkdir -p "$RUNNER_TEMP/web"
+          cp cloudflare/web/index.js "$RUNNER_TEMP/web/index.js"
+          cat > "$RUNNER_TEMP/web/wrangler.toml" <<TOML
+          name = "deskkit-staging-web"
+          main = "index.js"
+          compatibility_date = "2026-09-01"
+          workers_dev = true
+          [assets]
+          directory = "$GITHUB_WORKSPACE/cloudflare/web/dist"
+          binding = "ASSETS"
+          html_handling = "none"
+          not_found_handling = "none"
+          TOML
+          sed -i 's/^          //' "$RUNNER_TEMP/web/wrangler.toml"
+          cd "$RUNNER_TEMP/web" && npx --yes wrangler@4 deploy
+          echo "staging web: $STG_WEB_URL"
+
+      - name: End-to-end tests (staging, simulated email)
+        if: inputs.task == 'test' || inputs.task == 'deploy-and-test'
+        run: python3 automate/tests/e2e/run.py
+
+      - name: Staging counts
+        if: always()
+        run: python3 .github/scripts/staging.py status
