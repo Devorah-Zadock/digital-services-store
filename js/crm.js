@@ -63,6 +63,33 @@ function crmInit() {
   crmRenderBoard();
   crmWireModal();
   crmWireAddButtons();
+  const backupBtn = document.getElementById("crm-backup-btn");
+  if (backupBtn) backupBtn.addEventListener("click", () => {
+    if (!crmLeads.length) { alert("אין עדיין לידים לגבות."); return; }
+    dkCrmDownloadBackup("csv");
+  });
+  const jsonBtn = document.getElementById("crm-backup-json");
+  if (jsonBtn) jsonBtn.addEventListener("click", () => {
+    if (!crmLeads.length) { alert("אין עדיין לידים לגבות."); return; }
+    dkCrmDownloadBackup("json");
+  });
+  crmReportLocalCount();
+}
+
+// Tells DeskKit only HOW MANY leads this browser holds — never names,
+// phones, emails or any other content — once per browser, so we know how
+// many people would be affected by moving the CRM to the server.
+// (supabase/functions/crm-local-stats)
+function crmReportLocalCount() {
+  const FLAG = "deskkit_crm_reported_v1";
+  try {
+    if (!crmLeads.length || localStorage.getItem(FLAG)) return;
+    fetch(SUPABASE_URL + "/functions/v1/crm-local-stats", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
+      body: JSON.stringify({ leads: crmLeads.length }),
+    }).then((r) => { if (r.ok) { try { localStorage.setItem(FLAG, "1"); } catch (e) { /* ignore */ } } }).catch(() => {});
+  } catch (err) { /* never break the board */ }
 }
 
 function crmRenderBoard() {

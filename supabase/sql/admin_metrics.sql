@@ -119,6 +119,9 @@ begin
       'welcomes_30d', public.admin__count('public.customer_profiles', $w$welcome_sent_at >= now() - interval '30 days' and welcome_sent_at > created_at$w$),
       'sent_today', public.admin__count('public.email_sends', $w$sent_at >= date_trunc('day', now())$w$),
       'sent_30d', public.admin__count('public.email_sends', $w$sent_at >= now() - interval '30 days'$w$)),
+    'crm_local', jsonb_build_object(
+      'browsers', public.admin__count('public.crm_local_reports'),
+      'leads', case when to_regclass('public.crm_local_reports') is null then 0 else (select coalesce(sum(lead_count), 0) from public.crm_local_reports) end),
     'messages_30d', public.admin__count('public.contact_messages', $w$created_at >= now() - interval '30 days'$w$)
   );
   return result;

@@ -104,6 +104,10 @@
     <p class="sub">מוחק לצמיתות את כל התוכן שלכם (אתרים, קורות חיים, הצעות מחיר, מערכות שעות) ואת החשבון עצמו. הפעולה מיידית ובלתי הפיכה.</p>
     <button type="button" id="as-delete-start" class="btn btn-outline" style="width:100%; box-sizing:border-box; text-align:center; color:#B23333; border-color:#F0D9D9;">מחיקת החשבון שלי</button>
     <div id="as-delete-confirm" style="display:none; margin-top:16px;">
+      <div id="as-delete-crm-warning" hidden style="background:#FFF6E5; border:1px solid #F0C36D; border-radius:10px; padding:12px 14px; margin-bottom:14px; font-size:14px; line-height:1.6;">
+        <b>שימו לב:</b> בדפדפן הזה שמורים <b id="as-delete-crm-count"></b> לידים ממערכת ניהול הלקוחות. הם נשמרים רק כאן, וימחקו יחד עם החשבון.
+        <button type="button" id="as-delete-crm-backup" class="btn btn-outline" style="display:block; margin-top:8px;">⬇ הורדת גיבוי של הלידים (Excel)</button>
+      </div>
       <p class="sub" style="margin-bottom:10px;">כדי לאשר, הקלידו את כתובת המייל שלכם (<b id="as-delete-email-hint" style="color:var(--dark);"></b>) בשדה הבא:</p>
       <input type="email" id="as-delete-email-input" dir="ltr" autocomplete="off" style="width:100%; box-sizing:border-box; padding:10px 12px; border-radius:8px; border:1px solid #DADFDD; font-family:inherit; font-size:14px; margin-bottom:10px;">
       <div class="as-current-pw-field" hidden>
@@ -128,8 +132,8 @@
 <script src="js/domain-guide.js?v=5"></script>
 <script src="js/require-auth.js"></script>
 <script src="js/captcha.js?v=3"></script>
-<script src="js/account-settings.js?v=7"></script>
-<script src="js/main.js?v=6"></script>
+<script src="js/account-settings.js?v=8"></script>
+<script src="js/main.js?v=7"></script>
 <script src="js/widgets.js?v=18"></script>
 </body>
 </html>
