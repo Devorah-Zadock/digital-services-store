@@ -49,7 +49,7 @@ async function activate(db: SupabaseClient, uid: string, key: string, input: Rec
   if (!existing) {
     const { count } = await db.from("automations").select("id", { count: "exact", head: true }).eq("user_id", uid).neq("status", "paused");
     const { data: limits } = await db.rpc("automate_limits", { p_user: uid });
-    if ((count || 0) >= Number(limits?.active_automations || 6)) throw new Bad("limit-active");
+    if ((count || 0) >= Number(limits?.active_automations || 10)) throw new Bad("limit-active");
     await must(db.from("automations").insert({ user_id: uid, template_key: key, trigger_type: t.trigger, config, pack, status: "active" }));
   } else {
     await must(db.from("automations").update({ config, pack: pack ?? undefined, status: "active", consecutive_failures: 0, updated_at: new Date().toISOString() }).eq("id", existing.id));

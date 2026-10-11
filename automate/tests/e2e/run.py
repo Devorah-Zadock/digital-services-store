@@ -323,14 +323,14 @@ def run_tests(a, b):
     # ---- T8 business monthly email quota
     month = time.strftime("%Y-%m-01")
     used = (rows(f"automate_usage?user_id=eq.{a['id']}&period=eq.{month}&select=emails") or [{"emails": 0}])[0]["emails"]
-    set_setting("plan_limits", {"free": {"active_automations": 6, "runs_per_month": 300, "emails_per_month": used}})
+    set_setting("plan_limits", {"free": {"active_automations": 10, "runs_per_month": 300, "emails_per_month": used}})
     fn("lead-intake", {"site": slug, "name": "מכסה חודשית", "email": "lead-7@example.com", "consent": True})
     drain(2)
     auto = rows(f"automations?user_id=eq.{a['id']}&template_key=eq.lead_autopilot&select=status")[0]
     lead7 = rows(f"contacts?user_id=eq.{a['id']}&email=eq.lead-7@example.com&select=id")[0]
     run7 = next(x for x in runs_of(a["id"], "lead_autopilot") if x["subject_id"] == lead7["id"])
     check("T8 monthly email quota → automation on hold, run waiting (nothing lost)", auto["status"] == "blocked_quota" and run7["status"] == "waiting", f"{auto['status']} {run7['status']}")
-    set_setting("plan_limits", {"free": {"active_automations": 6, "runs_per_month": 300, "emails_per_month": 1000}})
+    set_setting("plan_limits", {"free": {"active_automations": 10, "runs_per_month": 300, "emails_per_month": 1000}})
     fast_forward_runs(a["id"]); drain(2)
     auto = rows(f"automations?user_id=eq.{a['id']}&template_key=eq.lead_autopilot&select=status")[0]
     m7 = [m for m in messages_of(a["id"]) if m["run_id"] == run7["id"]]
@@ -432,7 +432,8 @@ def run_tests(a, b):
     check("T12 the invoice document itself never changed", after == original)
 
     # ---- T13 review request
-    api(a, "activate", template="review_request", config={"review_url": "https://g.page/r/test/review", "client_messages": "auto"})
+    st, r = api(a, "activate", template="review_request", config={"review_url": "https://g.page/r/test/review", "client_messages": "auto"})
+    check("T13 review automation activated (pack + 1 fits the plan)", st == 200, str(r))
     st, cc = rest("POST", "contacts", {"name": "לקוח מרוצה", "email": "happy@example.com", "stage": "won"}, token=a["token"])
     cid = cc[0]["id"]
     rest("PATCH", f"contacts?id=eq.{cid}", {"job_done_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}, token=a["token"])

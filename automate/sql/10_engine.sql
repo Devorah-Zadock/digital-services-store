@@ -38,7 +38,7 @@ revoke all on table public.automate_settings from anon, authenticated;
 insert into public.automate_settings (key, value) values
   ('kill_switch', '{"on": false, "reason": null}'),
   -- Per-business monthly limits (free plan). Plans can be added later.
-  ('plan_limits', '{"free": {"active_automations": 6, "runs_per_month": 300, "emails_per_month": 200}}'),
+  ('plan_limits', '{"free": {"active_automations": 10, "runs_per_month": 300, "emails_per_month": 200}}'),
   -- Whole-system caps per day. The email provider's free plan allows 100
   -- a day in total; sign-up confirmations, password resets and welcome
   -- emails must always fit, so automations get at most this many.
@@ -47,6 +47,11 @@ insert into public.automate_settings (key, value) values
   -- alerts are sent any time.
   ('quiet_hours', '{"start": 21, "end": 8, "shabbat": true}')
 on conflict (key) do nothing;
+
+-- v1 → v2: a whole business pack plus review requests must fit.
+update public.automate_settings
+   set value = jsonb_set(value, '{free,active_automations}', '10'), updated_at = now()
+ where key = 'plan_limits' and coalesce((value -> 'free' ->> 'active_automations')::int, 0) < 10;
 
 create or replace function public.automate_setting(p_key text)
 returns jsonb language sql stable security definer set search_path = '' as $$
@@ -380,7 +385,7 @@ $$;
 create or replace function public.automate_limits(p_user uuid)
 returns jsonb language sql stable security definer set search_path = '' as $$
   select coalesce(public.automate_setting('plan_limits') -> 'free',
-                  '{"active_automations": 6, "runs_per_month": 300, "emails_per_month": 200}'::jsonb);
+                  '{"active_automations": 10, "runs_per_month": 300, "emails_per_month": 200}'::jsonb);
 $$;
 
 create or replace function public.automate_month() returns date
