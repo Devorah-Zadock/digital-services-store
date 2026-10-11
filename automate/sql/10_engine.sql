@@ -597,22 +597,23 @@ $$;
 create or replace function public.automate_attention(p_user uuid)
 returns table (kind text, ref_id uuid, title text, reason text, amount numeric, since timestamptz, priority int)
 language sql stable security definer set search_path = '' as $$
-  select 'lead_unhandled', c.id, c.name,
-         'פנייה חדשה שעוד לא טופלה', c.amount, c.created_at,
-         100 + least(extract(epoch from now() - c.created_at)::int / 3600, 99)
+  select * from (
+  select 'lead_unhandled'::text as kind, c.id as ref_id, c.name as title,
+         'פנייה חדשה שעוד לא טופלה'::text as reason, c.amount as amount, c.created_at as since,
+         (100 + least(extract(epoch from now() - c.created_at)::int / 3600, 99))::int as priority
     from public.contacts c
    where c.user_id = p_user and c.stage = 'new' and c.handled_at is null
      and c.created_at < now() - interval '2 hours'
   union all
   select 'quote_waiting', q.id, q.client_name,
          'הצעת מחיר בלי תשובה כבר ' || greatest(1, extract(day from now() - q.sent_at)::int) || ' ימים', q.total, q.sent_at,
-         80 + least(extract(day from now() - q.sent_at)::int, 19)
+         (80 + least(extract(day from now() - q.sent_at)::int, 19))::int
     from public.quote_shares q
    where q.user_id = p_user and q.status = 'sent' and q.sent_at < now() - interval '3 days'
   union all
   select 'invoice_overdue', i.invoice_id, coalesce(i.client_name, 'חשבונית ' || i.invoice_number),
          'חשבונית שמועד התשלום שלה עבר לפני ' || ((now() at time zone 'Asia/Jerusalem')::date - i.due_date) || ' ימים', i.amount,
-         i.due_date::timestamptz, 90 + least(((now() at time zone 'Asia/Jerusalem')::date - i.due_date), 9)
+         i.due_date::timestamptz, (90 + least(((now() at time zone 'Asia/Jerusalem')::date - i.due_date), 9))::int
     from public.invoice_tracking i
    where i.user_id = p_user and i.status = 'unpaid' and i.due_date < (now() at time zone 'Asia/Jerusalem')::date
   union all
@@ -627,6 +628,7 @@ language sql stable security definer set search_path = '' as $$
   select 'followup_stuck', c.id, c.name, 'בשלב פולו-אפ בלי שינוי כבר שבוע', c.amount, c.updated_at, 60
     from public.contacts c
    where c.user_id = p_user and c.stage = 'followup' and c.updated_at < now() - interval '7 days'
+  ) items
   order by priority desc, since
   limit 50;
 $$;
