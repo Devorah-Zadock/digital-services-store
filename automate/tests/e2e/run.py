@@ -195,10 +195,8 @@ def main():
 def run_tests(a, b):
     slug = f"t{RUN}-a"
     # A test site for A (customer sites' contact forms post to lead-intake).
-    st, _ = rest("POST", "site_projects", {"user_id": a["id"], "template": "test", "slug": slug, "name": "test"}, prefer="return=minimal")
-    if st >= 300:   # schema differences: try the minimal shape
-        st, _ = rest("POST", "site_projects", {"user_id": a["id"], "slug": slug}, prefer="return=minimal")
-    check("setup: test site created", st < 300, f"HTTP {st}")
+    st, err = rest("POST", "site_projects", {"user_id": a["id"], "template": "test", "data": {}, "slug": slug}, prefer="return=minimal")
+    check("setup: test site created", st < 300, f"HTTP {st} {str(err)[:200]}")
 
     # ---- profile + activation
     st, _ = api(a, "save-profile", business_name="עסק בדיקה", business_type="home_services", reply_email="owner-a@example.com")
