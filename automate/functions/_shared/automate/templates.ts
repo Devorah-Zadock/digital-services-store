@@ -26,7 +26,8 @@ export type Check =
   | "has_client_email" | "review_ready" | "onboarding_open" | "second_nudge_on" | "welcome_allowed"
   | "invoice_second_allowed" | "invoice_third_allowed"
   | "lead_open_no_quote" | "auto_close_on" | "no_newer_job" | "service_client_ok" | "review_not_asked"
-  | "invoice_paid" | "paid_review_ok" | "referral_ok" | "feedback_ok" | "reengage_on" | "client_not_back";
+  | "invoice_paid" | "paid_review_ok" | "referral_ok" | "feedback_ok" | "reengage_on" | "client_not_back"
+  | "quote_has_expiry";
 
 export type Step =
   | { key: string; kind: "action"; action: "email_owner"; message: string }
@@ -36,7 +37,8 @@ export type Step =
   | { key: string; kind: "action"; action: "mark_contact_won" }
   | { key: string; kind: "action"; action: "set_stage"; stage: "followup" | "lost"; note: string }
   | { key: string; kind: "action"; action: "digest_owner" }
-  | { key: string; kind: "wait"; hours?: number; days?: number; hoursFrom?: string; daysFrom?: string; untilDueDatePlusDaysFrom?: string }
+  | { key: string; kind: "action"; action: "weekly_owner" }
+  | { key: string; kind: "wait"; hours?: number; days?: number; hoursFrom?: string; daysFrom?: string; untilDueDatePlusDaysFrom?: string; untilQuoteExpiryMinusDaysFrom?: string }
   | { key: string; kind: "check"; check: Check; otherwise: "stop" | { skip: number } };
 
 export type Template = {
@@ -408,6 +410,51 @@ export const TEMPLATES: Record<string, Template> = {
     ],
   },
 
+  quote_expiry: {
+    key: "quote_expiry", version: 1, trigger: "quote.sent", subject: "quote", icon: "⏳",
+    name: "הצעה שעומדת לפוג", nameEn: "Quote about to expire",
+    outcome: "כמה ימים לפני שתוקף ההצעה נגמר, לקוח שעוד לא ענה מקבל תזכורת עדינה — ואת/ה יודע/ת שכדאי להתקשר.",
+    outcomeEn: "A few days before a quote expires, a client who hasn't answered gets a gentle nudge — and you know to call.",
+    howItWorks: [
+      "כל הצעה שנשלחת מ-DeskKit מקבלת תוקף (30 יום, אם לא בחרת אחרת).",
+      "כמה ימים לפני שהתוקף נגמר, אם הלקוח עוד לא אישר או דחה — הוא מקבל תזכורת עדינה עם הקישור (אחרי אישורך, או אוטומטית).",
+      "את/ה מקבל/ת עדכון, כדי להחליט אם להתקשר או להאריך.",
+      "אם הלקוח כבר ענה — לא נשלח כלום.",
+    ],
+    needs: ["הצעת מחיר שנשלחה מתוך DeskKit"],
+    category: "sales",
+    config: [
+      { key: "days_before", type: "int", label: "כמה ימים לפני סוף התוקף", labelEn: "Days before expiry", min: 1, max: 7, default: 2, unit: "ימים" },
+      CLIENT_MESSAGES,
+      { key: "expiry_text", type: "text", label: "נוסח התזכורת", labelEn: "Reminder text", maxLength: 1000, multiline: true,
+        default: "היי {שם},\nרק תזכורת: הצעת המחיר מ{עסק} בתוקף עד {מועד}. אפשר לצפות בה ולאשר כאן:\n{קישור}\nאם צריך עוד זמן או שינוי — פשוט להשיב למייל הזה.",
+        placeholders: ["{שם}", "{עסק}", "{קישור}", "{מועד}"] },
+    ],
+    steps: [
+      { key: "has_expiry", kind: "check", check: "quote_has_expiry", otherwise: "stop" },
+      { key: "wait_expiry", kind: "wait", untilQuoteExpiryMinusDaysFrom: "days_before" },
+      { key: "pending", kind: "check", check: "quote_pending", otherwise: "stop" },
+      { key: "remind_client", kind: "action", action: "email_client", message: "quote_expiring", approval: "config" },
+      { key: "tell_owner", kind: "action", action: "email_owner", message: "quote_expiring_owner" },
+    ],
+  },
+
+  weekly_report: {
+    key: "weekly_report", version: 1, trigger: "schedule.weekly", subject: null, icon: "📊",
+    name: "סיכום שבועי: איך היה השבוע", nameEn: "Weekly summary: how the week went",
+    outcome: "כל יום ראשון בבוקר מייל קצר עם המספרים של השבוע: פניות, הצעות שאושרו, כסף שנכנס ומה עדיין פתוח.",
+    outcomeEn: "Every Sunday morning, the week in numbers: leads, approved quotes, money in, and what's still open.",
+    howItWorks: [
+      "כל יום ראשון בבוקר המערכת סוכמת את השבוע שעבר.",
+      "מייל אחד קצר: פניות חדשות וכמה מהן טופלו, הצעות שנשלחו ואושרו (בשקלים), תשלומים שהתקבלו, חובות פתוחים ומשימות.",
+      "שבוע בלי שום פעילות — לא נשלח כלום.",
+    ],
+    needs: [],
+    category: "assistant",
+    config: [],
+    steps: [{ key: "weekly", kind: "action", action: "weekly_owner" }],
+  },
+
   daily_digest: {
     key: "daily_digest", version: 1, trigger: "schedule.daily", subject: null, icon: "☀️",
     name: "סיכום בוקר: מה דורש טיפול", nameEn: "Morning brief: what needs you",
@@ -434,9 +481,11 @@ export type Pack = { key: string; name: string; nameEn: string; icon: string; te
 const SALES_CORE = ["lead_autopilot", "quote_followup", "quote_won", "invoice_collect", "client_onboarding", "daily_digest"];
 // What each pack adds on top: the follow-ups that turn one sale into the next.
 const GROWTH = ["lead_nurture", "quote_lost", "paid_thanks"];
+// Fits every pack (owner-only email, no client contact).
+const WEEKLY = ["weekly_report"];
 
 export const PACKS: Pack[] = [
-  { key: "general", name: "עסק כללי", nameEn: "General business", icon: "🏢", templates: SALES_CORE.concat(GROWTH), overrides: {} },
+  { key: "general", name: "עסק כללי", nameEn: "General business", icon: "🏢", templates: SALES_CORE.concat(GROWTH, WEEKLY), overrides: {} },
   { key: "home_services", name: "שיפוצים, התקנות ובעלי מקצוע", nameEn: "Home services & trades", icon: "🛠️", templates: SALES_CORE.concat(["lead_nurture", "service_reminder", "paid_thanks"]),
     overrides: {
       service_reminder: { after_days: 180 },
@@ -459,7 +508,7 @@ export const PACKS: Pack[] = [
       quote_followup: { first_after_days: 2 },
       client_onboarding: { checklist: "לחתום על הזמנה ולקבל מקדמה\nלתאם פגישת תכנון\nלקבל לו\"ז אירוע\nלשלוח תזכורת שבוע לפני" },
     } },
-  { key: "consulting", name: "ייעוץ ושירותים מקצועיים", nameEn: "Consulting & professional services", icon: "💼", templates: SALES_CORE.concat(GROWTH),
+  { key: "consulting", name: "ייעוץ ושירותים מקצועיים", nameEn: "Consulting & professional services", icon: "💼", templates: SALES_CORE.concat(GROWTH, WEEKLY),
     overrides: {
       client_onboarding: { checklist: "לשלוח הסכם התקשרות\nלתאם פגישת פתיחה\nלקבל מסמכים מהלקוח" },
     } },

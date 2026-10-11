@@ -31,7 +31,13 @@ function num(v: unknown, dflt: number): number {
 }
 
 // When a wait step is over. dueDate is "YYYY-MM-DD" (Israel date) for invoice waits.
-export function waitUntil(step: Extract<Step, { kind: "wait" }>, config: Record<string, unknown>, now: Date, dueDate?: string | null): Date {
+export function waitUntil(step: Extract<Step, { kind: "wait" }>, config: Record<string, unknown>, now: Date, dueDate?: string | null, expiresAt?: string | null): Date {
+  if (step.untilQuoteExpiryMinusDaysFrom) {
+    // N days before a quote's expiry (already past → now).
+    const minus = num(config[step.untilQuoteExpiryMinusDaysFrom], 2);
+    const at = expiresAt ? Date.parse(expiresAt) - minus * 864e5 : now.getTime();
+    return new Date(Math.max(now.getTime(), at));
+  }
   if (step.untilDueDatePlusDaysFrom) {
     const plus = num(config[step.untilDueDatePlusDaysFrom], 0);
     const base = dueDate ? israelMorning(dueDate) : now;
@@ -149,7 +155,7 @@ export function lintTemplate(t: Template): string[] {
     if (seen.has(s.key)) problems.push(`${t.key}: duplicate step ${s.key}`);
     seen.add(s.key);
     if (s.kind === "check" && s.otherwise !== "stop" && i + 1 + s.otherwise.skip > t.steps.length) problems.push(`${t.key}: skip past end at ${s.key}`);
-    const fromKey = s.kind === "wait" ? (s.hoursFrom || s.daysFrom || s.untilDueDatePlusDaysFrom)
+    const fromKey = s.kind === "wait" ? (s.hoursFrom || s.daysFrom || s.untilDueDatePlusDaysFrom || s.untilQuoteExpiryMinusDaysFrom)
       : s.kind === "action" && s.action === "create_task" ? s.dueHoursFrom : undefined;
     if (fromKey && !t.config.some((f) => f.key === fromKey)) problems.push(`${t.key}: ${s.key} reads unknown setting ${fromKey}`);
   });

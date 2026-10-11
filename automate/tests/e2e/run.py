@@ -629,6 +629,26 @@ def run_growth_tests():
         fast_forward_runs(c["id"]); drain(3)
         ql2 = [r for r in runs_of(c["id"], "quote_lost") if r["subject_id"] == s2["share"]["id"]][0]
         check("T22 a new quote was sent meanwhile → no 'come back' email", ql2["status"] == "stopped" and "quote_reengage" not in purposes(ql2["id"]), ql2["status"])
+        # ---- T23 weekly summary (Sunday's event, sent on demand here)
+        api(c, "activate", template="weekly_report", config={})
+        rpc("automate_emit", {"p_user": c["id"], "p_type": "schedule.weekly", "p_subject_type": None, "p_subject_id": None,
+                              "p_key": f"weekly:test-{RUN}", "p_payload": {}})
+        drain(2)
+        wk = [m for m in messages_of(c["id"]) if m["purpose"] == "weekly"]
+        check("T23 weekly summary sent to the owner (with this week's numbers)", len(wk) == 1 and wk[0]["recipient_role"] == "owner", str(wk))
+
+        # ---- T24 quote about to expire: reminder only if still unanswered
+        api(c, "activate", template="quote_expiry", config={"client_messages": "auto", "days_before": 2})
+        st, e1 = api(c, "send-quote", quote_id=qid, client_name="פג-תוקף", client_email="expiry-1@example.com", expires_days=3)
+        st, e2 = api(c, "send-quote", quote_id=qid, client_name="ענה-בזמן", client_email="expiry-2@example.com", expires_days=3)
+        drain(1)
+        fn("quote-public", {"token": e2["share"]["token"], "action": "approve", "name": "ענה-בזמן"})
+        fast_forward_runs(c["id"]); drain(3)
+        x1 = [r for r in runs_of(c["id"], "quote_expiry") if r["subject_id"] == e1["share"]["id"]][0]
+        x2 = [r for r in runs_of(c["id"], "quote_expiry") if r["subject_id"] == e2["share"]["id"]][0]
+        check("T24 unanswered quote near expiry → reminder to the client + owner told",
+              {"quote_expiring", "quote_expiring_owner"} <= set(purposes(x1["id"])), str(purposes(x1["id"])))
+        check("T24 a quote already answered gets no expiry reminder", "quote_expiring" not in purposes(x2["id"]), str(purposes(x2["id"])))
     finally:
         delete_user(c["id"])
 

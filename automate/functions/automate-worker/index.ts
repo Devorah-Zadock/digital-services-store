@@ -146,6 +146,7 @@ async function evaluate(check: string, rc: RunCtx): Promise<boolean> {
       return true;
     }
     case "auto_close_on": return cfg.auto_close === true;
+    case "quote_has_expiry": return !!(await rc.quote())?.expires_at;
     case "no_newer_job": {
       // The run is about one specific finished job; a newer one starts its own run.
       const c = await rc.contact();
@@ -289,6 +290,30 @@ async function execAction(step: Extract<Step, { kind: "action" }>, rc: RunCtx): 
       await must(rc.db.from("contacts").update({ stage: step.stage, notes }).eq("id", c.id).eq("user_id", rc.run.user_id));
       return { type: "ok", summary: step.stage === "lost" ? `${c.name} סומן/ה "לא רלוונטי"` : `${c.name} הועבר/ה ל"פולו-אפ"` };
     }
+    case "weekly_owner": {
+      const { data: w, error: we } = await rc.db.rpc("automate_weekly_stats", { p_user: rc.run.user_id });
+      if (we) throw new Error(we.message);
+      const stats = (w || {}) as Record<string, number>;
+      const activity = ["leads_new", "quotes_sent", "quotes_approved", "paid_count", "tasks_done", "quotes_waiting", "overdue_count", "tasks_overdue"]
+        .some((k) => Number(stats[k] || 0) > 0);
+      if (!activity) return { type: "skip", summary: "שבוע בלי פעילות — לא נשלח סיכום" };
+      const key = `${rc.run.id}:${step.key}`;
+      const { data: existing } = await rc.db.from("automation_messages").select("id").eq("idempotency_key", key).maybeSingle();
+      if (existing) return { type: "ok" };
+      const { data: allowed } = await rc.db.rpc("automate_take_email", { p_user: rc.run.user_id });
+      if (!allowed) return { type: "blocked", reason: "quota_emails" };
+      const built = buildMessage("weekly", { ...(await rc.messageCtx()), weekly: stats });
+      const biz = await rc.biz();
+      // @ts-ignore notifyEmail
+      const to = biz.notifyEmail || (await rc.owner());
+      if (!to) return { type: "skip", summary: "אין כתובת מייל" };
+      const { error } = await rc.db.from("automation_messages").insert({
+        user_id: rc.run.user_id, run_id: rc.run.id, recipient_role: "owner", purpose: "weekly", to_email: to,
+        from_name: "DeskKit Automate", subject: built.subject, html: built.html, idempotency_key: key, status: "queued",
+      });
+      if (error && !/duplicate key/.test(error.message)) throw new Error(error.message);
+      return { type: "ok", summary: "נשלח סיכום שבועי" };
+    }
     case "digest_owner": {
       const { data: items } = await rc.db.rpc("automate_attention", { p_user: rc.run.user_id });
       if (!items || !items.length) return { type: "skip", summary: "אין דברים פתוחים — לא נשלח סיכום" };
@@ -377,7 +402,8 @@ async function processRun(db: Db, run: Run): Promise<string> {
         let until = waits[step.key];
         if (!until) {
           const inv = step.untilDueDatePlusDaysFrom ? await rc.invoice() : null;
-          until = waitUntil(step, rc.config, new Date(), inv?.due_date).toISOString();
+          const qt = step.untilQuoteExpiryMinusDaysFrom ? await rc.quote() : null;
+          until = waitUntil(step, rc.config, new Date(), inv?.due_date, qt?.expires_at).toISOString();
           waits[step.key] = until;
         }
         if (Date.parse(until) > Date.now()) {

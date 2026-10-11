@@ -54,6 +54,13 @@ Deno.test("a stalled lead: follow-up, then decide, then (only if chosen) close",
   eq(afterCheck(steps[at("close_on")] as never, at("close_on"), false), { stop: true });
 });
 
+Deno.test("quote expiry wait: N days before, never in the past", () => {
+  const step = TEMPLATES.quote_expiry.steps.find((x) => x.key === "wait_expiry") as never;
+  const now = new Date("2026-10-11T10:00:00Z");
+  eq(waitUntil(step, { days_before: 2 }, now, null, "2026-10-20T10:00:00Z").toISOString(), "2026-10-18T10:00:00.000Z");
+  eq(waitUntil(step, { days_before: 2 }, now, null, "2026-10-12T10:00:00Z").toISOString(), now.toISOString());
+});
+
 Deno.test("catalog exposes no step internals", () => {
   const c = catalog();
   ok(c.templates.length >= 6);

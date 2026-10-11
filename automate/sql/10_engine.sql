@@ -575,8 +575,36 @@ begin
   for r in select distinct user_id from public.automations where trigger_type = 'schedule.daily' and status = 'active' loop
     n := n + public.automate_emit(r.user_id, 'schedule.daily', null, null, 'daily:' || d, jsonb_build_object('day', d));
   end loop;
+  -- Sundays (Israel): the week's summary.
+  if extract(dow from (now() at time zone 'Asia/Jerusalem')) = 0 then
+    for r in select distinct user_id from public.automations where trigger_type = 'schedule.weekly' and status = 'active' loop
+      n := n + public.automate_emit(r.user_id, 'schedule.weekly', null, null, 'weekly:' || d, jsonb_build_object('day', d));
+    end loop;
+  end if;
   return n;
 end;
+$$;
+
+-- The week in numbers, for the owner's Sunday summary (counts and sums only).
+create or replace function public.automate_weekly_stats(p_user uuid)
+returns jsonb language sql stable security definer set search_path = '' as $$
+  with w as (select now() - interval '7 days' as since, (now() at time zone 'Asia/Jerusalem')::date as today)
+  select jsonb_build_object(
+    'leads_new', (select count(*) from public.contacts c, w where c.user_id = p_user and c.source <> 'import' and c.created_at >= w.since),
+    'leads_handled', (select count(*) from public.contacts c, w where c.user_id = p_user and c.source <> 'import' and c.created_at >= w.since and c.handled_at is not null),
+    'clients_won', (select count(*) from public.contacts c, w where c.user_id = p_user and c.stage = 'won' and c.updated_at >= w.since),
+    'quotes_sent', (select count(*) from public.quote_shares q, w where q.user_id = p_user and q.created_at >= w.since),
+    'quotes_approved', (select count(*) from public.quote_shares q, w where q.user_id = p_user and q.status = 'approved' and q.decided_at >= w.since),
+    'quotes_approved_total', (select coalesce(sum(q.total), 0) from public.quote_shares q, w where q.user_id = p_user and q.status = 'approved' and q.decided_at >= w.since),
+    'quotes_waiting', (select count(*) from public.quote_shares q where q.user_id = p_user and q.status = 'sent'),
+    'paid_count', (select count(*) from public.invoice_tracking i, w where i.user_id = p_user and i.status = 'paid' and i.paid_at >= w.since),
+    'paid_total', (select coalesce(sum(i.amount), 0) from public.invoice_tracking i, w where i.user_id = p_user and i.status = 'paid' and i.paid_at >= w.since),
+    'overdue_count', (select count(*) from public.invoice_tracking i, w where i.user_id = p_user and i.status = 'unpaid' and i.due_date < w.today),
+    'overdue_total', (select coalesce(sum(i.amount), 0) from public.invoice_tracking i, w where i.user_id = p_user and i.status = 'unpaid' and i.due_date < w.today),
+    'tasks_done', (select count(*) from public.tasks t, w where t.user_id = p_user and t.status = 'done' and t.done_at >= w.since),
+    'tasks_overdue', (select count(*) from public.tasks t where t.user_id = p_user and t.status = 'open' and t.due_at < now()),
+    'emails_sent', (select count(*) from public.automation_messages m, w where m.user_id = p_user and m.status in ('sent', 'simulated') and m.sent_at >= w.since)
+  );
 $$;
 
 -- Retention: activity logs and emails are kept 90 days, then deleted
@@ -754,7 +782,7 @@ begin
   foreach f in array array[
     'automate_alert(uuid,text,text,text)', 'automate_limits(uuid)', 'automate_month()', 'automate_emit(uuid,text,text,uuid,text,jsonb)',
     'automate_cancel_runs(uuid,text,uuid,text[],text)', 'automate_emit_daily()', 'automate_claim_runs(integer)',
-    'automate_claim_messages(integer)', 'automate_emails_today()', 'automate_admin_overview()', 'automate_set_kill_switch(boolean,text)', 'automate_take_email(uuid)', 'automate_attention(uuid)',
+    'automate_claim_messages(integer)', 'automate_emails_today()', 'automate_admin_overview()', 'automate_set_kill_switch(boolean,text)', 'automate_weekly_stats(uuid)', 'automate_take_email(uuid)', 'automate_attention(uuid)',
     'contacts_events()', 'quote_shares_events()', 'invoice_tracking_events()'] loop
     execute format('revoke all on function public.%s from public, anon, authenticated', f);
     execute format('grant execute on function public.%s to service_role', f);
