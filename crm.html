@@ -63,13 +63,18 @@
     <div class="crm-header-bar">
       <div>
         <h1>ניהול לקוחות</h1>
-        <p style="margin:4px 0 0; color:var(--grey); font-size:13.5px;">כל הלידים שלכם, לפי שלב במכירה. המידע נשמר בדפדפן הזה בלבד.</p>
+        <p style="margin:4px 0 0; color:var(--grey); font-size:13.5px;">כל הלידים שלכם, לפי שלב במכירה.</p>
+        <p class="crm-local-note" style="margin:8px 0 0; font-size:13px; color:#8A5A00; background:#FFF6E5; border:1px solid #F0C36D; border-radius:8px; padding:6px 10px; display:inline-block;">⚠️ המידע נשמר <b>רק בדפדפן הזה</b>, בלי גיבוי. ניקוי נתוני גלישה ימחק אותו — מומלץ להוריד גיבוי מדי פעם.</p>
       </div>
       <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
         <div class="crm-summary">
           <span class="crm-summary-label">סה"כ בעסקאות פתוחות</span>
           <span class="crm-summary-total" id="crm-summary-total">₪0</span>
         </div>
+        <span style="display:inline-flex; flex-direction:column; align-items:center; gap:2px;">
+          <button type="button" class="btn btn-outline" id="crm-backup-btn" title="הורדת כל הלידים לקובץ שנפתח באקסל">⬇ הורדת גיבוי</button>
+          <button type="button" id="crm-backup-json" style="background:none; border:0; color:var(--grey); font-size:12px; text-decoration:underline; cursor:pointer;">גיבוי מלא (JSON)</button>
+        </span>
         <button type="button" class="btn btn-gold" id="crm-add-lead-btn">+ הוספת ליד</button>
       </div>
     </div>
@@ -165,10 +170,10 @@
 <script src="js/nav-auth.js?v=4"></script>
 <script src="js/my-panel.js?v=16"></script>
 <script src="js/domain-guide.js?v=5"></script>
-<script src="js/main.js?v=6"></script>
+<script src="js/main.js?v=7"></script>
 <script src="js/captcha.js?v=3"></script>
 <script src="js/widgets.js?v=18"></script>
-<script src="js/crm.js?v=2"></script>
+<script src="js/crm.js?v=3"></script>
 <script src="js/contact-email.js?v=1"></script>
 </body>
 </html>

@@ -335,6 +335,7 @@ type Actor = { id: string; email: string; role: Role };
 
 // ---- Owner's update emails ("דיוור") ----
 const MAIL_BATCH = 25;
+const CAMPAIGN_DAILY_CAP = Math.max(0, Number(Deno.env.get("CAMPAIGN_DAILY_CAP") || 50));
 
 // Israeli law (חוק התקשורת, סעיף 30א) requires an advertising email's
 // subject to start with "פרסומת"; the owner ticks whether it's one.
@@ -928,7 +929,15 @@ Deno.serve(async (req: Request) => {
       const { data: camp, error: cErr } = await admin.from("email_campaigns").select("id, kind, subject, body, finished_at").eq("id", body.campaignId).maybeSingle();
       if (cErr) throw cErr;
       if (!camp || camp.kind !== "update") return json({ error: "not found" }, 404);
-      const { data: recipients, error: rErr } = await admin.rpc("email_campaign_recipients", { p_campaign: camp.id, p_limit: MAIL_BATCH });
+      // Updates may use at most CAMPAIGN_DAILY_CAP of the email provider's
+      // daily allowance (free Resend plan: 100/day, shared with sign-up
+      // confirmations, password resets and welcome emails). The rest is
+      // always left for those, so a big update can never block a sign-up.
+      const dayStart = new Date(); dayStart.setUTCHours(0, 0, 0, 0);
+      const { count: sentToday } = await admin.from("email_sends").select("user_id", { count: "exact", head: true }).gte("sent_at", dayStart.toISOString());
+      const roomToday = CAMPAIGN_DAILY_CAP - (sentToday || 0);
+      if (roomToday <= 0) return json({ status: "quota", sent: 0, reason: "daily-cap" });
+      const { data: recipients, error: rErr } = await admin.rpc("email_campaign_recipients", { p_campaign: camp.id, p_limit: Math.min(MAIL_BATCH, roomToday) });
       if (rErr) throw rErr;
       const list = (recipients || []) as { user_id: string; email: string }[];
       if (!list.length) {

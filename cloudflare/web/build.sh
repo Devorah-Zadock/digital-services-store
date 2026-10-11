@@ -8,7 +8,7 @@ rm -rf "$dist"
 mkdir -p "$dist"
 tar -C "$root" \
   --exclude './.git' --exclude './.github' --exclude './supabase' --exclude './api' \
-  --exclude './cloudflare' --exclude './middleware.js' --exclude './vercel.json' \
+  --exclude './cloudflare' --exclude './automate' --exclude './middleware.js' --exclude './vercel.json' \
   --exclude '*.md' --exclude 'node_modules' \
   -cf - . | tar -C "$dist" -xf -
 cp "$root/cloudflare/web/_headers" "$dist/_headers"

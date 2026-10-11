@@ -6,16 +6,63 @@ const DESKKIT_LOCAL_CONTENT_PREFIXES = [
   "deskkit_sites_data_v1_",   // site drafts (per template)
   "deskkit_sites_last_template",
   "deskkit_sites_unlocked_",  // site purchase-unlock flags
-  "deskkit_crm_",             // CRM demo leads + unlock flag
   "deskkit_schedule_unlocked_", // schedule-builder unlock flag
 ];
+// CRM leads are NOT in the list above: they live only in this browser
+// (not tied to any account) and have no copy anywhere else, so another
+// account signing in here must never wipe them silently. They are removed
+// only on account deletion, after a warning that offers a backup file
+// (clearLocalDeskkitContent({ includeCrm: true }), account-settings.js).
+const DESKKIT_CRM_PREFIX = "deskkit_crm_";
 
-function clearLocalDeskkitContent() {
+/* ---------- CRM leads kept in this browser: read + backup file ---------- */
+function dkCrmLocalLeads() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem("deskkit_crm_leads") || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) { return []; }
+}
+
+const DK_CRM_STAGE_LABELS = { new: "ליד חדש", inprogress: "בטיפול / נשלחה הצעה", followup: "פולו-אפ", won: "נסגר בהצלחה" };
+
+// Downloads every lead in this browser as a file: "csv" opens in Excel
+// (UTF-8 with BOM so Hebrew shows correctly), "json" keeps everything
+// exactly as stored. Read-only — nothing is changed or sent anywhere.
+function dkCrmDownloadBackup(format) {
+  const leads = dkCrmLocalLeads();
+  const stamp = new Date().toISOString().slice(0, 10);
+  let blob, name;
+  if (format === "json") {
+    blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), source: "DeskKit CRM (this browser)", leads }, null, 2)], { type: "application/json" });
+    name = `deskkit-crm-backup-${stamp}.json`;
+  } else {
+    const cell = (v) => {
+      let t = String(v == null ? "" : v);
+      if (/^[=+\-@]/.test(t)) t = "'" + t; // never let a spreadsheet run a cell as a formula
+      return '"' + t.replace(/"/g, '""') + '"';
+    };
+    const rows = [["שם", "טלפון", "מייל", "סכום (₪)", "שלב", "הערות", "נוצר"]].concat(leads.map((l) => [
+      l.name, l.phone, l.email, l.amount, DK_CRM_STAGE_LABELS[l.stage] || l.stage, l.notes,
+      l.createdAt ? new Date(l.createdAt).toLocaleString("he-IL") : "",
+    ]));
+    blob = new Blob(["\ufeff" + rows.map((r) => r.map(cell).join(",")).join("\r\n")], { type: "text/csv;charset=utf-8" });
+    name = `deskkit-crm-backup-${stamp}.csv`;
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  return leads.length;
+}
+
+function clearLocalDeskkitContent(opts) {
+  const includeCrm = !!(opts && opts.includeCrm);
   try {
     const toRemove = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && DESKKIT_LOCAL_CONTENT_PREFIXES.some((p) => key === p || key.startsWith(p))) {
+      if (key && (DESKKIT_LOCAL_CONTENT_PREFIXES.some((p) => key === p || key.startsWith(p)) || (includeCrm && key.startsWith(DESKKIT_CRM_PREFIX)))) {
         toRemove.push(key);
       }
     }

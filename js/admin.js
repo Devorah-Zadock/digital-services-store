@@ -1524,7 +1524,7 @@ const MT_TOOL_LABELS = {
   "site-ai-director": "עוזר אתר", "site-ai-review": "בדיקת אתר",
 };
 // Free-plan limits, for the "how close are we" bars.
-const MT_LIMITS = { dbBytes: 500 * 1024 * 1024, storageBytes: 1024 * 1024 * 1024, mailDay: 100, mailMonth: 3000 };
+const MT_LIMITS = { dbBytes: 500 * 1024 * 1024, storageBytes: 1024 * 1024 * 1024, mailDay: 50, mailMonth: 3000 };
 
 function fmtBytes(n) {
   n = Number(n || 0);
@@ -1608,6 +1608,7 @@ function renderMetrics(m) {
       ["הצעות מחיר", fmtNum(docs.quotes)],
       ["חשבוניות", fmtNum(docs.invoices) + ` (${fmtNum(docs.invoices_issued)} הופקו)`],
       ["מערכות שעות", fmtNum(docs.schedules)],
+      ["CRM בדפדפנים (ספירה אנונימית)", `${fmtNum((m.crm_local || {}).browsers)} דפדפנים · ${fmtNum((m.crm_local || {}).leads)} לידים`],
     ])),
     mtCard("רכישות לפי מוצר", mtRows(licenses.map((l) => [MT_PRODUCT_LABELS[l.product] || "מוצר אחר", `${fmtNum(l.total)} (${fmtNum(l.last_30d)} ב-30 יום)`]), "עוד אין רכישות.")),
     mtCard("הורדות — 30 ימים", mtRows((m.downloads_30d || []).map((d) => [MT_TOOL_LABELS[d.kind] || d.kind, fmtNum(d.n)]), "אין הורדות ב-30 הימים האחרונים.")),
@@ -1628,7 +1629,7 @@ function renderMetrics(m) {
     mtCard("ניצול המסלולים החינמיים",
       mtMeter("מסד נתונים (Supabase)", m.db_bytes, MT_LIMITS.dbBytes, fmtBytes(m.db_bytes), "500 MB") +
       mtMeter("קבצים ותמונות (Supabase)", storageBytes, MT_LIMITS.storageBytes, fmtBytes(storageBytes), "1 GB") +
-      mtMeter("דיוור היום (Resend)", mail.sent_today, MT_LIMITS.mailDay, fmtNum(mail.sent_today), "100") +
+      mtMeter("דיוור היום (תקרה יומית)", mail.sent_today, MT_LIMITS.mailDay, fmtNum(mail.sent_today), "50") +
       `<p class="cx-muted mt-note">ב-70% הפס נצבע כתום, וב-90% אדום. זה הסימן לחשוב על שדרוג או ניקוי.</p>`),
   ].join("");
 
@@ -1698,7 +1699,7 @@ async function mailRunCampaign(campaignId) {
       const r = await callAdminStats({ action: "mail-send-batch", campaignId });
       total += r.sent || 0;
       if (r.status === "done") { mailStatus(`✓ נשלח! ${fmtNum(total)} מיילים יצאו בסבב הזה.`, "ok"); break; }
-      if (r.status === "quota") { mailStatus(`נשלחו ${fmtNum(total)} מיילים, ואז נגמרה המכסה היומית של Resend. מחר לוחצים "המשך שליחה" ברשימה מימין — זה ימשיך מאיפה שנעצר.`, "err"); break; }
+      if (r.status === "quota") { mailStatus(`נשלחו ${fmtNum(total)} מיילים היום, וזו התקרה היומית לדיוור (שומרים מקום למיילי הרשמה ואיפוס סיסמה). מחר לוחצים "המשך שליחה" ברשימה מימין — זה ימשיך בדיוק מאיפה שנעצר.`, "err"); break; }
       if (r.status === "error") { mailStatus(`נשלחו ${fmtNum(total)}. שליחה נכשלה בשלב הזה — אפשר ללחוץ "המשך שליחה" כדי לנסות שוב.`, "err"); break; }
       mailStatus(`שולחים… ${fmtNum(total)} עד עכשיו`);
       await new Promise((res) => setTimeout(res, 700));

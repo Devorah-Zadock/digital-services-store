@@ -124,6 +124,16 @@ document.addEventListener("DOMContentLoaded", () => {
     dkLoadMailPref(data.session);
   });
 
+  // Leads in the CRM live only in this browser and are erased with the
+  // account — say so before deleting, with a one-click backup file.
+  const crmCount = typeof dkCrmLocalLeads === "function" ? dkCrmLocalLeads().length : 0;
+  const crmWarn = document.getElementById("as-delete-crm-warning");
+  if (crmWarn && crmCount > 0) {
+    document.getElementById("as-delete-crm-count").textContent = String(crmCount);
+    crmWarn.hidden = false;
+    document.getElementById("as-delete-crm-backup").addEventListener("click", () => dkCrmDownloadBackup("csv"));
+  }
+
   const exportBtn = document.getElementById("as-export-btn");
   const exportMsg = document.getElementById("as-export-msg");
   if (exportBtn) {
@@ -201,7 +211,7 @@ document.addEventListener("DOMContentLoaded", () => {
         confirmBtn.disabled = false;
         return;
       }
-      clearLocalDeskkitContent();
+      clearLocalDeskkitContent({ includeCrm: true });
       await supabaseClient.auth.signOut();
       window.location.href = "index.html?accountDeleted=1";
     } catch (err) {
