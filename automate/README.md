@@ -8,7 +8,7 @@ now**: nothing in this folder is deployed to the live site.
 - `functions/` — Edge Functions: `automate-worker` (background), `automate-api`
   (the app), `lead-intake` (site contact forms), `quote-public` (client's quote link)
 - `functions/_shared/automate/` — templates (the automation library), engine
-  (pure logic), messages (all emails), mailer (simulated unless `MAIL_MODE=live`)
+  (pure logic), messages (all emails), mailer (simulated unless `AUTOMATE_MAIL_MODE=live`)
 - `web/` — the Automate app pages, copied onto the staging web app
 - `tests/unit` — engine logic (Deno), `tests/e2e/run.py` — full flows on staging
 

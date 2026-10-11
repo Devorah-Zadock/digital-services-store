@@ -1,0 +1,134 @@
+name: Automate (live)
+
+# DeskKit Automate on the LIVE project — run by hand, one careful step at a
+# time (see automate/docs/ROLLOUT.md). Nothing here runs on a push.
+#
+#   rehearse        restore last night's backup into a throwaway database
+#                   in this runner, install there twice, check that every
+#                   existing table is untouched and the security is right
+#   preflight       live, read-only: name clashes, secrets, admin list
+#   install         live: the engine, DISABLED (emergency stop on, nobody
+#                   allowed in, no schedule) — one transaction
+#   check           live, read-only: security + state
+#   pilot-prepare   live: pilot = the owner's admin account only, simulated
+#                   mail, functions deployed, worker scheduled (the
+#                   emergency stop stays as it is)
+#   pilot-check     live, read-only: everything limited to the owner
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "Step"
+        type: choice
+        options: [rehearse, preflight, install, check, pilot-prepare, pilot-check]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: automate-live
+  cancel-in-progress: false
+
+env:
+  SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+  PROJECT_REF: vafkjsetlrpaczsmqvqs
+
+jobs:
+  rehearse:
+    if: inputs.task == 'rehearse'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET: deskkit-backups
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+      TEST_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Install tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client gnupg > /dev/null
+          python3 -m pip install --quiet --disable-pip-version-check --user --upgrade --break-system-packages boto3 botocore
+      - name: Download and decrypt the latest backup
+        run: python3 .github/scripts/backup_tool.py db-download-latest "$RUNNER_TEMP/restore"
+      - name: Start a throwaway Supabase database
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/local" && cd "$RUNNER_TEMP/local"
+          supabase init --force < /dev/null > /dev/null 2>&1
+          major="$(cat "$RUNNER_TEMP/restore/server_major")"
+          if [ -n "$major" ]; then sed -i "s/^major_version = .*/major_version = $major/" supabase/config.toml; fi
+          supabase start -x realtime,imgproxy,kong,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor,mailpit > start.log 2>&1 || { tail -n 15 start.log; exit 1; }
+      - name: Restore the backup into it
+        run: python3 .github/scripts/backup_tool.py restore "$RUNNER_TEMP/restore" "$TEST_DB_URL"
+      - name: Install there (disabled), twice, and compare
+        env:
+          COMPARE_STRICT: "1"
+        run: |
+          set -euo pipefail
+          T="$RUNNER_TEMP"
+          python3 .github/scripts/automate_live.py counts "$TEST_DB_URL" "$T/before.json"
+          psql "$TEST_DB_URL" -X -q -v ON_ERROR_STOP=1 --single-transaction -f automate/sql/10_engine.sql -f automate/sql/20_live_disabled.sql > /dev/null
+          python3 .github/scripts/automate_live.py check "$TEST_DB_URL" fresh-install
+          echo "--- applying the same files a second time (must change nothing) ---"
+          psql "$TEST_DB_URL" -X -q -v ON_ERROR_STOP=1 --single-transaction -f automate/sql/10_engine.sql -f automate/sql/20_live_disabled.sql > /dev/null
+          python3 .github/scripts/automate_live.py check "$TEST_DB_URL" fresh-install
+          python3 .github/scripts/automate_live.py counts "$TEST_DB_URL" "$T/after.json"
+          python3 .github/scripts/automate_live.py compare "$T/before.json" "$T/after.json"
+      - name: Engine tests on the restored copy (then thrown away)
+        run: psql "$TEST_DB_URL" -X -q -v ON_ERROR_STOP=1 -f automate/tests/local/sql_tests.sql | grep -i "passed"
+      - name: Clean up
+        if: always()
+        run: |
+          (cd "$RUNNER_TEMP/local" 2>/dev/null && supabase stop --no-backup > /dev/null 2>&1) || true
+          rm -rf "$RUNNER_TEMP/restore" "$RUNNER_TEMP/local" "$RUNNER_TEMP/before.json" "$RUNNER_TEMP/after.json"
+
+  live:
+    if: inputs.task != 'rehearse'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preflight (read-only)
+        if: inputs.task == 'preflight'
+        run: python3 .github/scripts/automate_live.py preflight
+      - name: Install (disabled)
+        if: inputs.task == 'install'
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/automate_live.py counts live "$RUNNER_TEMP/before.json"
+          python3 .github/scripts/automate_live.py install
+          python3 .github/scripts/automate_live.py counts live "$RUNNER_TEMP/after.json"
+          python3 .github/scripts/automate_live.py compare "$RUNNER_TEMP/before.json" "$RUNNER_TEMP/after.json"
+      - name: Check (read-only)
+        if: inputs.task == 'check'
+        run: python3 .github/scripts/automate_live.py check live
+      - uses: supabase/setup-cli@v1
+        if: inputs.task == 'pilot-prepare'
+        with:
+          version: latest
+      - name: Pilot — owner only, simulated mail
+        if: inputs.task == 'pilot-prepare'
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/automate_live.py check live
+          python3 .github/scripts/automate_live.py pilot-settings
+          python3 .github/scripts/automate_live.py pilot-secrets
+          mkdir -p "$RUNNER_TEMP/fx/supabase/functions"
+          cp -r automate/functions/. "$RUNNER_TEMP/fx/supabase/functions/"
+          supabase functions deploy automate-api automate-worker lead-intake quote-public \
+            --project-ref "$PROJECT_REF" --workdir "$RUNNER_TEMP/fx" --no-verify-jwt --use-api
+          python3 .github/scripts/automate_live.py pilot-cron
+          python3 .github/scripts/automate_live.py pilot-check
+      - name: Pilot check (read-only)
+        if: inputs.task == 'pilot-check'
+        run: python3 .github/scripts/automate_live.py pilot-check

@@ -131,12 +131,67 @@ async function evaluate(check: string, rc: RunCtx): Promise<boolean> {
     case "has_client_email": { const c = await rc.contact(); const q = await rc.quote(); const i = await rc.invoice(); return !!(c?.email || q?.client_email || i?.client_email); }
     case "review_ready": { const c = await rc.contact(); return !!c?.email && !!cfg.review_url && c.stage !== "lost"; }
     case "welcome_allowed": { const c = await rc.contact(); return cfg.welcome !== false && !!c?.email; }
+    case "lead_open_no_quote": {
+      const c = await rc.contact();
+      if (!c || !["new", "inprogress", "followup"].includes(c.stage)) return false;
+      // A quote sent (or approved) to this lead means it moved on — quote follow-ups take over.
+      const { count: byId } = await rc.db.from("quote_shares").select("id", { count: "exact", head: true })
+        .eq("user_id", rc.run.user_id).eq("contact_id", c.id).in("status", ["sent", "approved"]);
+      if (byId) return false;
+      if (c.email) {
+        const { count: byEmail } = await rc.db.from("quote_shares").select("id", { count: "exact", head: true })
+          .eq("user_id", rc.run.user_id).ilike("client_email", exactLike(c.email)).in("status", ["sent", "approved"]);
+        if (byEmail) return false;
+      }
+      return true;
+    }
+    case "auto_close_on": return cfg.auto_close === true;
+    case "no_newer_job": {
+      // The run is about one specific finished job; a newer one starts its own run.
+      const c = await rc.contact();
+      const ev = (rc.run.context.event || {}) as { job_done_at?: string };
+      if (!c?.job_done_at) return false;
+      return !ev.job_done_at || Date.parse(c.job_done_at) === Date.parse(ev.job_done_at);
+    }
+    case "service_client_ok": { const c = await rc.contact(); return !!c?.email && c.stage !== "lost"; }
+    case "review_not_asked": { const c = await rc.contact(); return !!c?.email && !(await askedForReview(rc, c.email)); }
+    case "invoice_paid": return (await rc.invoice())?.status === "paid";
+    case "paid_review_ok": {
+      const i = await rc.invoice();
+      return i?.status === "paid" && !!cfg.review_url && !!i.client_email && !(await askedForReview(rc, i.client_email));
+    }
+    case "referral_ok": return cfg.referral === true && (await rc.invoice())?.status === "paid";
+    case "feedback_ok": return cfg.ask_feedback !== false && !!(await rc.quote())?.client_email;
+    case "reengage_on": return cfg.reengage !== false;
+    case "client_not_back": {
+      const q = await rc.quote();
+      if (!q?.client_email) return false;
+      const { count: newer } = await rc.db.from("quote_shares").select("id", { count: "exact", head: true })
+        .eq("user_id", rc.run.user_id).ilike("client_email", exactLike(q.client_email)).gt("created_at", q.created_at);
+      if (newer) return false;
+      const c = await rc.contact();
+      return !c || (c.stage !== "won" && c.stage !== "lost");
+    }
     case "onboarding_open": {
       const { count } = await rc.db.from("tasks").select("id", { count: "exact", head: true }).eq("run_id", rc.run.id).eq("status", "open");
       return (count || 0) > 0;
     }
   }
   throw new Error("unknown check " + check);
+}
+
+// Case-insensitive exact match: "_" and "%" in an address are not wildcards.
+function exactLike(v: string): string {
+  return String(v).replace(/[\\%_]/g, (m) => "\\" + m);
+}
+
+// Was this client asked for a review in the last year (by any automation)?
+async function askedForReview(rc: RunCtx, email: string): Promise<boolean> {
+  const since = new Date(Date.now() - 365 * 864e5).toISOString();
+  const { count } = await rc.db.from("automation_messages").select("id", { count: "exact", head: true })
+    .eq("user_id", rc.run.user_id).eq("purpose", "review_request").ilike("to_email", exactLike(email))
+    .not("status", "in", "(cancelled,failed)").neq("run_id", rc.run.id).gte("created_at", since);
+  return (count || 0) > 0;
 }
 
 // ---------------------------------------------------------------------
@@ -224,6 +279,15 @@ async function execAction(step: Extract<Step, { kind: "action" }>, rc: RunCtx): 
         await must(rc.db.from("quote_shares").update({ contact_id: created.id }).eq("id", q.id));
       }
       return { type: "ok", summary: `${q.client_name} סומן/ה כלקוח/ה שנסגר/ה` };
+    }
+    case "set_stage": {
+      const c = await rc.contact();
+      if (!c) return { type: "skip", summary: "הלקוח לא נמצא" };
+      // Never undo a decision: a client already won or lost stays as is.
+      if (c.stage === "won" || c.stage === "lost" || c.stage === step.stage) return { type: "skip", summary: "השלב כבר עודכן" };
+      const notes = step.note ? [c.notes, `${new Date().toLocaleDateString("he-IL", { timeZone: "Asia/Jerusalem" })}: ${step.note}`].filter(Boolean).join("\n").slice(-5000) : c.notes;
+      await must(rc.db.from("contacts").update({ stage: step.stage, notes }).eq("id", c.id).eq("user_id", rc.run.user_id));
+      return { type: "ok", summary: step.stage === "lost" ? `${c.name} סומן/ה "לא רלוונטי"` : `${c.name} הועבר/ה ל"פולו-אפ"` };
     }
     case "digest_owner": {
       const { data: items } = await rc.db.rpc("automate_attention", { p_user: rc.run.user_id });

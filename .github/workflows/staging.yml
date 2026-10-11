@@ -47,7 +47,7 @@ jobs:
           deno-version: v2.x
 
       - name: Unit tests (engine logic)
-        run: deno test automate/tests/unit
+        run: deno test --allow-read=automate automate/tests/unit
 
       - name: Connect to the staging project
         run: python3 .github/scripts/staging.py env

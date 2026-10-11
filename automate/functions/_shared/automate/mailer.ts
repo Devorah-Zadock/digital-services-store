@@ -1,8 +1,8 @@
 // DeskKit Automate — the only place that hands an email to a provider.
 //
-// SAFE BY DEFAULT: unless MAIL_MODE is exactly "live", nothing is sent —
+// SAFE BY DEFAULT: unless AUTOMATE_MAIL_MODE is exactly "live", nothing is sent —
 // the email is recorded as "simulated" (the staging project never has
-// MAIL_MODE=live). In live mode, MAIL_ALLOWLIST (comma-separated
+// AUTOMATE_MAIL_MODE=live). In live mode, AUTOMATE_MAIL_ALLOWLIST (comma-separated
 // addresses) limits real sending to those addresses only, for a
 // controlled pilot; everyone else is simulated.
 
@@ -21,8 +21,8 @@ function cleanName(s: string): string {
 }
 
 export function mailMode(): { live: boolean; allowlist: string[] } {
-  const live = Deno.env.get("MAIL_MODE") === "live" && !!Deno.env.get("RESEND_API_KEY");
-  const allowlist = (Deno.env.get("MAIL_ALLOWLIST") || "").split(",").map((x) => x.trim().toLowerCase()).filter(Boolean);
+  const live = Deno.env.get("AUTOMATE_MAIL_MODE") === "live" && !!Deno.env.get("RESEND_API_KEY");
+  const allowlist = (Deno.env.get("AUTOMATE_MAIL_ALLOWLIST") || "").split(",").map((x) => x.trim().toLowerCase()).filter(Boolean);
   return { live, allowlist };
 }
 

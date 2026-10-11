@@ -25,6 +25,35 @@ Deno.test("packs only reference existing templates and settings", () => {
   }
 });
 
+Deno.test("every check, message and action a template uses exists in the worker", async () => {
+  const worker = await Deno.readTextFile(new URL("../../functions/automate-worker/index.ts", import.meta.url));
+  const messages = await Deno.readTextFile(new URL("../../functions/_shared/automate/messages.ts", import.meta.url));
+  for (const t of Object.values(TEMPLATES)) {
+    for (const s of t.steps) {
+      if (s.kind === "check") ok(worker.includes(`case "${s.check}"`), `${t.key}: check ${s.check}`);
+      if (s.kind === "action") {
+        ok(worker.includes(`case "${s.action}"`), `${t.key}: action ${s.action}`);
+        if ("message" in s) ok(messages.includes(`case "${s.message}"`), `${t.key}: message ${s.message}`);
+      }
+    }
+  }
+});
+
+Deno.test("every pack fits the free plan (12 active automations)", () => {
+  for (const p of PACKS) ok(p.templates.length <= 12 - 1, `${p.key} has ${p.templates.length} (needs room for one more)`);
+});
+
+Deno.test("a stalled lead: follow-up, then decide, then (only if chosen) close", () => {
+  const steps = TEMPLATES.lead_nurture.steps;
+  const at = (k: string) => steps.findIndex((s) => s.key === k);
+  // no email → skip just the client message, keep going
+  eq(afterCheck(steps[at("can_email")] as never, at("can_email"), false), { next: at("followup_client") + 1 });
+  // lead moved on (quote / won / lost) → stop
+  eq(afterCheck(steps[at("open_2")] as never, at("open_2"), false), { stop: true });
+  // auto-close off → stop after the decide task
+  eq(afterCheck(steps[at("close_on")] as never, at("close_on"), false), { stop: true });
+});
+
 Deno.test("catalog exposes no step internals", () => {
   const c = catalog();
   ok(c.templates.length >= 6);

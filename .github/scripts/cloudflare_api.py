@@ -24,6 +24,7 @@ are public anyway (anyone can look up a domain's DNS) — never tokens.
                                 token to also have Account Analytics: Read)
 """
 import json
+import re
 import os
 import sys
 import urllib.error
@@ -428,8 +429,29 @@ def cmd_visits():
     print(f"visits saved: {len(daily)} days, {sum(d['visits'] for d in daily)} visits, {sum(d['pageviews'] for d in daily)} page views (last 30 days)")
 
 
+def cmd_turnstile_info():
+    """Read-only: the account's Turnstile widgets (public site keys, mode and
+    the hostnames each one is allowed on). Changes nothing."""
+    acct = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "").strip()
+    token = os.environ.get("CLOUDFLARE_API_TOKEN", "").strip()
+    req = urllib.request.Request(f"{API}/accounts/{acct}/challenges/widgets?per_page=50",
+                                 headers={"Authorization": f"Bearer {token}"})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as res:
+            widgets = json.loads(res.read().decode()).get("result") or []
+    except urllib.error.HTTPError as e:
+        print(f"cannot list Turnstile widgets with this API token (HTTP {e.code}) — needs 'Turnstile: Read'")
+        return
+    site_key = re.search(r'DK_TURNSTILE_SITE_KEY = "([^"]*)"', open("js/captcha.js", encoding="utf-8").read())
+    site_key = site_key.group(1) if site_key else ""
+    print(f"{len(widgets)} widget(s)")
+    for w in widgets:
+        mine = "← the key in js/captcha.js" if w.get("sitekey") == site_key else ""
+        print(f"  {w.get('name')!r} mode={w.get('mode')} domains={w.get('domains')} {mine}")
+
+
 if __name__ == "__main__":
-    cmds = {"subdomain": cmd_subdomain, "status": cmd_status, "smoke": cmd_smoke, "live": cmd_live, "prepare": cmd_prepare, "switch": cmd_switch, "drop-vercel": cmd_drop_vercel, "rollback": cmd_rollback, "visits": cmd_visits}
+    cmds = {"subdomain": cmd_subdomain, "status": cmd_status, "smoke": cmd_smoke, "live": cmd_live, "prepare": cmd_prepare, "switch": cmd_switch, "drop-vercel": cmd_drop_vercel, "rollback": cmd_rollback, "visits": cmd_visits, "turnstile-info": cmd_turnstile_info}
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
     if cmd not in cmds:
         sys.exit(__doc__)

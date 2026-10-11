@@ -24,7 +24,9 @@ export type ConfigField =
 export type Check =
   | "lead_from_form" | "lead_still_new" | "client_ack_allowed" | "quote_pending" | "invoice_unpaid"
   | "has_client_email" | "review_ready" | "onboarding_open" | "second_nudge_on" | "welcome_allowed"
-  | "invoice_second_allowed" | "invoice_third_allowed";
+  | "invoice_second_allowed" | "invoice_third_allowed"
+  | "lead_open_no_quote" | "auto_close_on" | "no_newer_job" | "service_client_ok" | "review_not_asked"
+  | "invoice_paid" | "paid_review_ok" | "referral_ok" | "feedback_ok" | "reengage_on" | "client_not_back";
 
 export type Step =
   | { key: string; kind: "action"; action: "email_owner"; message: string }
@@ -32,6 +34,7 @@ export type Step =
   | { key: string; kind: "action"; action: "create_task"; title: string; dueHours?: number; dueHoursFrom?: string }
   | { key: string; kind: "action"; action: "create_checklist" }
   | { key: string; kind: "action"; action: "mark_contact_won" }
+  | { key: string; kind: "action"; action: "set_stage"; stage: "followup" | "lost"; note: string }
   | { key: string; kind: "action"; action: "digest_owner" }
   | { key: string; kind: "wait"; hours?: number; days?: number; hoursFrom?: string; daysFrom?: string; untilDueDatePlusDaysFrom?: string }
   | { key: string; kind: "check"; check: Check; otherwise: "stop" | { skip: number } };
@@ -244,7 +247,164 @@ export const TEMPLATES: Record<string, Template> = {
     steps: [
       { key: "wait_delay", kind: "wait", daysFrom: "delay_days" },
       { key: "ready", kind: "check", check: "review_ready", otherwise: "stop" },
+      { key: "not_asked", kind: "check", check: "review_not_asked", otherwise: "stop" },
       { key: "ask_review", kind: "action", action: "email_client", message: "review_request", approval: "config" },
+    ],
+  },
+
+  lead_nurture: {
+    key: "lead_nurture", version: 1, trigger: "lead.created", subject: "contact", icon: "🌱",
+    name: "ליד שלא התקדם — מעקב עד החלטה", nameEn: "Stalled leads — followed up until decided",
+    outcome: "פנייה שלא התקדמה מקבלת הודעת מעקב עדינה; אם אין תגובה — את/ה מחליט/ה, ואם בחרת — הליד נסגר מסודר.",
+    outcomeEn: "A lead that stalls gets a gentle follow-up; if nothing moves, you decide — or it's closed neatly.",
+    howItWorks: [
+      "כמה ימים אחרי פנייה שלא התקדמה (לא נשלחה הצעה, לא נסגר) — הודעת מעקב קצרה ללקוח (אחרי אישורך, או אוטומטית).",
+      "אם בינתיים נשלחה הצעה, הלקוח נסגר או סומן \"לא רלוונטי\" — שום דבר לא נשלח והמעקב נעצר.",
+      "אם עברו עוד ימים בלי התקדמות — הליד עובר ל\"פולו-אפ\", ונפתחת לך משימה: להמשיך או לסגור.",
+      "אם בחרת בסגירה אוטומטית — ליד שנשאר תקוע עוד זמן רב נסגר כ\"לא רלוונטי\", ואת/ה מקבל/ת עדכון.",
+    ],
+    needs: ["מייל של הלקוח (בשביל הודעת המעקב)"],
+    category: "sales",
+    config: [
+      { key: "first_days", type: "int", label: "הודעת מעקב ללקוח אחרי", labelEn: "Follow-up to the client after", min: 1, max: 14, default: 3, unit: "ימים" },
+      CLIENT_MESSAGES,
+      { key: "followup_text", type: "text", label: "נוסח הודעת המעקב", labelEn: "Follow-up text", maxLength: 1000, multiline: true,
+        default: "היי {שם},\nרציתי לבדוק אם הפנייה שלך ל{עסק} עדיין רלוונטית. אם כן — אפשר פשוט להשיב למייל הזה ונמשיך משם.\nאם כבר לא — הכל בסדר, תודה שחשבת עלינו.",
+        placeholders: ["{שם}", "{עסק}"] },
+      { key: "decide_days", type: "int", label: "משימת \"להמשיך או לסגור\" אחרי עוד", labelEn: "\"Continue or close\" task after another", min: 2, max: 30, default: 7, unit: "ימים" },
+      { key: "auto_close", type: "bool", label: "לסגור אוטומטית ליד שנשאר תקוע", labelEn: "Close stalled leads automatically", default: false },
+      { key: "close_days", type: "int", label: "לסגור אחרי עוד", labelEn: "Close after another", min: 7, max: 90, default: 21, unit: "ימים" },
+    ],
+    steps: [
+      { key: "wait_first", kind: "wait", daysFrom: "first_days" },
+      { key: "open_1", kind: "check", check: "lead_open_no_quote", otherwise: "stop" },
+      { key: "can_email", kind: "check", check: "has_client_email", otherwise: { skip: 1 } },
+      { key: "followup_client", kind: "action", action: "email_client", message: "lead_followup", approval: "config" },
+      { key: "wait_decide", kind: "wait", daysFrom: "decide_days" },
+      { key: "open_2", kind: "check", check: "lead_open_no_quote", otherwise: "stop" },
+      { key: "to_followup", kind: "action", action: "set_stage", stage: "followup", note: "" },
+      { key: "decide_task", kind: "action", action: "create_task", title: "להחליט על {שם}: להמשיך או לסגור", dueHours: 24 },
+      { key: "tell_owner", kind: "action", action: "email_owner", message: "lead_decide" },
+      { key: "close_on", kind: "check", check: "auto_close_on", otherwise: "stop" },
+      { key: "wait_close", kind: "wait", daysFrom: "close_days" },
+      { key: "open_3", kind: "check", check: "lead_open_no_quote", otherwise: "stop" },
+      { key: "close", kind: "action", action: "set_stage", stage: "lost", note: "נסגר אוטומטית — לא הייתה התקדמות" },
+      { key: "tell_closed", kind: "action", action: "email_owner", message: "lead_closed" },
+    ],
+  },
+
+  service_reminder: {
+    key: "service_reminder", version: 1, trigger: "job.done", subject: "contact", icon: "🔁",
+    name: "לקוחות שחוזרים: תזכורת לטיפול הבא", nameEn: "Repeat clients: next-visit reminder",
+    outcome: "כשמגיע הזמן לטיפול או לשירות הבא, הלקוח מקבל תזכורת אישית — ואם לא חזר, את/ה יודע/ת למי להתקשר.",
+    outcomeEn: "When the next visit is due, the client gets a personal reminder — and if they don't book, you know whom to call.",
+    howItWorks: [
+      "מסמנים אצל הלקוח \"העבודה הסתיימה\".",
+      "אחרי הזמן שבחרת (למשל חצי שנה לטיפול במזגן, 4 שבועות לטיפול יופי) — הלקוח מקבל תזכורת אישית.",
+      "אם הלקוח כבר חזר בינתיים (סימנת עבודה חדשה) — שום דבר לא נשלח, והספירה מתחילה מחדש מהעבודה החדשה.",
+      "אם עבר שבוע מהתזכורת והלקוח לא חזר — משימה בשבילך להתקשר.",
+    ],
+    needs: ["מייל של הלקוח"],
+    category: "service",
+    config: [
+      { key: "after_days", type: "int", label: "תזכורת אחרי", labelEn: "Remind after", min: 7, max: 730, default: 180, unit: "ימים",
+        help: "כמה זמן אחרי סיום העבודה כדאי לחזור? למשל: 28 לטיפול יופי, 180 לטיפול במזגן, 365 לבדיקה שנתית." },
+      { ...CLIENT_MESSAGES },
+      { key: "reminder_text", type: "text", label: "נוסח התזכורת", labelEn: "Reminder text", maxLength: 1000, multiline: true,
+        default: "היי {שם},\nעבר זמן מאז הביקור האחרון שלנו, וזה זמן טוב לקבוע את הבא.\nאפשר להשיב למייל הזה או להתקשר, ונתאם מועד שנוח לך.\n{עסק}",
+        placeholders: ["{שם}", "{עסק}"] },
+      { key: "call_after_days", type: "int", label: "משימת טלפון אם לא חזר אחרי", labelEn: "Call task if no booking after", min: 1, max: 30, default: 7, unit: "ימים" },
+    ],
+    steps: [
+      { key: "wait_due", kind: "wait", daysFrom: "after_days" },
+      { key: "same_job_1", kind: "check", check: "no_newer_job", otherwise: "stop" },
+      { key: "can_send", kind: "check", check: "service_client_ok", otherwise: { skip: 1 } },
+      { key: "remind_client", kind: "action", action: "email_client", message: "service_due", approval: "config" },
+      { key: "wait_call", kind: "wait", daysFrom: "call_after_days" },
+      { key: "same_job_2", kind: "check", check: "no_newer_job", otherwise: "stop" },
+      { key: "call_task", kind: "action", action: "create_task", title: "להתקשר ל{שם} לתיאום הביקור הבא", dueHours: 24 },
+    ],
+  },
+
+  paid_thanks: {
+    key: "paid_thanks", version: 1, trigger: "invoice.paid", subject: "invoice", icon: "🙏",
+    name: "שולם — תודה, ביקורת והמלצה", nameEn: "Paid — thanks, a review and a referral",
+    outcome: "כשמסמנים שחשבונית שולמה: הלקוח מקבל תודה, אחר כך בקשה לביקורת, ובהמשך בקשה להמליץ עליך.",
+    outcomeEn: "When an invoice is marked paid: a thank-you, then a review request, then a referral request.",
+    howItWorks: [
+      "מסמנים \"שולם\" בחשבונית שבמעקב.",
+      "הלקוח מקבל מייל תודה קצר.",
+      "אחרי כמה ימים — בקשה לכתוב ביקורת (אם הוספת קישור, ורק אם לא ביקשנו ממנו כבר בשנה האחרונה).",
+      "אחרי חודש — בקשה עדינה להמליץ עליך לחברים (אם הפעלת).",
+      "אם סימון ה\"שולם\" בוטל — שום דבר נוסף לא נשלח.",
+    ],
+    needs: ["חשבונית במעקב עם מייל של הלקוח"],
+    category: "money",
+    config: [
+      { ...CLIENT_MESSAGES, default: "auto" },
+      { key: "thanks_text", type: "text", label: "נוסח התודה", labelEn: "Thank-you text", maxLength: 1000, multiline: true,
+        default: "היי {שם},\nקיבלנו את התשלום על חשבונית {חשבונית} — תודה רבה!\nשמחנו לעבוד איתך, ואנחנו כאן לכל דבר.\n{עסק}",
+        placeholders: ["{שם}", "{עסק}", "{חשבונית}", "{סכום}"] },
+      { key: "review_url", type: "url", label: "קישור לכתיבת ביקורת (לא חובה)", labelEn: "Review link (optional)", default: "",
+        help: "בלי קישור — לא תישלח בקשה לביקורת." },
+      { key: "review_after_days", type: "int", label: "בקשת ביקורת אחרי", labelEn: "Review request after", min: 1, max: 14, default: 3, unit: "ימים" },
+      { key: "review_text", type: "text", label: "נוסח בקשת הביקורת", labelEn: "Review request text", maxLength: 1000, multiline: true,
+        default: "היי {שם},\nאם נהנית מהעבודה איתנו, נשמח מאוד לביקורת קצרה:\n{קישור}\nזה עוזר לעסק קטן יותר ממה שנדמה. תודה!",
+        placeholders: ["{שם}", "{עסק}", "{קישור}"] },
+      { key: "referral", type: "bool", label: "לבקש המלצה לחברים אחרי חודש", labelEn: "Ask for a referral after a month", default: false },
+      { key: "referral_after_days", type: "int", label: "בקשת המלצה אחרי", labelEn: "Referral request after", min: 14, max: 90, default: 30, unit: "ימים" },
+      { key: "referral_text", type: "text", label: "נוסח בקשת ההמלצה", labelEn: "Referral text", maxLength: 1000, multiline: true,
+        default: "היי {שם},\nאם מכירים מישהו שיכול להיעזר ב{עסק} — נשמח מאוד אם תעבירו לו את הפרטים שלנו.\nהמלצה מלקוח מרוצה היא הדבר הכי שווה שיש לנו. תודה!",
+        placeholders: ["{שם}", "{עסק}"] },
+    ],
+    steps: [
+      { key: "paid", kind: "check", check: "invoice_paid", otherwise: "stop" },
+      { key: "can_email", kind: "check", check: "has_client_email", otherwise: "stop" },
+      { key: "thank", kind: "action", action: "email_client", message: "paid_thanks", approval: "config" },
+      { key: "wait_review", kind: "wait", daysFrom: "review_after_days" },
+      { key: "review_ok", kind: "check", check: "paid_review_ok", otherwise: { skip: 1 } },
+      { key: "ask_review", kind: "action", action: "email_client", message: "review_request", approval: "config" },
+      { key: "referral_on", kind: "check", check: "referral_ok", otherwise: "stop" },
+      { key: "wait_referral", kind: "wait", daysFrom: "referral_after_days" },
+      { key: "still_paid", kind: "check", check: "invoice_paid", otherwise: "stop" },
+      { key: "ask_referral", kind: "action", action: "email_client", message: "referral_request", approval: "config" },
+    ],
+  },
+
+  quote_lost: {
+    key: "quote_lost", version: 1, trigger: "quote.declined", subject: "quote", icon: "🧭",
+    name: "הצעה שנדחתה — לומדים וחוזרים בזמן", nameEn: "Declined quote — learn, then come back",
+    outcome: "כשלקוח דוחה הצעה: את/ה יודע/ת מיד, הלקוח נשאל בעדינות מה היה חסר, ואחרי זמן — פנייה חוזרת אם עדיין לא סגר עם אף אחד.",
+    outcomeEn: "When a quote is declined: you know at once, the client is gently asked what was missing, and later you reach out again.",
+    howItWorks: [
+      "הלקוח לוחץ \"לא מתאים\" בקישור ההצעה — את/ה מקבל/ת מייל מיד.",
+      "למחרת: שאלה קצרה ללקוח מה היה חסר (אחרי אישורך, או אוטומטית) — כדי ללמוד ולשפר את ההצעה הבאה.",
+      "אחרי הזמן שבחרת: אם לא נשלחה ללקוח הצעה חדשה והוא לא נסגר — פנייה חוזרת עדינה, ומשימה בשבילך.",
+    ],
+    needs: ["הצעת מחיר שנשלחה מתוך DeskKit"],
+    category: "sales",
+    config: [
+      { key: "ask_feedback", type: "bool", label: "לשאול את הלקוח מה היה חסר", labelEn: "Ask the client what was missing", default: true },
+      CLIENT_MESSAGES,
+      { key: "feedback_text", type: "text", label: "נוסח השאלה", labelEn: "Question text", maxLength: 1000, multiline: true,
+        default: "היי {שם},\nתודה שבדקת את ההצעה של {עסק}. כדי שנשתפר — נשמח לשמוע במשפט אחד מה היה חסר או לא התאים (מחיר, מועד, משהו אחר?). אפשר פשוט להשיב למייל הזה.",
+        placeholders: ["{שם}", "{עסק}"] },
+      { key: "reengage", type: "bool", label: "לפנות שוב אחרי זמן", labelEn: "Reach out again later", default: true },
+      { key: "reengage_days", type: "int", label: "פנייה חוזרת אחרי", labelEn: "Reach out again after", min: 30, max: 180, default: 60, unit: "ימים" },
+      { key: "reengage_text", type: "text", label: "נוסח הפנייה החוזרת", labelEn: "Reach-out text", maxLength: 1000, multiline: true,
+        default: "היי {שם},\nלפני זמן מה בדקת הצעה מ{עסק}. אם הצורך עדיין קיים, או שמשהו השתנה — נשמח להכין הצעה מעודכנת. פשוט להשיב למייל הזה.",
+        placeholders: ["{שם}", "{עסק}"] },
+    ],
+    steps: [
+      { key: "tell_owner", kind: "action", action: "email_owner", message: "quote_declined" },
+      { key: "feedback_on", kind: "check", check: "feedback_ok", otherwise: { skip: 2 } },
+      { key: "wait_feedback", kind: "wait", hours: 24 },
+      { key: "ask_feedback", kind: "action", action: "email_client", message: "quote_feedback", approval: "config" },
+      { key: "reengage_on", kind: "check", check: "reengage_on", otherwise: "stop" },
+      { key: "wait_reengage", kind: "wait", daysFrom: "reengage_days" },
+      { key: "not_back", kind: "check", check: "client_not_back", otherwise: "stop" },
+      { key: "reengage_client", kind: "action", action: "email_client", message: "quote_reengage", approval: "config" },
+      { key: "reengage_task", kind: "action", action: "create_task", title: "לבדוק אם {שם} רלוונטי/ת שוב", dueHours: 48 },
     ],
   },
 
@@ -272,30 +432,34 @@ export const TEMPLATES: Record<string, Template> = {
 export type Pack = { key: string; name: string; nameEn: string; icon: string; templates: string[]; overrides: Record<string, Record<string, unknown>> };
 
 const SALES_CORE = ["lead_autopilot", "quote_followup", "quote_won", "invoice_collect", "client_onboarding", "daily_digest"];
+// What each pack adds on top: the follow-ups that turn one sale into the next.
+const GROWTH = ["lead_nurture", "quote_lost", "paid_thanks"];
 
 export const PACKS: Pack[] = [
-  { key: "general", name: "עסק כללי", nameEn: "General business", icon: "🏢", templates: SALES_CORE, overrides: {} },
-  { key: "home_services", name: "שיפוצים, התקנות ובעלי מקצוע", nameEn: "Home services & trades", icon: "🛠️", templates: SALES_CORE,
+  { key: "general", name: "עסק כללי", nameEn: "General business", icon: "🏢", templates: SALES_CORE.concat(GROWTH), overrides: {} },
+  { key: "home_services", name: "שיפוצים, התקנות ובעלי מקצוע", nameEn: "Home services & trades", icon: "🛠️", templates: SALES_CORE.concat(["lead_nurture", "service_reminder", "paid_thanks"]),
     overrides: {
+      service_reminder: { after_days: 180 },
       lead_autopilot: { response_hours: 1, auto_reply_text: "היי {שם},\nתודה שפנית ל{עסק}! קיבלנו את הפנייה ונחזור אלייך היום לתיאום הצעת מחיר." },
       client_onboarding: { checklist: "לתאם מועד הגעה\nלאשר כתובת ופרטי גישה\nלהזמין חומרים\nלשלוח ללקוח תזכורת יום לפני" },
     } },
-  { key: "beauty", name: "טיפוח, יופי וטיפולים", nameEn: "Beauty & wellness", icon: "💅", templates: ["lead_autopilot", "client_onboarding", "review_request", "daily_digest"],
+  { key: "beauty", name: "טיפוח, יופי וטיפולים", nameEn: "Beauty & wellness", icon: "💅", templates: ["lead_autopilot", "lead_nurture", "client_onboarding", "review_request", "service_reminder", "daily_digest"],
     overrides: {
+      service_reminder: { after_days: 28, client_messages: "auto", reminder_text: "היי {שם} 💛\nעברו כמה שבועות מהטיפול האחרון — זה בדיוק הזמן לקבוע את הבא.\nאפשר להשיב למייל הזה ונתאם תור.\n{עסק}" },
       lead_autopilot: { response_hours: 2, auto_reply_text: "היי {שם},\nתודה שפנית ל{עסק} 💛 נחזור אלייך בהקדם לתיאום תור." },
       client_onboarding: { checklist: "לתאם תור ראשון\nלשלוח הנחיות הכנה לטיפול\nלשאול על רגישויות" },
     } },
-  { key: "lessons", name: "שיעורים פרטיים והדרכה", nameEn: "Tutoring & coaching", icon: "📚", templates: ["lead_autopilot", "client_onboarding", "invoice_collect", "daily_digest"],
+  { key: "lessons", name: "שיעורים פרטיים והדרכה", nameEn: "Tutoring & coaching", icon: "📚", templates: ["lead_autopilot", "lead_nurture", "client_onboarding", "invoice_collect", "paid_thanks", "daily_digest"],
     overrides: {
       lead_autopilot: { auto_reply_text: "היי {שם},\nתודה שפנית ל{עסק}! נחזור אלייך בהקדם כדי להתאים מועד לשיעור ראשון." },
       client_onboarding: { checklist: "לקבוע שיעור ראשון\nלשלוח חומרי פתיחה\nלתאם יום ושעה קבועים" },
     } },
-  { key: "events", name: "צילום, אירועים והפקות", nameEn: "Photography & events", icon: "📸", templates: SALES_CORE.concat(["review_request"]),
+  { key: "events", name: "צילום, אירועים והפקות", nameEn: "Photography & events", icon: "📸", templates: SALES_CORE.concat(["review_request", "quote_lost", "lead_nurture"]),
     overrides: {
       quote_followup: { first_after_days: 2 },
       client_onboarding: { checklist: "לחתום על הזמנה ולקבל מקדמה\nלתאם פגישת תכנון\nלקבל לו\"ז אירוע\nלשלוח תזכורת שבוע לפני" },
     } },
-  { key: "consulting", name: "ייעוץ ושירותים מקצועיים", nameEn: "Consulting & professional services", icon: "💼", templates: SALES_CORE,
+  { key: "consulting", name: "ייעוץ ושירותים מקצועיים", nameEn: "Consulting & professional services", icon: "💼", templates: SALES_CORE.concat(GROWTH),
     overrides: {
       client_onboarding: { checklist: "לשלוח הסכם התקשרות\nלתאם פגישת פתיחה\nלקבל מסמכים מהלקוח" },
     } },

@@ -2,44 +2,50 @@
 
 Nothing below has been done on the live site. Each step is reversible.
 
-## 0. Before
-- Run `backup-and-test` (Actions → Backup) and confirm the restore test passes.
-- Staging: `deploy-and-test` green.
+## 0. Before (Actions → "Automate (live)" and "Backup")
+- `Backup → backup-and-test`: fresh encrypted backup + restore test.
+- `rehearse`: restores that backup into a throwaway database in the runner, installs
+  there twice (second run must change nothing), checks RLS/rights/state, compares the
+  row count of every existing table (must be identical), runs the engine tests.
+- `preflight` (live, read-only): no name clashes with existing objects, secrets, admin list.
 
-## 1. Database (additive only)
-- Apply `automate/sql/10_engine.sql` to live (NOT 90/95 — staging only).
-  Creates new tables/functions; changes no existing table or row.
-- Check: `security_check_live` — every new table RLS on, no anon rights.
-- Rollback: drop the new tables (they hold no data yet).
+## 1. Install — DISABLED (`install`)
+- `10_engine.sql` + `20_live_disabled.sql` in ONE transaction: only new tables and
+  functions; no trigger or column on any existing table; every reference to an
+  account is ON DELETE CASCADE (account deletion keeps working).
+- Starts with: emergency stop ON, access = allowlist with nobody, no schedule, no
+  functions deployed → nothing can run, nothing can be sent.
+- Then `check` (read-only) any time.
+- To disable later without touching the rest of the site: the admin card's emergency
+  stop; or unschedule the two cron jobs. The site never depends on Automate.
 
-## 2. Functions + schedule, sending OFF
-- Deploy `automate-worker`, `automate-api`, `lead-intake`, `quote-public` to live with
-  `AUTOMATE_ENV=production`, `MAIL_MODE=sink` (simulated), access = allowlist [owner only].
-- pg_cron + pg_net + vault secret (same as staging's `cron` step).
-- Rollback: kill switch on, unschedule cron, delete the functions.
+## 2. Pilot prepared (`pilot-prepare`, then `pilot-check`)
+- Pilot list = the one account that has an admin password (read inside the
+  database — the email is never in the repository or the logs).
+- Function secrets are Automate's own (`AUTOMATE_*`): mail `sink` = simulated only,
+  `AUTOMATE_MAIL_ALLOWLIST` = the owner, new worker secret.
+- Deploys automate-api, automate-worker, lead-intake (with the pilot gate), quote-public.
+- Schedules the worker every 2 minutes (it does nothing while the emergency stop is on).
+- The app: https://deskkit.co.il/automate-app.html (unlinked; others see "coming soon").
+- The emergency stop stays ON — the owner turns it off from Admin → Automate when she
+  wants to try it. Emails stay simulated until a separate, approved switch to live.
 
-## 3. Pilot with the owner's own account
-- `MAIL_MODE=live`, `MAIL_ALLOWLIST=<owner's addresses only>` — real emails only to the owner.
-- Add the owner to `access.emails`. Use it for real for a few days.
-- Admin area → "Automate" tab (built and tested on staging): status, today's emails vs cap,
-  failures, system alerts, and the emergency stop (owner only, asks for the admin password).
-  Until step 1 runs on live it shows "Automate עוד לא הופעל".
+## 3. Real emails — owner only (needs the owner's approval)
+- `AUTOMATE_MAIL_MODE=live` with `AUTOMATE_MAIL_ALLOWLIST` = the owner → real emails
+  only to her own addresses; every other recipient stays simulated.
 
 ## 4. Website contact form ("השאירו פרטים")
-- Built: one shared form in every template (js/site-templates.js, siteLeadFormHtml),
-  a switch in the builder's site settings, off by default. It appears only where
-  `DK_AUTOMATE_ENABLED = true` (today: staging web only) — on live nothing renders,
-  and existing sites' HTML is byte-for-byte unchanged (checked for every template).
-- To enable on live: set `DK_AUTOMATE_ENABLED = true` in js/supabase-config.js.
-- BEFORE that, decide the spam check: live has `TURNSTILE_SECRET_KEY` set (for the
-  DeskKit contact page), so `lead-intake` would demand a Turnstile token the form does
-  not send yet. Either add the Turnstile widget to the form (the site key must allow
-  `*.deskkit.co.il`), or give lead-intake its own secret name. Honeypot + per-site
-  rate limit (20/hour) work either way.
+- One shared form in every template (siteLeadFormHtml), a switch in the builder's site
+  settings, off by default. Existing sites' HTML is byte-for-byte unchanged.
+- The switch shows only to accounts in the pilot (`automate_my_access()`; on staging
+  `DK_AUTOMATE_ENABLED`). lead-intake refuses sites whose owner isn't in the pilot.
+- "I'm not a robot": the same free Cloudflare Turnstile key DeskKit's own forms use,
+  loaded only when the form opens; lead-intake checks it with the existing secret.
+  Check the widget's allowed hostnames with Cloudflare → `turnstile-info`.
 - The owner republishes a site after turning the switch on.
 
 ## 5. Gradual opening
-- Add pilot customers to `access.emails`; remove `MAIL_ALLOWLIST`.
+- Add pilot customers to `access.emails`; remove `AUTOMATE_MAIL_ALLOWLIST`.
 - Then `access.mode = open`; replace the "coming soon" automate.html.
 - Privacy policy and terms updated BEFORE opening (see PRIVACY-DRAFT.md).
 

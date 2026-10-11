@@ -904,7 +904,7 @@ Deno.serve(async (req: Request) => {
         }
         throw error;
       }
-      return json({ installed: true, mailMode: Deno.env.get("MAIL_MODE") === "live" ? "live" : "simulated", ...(data as Record<string, unknown>) });
+      return json({ installed: true, mailMode: Deno.env.get("AUTOMATE_MAIL_MODE") === "live" ? "live" : "simulated", ...(data as Record<string, unknown>) });
     }
 
     if (action === "automate-kill-switch") {

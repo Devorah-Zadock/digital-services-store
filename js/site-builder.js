@@ -1838,7 +1838,22 @@ async function verifySiteLicense() {
 // account, and the catalog branch below calls it once the catalog itself
 // is actually on screen.
 
+// DeskKit Automate pilot: the site settings' "השאירו פרטים" switch (and the
+// form it adds) is only for accounts Automate has let in. The staging site
+// sets DK_AUTOMATE_ENABLED itself; on the live site the server answers per
+// account (before Automate is installed the call simply fails → stays off).
+function dkAutomateAccessCheck() {
+  if (typeof DK_AUTOMATE_ENABLED !== "undefined" || typeof supabaseClient === "undefined") return;
+  supabaseClient.auth.getSession().then(({ data }) => {
+    if (!data || !data.session) return;
+    return supabaseClient.rpc("automate_my_access").then(({ data: ok, error }) => {
+      if (!error && ok === true) window.DK_AUTOMATE_ENABLED = true;
+    });
+  }).catch(() => {});
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+  dkAutomateAccessCheck();
   const params = new URLSearchParams(location.search);
   const urlTemplate = params.get("template");
   const urlSiteId = params.get("site");

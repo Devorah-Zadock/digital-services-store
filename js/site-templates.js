@@ -460,7 +460,10 @@ function searchScriptHtml() {
 function siteLeadFormConfig(d) {
   const on = d && d.leadForm === true && typeof DK_AUTOMATE_ENABLED !== "undefined" && DK_AUTOMATE_ENABLED === true;
   if (!on || typeof SUPABASE_URL === "undefined") return null;
-  return { endpoint: SUPABASE_URL + "/functions/v1/lead-intake", accent: d.primaryColor || "#0F766E", biz: (d.businessName || "").trim() };
+  // The same free Cloudflare Turnstile key DeskKit's own forms use (empty on
+  // staging, where lead-intake has no secret and doesn't ask for it).
+  const sitekey = (typeof DK_TURNSTILE_SITE_KEY !== "undefined" && /^[0-9A-Za-z_-]{10,80}$/.test(DK_TURNSTILE_SITE_KEY)) ? DK_TURNSTILE_SITE_KEY : "";
+  return { endpoint: SUPABASE_URL + "/functions/v1/lead-intake", accent: d.primaryColor || "#0F766E", biz: (d.businessName || "").trim(), sitekey };
 }
 function siteLeadFormHtml(cfg) {
   const accent = /^#[0-9a-f]{3,8}$/i.test(cfg.accent) ? cfg.accent : "#0F766E";
@@ -493,15 +496,36 @@ function siteLeadFormHtml(cfg) {
       <label for="dk-lead-email">מייל</label><input id="dk-lead-email" name="email" type="email" autocomplete="email" maxlength="254" dir="ltr">
       <label for="dk-lead-message">במה אפשר לעזור? (לא חובה)</label><textarea id="dk-lead-message" name="message" maxlength="2000"></textarea>
       <div class="dk-lead-hp" aria-hidden="true"><label>אתר<input name="website" tabindex="-1" autocomplete="off"></label></div>
+      ${cfg.sitekey ? `<div id="dk-lead-captcha" style="margin-top:12px;min-height:0;"></div>` : ""}
       <button type="submit" class="dk-lead-send">שליחה</button>
       <div class="dk-lead-msg" id="dk-lead-msg" role="status" aria-live="polite"></div>
-      <div class="dk-lead-note">הפרטים יגיעו ל${to} בלבד, כדי לחזור אליכם.</div>
+      <div class="dk-lead-note">בשליחת הטופס אתם מבקשים ש${to} יחזרו אליכם בנוגע לפנייה. הפרטים יגיעו אליהם בלבד.</div>
     </form>
   </div>
   <script>
   (function () {
     var wrap = document.getElementById("dk-lead-wrap"), form = document.getElementById("dk-lead-form"), msg = document.getElementById("dk-lead-msg");
-    function open(o) { wrap.classList.toggle("open", o); if (o) document.getElementById("dk-lead-name").focus(); }
+    var KEY = ${JSON.stringify(cfg.sitekey)}, widget = null, token = "", pending = [];
+    // "I'm not a robot" (Cloudflare Turnstile): loaded only when the form is
+    // first opened, so the site itself stays as light as before.
+    function captcha() {
+      if (!KEY || widget !== null) return;
+      widget = false;
+      window.dkLeadTs = function () {
+        widget = window.turnstile.render("#dk-lead-captcha", { sitekey: KEY, size: "flexible",
+          callback: function (t) { token = t; pending.splice(0).forEach(function (f) { f(); }); },
+          "expired-callback": function () { token = ""; }, "error-callback": function () { token = ""; } });
+      };
+      var sc = document.createElement("script");
+      sc.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=dkLeadTs";
+      sc.async = true; document.head.appendChild(sc);
+    }
+    function withToken(f) {
+      if (!KEY || token) return f();
+      pending.push(f); say("רק רגע, מוודאים שאתם לא רובוט…");
+      setTimeout(function () { if (!token && pending.length) { pending = []; say("האימות לא הסתיים. נסו שוב בעוד רגע.", "err"); form.querySelector(".dk-lead-send").disabled = false; } }, 15000);
+    }
+    function open(o) { wrap.classList.toggle("open", o); if (o) { captcha(); document.getElementById("dk-lead-name").focus(); } }
     document.getElementById("dk-lead-open").onclick = function () { open(true); };
     document.getElementById("dk-lead-close").onclick = function () { open(false); };
     wrap.addEventListener("click", function (e) { if (e.target === wrap) open(false); });
@@ -510,11 +534,14 @@ function siteLeadFormHtml(cfg) {
     var m = location.hostname.match(/^([a-z0-9-]+)\\.deskkit\\.co\\.il$/);
     form.addEventListener("submit", function (e) {
       e.preventDefault();
-      var f = form.elements, body = { site: m ? m[1] : "", name: f.name.value.trim(), phone: f.phone.value.trim(), email: f.email.value.trim(), message: f.message.value.trim(), website: f.website.value };
+      var f = form.elements, body = { site: m ? m[1] : "", name: f.name.value.trim(), phone: f.phone.value.trim(), email: f.email.value.trim(), message: f.message.value.trim(), website: f.website.value, consent: true };
       if (!body.name) return say("נא למלא שם.", "err");
       if (!body.phone && !body.email) return say("נא להשאיר טלפון או מייל, כדי שנוכל לחזור אליכם.", "err");
       if (!m) return say("זו תצוגה מקדימה — באתר שפורסם הטופס ישלח את הפרטים.", "ok");
-      var btn = form.querySelector(".dk-lead-send"); btn.disabled = true; say("שולחים…");
+      var btn = form.querySelector(".dk-lead-send"); btn.disabled = true;
+      withToken(function () {
+      say("שולחים…");
+      body.turnstile = token;
       fetch(${JSON.stringify(cfg.endpoint)}, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
         .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
         .then(function (r) {
@@ -523,7 +550,12 @@ function siteLeadFormHtml(cfg) {
           say(e === "phone" ? "מספר הטלפון לא נראה תקין." : e === "email" ? "כתובת המייל לא נראית תקינה." : e === "busy" ? "נשלחו הרבה פניות בזמן קצר — נסו שוב מאוחר יותר." : e === "captcha" ? "האימות נכשל. רעננו את הדף ונסו שוב." : "השליחה לא הצליחה. נסו שוב בעוד רגע.", "err");
         })
         .catch(function () { say("אין חיבור כרגע. נסו שוב בעוד רגע.", "err"); })
-        .then(function () { btn.disabled = false; });
+        .then(function () {
+          btn.disabled = false;
+          // A token works once: get a fresh one for the next send.
+          if (widget && window.turnstile) { token = ""; window.turnstile.reset(widget); }
+        });
+      });
     });
   })();
   </script>`;
