@@ -139,6 +139,45 @@ export function buildMessage(id: string, ctx: Ctx): Built {
     case "review_request":
       return { toRole: "client", purpose: id, subject: `${ctx.business.name} — נשמח לשמוע מה חשבת`,
         html: clientEmail(ctx, textToHtml(fill(String(ctx.config.review_text || ""), v))) };
+    case "lead_followup":
+      return { toRole: "client", purpose: id, subject: `${ctx.business.name} — עדיין רלוונטי?`,
+        html: clientEmail(ctx, textToHtml(fill(String(ctx.config.followup_text || ""), v))) };
+    case "lead_decide": {
+      const c = ctx.contact!;
+      return { toRole: "owner", purpose: id, subject: `${c.name}: להמשיך או לסגור?`,
+        html: ownerEmail(ctx, `<h2 style="margin:0 0 8px;font-size:20px;">ליד שלא מתקדם 🌱</h2>
+          <p style="margin:0 0 6px;">הפנייה של <b>${escapeHtml(c.name)}</b> פתוחה כבר כמה ימים בלי הצעת מחיר ובלי סגירה${c.email ? ", גם אחרי הודעת המעקב" : ""}. העברנו אותה ל"פולו-אפ" ופתחנו לך משימה להחליט.</p>
+          ${contactCard(c)}${button("להחליט עכשיו", `${app}#contacts`)}`) };
+    }
+    case "lead_closed": {
+      const c = ctx.contact!;
+      return { toRole: "owner", purpose: id, subject: `הליד של ${c.name} נסגר`,
+        html: ownerEmail(ctx, `<h2 style="margin:0 0 8px;font-size:20px;">סגרנו ליד ישן</h2>
+          <p style="margin:0 0 6px;">לא הייתה התקדמות עם <b>${escapeHtml(c.name)}</b>, אז סימנו אותו "לא רלוונטי" (כמו שביקשת). אם הוא יחזור — אפשר להחזיר אותו לרשימה בלחיצה.</p>
+          ${button("לרשימת הלקוחות", `${app}#contacts`)}`) };
+    }
+    case "service_due":
+      return { toRole: "client", purpose: id, subject: `${ctx.business.name} — הגיע הזמן לביקור הבא`,
+        html: clientEmail(ctx, textToHtml(fill(String(ctx.config.reminder_text || ""), v))) };
+    case "paid_thanks":
+      return { toRole: "client", purpose: id, subject: `תודה! התשלום התקבל — ${ctx.business.name}`,
+        html: clientEmail(ctx, textToHtml(fill(String(ctx.config.thanks_text || ""), v))) };
+    case "referral_request":
+      return { toRole: "client", purpose: id, subject: `${ctx.business.name} — בקשה קטנה`,
+        html: clientEmail(ctx, textToHtml(fill(String(ctx.config.referral_text || ""), v))) };
+    case "quote_declined": {
+      const q = ctx.quote!;
+      return { toRole: "owner", purpose: id, subject: `${q.client_name} דחה/תה את הצעת המחיר`,
+        html: ownerEmail(ctx, `<h2 style="margin:0 0 8px;font-size:20px;">הצעה נדחתה</h2>
+          <p style="margin:0 0 6px;"><b>${escapeHtml(q.client_name)}</b> סימן/ה שההצעה${q.title ? ` "${escapeHtml(q.title)}"` : ""}${q.total != null ? ` (${shekels(q.total)})` : ""} לא מתאימה. ${ctx.config.ask_feedback === false ? "" : "מחר נשאל אותו/ה בעדינות מה היה חסר, כדי ללמוד להבא."}</p>
+          ${button("למסך היום", `${app}#today`)}`) };
+    }
+    case "quote_feedback":
+      return { toRole: "client", purpose: id, subject: `${ctx.business.name} — שאלה קצרה`,
+        html: clientEmail(ctx, textToHtml(fill(String(ctx.config.feedback_text || ""), v))) };
+    case "quote_reengage":
+      return { toRole: "client", purpose: id, subject: `${ctx.business.name} — עדיין רלוונטי?`,
+        html: clientEmail(ctx, textToHtml(fill(String(ctx.config.reengage_text || ""), v))) };
     case "digest": {
       const items = (ctx.attention || []).slice(0, 8);
       const rows = items.map((a) => `<li style="margin:0 0 8px;"><b>${escapeHtml(a.title)}</b> — ${escapeHtml(a.reason)}${a.amount ? ` · ${shekels(a.amount)}` : ""}</li>`).join("");

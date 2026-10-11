@@ -52,6 +52,11 @@ insert into public.automate_settings (key, value) values
 on conflict (key) do nothing;
 
 -- v1 → v2: a whole business pack plus review requests must fit.
+-- v3: room for the follow-up automations (a pack + growth add-ons).
+update public.automate_settings
+   set value = jsonb_set(value, '{free,active_automations}', '12'), updated_at = now()
+ where key = 'plan_limits' and coalesce((value -> 'free' ->> 'active_automations')::int, 0) < 12;
+
 update public.automate_settings
    set value = jsonb_set(value, '{free,active_automations}', '10'), updated_at = now()
  where key = 'plan_limits' and coalesce((value -> 'free' ->> 'active_automations')::int, 0) < 10;
@@ -61,6 +66,21 @@ returns jsonb language sql stable security definer set search_path = '' as $$
   select value from public.automate_settings where key = p_key;
 $$;
 revoke all on function public.automate_setting(text) from public, anon, authenticated;
+
+-- Is the signed-in account allowed into Automate (pilot list, or open to all)?
+-- The site builder uses it to show the "השאירו פרטים" switch only to them,
+-- and browser writes (contacts, tasks, profile, invoice tracking) require it,
+-- so nothing is stored for anyone outside the pilot. Deleting one's own rows
+-- is always allowed.
+create or replace function public.automate_my_access()
+returns boolean language sql stable security definer set search_path = '' as $$
+  select coalesce(public.automate_setting('access') ->> 'mode', '') = 'open'
+      or exists (select 1 from jsonb_array_elements_text(coalesce(public.automate_setting('access') -> 'emails', '[]'::jsonb)) e
+                  where lower(e) = lower(coalesce(auth.jwt() ->> 'email', '')) and coalesce(auth.jwt() ->> 'email', '') <> '');
+$$;
+revoke all on function public.automate_my_access() from public, anon;
+grant execute on function public.automate_my_access() to authenticated;
+
 
 -- ---------------------------------------------------------------------
 -- Business profile used in every message (asked once, in the setup wizard).
@@ -78,7 +98,7 @@ revoke all on table public.business_profiles from anon, authenticated;
 grant select, insert, update on table public.business_profiles to authenticated;
 drop policy if exists business_profiles_owner_all on public.business_profiles;
 create policy business_profiles_owner_all on public.business_profiles for all to authenticated
-  using (user_id = auth.uid()) with check (user_id = auth.uid());
+  using (user_id = auth.uid()) with check (user_id = auth.uid() and public.automate_my_access());
 
 -- ---------------------------------------------------------------------
 -- Contacts (the CRM, now server-side). Owner-only via RLS.
@@ -114,9 +134,9 @@ create policy contacts_owner_select on public.contacts for select to authenticat
 -- A business adds contacts by hand or by import; "site_form" contacts are
 -- created only by the lead-intake function (service role).
 create policy contacts_owner_insert on public.contacts for insert to authenticated
-  with check (user_id = auth.uid() and source in ('manual', 'import'));
+  with check (user_id = auth.uid() and source in ('manual', 'import') and public.automate_my_access());
 create policy contacts_owner_update on public.contacts for update to authenticated
-  using (user_id = auth.uid()) with check (user_id = auth.uid());
+  using (user_id = auth.uid()) with check (user_id = auth.uid() and public.automate_my_access());
 create policy contacts_owner_delete on public.contacts for delete to authenticated using (user_id = auth.uid());
 
 -- The owner can't rewrite where a contact came from or move it to another account.
@@ -167,7 +187,7 @@ grant select, insert, update, delete on table public.tasks to authenticated;
 drop policy if exists tasks_owner_all on public.tasks;
 create policy tasks_owner_all on public.tasks for all to authenticated
   using (user_id = auth.uid())
-  with check (user_id = auth.uid() and (contact_id is null or exists (
+  with check (user_id = auth.uid() and public.automate_my_access() and (contact_id is null or exists (
     select 1 from public.contacts c where c.id = contact_id and c.user_id = auth.uid())));
 
 -- ---------------------------------------------------------------------
@@ -223,7 +243,7 @@ grant select, insert, update, delete on table public.invoice_tracking to authent
 drop policy if exists invoice_tracking_owner_all on public.invoice_tracking;
 create policy invoice_tracking_owner_all on public.invoice_tracking for all to authenticated
   using (user_id = auth.uid())
-  with check (user_id = auth.uid() and exists (
+  with check (user_id = auth.uid() and public.automate_my_access() and exists (
     select 1 from public.invoice_saves i where i.id = invoice_id and i.user_id = auth.uid() and i.status = 'issued'));
 
 create or replace function public.invoice_tracking_guard()
@@ -388,7 +408,7 @@ $$;
 create or replace function public.automate_limits(p_user uuid)
 returns jsonb language sql stable security definer set search_path = '' as $$
   select coalesce(public.automate_setting('plan_limits') -> 'free',
-                  '{"active_automations": 10, "runs_per_month": 300, "emails_per_month": 200}'::jsonb);
+                  '{"active_automations": 12, "runs_per_month": 300, "emails_per_month": 200}'::jsonb);
 $$;
 
 create or replace function public.automate_month() returns date
@@ -482,13 +502,19 @@ begin
   else
     if new.stage = 'won' and old.stage is distinct from 'won' then
       perform public.automate_emit(new.user_id, 'client.won', 'contact', new.id, 'client.won:' || new.id, '{}');
+      -- a lead that turned into a client needs no more chasing
+      perform public.automate_cancel_runs(new.user_id, 'contact', new.id, array['lead_nurture'], 'contact_won');
     end if;
-    if new.job_done_at is not null and old.job_done_at is null then
-      perform public.automate_emit(new.user_id, 'job.done', 'contact', new.id, 'job.done:' || new.id, '{}');
+    -- Every finished job is its own event (repeat clients get their own
+    -- next-visit reminder); a review is still asked at most once a year.
+    if new.job_done_at is not null and new.job_done_at is distinct from old.job_done_at then
+      perform public.automate_emit(new.user_id, 'job.done', 'contact', new.id,
+        'job.done:' || new.id || ':' || floor(extract(epoch from new.job_done_at))::bigint,
+        jsonb_build_object('job_done_at', new.job_done_at));
     end if;
     if new.stage = 'lost' and old.stage is distinct from 'lost' then
       perform public.automate_cancel_runs(new.user_id, 'contact', new.id,
-        array['lead_autopilot', 'client_onboarding', 'review_request'], 'contact_lost');
+        array['lead_autopilot', 'client_onboarding', 'review_request', 'lead_nurture', 'service_reminder'], 'contact_lost');
     end if;
   end if;
   return null;
@@ -509,6 +535,8 @@ begin
     end if;
     if new.status = 'approved' then
       perform public.automate_emit(new.user_id, 'quote.approved', 'quote', new.id, 'quote.approved:' || new.id, '{}');
+    elsif new.status = 'declined' then
+      perform public.automate_emit(new.user_id, 'quote.declined', 'quote', new.id, 'quote.declined:' || new.id, '{}');
     end if;
   end if;
   return null;
@@ -525,6 +553,12 @@ begin
     perform public.automate_emit(new.user_id, 'invoice.tracked', 'invoice', new.invoice_id, 'invoice.tracked:' || new.invoice_id, '{}');
   elsif tg_op = 'UPDATE' and new.status <> old.status and new.status in ('paid', 'cancelled') then
     perform public.automate_cancel_runs(new.user_id, 'invoice', new.invoice_id, array['invoice_collect'], 'invoice_' || new.status);
+    if new.status = 'paid' then
+      perform public.automate_emit(new.user_id, 'invoice.paid', 'invoice', new.invoice_id, 'invoice.paid:' || new.invoice_id, '{}');
+    end if;
+  elsif tg_op = 'UPDATE' and new.status <> old.status and old.status = 'paid' then
+    -- "paid" taken back: no more thank-you / review / referral emails for it
+    perform public.automate_cancel_runs(new.user_id, 'invoice', new.invoice_id, array['paid_thanks'], 'invoice_unpaid_again');
   end if;
   return null;
 end;
@@ -703,17 +737,6 @@ returns jsonb language sql stable security definer set search_path = '' as $$
         from (select * from public.automate_alerts where user_id is null and resolved_at is null order by created_at desc limit 10) a), '[]'::jsonb)
   );
 $$;
-
--- Is the signed-in account allowed into Automate (pilot list, or open to all)?
--- The site builder uses it to show the "השאירו פרטים" switch only to them.
-create or replace function public.automate_my_access()
-returns boolean language sql stable security definer set search_path = '' as $$
-  select coalesce(public.automate_setting('access') ->> 'mode', '') = 'open'
-      or exists (select 1 from jsonb_array_elements_text(coalesce(public.automate_setting('access') -> 'emails', '[]'::jsonb)) e
-                  where lower(e) = lower(coalesce(auth.jwt() ->> 'email', '')) and coalesce(auth.jwt() ->> 'email', '') <> '');
-$$;
-revoke all on function public.automate_my_access() from public, anon;
-grant execute on function public.automate_my_access() to authenticated;
 
 -- The emergency stop. While on, the worker does nothing at all (no runs,
 -- no emails); everything waits and continues when it is switched off.

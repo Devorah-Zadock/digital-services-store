@@ -1,5 +1,7 @@
 -- Local SQL tests (plain Postgres + stubs.sql). Each block raises on failure.
 \set ON_ERROR_STOP 1
+-- Like staging: Automate open to every test account (the pilot gate has its own tests below).
+update public.automate_settings set value = '{"mode": "open", "emails": []}' where key = 'access';
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@example.com'),
   ('00000000-0000-0000-0000-00000000000b', 'b@example.com') on conflict do nothing;
@@ -203,3 +205,41 @@ do $$ begin
   if (public.automate_setting('kill_switch') ->> 'on')::boolean then raise exception 'a second install run must not re-disable'; end if;
 end $$;
 select 'pilot access + install mode tests passed';
+
+-- Browser writes are for pilot accounts only (deleting own rows always works).
+update public.automate_settings set value = '{"mode": "allowlist", "emails": ["b@example.com"]}' where key = 'access';
+set role authenticated;
+set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000a';
+set request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000a", "email": "a@example.com"}';
+do $$ begin
+  begin insert into public.contacts (name, phone) values ('לא בפיילוט', '0500000000'); raise exception 'non-pilot account could add a contact';
+  exception when insufficient_privilege then null; end;
+  begin insert into public.tasks (title) values ('x'); raise exception 'non-pilot account could add a task';
+  exception when insufficient_privilege then null; end;
+end $$;
+set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000b';
+set request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000b", "email": "b@example.com"}';
+insert into public.contacts (name, phone) values ('בפיילוט', '0500000001');
+do $$ begin if (select count(*) from public.contacts where name = 'בפיילוט') <> 1 then raise exception 'pilot account should add a contact'; end if; end $$;
+delete from public.contacts where name = 'בפיילוט';
+reset role;
+update public.automate_settings set value = '{"mode": "open", "emails": []}' where key = 'access';
+select 'pilot write gate tests passed';
+
+-- New events: every finished job counts; a lead that's won stops being chased.
+insert into public.automations (user_id, template_key, trigger_type) values
+  ('00000000-0000-0000-0000-00000000000b', 'lead_nurture', 'lead.created'),
+  ('00000000-0000-0000-0000-00000000000b', 'service_reminder', 'job.done') on conflict do nothing;
+do $$ declare c uuid; n int; begin
+  insert into public.contacts (user_id, name, email) values ('00000000-0000-0000-0000-00000000000b', 'ליד למעקב', 'n@example.com') returning id into c;
+  if (select count(*) from public.automation_runs where subject_id = c and template_key = 'lead_nurture' and status = 'queued') <> 1 then raise exception 'lead_nurture should start'; end if;
+  update public.contacts set stage = 'won' where id = c;
+  if (select status from public.automation_runs where subject_id = c and template_key = 'lead_nurture') <> 'cancelled' then raise exception 'won should cancel lead_nurture'; end if;
+  update public.contacts set job_done_at = now() - interval '200 days' where id = c;
+  update public.contacts set job_done_at = now() where id = c;
+  update public.contacts set notes = 'x' where id = c;   -- not a new job
+  select count(*) into n from public.automation_runs where subject_id = c and template_key = 'service_reminder';
+  if n <> 2 then raise exception 'each finished job should start its own reminder, got %', n; end if;
+  if (select count(*) from public.automation_events where subject_id = c and type = 'job.done' and payload ? 'job_done_at') <> 2 then raise exception 'job.done should carry the job time'; end if;
+end $$;
+select 'new automation events tests passed';

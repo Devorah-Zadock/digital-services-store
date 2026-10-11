@@ -499,7 +499,7 @@ function siteLeadFormHtml(cfg) {
       ${cfg.sitekey ? `<div id="dk-lead-captcha" style="margin-top:12px;min-height:0;"></div>` : ""}
       <button type="submit" class="dk-lead-send">שליחה</button>
       <div class="dk-lead-msg" id="dk-lead-msg" role="status" aria-live="polite"></div>
-      <div class="dk-lead-note">הפרטים יגיעו ל${to} בלבד, כדי לחזור אליכם.</div>
+      <div class="dk-lead-note">בשליחת הטופס אתם מבקשים ש${to} יחזרו אליכם בנוגע לפנייה. הפרטים יגיעו אליהם בלבד.</div>
     </form>
   </div>
   <script>
@@ -534,7 +534,7 @@ function siteLeadFormHtml(cfg) {
     var m = location.hostname.match(/^([a-z0-9-]+)\\.deskkit\\.co\\.il$/);
     form.addEventListener("submit", function (e) {
       e.preventDefault();
-      var f = form.elements, body = { site: m ? m[1] : "", name: f.name.value.trim(), phone: f.phone.value.trim(), email: f.email.value.trim(), message: f.message.value.trim(), website: f.website.value };
+      var f = form.elements, body = { site: m ? m[1] : "", name: f.name.value.trim(), phone: f.phone.value.trim(), email: f.email.value.trim(), message: f.message.value.trim(), website: f.website.value, consent: true };
       if (!body.name) return say("נא למלא שם.", "err");
       if (!body.phone && !body.email) return say("נא להשאיר טלפון או מייל, כדי שנוכל לחזור אליכם.", "err");
       if (!m) return say("זו תצוגה מקדימה — באתר שפורסם הטופס ישלח את הפרטים.", "ok");

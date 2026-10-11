@@ -511,8 +511,117 @@ def run_tests(a, b):
         rest("DELETE", f"admin_secrets?email=eq.{adm['email']}", prefer="return=minimal")
         delete_user(adm["id"])
 
+    run_growth_tests()
+
     real = rows("automation_messages?status=eq.sent&select=id")
     check("T00 not a single email was really sent from staging", real == [])
+
+
+def run_growth_tests():
+    """T19–T22: the multi-step follow-up automations, on a fresh business."""
+    c = make_user("c")
+    try:
+        api(c, "save-profile", business_name="עסק ג")
+        cid = lambda name: rows(f"contacts?user_id=eq.{c['id']}&name=eq.{name}&select=id,stage")[0]
+        purposes = lambda run_id: [m["purpose"] for m in messages_of(c["id"]) if m["run_id"] == run_id]
+
+        # ---- T19 stalled lead: follow-up → decide → close (and stops when the lead moves on)
+        api(c, "activate", template="lead_nurture", config={"client_messages": "auto", "auto_close": True})
+        rest("POST", "contacts", {"name": "ליד-תקוע", "email": "nurture-1@example.com", "phone": "0501111111"}, token=c["token"])
+        lead = cid("ליד-תקוע")
+        drain(1)
+        run = [r for r in runs_of(c["id"], "lead_nurture") if r["subject_id"] == lead["id"]][0]
+        check("T19 lead waits quietly first", run["status"] == "waiting" and not purposes(run["id"]), run["status"])
+        fast_forward_runs(c["id"]); drain(2)
+        check("T19 no progress → gentle follow-up to the client", "lead_followup" in purposes(run["id"]), str(purposes(run["id"])))
+        fast_forward_runs(c["id"]); drain(2)
+        tasks = rows(f"tasks?user_id=eq.{c['id']}&contact_id=eq.{lead['id']}&select=title")
+        check("T19 still nothing → moved to follow-up, decide task + owner told",
+              cid("ליד-תקוע")["stage"] == "followup" and any("להחליט" in t["title"] for t in tasks) and "lead_decide" in purposes(run["id"]),
+              f"{cid('ליד-תקוע')['stage']} {tasks} {purposes(run['id'])}")
+        fast_forward_runs(c["id"]); drain(2)
+        run = [r for r in runs_of(c["id"], "lead_nurture") if r["subject_id"] == lead["id"]][0]
+        check("T19 auto-close on → closed as not relevant + owner told",
+              cid("ליד-תקוע")["stage"] == "lost" and "lead_closed" in purposes(run["id"]) and run["status"] == "succeeded",
+              f"{cid('ליד-תקוע')['stage']} {run['status']}")
+        rest("POST", "contacts", {"name": "ליד-שנסגר", "email": "nurture-2@example.com"}, token=c["token"])
+        won = cid("ליד-שנסגר")
+        drain(1)
+        rest("PATCH", f"contacts?id=eq.{won['id']}", {"stage": "won"}, token=c["token"], prefer="return=minimal")
+        fast_forward_runs(c["id"]); drain(2)
+        r2 = [r for r in runs_of(c["id"], "lead_nurture") if r["subject_id"] == won["id"]][0]
+        check("T19 lead won → follow-ups cancelled, nothing sent", r2["status"] == "cancelled" and not purposes(r2["id"]), r2["status"])
+
+        # ---- T20 repeat clients: reminder for the next visit, restarts on a new job
+        api(c, "activate", template="service_reminder", config={"client_messages": "auto", "after_days": 30})
+        rest("POST", "contacts", {"name": "לקוח-חוזר", "email": "repeat-1@example.com"}, token=c["token"])
+        rep = cid("לקוח-חוזר")
+        rest("PATCH", f"contacts?id=eq.{rep['id']}", {"stage": "won", "job_done_at": "2026-01-01T10:00:00Z"}, token=c["token"], prefer="return=minimal")
+        drain(1); fast_forward_runs(c["id"]); drain(2)
+        sr = [r for r in runs_of(c["id"], "service_reminder") if r["subject_id"] == rep["id"]]
+        check("T20 visit due → personal reminder to the client", len(sr) == 1 and "service_due" in purposes(sr[0]["id"]), str(len(sr)))
+        rest("PATCH", f"contacts?id=eq.{rep['id']}", {"job_done_at": "2026-02-01T10:00:00Z"}, token=c["token"], prefer="return=minimal")
+        drain(1)
+        sr = [r for r in runs_of(c["id"], "service_reminder") if r["subject_id"] == rep["id"]]
+        check("T20 a new job starts its own reminder", len(sr) == 2, str(len(sr)))
+        first = sr[0]
+        rest("PATCH", f"automation_runs?id=eq.{sr[1]['id']}", {"next_run_at": "2100-01-01T00:00:00Z"}, prefer="return=minimal")  # keep the new one waiting
+        rest("PATCH", f"automation_runs?id=eq.{first['id']}", {"next_run_at": "2000-01-01T00:00:00Z",
+             "context": {**(first.get("context") or {}), "waits": {k: "2000-01-01T00:00:00Z" for k in ((first.get("context") or {}).get("waits") or {})}}}, prefer="return=minimal")
+        drain(2)
+        first = rows(f"automation_runs?id=eq.{first['id']}&select=status")[0]
+        calls = rows(f"tasks?user_id=eq.{c['id']}&contact_id=eq.{rep['id']}&select=title")
+        check("T20 client came back → the old reminder stops (no call task)", first["status"] == "stopped" and not calls, f"{first['status']} {calls}")
+
+        # ---- T21 paid: thanks → review → referral; review never twice
+        api(c, "activate", template="paid_thanks", config={"client_messages": "auto", "review_url": "https://g.page/r/test-review", "referral": True})
+        st, inv = rest("POST", "invoice_saves", {"user_id": c["id"], "doc_type": "invoice_receipt", "status": "issued", "number": 501,
+                                                "data": {"recipientName": "לקוחה משלמת"}, "issued_at": "2026-10-01T10:00:00Z"})
+        inv_id = inv[0]["id"]
+        api(c, "track-invoice", invoice_id=inv_id, due_date="2026-10-20", client_email="payer@example.com", amount=900)
+        api(c, "invoice-status", invoice_id=inv_id, status="paid")
+        drain(2)
+        pr = [r for r in runs_of(c["id"], "paid_thanks") if r["subject_id"] == inv_id][0]
+        check("T21 marked paid → thank-you email", "paid_thanks" in purposes(pr["id"]), str(purposes(pr["id"])))
+        fast_forward_runs(c["id"]); drain(2)
+        check("T21 a few days later → review request", "review_request" in purposes(pr["id"]), str(purposes(pr["id"])))
+        fast_forward_runs(c["id"]); drain(2)
+        pr = rows(f"automation_runs?id=eq.{pr['id']}&select=id,status")[0]
+        check("T21 a month later → referral request, done", "referral_request" in purposes(pr["id"]) and pr["status"] == "succeeded", pr["status"])
+        st, inv2 = rest("POST", "invoice_saves", {"user_id": c["id"], "doc_type": "invoice_receipt", "status": "issued", "number": 502,
+                                                 "data": {"recipientName": "לקוחה משלמת"}, "issued_at": "2026-10-02T10:00:00Z"})
+        inv2_id = inv2[0]["id"]
+        api(c, "track-invoice", invoice_id=inv2_id, due_date="2026-10-20", client_email="PAYER@example.com", amount=300)
+        api(c, "invoice-status", invoice_id=inv2_id, status="paid")
+        drain(1); fast_forward_runs(c["id"]); drain(2)
+        pr2 = [r for r in runs_of(c["id"], "paid_thanks") if r["subject_id"] == inv2_id][0]
+        check("T21 same client pays again → thanks, but no second review request this year",
+              "paid_thanks" in purposes(pr2["id"]) and "review_request" not in purposes(pr2["id"]), str(purposes(pr2["id"])))
+
+        # ---- T22 declined quote: owner told → feedback question → reach out later (unless a new quote went out)
+        api(c, "activate", template="quote_lost", config={"client_messages": "auto", "reengage_days": 30})
+        st, q = rest("POST", "quote_saves", {"user_id": c["id"], "data": {"businessName": "עסק ג", "recipient": "לקוח", "eventName": "עבודה", "price": "5,000", "template": "classic"}}, token=c["token"])
+        qid = q[0]["id"]
+        st, s1 = api(c, "send-quote", quote_id=qid, client_name="דוחה-אחת", client_email="decline-1@example.com")
+        fn("quote-public", {"token": s1["share"]["token"], "action": "decline"})
+        drain(2)
+        ql = [r for r in runs_of(c["id"], "quote_lost") if r["subject_id"] == s1["share"]["id"]][0]
+        check("T22 declined → owner told at once", "quote_declined" in purposes(ql["id"]), str(purposes(ql["id"])))
+        fast_forward_runs(c["id"]); drain(2)
+        check("T22 next day → short 'what was missing?' to the client", "quote_feedback" in purposes(ql["id"]), str(purposes(ql["id"])))
+        fast_forward_runs(c["id"]); drain(2)
+        ql = rows(f"automation_runs?id=eq.{ql['id']}&select=id,status")[0]
+        check("T22 later, client didn't come back → reach out again + task",
+              "quote_reengage" in purposes(ql["id"]) and ql["status"] == "succeeded", ql["status"])
+        st, s2 = api(c, "send-quote", quote_id=qid, client_name="דוחה-שתיים", client_email="decline-2@example.com")
+        fn("quote-public", {"token": s2["share"]["token"], "action": "decline"})
+        drain(1); fast_forward_runs(c["id"]); drain(2)
+        api(c, "send-quote", quote_id=qid, client_name="דוחה-שתיים", client_email="Decline-2@example.com")   # a new quote went out
+        fast_forward_runs(c["id"]); drain(3)
+        ql2 = [r for r in runs_of(c["id"], "quote_lost") if r["subject_id"] == s2["share"]["id"]][0]
+        check("T22 a new quote was sent meanwhile → no 'come back' email", ql2["status"] == "stopped" and "quote_reengage" not in purposes(ql2["id"]), ql2["status"])
+    finally:
+        delete_user(c["id"])
 
 
 if __name__ == "__main__":
