@@ -132,6 +132,16 @@ do $$ begin
   if not exists (select 1 from public.automate_attention('00000000-0000-0000-0000-00000000000a') where kind = 'lead_unhandled') then raise exception 'attention missing lead'; end if;
 end $$;
 
+-- retention: old finished work is removed, waiting work is kept
+do $$ declare res jsonb; keep int; begin
+  update public.automation_runs set status = 'succeeded', finished_at = now() - interval '100 days' where template_key = 'quote_followup';
+  update public.automation_runs set status = 'waiting', created_at = now() - interval '100 days' where template_key = 'client_onboarding';
+  res := public.automate_cleanup();
+  if (res ->> 'runs')::int < 1 then raise exception 'old runs not cleaned: %', res; end if;
+  select count(*) into keep from public.automation_runs where template_key = 'client_onboarding';
+  if keep < 1 then raise exception 'waiting run was deleted'; end if;
+end $$;
+
 -- cascading delete of a business removes everything it owns
 delete from auth.users where id = '00000000-0000-0000-0000-00000000000a';
 do $$ begin

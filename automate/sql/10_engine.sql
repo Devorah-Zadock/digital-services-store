@@ -545,6 +545,27 @@ begin
 end;
 $$;
 
+-- Retention: activity logs and emails are kept 90 days, then deleted
+-- (finished runs only — anything still waiting is kept). Runs daily.
+create or replace function public.automate_cleanup()
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare cutoff timestamptz := now() - interval '90 days'; m int; r int; e int; a int;
+begin
+  delete from public.automation_messages where created_at < cutoff and status in ('sent', 'simulated', 'failed', 'cancelled');
+  get diagnostics m = row_count;
+  delete from public.automation_runs where finished_at < cutoff and status in ('succeeded', 'stopped', 'failed', 'cancelled');
+  get diagnostics r = row_count;   -- their steps go with them (cascade)
+  delete from public.automation_events where created_at < cutoff
+    and not exists (select 1 from public.automation_runs x where x.event_id = automation_events.id);
+  get diagnostics e = row_count;
+  delete from public.automate_alerts where created_at < cutoff;
+  get diagnostics a = row_count;
+  return jsonb_build_object('messages', m, 'runs', r, 'events', e, 'alerts', a);
+end;
+$$;
+revoke all on function public.automate_cleanup() from public, anon, authenticated;
+grant execute on function public.automate_cleanup() to service_role;
+
 -- ---------------------------------------------------------------------
 -- Worker claims (SKIP LOCKED: two workers never take the same run; a run
 -- whose worker died is taken again after its lock expires).

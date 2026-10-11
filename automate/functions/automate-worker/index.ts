@@ -440,7 +440,10 @@ Deno.serve(async (req: Request) => {
   if (kill.on) return json({ killed: true });
 
   const out: Record<string, unknown> = {};
-  if (body.task === "daily") out.daily = (await db.rpc("automate_emit_daily")).data;
+  if (body.task === "daily") {
+    out.daily = (await db.rpc("automate_emit_daily")).data;
+    out.cleanup = (await db.rpc("automate_cleanup")).data;
+  }
 
   const runStats: Record<string, number> = {};
   if (body.task !== "dispatch") {
