@@ -490,6 +490,14 @@ def run_tests(a, b):
         st, r = admin_fn("set-admin-password", newPassword=adm_pw)
         tok = r.get("token") if isinstance(r, dict) else None
         check("T18 admin password set → unlock token", st == 200 and tok, f"HTTP {st} {r}")
+        st, r = admin_fn("unlock", password="wrong-password-123")
+        check("T18 wrong admin password refused", st == 401, f"HTTP {st}")
+        st, r = admin_fn("unlock", password=adm_pw)
+        check("T18 right admin password unlocks", st == 200 and r.get("token"), f"HTTP {st}")
+        ev = rows(f"admin_audit_log?admin_user_id=eq.{adm['id']}&action=in.(admin_unlock,admin_unlock_failed)&select=action,details")
+        check("T18 every admin entry records the device and a network code (not the address)",
+              len(ev) == 2 and all(e["details"].get("device") and len(e["details"].get("net", "")) == 6 for e in ev)
+              and not any("." in e["details"].get("net", "") for e in ev), str(ev))
         st, r = fn("admin-stats", {"action": "automate-status"}, token=adm["token"])
         check("T18 card refused without the admin unlock", st == 401 and r.get("error") == "admin-locked", f"HTTP {st} {r}")
         st, r = admin_fn("automate-status", adminToken=tok)
