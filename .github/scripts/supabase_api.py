@@ -244,8 +244,42 @@ if __name__ == "__main__":
             status = m.get("status") or m.get("code") or ""
             if level in ("error", "warning") or (isinstance(status, int) and status >= 400) or m.get("error"):
                 print(" | ".join(scrub(x) for x in [m.get("time", r.get("timestamp")), level, m.get("method", ""), m.get("path", ""), status, m.get("error_code", ""), m.get("error", ""), m.get("msg", "")]))
-    elif cmd == "staging-check":
-        staging_check()
+    elif cmd == "auth-logins":
+        # Read-only: sign-in events of ADMIN accounts in the Auth logs (kept
+        # about a day on the free plan). Printed: Israel time, event, sign-in
+        # method, and a short one-way fingerprint of the network address —
+        # never the address, the email or the browser string.
+        import hashlib
+        hours = int(sys.argv[2]) if len(sys.argv) > 2 else 24
+        ids = {r["id"] for r in (call("POST", "/database/query", {"query":
+            "select id::text as id from auth.users where lower(email) in (select lower(email) from public.admin_secrets union select lower(email) from public.admin_users)"}) or [])}
+        start = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        end = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        rows = []
+        for table in ["auth_logs", "auth", "gotrue_logs"]:
+            sql = f"select timestamp, event_message from {table} order by timestamp desc limit 2000"
+            res = call("GET", "/analytics/endpoints/logs?" + urllib.parse.urlencode({"sql": sql, "iso_timestamp_start": start, "iso_timestamp_end": end})) or {}
+            if res.get("error"):
+                continue
+            rows = res.get("result") or res.get("data") or []
+            break
+        fp = lambda v: hashlib.md5(str(v or "").encode()).hexdigest()[:6] if v else "-"
+        il = lambda t: (datetime.datetime.fromisoformat(str(t).replace("Z", "+00:00")) + datetime.timedelta(hours=3)).strftime("%m-%d %H:%M:%S") if t else "?"
+        shown = 0
+        print(f"{len(rows)} auth log lines in the last {hours} h; admin accounts: {len(ids)}")
+        for r in reversed(rows):
+            try:
+                m = json.loads(r.get("event_message") or "{}")
+            except Exception:
+                continue
+            if m.get("actor_id") not in ids or not m.get("action"):
+                continue
+            if m.get("action") in ("token_refreshed", "token_revoked"):
+                continue
+            prov = ((m.get("auth_event") or {}).get("traits") or {}).get("provider") or m.get("provider") or ""
+            print(f"  {il(m.get('time'))} (Israel) | {m.get('action')} | {prov} | net {fp(m.get('remote_addr'))}")
+            shown += 1
+        print(f"{shown} sign-in event(s) of admin accounts")
     elif cmd == "staging-create":
         import secrets
         facts, live, total_active_free = staging_check()

@@ -13,6 +13,7 @@ insert into public.automations (user_id, template_key, trigger_type) values
 -- as business A (browser role)
 set role authenticated;
 set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000a';
+set request.jwt.claim.role = 'authenticated';
 insert into public.contacts (name, phone) values ('ליד א', '0501234567');
 do $$ begin
   if (select count(*) from public.contacts) <> 1 then raise exception 'A should see 1 contact'; end if;
@@ -44,6 +45,7 @@ do $$ begin if (select handled_at from public.contacts where name = 'ליד א')
 
 -- as business B
 set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000b';
+set request.jwt.claim.role = 'authenticated';
 do $$ begin
   if (select count(*) from public.contacts) <> 0 then raise exception 'B sees A contacts'; end if;
   if (select count(*) from public.automation_runs) <> 0 then raise exception 'B sees A runs'; end if;
@@ -51,6 +53,7 @@ end $$;
 update public.contacts set name = 'hacked';
 delete from public.contacts;
 reset role;
+set request.jwt.claim.role = '';
 do $$ begin if (select count(*) from public.contacts where name = 'ליד א') <> 1 then raise exception 'B changed A data'; end if; end $$;
 
 -- anonymous visitors
@@ -60,6 +63,7 @@ do $$ begin
   exception when insufficient_privilege then null; end;
 end $$;
 reset role;
+set request.jwt.claim.role = '';
 
 -- events are idempotent
 do $$ declare n int; c uuid; begin
@@ -93,11 +97,12 @@ do $$ declare before int; after int; begin
 end $$;
 
 -- invoice tracking: only own, issued invoices
-insert into public.invoice_saves (id, user_id, status, number) values
-  ('00000000-0000-0000-0000-0000000000f1', '00000000-0000-0000-0000-00000000000b', 'issued', 7),
-  ('00000000-0000-0000-0000-0000000000f2', '00000000-0000-0000-0000-00000000000a', 'draft', null);
+insert into public.invoice_saves (id, user_id, doc_type, status, number, data, issued_at) values
+  ('00000000-0000-0000-0000-0000000000f1', '00000000-0000-0000-0000-00000000000b', 'invoice_receipt', 'issued', 7, '{"recipientName": "בדיקה"}', now()),
+  ('00000000-0000-0000-0000-0000000000f2', '00000000-0000-0000-0000-00000000000a', 'invoice_receipt', 'draft', null, '{}', null);
 set role authenticated;
 set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000a';
+set request.jwt.claim.role = 'authenticated';
 do $$ begin
   begin insert into public.invoice_tracking (invoice_id, due_date) values ('00000000-0000-0000-0000-0000000000f1', current_date); raise exception 'tracked B invoice';
   exception when insufficient_privilege or check_violation then null; when others then if sqlerrm like '%tracked%' then raise; end if; end;
@@ -105,6 +110,7 @@ do $$ begin
   exception when insufficient_privilege or check_violation then null; when others then if sqlerrm like '%tracked%' then raise; end if; end;
 end $$;
 reset role;
+set request.jwt.claim.role = '';
 
 -- quota: runs blocked when the monthly limit is reached
 do $$ declare n int; c uuid; begin
@@ -173,6 +179,7 @@ do $$ begin
   exception when insufficient_privilege then null; end;
 end $$;
 reset role;
+set request.jwt.claim.role = '';
 select 'admin card tests passed';
 
 -- Pilot access check used by the site builder.
@@ -185,12 +192,14 @@ do $$ begin if public.automate_my_access() then raise exception 'non-pilot accou
 set request.jwt.claims = '{}';
 do $$ begin if public.automate_my_access() then raise exception 'no email → no access'; end if; end $$;
 reset role;
+set request.jwt.claim.role = '';
 set role anon;
 do $$ begin
   begin perform public.automate_my_access(); raise exception 'anon could call automate_my_access';
   exception when insufficient_privilege then null; end;
 end $$;
 reset role;
+set request.jwt.claim.role = '';
 
 -- LIVE install mode: first run disables, later runs never override the owner.
 delete from public.automate_settings where key = 'installed';
@@ -210,6 +219,7 @@ select 'pilot access + install mode tests passed';
 update public.automate_settings set value = '{"mode": "allowlist", "emails": ["b@example.com"]}' where key = 'access';
 set role authenticated;
 set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000a';
+set request.jwt.claim.role = 'authenticated';
 set request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000a", "email": "a@example.com"}';
 do $$ begin
   begin insert into public.contacts (name, phone) values ('לא בפיילוט', '0500000000'); raise exception 'non-pilot account could add a contact';
@@ -218,11 +228,13 @@ do $$ begin
   exception when insufficient_privilege then null; end;
 end $$;
 set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000b';
+set request.jwt.claim.role = 'authenticated';
 set request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000b", "email": "b@example.com"}';
 insert into public.contacts (name, phone) values ('בפיילוט', '0500000001');
 do $$ begin if (select count(*) from public.contacts where name = 'בפיילוט') <> 1 then raise exception 'pilot account should add a contact'; end if; end $$;
 delete from public.contacts where name = 'בפיילוט';
 reset role;
+set request.jwt.claim.role = '';
 update public.automate_settings set value = '{"mode": "open", "emails": []}' where key = 'access';
 select 'pilot write gate tests passed';
 
