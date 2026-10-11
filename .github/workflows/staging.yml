@@ -90,7 +90,7 @@ jobs:
           supabase functions deploy --project-ref "$STG_REF" --workdir "$RUNNER_TEMP/stg" --no-verify-jwt --use-api
 
       - uses: actions/setup-node@v4
-        if: inputs.task == 'setup' || inputs.task == 'deploy' || inputs.task == 'deploy-and-test'
+        if: inputs.task != 'status'
         with:
           node-version: 22
 
@@ -121,6 +121,15 @@ jobs:
       - name: End-to-end tests (staging, simulated email)
         if: inputs.task == 'test' || inputs.task == 'deploy-and-test'
         run: python3 automate/tests/e2e/run.py
+
+      - name: UI smoke test (staging web, real browser)
+        if: inputs.task == 'test' || inputs.task == 'deploy-and-test'
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ui" && cp automate/tests/ui/smoke.mjs "$RUNNER_TEMP/ui/"
+          cd "$RUNNER_TEMP/ui" && npm init -y > /dev/null && npm i --silent playwright@1.56.1 > /dev/null
+          npx playwright install --with-deps chromium > /dev/null 2>&1
+          node smoke.mjs
 
       - name: Staging counts
         if: always()

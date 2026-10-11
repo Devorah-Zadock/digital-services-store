@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>הצעת מחיר</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #F1F5F4; font-family: Heebo, Arial, sans-serif; color: #12211D; }
+  .qv-wrap { max-width: 860px; margin: 0 auto; padding: 22px 14px 80px; }
+  .qv-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .qv-top h1 { font-size: 22px; margin: 0; }
+  .qv-status { border-radius: 12px; padding: 12px 16px; margin-bottom: 14px; font-weight: 600; }
+  .qv-status.ok { background: #E6F4EC; color: #067647; } .qv-status.no { background: #FDECEA; color: #B42318; } .qv-status.info { background: #FEF3E2; color: #B54708; }
+  .qv-doc { background: #fff; border: 1px solid #E3EAE7; border-radius: 14px; padding: 18px; overflow-x: auto; }
+  .qv-decide { background: #fff; border: 1px solid #E3EAE7; border-radius: 14px; padding: 18px; margin-top: 14px; }
+  .qv-decide h2 { margin: 0 0 8px; font-size: 19px; }
+  .qv-decide input, .qv-decide textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 15px; padding: 10px 12px; border: 1px solid #D5DDDA; border-radius: 9px; margin: 6px 0 10px; }
+  .qv-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+  .qv-btn { font: inherit; font-weight: 700; font-size: 16px; border-radius: 10px; padding: 12px 22px; border: 1px solid #D5DDDA; background: #fff; cursor: pointer; }
+  .qv-btn.yes { background: #0F766E; border-color: #0F766E; color: #fff; }
+  .qv-foot { text-align: center; color: #667085; font-size: 12.5px; margin-top: 18px; }
+</style>
+</head>
+<body>
+<div class="qv-wrap">
+  <div class="qv-top"><h1 id="qv-title">הצעת מחיר</h1><span id="qv-biz" style="color:#475467;"></span></div>
+  <div id="qv-status" class="qv-status info" hidden></div>
+  <div class="qv-doc" id="qv-doc">טוענים…</div>
+  <div class="qv-decide" id="qv-decide" hidden>
+    <h2>מה דעתך?</h2>
+    <label for="qv-name">שם מלא (לאישור)</label><input id="qv-name" maxlength="200" autocomplete="name">
+    <label for="qv-note">הערה (לא חובה)</label><textarea id="qv-note" rows="2" maxlength="2000"></textarea>
+    <div class="qv-btns"><button class="qv-btn yes" id="qv-yes">✓ מאשר/ת את ההצעה</button><button class="qv-btn" id="qv-no">לא מתאים לי</button></div>
+    <p id="qv-err" style="color:#B42318;"></p>
+  </div>
+  <p class="qv-foot">נשלח באמצעות DeskKit</p>
+</div>
+<script src="js/vendor/supabase-js-2.116.0.js"></script>
+<script src="js/supabase-config.js?v=2"></script>
+<script src="js/quote-render.js?v=17"></script>
+<script src="js/quote-view.js?v=1"></script>
+</body>
+</html>

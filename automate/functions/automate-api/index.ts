@@ -256,6 +256,15 @@ Deno.serve(async (req: Request) => {
       return json({ ok: true, received: leads.length, withId: rows.length, onServer: count || 0, verified: (count || 0) === rows.length });
     }
 
+    // STAGING ONLY: a demo "website" for this test account, so the owner
+    // can try the website form → lead flow without a real site.
+    if (action === "demo-site" && Deno.env.get("AUTOMATE_ENV") === "staging") {
+      const slug = "demo-" + uid.replace(/-/g, "").slice(0, 10);
+      const { data: site } = await db.from("site_projects").select("id").eq("slug", slug).maybeSingle();
+      if (!site) await must(db.from("site_projects").insert({ user_id: uid, template: "demo", data: {}, slug }));
+      return json({ ok: true, slug });
+    }
+
     return json({ error: "unknown action" }, 400);
   } catch (e) {
     if (e instanceof Bad) return json({ error: e.code }, e.status);
