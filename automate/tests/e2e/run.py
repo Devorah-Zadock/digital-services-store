@@ -471,6 +471,11 @@ def run_tests(a, b):
     st_b, _ = api(b, "overview")
     check("T17 pilot: an account not on the list is refused", st_a == 403)
     check("T17 pilot: an account on the list gets in", st_b == 200)
+    # A's site is not in the pilot (only B is): its form is refused, nothing stored.
+    before = len(rows(f"contacts?user_id=eq.{a['id']}&select=id"))
+    st, r = fn("lead-intake", {"site": slug, "name": "פנייה בפיילוט סגור", "phone": "0509999999"})
+    after = len(rows(f"contacts?user_id=eq.{a['id']}&select=id"))
+    check("T17 pilot: a site whose owner isn't in the pilot takes no enquiry", st == 404 and after == before, f"HTTP {st} {r} {before}->{after}")
     set_setting("access", {"mode": "open", "emails": []})
 
     # ---- T18 admin-area Automate card (behind the admin password, like every admin action)

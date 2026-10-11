@@ -172,3 +172,34 @@ do $$ begin
 end $$;
 reset role;
 select 'admin card tests passed';
+
+-- Pilot access check used by the site builder.
+update public.automate_settings set value = '{"mode": "allowlist", "emails": ["b@example.com"]}' where key = 'access';
+set role authenticated;
+set request.jwt.claims = '{"email": "B@example.com"}';
+do $$ begin if not public.automate_my_access() then raise exception 'pilot account should have access'; end if; end $$;
+set request.jwt.claims = '{"email": "a@example.com"}';
+do $$ begin if public.automate_my_access() then raise exception 'non-pilot account must not have access'; end if; end $$;
+set request.jwt.claims = '{}';
+do $$ begin if public.automate_my_access() then raise exception 'no email → no access'; end if; end $$;
+reset role;
+set role anon;
+do $$ begin
+  begin perform public.automate_my_access(); raise exception 'anon could call automate_my_access';
+  exception when insufficient_privilege then null; end;
+end $$;
+reset role;
+
+-- LIVE install mode: first run disables, later runs never override the owner.
+delete from public.automate_settings where key = 'installed';
+\i automate/sql/20_live_disabled.sql
+do $$ begin
+  if not (public.automate_setting('kill_switch') ->> 'on')::boolean then raise exception 'install must start disabled'; end if;
+  if public.automate_setting('access') ->> 'mode' <> 'allowlist' or jsonb_array_length(public.automate_setting('access') -> 'emails') <> 0 then raise exception 'install must start closed'; end if;
+end $$;
+select public.automate_set_kill_switch(false, null);
+\i automate/sql/20_live_disabled.sql
+do $$ begin
+  if (public.automate_setting('kill_switch') ->> 'on')::boolean then raise exception 'a second install run must not re-disable'; end if;
+end $$;
+select 'pilot access + install mode tests passed';

@@ -704,6 +704,17 @@ returns jsonb language sql stable security definer set search_path = '' as $$
   );
 $$;
 
+-- Is the signed-in account allowed into Automate (pilot list, or open to all)?
+-- The site builder uses it to show the "השאירו פרטים" switch only to them.
+create or replace function public.automate_my_access()
+returns boolean language sql stable security definer set search_path = '' as $$
+  select coalesce(public.automate_setting('access') ->> 'mode', '') = 'open'
+      or exists (select 1 from jsonb_array_elements_text(coalesce(public.automate_setting('access') -> 'emails', '[]'::jsonb)) e
+                  where lower(e) = lower(coalesce(auth.jwt() ->> 'email', '')) and coalesce(auth.jwt() ->> 'email', '') <> '');
+$$;
+revoke all on function public.automate_my_access() from public, anon;
+grant execute on function public.automate_my_access() to authenticated;
+
 -- The emergency stop. While on, the worker does nothing at all (no runs,
 -- no emails); everything waits and continues when it is switched off.
 create or replace function public.automate_set_kill_switch(p_on boolean, p_reason text)
@@ -718,7 +729,7 @@ do $$
 declare f text;
 begin
   foreach f in array array[
-    'automate_alert(uuid,text,text,text)', 'automate_limits(uuid)', 'automate_emit(uuid,text,text,uuid,text,jsonb)',
+    'automate_alert(uuid,text,text,text)', 'automate_limits(uuid)', 'automate_month()', 'automate_emit(uuid,text,text,uuid,text,jsonb)',
     'automate_cancel_runs(uuid,text,uuid,text[],text)', 'automate_emit_daily()', 'automate_claim_runs(integer)',
     'automate_claim_messages(integer)', 'automate_emails_today()', 'automate_admin_overview()', 'automate_set_kill_switch(boolean,text)', 'automate_take_email(uuid)', 'automate_attention(uuid)',
     'contacts_events()', 'quote_shares_events()', 'invoice_tracking_events()'] loop

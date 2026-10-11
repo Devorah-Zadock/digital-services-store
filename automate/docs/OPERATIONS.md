@@ -18,7 +18,7 @@
 - **Daily email cap (whole system)** — `email_caps.automation_daily` (default 30). The free email plan has 100/day shared with sign-up and password emails; automations never take more than the cap. Over the cap, emails wait for the next morning.
 - **Per-business monthly limits** — `plan_limits.free` (default 10 active automations, 300 runs, 200 emails). Over the limit: the automation is "waiting for quota", nothing is dropped, an alert is shown.
 - **Quiet hours** — client emails wait outside 08:00–21:00 Israel time and over Shabbat (Fri 14:00 → Sat 20:00). Owner alerts go any time.
-- **Mail mode** — nothing is really sent unless `MAIL_MODE=live`. `MAIL_ALLOWLIST` restricts live sending to listed addresses (pilot).
+- **Mail mode** — nothing is really sent unless `AUTOMATE_MAIL_MODE=live`. `AUTOMATE_MAIL_ALLOWLIST` restricts live sending to listed addresses (pilot).
 - **Pilot gate** — `access = {"mode": "allowlist", "emails": [...]}` (live default) or `{"mode": "open"}`.
 - **Pause** — per automation, by the owner: waiting runs hold, new events start nothing.
 

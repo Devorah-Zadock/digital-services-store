@@ -530,7 +530,7 @@
 
   async function start() {
     const { data } = await supabaseClient.auth.getSession();
-    if (!data.session) { location.href = "account.html?redirect=automate.html"; return; }
+    if (!data.session) { location.href = "account.html?redirect=" + encodeURIComponent(location.pathname.split("/").pop() || "automate.html"); return; }
     S.session = data.session; S.user = data.session.user;
     try { await loadOverview(); } catch (err) {
       $("au-gate").innerHTML = err.message === "PILOT"

@@ -59,6 +59,17 @@ Deno.serve(async (req: Request) => {
   const { data: site } = await db.from("site_projects").select("id, user_id").eq("slug", slug).maybeSingle();
   if (!site) return json({ error: "site" }, 404);
 
+  // Same pilot gate as the app: while Automate opens gradually, only sites of
+  // approved accounts take enquiries (others look like "no such site", and
+  // nothing is stored for an owner who can't see it).
+  const { data: access } = await db.rpc("automate_setting", { p_key: "access" });
+  if (access?.mode !== "open") {
+    const { data: owner } = await db.auth.admin.getUserById(site.user_id);
+    const email = String(owner?.user?.email || "").toLowerCase();
+    const list = Array.isArray(access?.emails) ? access.emails.map((e: string) => String(e).toLowerCase()) : [];
+    if (!email || !list.includes(email)) return json({ error: "site" }, 404);
+  }
+
   const hourAgo = new Date(Date.now() - 3600e3).toISOString();
   const { count } = await db.from("contacts").select("id", { count: "exact", head: true })
     .eq("user_id", site.user_id).eq("source", "site_form").gte("created_at", hourAgo);
