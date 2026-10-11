@@ -17,7 +17,7 @@ name: Cloudflare
 on:
   push:
     branches: [main]
-    paths-ignore: ["supabase/**", ".github/workflows/backup.yml", ".github/workflows/supabase-deploy.yml"]
+    paths-ignore: ["supabase/**", "automate/**", ".github/workflows/backup.yml", ".github/workflows/supabase-deploy.yml", ".github/workflows/staging.yml"]
   schedule:
     - cron: "41 */3 * * *"   # website visit statistics → admin area, every 3 hours
   workflow_dispatch:
