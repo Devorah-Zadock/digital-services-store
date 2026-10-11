@@ -14,6 +14,8 @@ stops at the first surprise.
                                             present, extensions available, admin list
   automate_live.py install                  live: 10_engine.sql + 20_live_disabled.sql
                                             in ONE transaction, then `check`
+  automate_live.py upgrade                  live: re-apply the engine to an existing
+                                            install (settings kept), then `check`
   automate_live.py pilot-settings           live: pilot list = the owner's admin
                                             account only (read from the database)
   automate_live.py pilot-secrets            live: Automate's own function secrets
@@ -256,6 +258,25 @@ def cmd_install():
     cmd_check("live", "fresh-install")
 
 
+def cmd_upgrade():
+    """Re-apply the engine to an existing install (one transaction). The SQL is
+    idempotent (create-if-missing / create-or-replace), and 20_live_disabled.sql
+    does nothing once installed — so the owner's settings (emergency stop,
+    pilot list) stay exactly as they are."""
+    if not cmd_preflight():
+        die("not installed yet — use install")
+    before = q("live", "select key, value from public.automate_settings where key in ('kill_switch', 'access') order by key")
+    body = open(ENGINE, encoding="utf-8").read() + "\n" + open(LIVE_MODE, encoding="utf-8").read()
+    if re.search(r"^\s*(begin|commit|rollback)\s*;", body, re.I | re.M):
+        die("the SQL files must not manage transactions themselves")
+    api("POST", f"/projects/{LIVE_REF}/database/query", {"query": "begin;\n" + body + "\ncommit;"})
+    after = q("live", "select key, value from public.automate_settings where key in ('kill_switch', 'access') order by key")
+    if json.dumps(before, sort_keys=True) != json.dumps(after, sort_keys=True):
+        die("the owner's settings changed during the upgrade")
+    print("upgraded (one transaction); emergency stop and pilot list unchanged")
+    cmd_check("live")
+
+
 # ------------------------------------------------------------------ pilot
 def owner_email():
     rows = q("live", "select lower(email) as e from public.admin_secrets")
@@ -370,6 +391,8 @@ if __name__ == "__main__":
         cmd_preflight()
     elif cmd == "install":
         cmd_install()
+    elif cmd == "upgrade":
+        cmd_upgrade()
     elif cmd == "pilot-settings":
         cmd_pilot_settings()
     elif cmd == "pilot-secrets":
