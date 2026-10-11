@@ -407,7 +407,9 @@ def run_tests(a, b):
     fast_forward_runs(a["id"]); drain(2)
     f2 = [x for x in runs_of(a["id"], "quote_followup") if x["subject_id"] == s2["share"]["id"]][0]
     rem2 = [m for m in messages_of(a["id"]) if m["run_id"] == f2["id"] and m["purpose"] == "quote_reminder"]
-    check("T11 declined quote → no reminder ever", f2["status"] == "cancelled" and not rem2, f"{f2['status']} {len(rem2)}")
+    # "cancelled" (stopped while waiting) or "stopped" (the scheduled worker was
+    # mid-run at that moment and its next check saw the decline) — both end it.
+    check("T11 declined quote → no reminder ever", f2["status"] in ("cancelled", "stopped") and not rem2, f"{f2['status']} {len(rem2)}")
 
     # ---- T12 invoices
     st, inv = rest("POST", "invoice_saves", {"user_id": a["id"], "doc_type": "invoice_receipt", "status": "issued", "number": 101,
