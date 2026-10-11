@@ -19,6 +19,8 @@ s = cfg.read_text(encoding="utf-8")
 s = re.sub(r'const SUPABASE_URL = "[^"]+";', f'const SUPABASE_URL = "{url}";', s, count=1)
 s = re.sub(r'const SUPABASE_ANON_KEY = "[^"]+";', f'const SUPABASE_ANON_KEY = "{anon}";', s, count=1)
 assert url in s and anon in s, "could not point the site at staging"
+# The live site's welcome email doesn't exist on staging — don't call it.
+s = s.replace("(function dkWelcomeOnce() {", "(function dkWelcomeOnce() { return;", 1)
 s += """
 /* STAGING ribbon */
 (function () {

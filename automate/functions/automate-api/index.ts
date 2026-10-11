@@ -49,7 +49,7 @@ async function activate(db: SupabaseClient, uid: string, key: string, input: Rec
   if (!existing) {
     const { count } = await db.from("automations").select("id", { count: "exact", head: true }).eq("user_id", uid).neq("status", "paused");
     const { data: limits } = await db.rpc("automate_limits", { p_user: uid });
-    if ((count || 0) >= Number(limits?.active_automations || 6)) throw new Bad("limit-active");
+    if ((count || 0) >= Number(limits?.active_automations || 10)) throw new Bad("limit-active");
     await must(db.from("automations").insert({ user_id: uid, template_key: key, trigger_type: t.trigger, config, pack, status: "active" }));
   } else {
     await must(db.from("automations").update({ config, pack: pack ?? undefined, status: "active", consecutive_failures: 0, updated_at: new Date().toISOString() }).eq("id", existing.id));
@@ -70,6 +70,12 @@ Deno.serve(async (req: Request) => {
   try {
     const body = await req.json().catch(() => ({}));
     const action = String(body.action || "");
+
+    // Pilot gate: on the live site Automate opens to approved accounts first.
+    const { data: access } = await db.rpc("automate_setting", { p_key: "access" });
+    const allowed = access?.mode === "open" ||
+      (Array.isArray(access?.emails) && access.emails.map((e: string) => String(e).toLowerCase()).includes(String(user.email || "").toLowerCase()));
+    if (!allowed) return json({ error: "not-in-pilot" }, 403);
 
     if (action === "overview") {
       const [autos, profile, usage, alerts] = await Promise.all([
@@ -254,6 +260,15 @@ Deno.serve(async (req: Request) => {
         ? await db.from("contacts").select("id", { count: "exact", head: true }).eq("user_id", uid).in("client_ref", refs)
         : { count: 0 };
       return json({ ok: true, received: leads.length, withId: rows.length, onServer: count || 0, verified: (count || 0) === rows.length });
+    }
+
+    // STAGING ONLY: a demo "website" for this test account, so the owner
+    // can try the website form → lead flow without a real site.
+    if (action === "demo-site" && Deno.env.get("AUTOMATE_ENV") === "staging") {
+      const slug = "demo-" + uid.replace(/-/g, "").slice(0, 10);
+      const { data: site } = await db.from("site_projects").select("id").eq("slug", slug).maybeSingle();
+      if (!site) await must(db.from("site_projects").insert({ user_id: uid, template: "demo", data: {}, slug }));
+      return json({ ok: true, slug });
     }
 
     return json({ error: "unknown action" }, 400);

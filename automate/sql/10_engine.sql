@@ -38,15 +38,23 @@ revoke all on table public.automate_settings from anon, authenticated;
 insert into public.automate_settings (key, value) values
   ('kill_switch', '{"on": false, "reason": null}'),
   -- Per-business monthly limits (free plan). Plans can be added later.
-  ('plan_limits', '{"free": {"active_automations": 6, "runs_per_month": 300, "emails_per_month": 200}}'),
+  ('plan_limits', '{"free": {"active_automations": 10, "runs_per_month": 300, "emails_per_month": 200}}'),
   -- Whole-system caps per day. The email provider's free plan allows 100
   -- a day in total; sign-up confirmations, password resets and welcome
   -- emails must always fit, so automations get at most this many.
   ('email_caps', '{"automation_daily": 30}'),
   -- Client-facing emails wait outside these hours (Israel time); owner
   -- alerts are sent any time.
-  ('quiet_hours', '{"start": 21, "end": 8, "shabbat": true}')
+  ('quiet_hours', '{"start": 21, "end": 8, "shabbat": true}'),
+  -- Who may use Automate. Live starts as a pilot ("allowlist"); staging
+  -- opens it to every test account (95_staging_settings.sql).
+  ('access', '{"mode": "allowlist", "emails": []}')
 on conflict (key) do nothing;
+
+-- v1 → v2: a whole business pack plus review requests must fit.
+update public.automate_settings
+   set value = jsonb_set(value, '{free,active_automations}', '10'), updated_at = now()
+ where key = 'plan_limits' and coalesce((value -> 'free' ->> 'active_automations')::int, 0) < 10;
 
 create or replace function public.automate_setting(p_key text)
 returns jsonb language sql stable security definer set search_path = '' as $$
@@ -380,7 +388,7 @@ $$;
 create or replace function public.automate_limits(p_user uuid)
 returns jsonb language sql stable security definer set search_path = '' as $$
   select coalesce(public.automate_setting('plan_limits') -> 'free',
-                  '{"active_automations": 6, "runs_per_month": 300, "emails_per_month": 200}'::jsonb);
+                  '{"active_automations": 10, "runs_per_month": 300, "emails_per_month": 200}'::jsonb);
 $$;
 
 create or replace function public.automate_month() returns date
@@ -537,6 +545,27 @@ begin
 end;
 $$;
 
+-- Retention: activity logs and emails are kept 90 days, then deleted
+-- (finished runs only — anything still waiting is kept). Runs daily.
+create or replace function public.automate_cleanup()
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare cutoff timestamptz := now() - interval '90 days'; m int; r int; e int; a int;
+begin
+  delete from public.automation_messages where created_at < cutoff and status in ('sent', 'simulated', 'failed', 'cancelled');
+  get diagnostics m = row_count;
+  delete from public.automation_runs where finished_at < cutoff and status in ('succeeded', 'stopped', 'failed', 'cancelled');
+  get diagnostics r = row_count;   -- their steps go with them (cascade)
+  delete from public.automation_events where created_at < cutoff
+    and not exists (select 1 from public.automation_runs x where x.event_id = automation_events.id);
+  get diagnostics e = row_count;
+  delete from public.automate_alerts where created_at < cutoff;
+  get diagnostics a = row_count;
+  return jsonb_build_object('messages', m, 'runs', r, 'events', e, 'alerts', a);
+end;
+$$;
+revoke all on function public.automate_cleanup() from public, anon, authenticated;
+grant execute on function public.automate_cleanup() to service_role;
+
 -- ---------------------------------------------------------------------
 -- Worker claims (SKIP LOCKED: two workers never take the same run; a run
 -- whose worker died is taken again after its lock expires).
@@ -597,22 +626,23 @@ $$;
 create or replace function public.automate_attention(p_user uuid)
 returns table (kind text, ref_id uuid, title text, reason text, amount numeric, since timestamptz, priority int)
 language sql stable security definer set search_path = '' as $$
-  select 'lead_unhandled', c.id, c.name,
-         'פנייה חדשה שעוד לא טופלה', c.amount, c.created_at,
-         100 + least(extract(epoch from now() - c.created_at)::int / 3600, 99)
+  select * from (
+  select 'lead_unhandled'::text as kind, c.id as ref_id, c.name as title,
+         'פנייה חדשה שעוד לא טופלה'::text as reason, c.amount as amount, c.created_at as since,
+         (100 + least(extract(epoch from now() - c.created_at)::int / 3600, 99))::int as priority
     from public.contacts c
    where c.user_id = p_user and c.stage = 'new' and c.handled_at is null
      and c.created_at < now() - interval '2 hours'
   union all
   select 'quote_waiting', q.id, q.client_name,
          'הצעת מחיר בלי תשובה כבר ' || greatest(1, extract(day from now() - q.sent_at)::int) || ' ימים', q.total, q.sent_at,
-         80 + least(extract(day from now() - q.sent_at)::int, 19)
+         (80 + least(extract(day from now() - q.sent_at)::int, 19))::int
     from public.quote_shares q
    where q.user_id = p_user and q.status = 'sent' and q.sent_at < now() - interval '3 days'
   union all
   select 'invoice_overdue', i.invoice_id, coalesce(i.client_name, 'חשבונית ' || i.invoice_number),
          'חשבונית שמועד התשלום שלה עבר לפני ' || ((now() at time zone 'Asia/Jerusalem')::date - i.due_date) || ' ימים', i.amount,
-         i.due_date::timestamptz, 90 + least(((now() at time zone 'Asia/Jerusalem')::date - i.due_date), 9)
+         i.due_date::timestamptz, (90 + least(((now() at time zone 'Asia/Jerusalem')::date - i.due_date), 9))::int
     from public.invoice_tracking i
    where i.user_id = p_user and i.status = 'unpaid' and i.due_date < (now() at time zone 'Asia/Jerusalem')::date
   union all
@@ -627,6 +657,7 @@ language sql stable security definer set search_path = '' as $$
   select 'followup_stuck', c.id, c.name, 'בשלב פולו-אפ בלי שינוי כבר שבוע', c.amount, c.updated_at, 60
     from public.contacts c
    where c.user_id = p_user and c.stage = 'followup' and c.updated_at < now() - interval '7 days'
+  ) items
   order by priority desc, since
   limit 50;
 $$;

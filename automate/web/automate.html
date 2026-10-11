@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeskKit Automate — אוטומציות לעסק</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=102">
+<link rel="stylesheet" href="css/deskkit-ui.css?v=49">
+<style>
+  .au-wrap { max-width: 1100px; margin: 0 auto; padding: 26px 18px 90px; }
+  .au-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+  .au-head h1 { font-family: Rubik, Heebo, sans-serif; font-size: 30px; margin: 0; }
+  .au-head p { margin: 4px 0 0; color: var(--grey); }
+  .au-usage { font-size: 13px; color: var(--grey); text-align: start; }
+  .au-usage b { color: var(--ink-dark); }
+  .au-tabs { display: flex; gap: 4px; border-bottom: 1px solid #E3EAE7; margin-bottom: 20px; overflow-x: auto; scrollbar-width: none; }
+  .au-tab { font: inherit; font-weight: 600; font-size: 15px; background: none; border: 0; border-bottom: 3px solid transparent; padding: 10px 14px; color: var(--grey); cursor: pointer; white-space: nowrap; }
+  .au-tab.active { color: var(--ink-dark); border-bottom-color: #14B8A6; }
+  .au-tab .au-count { display: inline-block; min-width: 18px; padding: 0 6px; border-radius: 99px; background: #B42318; color: #fff; font-size: 11px; line-height: 18px; margin-inline-start: 4px; }
+  .au-panel { padding: 0; margin: 0; }
+  .au-panel[hidden] { display: none !important; }
+  .au-card { background: #fff; border: 1px solid #E3EAE7; border-radius: 14px; padding: 16px 18px; }
+  .au-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .au-list { display: flex; flex-direction: column; gap: 10px; }
+  .au-item { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+  .au-item-main { min-width: 0; flex: 1 1 260px; }
+  .au-item-title { font-weight: 700; color: var(--ink-dark); }
+  .au-item-sub { font-size: 13.5px; color: var(--grey); margin-top: 2px; }
+  .au-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .au-btn { font: inherit; font-size: 13.5px; font-weight: 600; border-radius: 9px; padding: 7px 13px; border: 1px solid #D5DDDA; background: #fff; color: var(--ink-dark); cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
+  .au-btn:hover { border-color: #9AB0A9; }
+  .au-btn.primary { background: #0F766E; border-color: #0F766E; color: #fff; }
+  .au-btn.primary:hover { background: #115E59; }
+  .au-btn.danger { color: #B42318; border-color: #F3C5C0; }
+  .au-btn[disabled] { opacity: .55; cursor: default; }
+  .au-pill { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 99px; white-space: nowrap; }
+  .au-pill.on { background: #E6F4EC; color: #067647; }
+  .au-pill.off { background: #F2F4F3; color: #667085; }
+  .au-pill.warn { background: #FEF3E2; color: #B54708; }
+  .au-pill.bad { background: #FDECEA; color: #B42318; }
+  .au-pill.info { background: #E3F3F0; color: #0F766E; }
+  .au-empty { text-align: center; color: var(--grey); padding: 26px 10px; }
+  .au-section-title { font-family: Rubik, Heebo, sans-serif; font-size: 18px; margin: 22px 0 10px; }
+  .au-tpl-icon { font-size: 26px; line-height: 1; }
+  .au-tpl h3 { margin: 8px 0 4px; font-size: 17px; }
+  .au-tpl p { margin: 0 0 10px; color: #475467; font-size: 14px; line-height: 1.6; }
+  .au-tpl .au-how { margin: 0 0 10px; padding-inline-start: 18px; font-size: 13.5px; color: #475467; line-height: 1.6; }
+  .au-alert { border-radius: 12px; padding: 10px 14px; margin-bottom: 10px; font-size: 14px; display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+  .au-alert.warning { background: #FEF3E2; border: 1px solid #F5C77E; }
+  .au-alert.error { background: #FDECEA; border: 1px solid #F3B7B0; }
+  .au-alert.info { background: #E3F3F0; border: 1px solid #A6DDD4; }
+  .au-modal { position: fixed; inset: 0; background: rgba(16, 24, 20, .45); display: flex; align-items: flex-start; justify-content: center; padding: 30px 14px; z-index: 1000; overflow-y: auto; }
+  .au-modal[hidden] { display: none; }
+  .au-dialog { background: #fff; border-radius: 16px; width: 100%; max-width: 620px; padding: 22px; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+  .au-dialog h2 { margin: 0 0 6px; font-family: Rubik, Heebo, sans-serif; }
+  .au-field { margin: 12px 0; }
+  .au-field label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 5px; }
+  .au-field .au-help { font-size: 12.5px; color: var(--grey); margin-top: 4px; }
+  .au-input, .au-field select, .au-field textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 15px; padding: 9px 11px; border: 1px solid #D5DDDA; border-radius: 9px; background: #fff; }
+  .au-field textarea { min-height: 110px; line-height: 1.6; }
+  .au-check { display: flex; gap: 8px; align-items: center; font-size: 15px; }
+  .au-packs { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; margin: 12px 0; }
+  .au-pack { font: inherit; text-align: start; background: #fff; border: 2px solid #E3EAE7; border-radius: 12px; padding: 12px; cursor: pointer; }
+  .au-pack.selected { border-color: #14B8A6; background: #F0FBF9; }
+  .au-pack b { display: block; margin-top: 4px; }
+  .au-steps-preview li { margin-bottom: 6px; }
+  .au-table-wrap { overflow-x: auto; }
+  .au-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .au-table th, .au-table td { text-align: start; padding: 9px 8px; border-bottom: 1px solid #EEF2F1; vertical-align: top; }
+  .au-table th { color: var(--grey); font-size: 12.5px; font-weight: 600; }
+  .au-timeline { margin: 8px 0 0; padding: 0; list-style: none; font-size: 13.5px; }
+  .au-timeline li { padding: 3px 0; color: #344054; }
+  .au-timeline .t { color: var(--grey); font-size: 12px; margin-inline-start: 6px; }
+  .au-row-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; margin-top: 10px; }
+  .au-row-form .au-field { margin: 0; flex: 1 1 160px; }
+  .au-toast { position: fixed; bottom: 46px; left: 50%; transform: translateX(-50%); background: #12211D; color: #fff; padding: 10px 18px; border-radius: 10px; font-weight: 600; z-index: 2000; }
+  .au-banner { background: linear-gradient(135deg, #0F766E, #14B8A6); color: #fff; border-radius: 16px; padding: 20px 22px; margin-bottom: 18px; }
+  .au-banner h2 { margin: 0 0 6px; font-family: Rubik, Heebo, sans-serif; }
+  .au-banner p { margin: 0 0 12px; opacity: .95; }
+  .au-banner .au-btn { background: #fff; border-color: #fff; color: #0F766E; }
+  .au-gate { text-align: center; padding: 60px 10px; }
+  @media (max-width: 600px) { .au-head h1 { font-size: 24px; } .au-dialog { padding: 16px; } }
+</style>
+</head>
+<body>
+<header class="site">
+  <nav class="nav">
+    <a href="index.html" class="brand"><span class="brand-text"><span class="brand-desk">Desk</span><span class="brand-kit">Kit</span></span></a>
+    <div class="nav-links">
+      <a href="index.html">בית</a>
+      <a href="automate.html">אוטומציות</a>
+      <a href="projects.html">הפרויקטים שלי</a>
+    </div>
+    <div class="nav-end-group">
+      <a href="account.html?redirect=automate.html" id="nav-login-link" class="nav-login nav-login-pending">כניסה</a>
+    </div>
+    <button class="burger" aria-label="תפריט">☰</button>
+  </nav>
+</header>
+
+<main class="au-wrap" id="au-app">
+  <div class="au-gate" id="au-gate"><p>טוענים…</p></div>
+
+  <div id="au-main" hidden>
+    <div class="au-head">
+      <div>
+        <h1>האוטומציות שלי</h1>
+        <p id="au-biz-line">תהליכים שעובדים בשבילך ברקע</p>
+      </div>
+      <div class="au-usage" id="au-usage"></div>
+    </div>
+
+    <div id="au-alerts"></div>
+
+    <nav class="au-tabs" role="tablist">
+      <button class="au-tab" data-tab="today" role="tab">היום <span class="au-count" id="au-today-count" hidden></span></button>
+      <button class="au-tab" data-tab="automations" role="tab">אוטומציות</button>
+      <button class="au-tab" data-tab="contacts" role="tab">לקוחות ופניות</button>
+      <button class="au-tab" data-tab="quotes" role="tab">הצעות מחיר</button>
+      <button class="au-tab" data-tab="invoices" role="tab">חשבוניות</button>
+      <button class="au-tab" data-tab="history" role="tab">מה קרה</button>
+    </nav>
+
+    <!-- היום -->
+    <section class="au-panel" id="panel-today">
+      <div id="au-approvals"></div>
+      <h2 class="au-section-title">דורש טיפול</h2>
+      <div class="au-list" id="au-attention"></div>
+      <h2 class="au-section-title">משימות פתוחות</h2>
+      <div class="au-list" id="au-tasks"></div>
+    </section>
+
+    <!-- אוטומציות -->
+    <section class="au-panel" id="panel-automations" hidden>
+      <div class="au-banner" id="au-pack-banner" hidden>
+        <h2>מצב טייס למכירות 🚀</h2>
+        <p>בוחרים סוג עסק — ואנחנו מפעילים חבילה שלמה עם ניסוחים מוכנים: פניות, הצעות מחיר, גבייה, קליטת לקוחות וסיכום בוקר.</p>
+        <button class="au-btn" id="au-open-wizard">להפעלה בלחיצה</button>
+      </div>
+      <div class="au-grid" id="au-templates"></div>
+    </section>
+
+    <!-- לקוחות -->
+    <section class="au-panel" id="panel-contacts" hidden>
+      <div id="au-import"></div>
+      <div class="au-card">
+        <div class="au-item">
+          <div class="au-item-main"><div class="au-item-title">הוספת לקוח או פנייה</div><div class="au-item-sub">פניות מטופס האתר נוספות לכאן לבד.</div></div>
+          <div class="au-actions"><button class="au-btn" id="au-demo-lead" hidden>הדמיית פנייה מהאתר</button></div>
+        </div>
+        <form class="au-row-form" id="au-contact-form">
+          <div class="au-field"><label for="c-name">שם</label><input class="au-input" id="c-name" required maxlength="200"></div>
+          <div class="au-field"><label for="c-phone">טלפון</label><input class="au-input" id="c-phone" dir="ltr" maxlength="40"></div>
+          <div class="au-field"><label for="c-email">מייל</label><input class="au-input" id="c-email" type="email" dir="ltr" maxlength="254"></div>
+          <div class="au-field"><label for="c-amount">סכום עסקה (₪)</label><input class="au-input" id="c-amount" type="number" min="0" step="1"></div>
+          <button class="au-btn primary" type="submit">הוספה</button>
+        </form>
+      </div>
+      <div class="au-card" style="margin-top:14px;"><div class="au-table-wrap"><table class="au-table" id="au-contacts"></table></div></div>
+    </section>
+
+    <!-- הצעות מחיר -->
+    <section class="au-panel" id="panel-quotes" hidden>
+      <p class="au-item-sub" style="margin:0 0 12px;">שולחים הצעה ללקוח כקישור עם כפתור "מאשר/ת". כך המערכת יודעת אם אושרה, ותזכורות נעצרות לבד. (הצעה ששלחתם כ-PDF ידנית — המערכת לא יכולה לדעת אם נענתה.)</p>
+      <h2 class="au-section-title" style="margin-top:0;">הצעות שנשלחו</h2>
+      <div class="au-list" id="au-shares"></div>
+      <h2 class="au-section-title">ההצעות השמורות שלך</h2>
+      <div class="au-list" id="au-quotes"></div>
+    </section>
+
+    <!-- חשבוניות -->
+    <section class="au-panel" id="panel-invoices" hidden>
+      <p class="au-item-sub" style="margin:0 0 12px;">החשבונית עצמה לא משתנה. כאן רק עוקבים אחרי התשלום. DeskKit לא מחובר לבנק — "שולם" הוא סימון שלך.</p>
+      <h2 class="au-section-title" style="margin-top:0;">במעקב</h2>
+      <div class="au-list" id="au-tracked"></div>
+      <h2 class="au-section-title">חשבוניות שהופקו</h2>
+      <div class="au-list" id="au-invoices"></div>
+    </section>
+
+    <!-- היסטוריה -->
+    <section class="au-panel" id="panel-history" hidden>
+      <div class="au-list" id="au-history"></div>
+    </section>
+  </div>
+</main>
+
+<div class="au-modal" id="au-modal" hidden><div class="au-dialog" id="au-dialog" role="dialog" aria-modal="true"></div></div>
+
+<script src="js/vendor/supabase-js-2.116.0.js"></script>
+<script src="js/supabase-config.js?v=2"></script>
+<script src="js/nav-auth.js?v=4"></script>
+<script src="js/main.js?v=7"></script>
+<script src="js/mobile-nav.js?v=2"></script>
+<script src="js/automate-app.js?v=1"></script>
+</body>
+</html>
