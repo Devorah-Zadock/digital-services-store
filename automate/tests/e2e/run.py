@@ -22,6 +22,7 @@ import secrets
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 
 URL = os.environ["STG_URL"].rstrip("/")
@@ -522,7 +523,7 @@ def run_growth_tests():
     c = make_user("c")
     try:
         api(c, "save-profile", business_name="עסק ג")
-        cid = lambda name: rows(f"contacts?user_id=eq.{c['id']}&name=eq.{name}&select=id,stage")[0]
+        cid = lambda name: rows(f"contacts?user_id=eq.{c['id']}&name=eq.{urllib.parse.quote(name)}&select=id,stage")[0]
         purposes = lambda run_id: [m["purpose"] for m in messages_of(c["id"]) if m["run_id"] == run_id]
 
         # ---- T19 stalled lead: follow-up → decide → close (and stops when the lead moves on)
