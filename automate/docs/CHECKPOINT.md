@@ -1,29 +1,31 @@
-# DeskKit Automate — checkpoint (paused 11.10.2026)
+# DeskKit Automate — where things stand (11.10.2026)
 
-Paused at the owner's request to work on the main site. Resume from "Next".
+## On the live site
+- Engine installed (11.10, one transaction, after a fresh backup + restore test and a
+  full rehearsal on a restored copy): 13 new tables, RLS everywhere, no visitor rights,
+  no change to any existing table.
+- State: **emergency stop ON**, pilot list = the owner's admin account only, emails
+  **simulated only** (`AUTOMATE_MAIL_MODE=sink`, allowlist = owner), worker scheduled
+  every 2 minutes (answers "killed" while the stop is on).
+- Pilot app: https://deskkit.co.il/automate-app.html (unlinked; anyone else sees
+  "coming soon"). Admin → "Automate" tab: status + emergency stop.
+- Isolation: lead-intake refuses sites outside the pilot; browser writes require
+  `automate_my_access()`; `pilot-check` verifies no data of other accounts.
+- To try it: Admin → Automate → turn the emergency stop off. Everything stays
+  simulated (no real email) until a separate, approved switch.
 
-## Done (all on staging, all tests green)
-- Engine: `automate/sql/10_engine.sql` (tables, events, runs, outbox, quotas,
-  kill switch, quiet hours, pilot gate, 90-day retention, RLS everywhere).
-- Functions: automate-worker, automate-api, lead-intake, quote-public.
-- Library: 7 automations + 6 business packs (`functions/_shared/automate/templates.ts`).
-- App: `automate/web/automate.html` (+ js/automate-app.js), `q.html`.
-- Staging: project `deskkit-staging` (free), web `deskkit-staging-web.deskkit.workers.dev`,
-  workflow "Staging (Automate)" (setup / deploy / test / deploy-and-test / status).
-- Tests: 13 unit, local SQL suite, 77 e2e, 8 browser — last run green.
-- Docs: OPERATIONS.md, ROLLOUT.md, PRIVACY-DRAFT-he.md.
-- Live site: only grant hardening, 50/day campaign cap, CRM backup/no-silent-wipe/delete warning, anonymous CRM count.
+## Automations (13)
+Sales: lead_autopilot, lead_nurture, quote_followup, quote_expiry, quote_won, quote_lost ·
+Money: invoice_collect, paid_thanks · Service: client_onboarding, review_request,
+service_reminder · Assistant: daily_digest, weekly_report.
+Six business packs. Every automation is tested end to end on staging (T1–T24).
 
-## Missing before selling
-1. Go-live (ROLLOUT.md steps 1–4) — needs owner approval at each step.
-2. ~~Contact-form block~~ — built (staging only, off by default); Turnstile decision before live (ROLLOUT step 4).
-3. ~~Admin-area card~~ — built: admin → "Automate" tab, tested on staging (e2e T18).
-4. Real email deliverability test (pilot, owner's address only).
-5. Payment / plan: how a customer buys Automate (Gumroad membership or other) — owner decision.
-6. English UI; legal review of the privacy/terms draft.
-7. Paid email plan decision before ~100 active businesses.
+## Keeping live up to date
+`Automate (live)` → `upgrade`: re-applies the engine (one transaction, settings kept),
+redeploys the four functions, runs the pilot isolation check.
 
-## Next
-- Re-run `deploy-and-test` on staging (the free project pauses after 7 idle days — restore it in the Supabase dashboard first if needed).
-- Then: present go-live step 1 for approval; meanwhile build the admin card and the
-  contact-form block behind a per-site switch (off by default), on staging first.
+## Still open (owner decisions)
+1. Real emails for the owner only (`AUTOMATE_MAIL_MODE=live`, allowlist = owner).
+2. Pricing / how customers pay — after the pilot shows which automations matter.
+3. English UI; legal review of the privacy/terms draft before opening to customers.
+4. Email volume plan before ~100 active businesses (free provider: 100/day total).

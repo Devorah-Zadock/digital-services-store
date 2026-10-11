@@ -407,7 +407,9 @@ def run_tests(a, b):
     fast_forward_runs(a["id"]); drain(2)
     f2 = [x for x in runs_of(a["id"], "quote_followup") if x["subject_id"] == s2["share"]["id"]][0]
     rem2 = [m for m in messages_of(a["id"]) if m["run_id"] == f2["id"] and m["purpose"] == "quote_reminder"]
-    check("T11 declined quote → no reminder ever", f2["status"] == "cancelled" and not rem2, f"{f2['status']} {len(rem2)}")
+    # "cancelled" (stopped while waiting) or "stopped" (the scheduled worker was
+    # mid-run at that moment and its next check saw the decline) — both end it.
+    check("T11 declined quote → no reminder ever", f2["status"] in ("cancelled", "stopped") and not rem2, f"{f2['status']} {len(rem2)}")
 
     # ---- T12 invoices
     st, inv = rest("POST", "invoice_saves", {"user_id": a["id"], "doc_type": "invoice_receipt", "status": "issued", "number": 101,
@@ -490,6 +492,14 @@ def run_tests(a, b):
         st, r = admin_fn("set-admin-password", newPassword=adm_pw)
         tok = r.get("token") if isinstance(r, dict) else None
         check("T18 admin password set → unlock token", st == 200 and tok, f"HTTP {st} {r}")
+        st, r = admin_fn("unlock", password="wrong-password-123")
+        check("T18 wrong admin password refused", st == 401, f"HTTP {st}")
+        st, r = admin_fn("unlock", password=adm_pw)
+        check("T18 right admin password unlocks", st == 200 and r.get("token"), f"HTTP {st}")
+        ev = rows(f"admin_audit_log?admin_user_id=eq.{adm['id']}&action=in.(admin_unlock,admin_unlock_failed)&select=action,details")
+        check("T18 every admin entry records the device and a network code (not the address)",
+              len(ev) == 2 and all(e["details"].get("device") and len(e["details"].get("net", "")) == 6 for e in ev)
+              and not any("." in e["details"].get("net", "") for e in ev), str(ev))
         st, r = fn("admin-stats", {"action": "automate-status"}, token=adm["token"])
         check("T18 card refused without the admin unlock", st == 401 and r.get("error") == "admin-locked", f"HTTP {st} {r}")
         st, r = admin_fn("automate-status", adminToken=tok)
@@ -621,6 +631,26 @@ def run_growth_tests():
         fast_forward_runs(c["id"]); drain(3)
         ql2 = [r for r in runs_of(c["id"], "quote_lost") if r["subject_id"] == s2["share"]["id"]][0]
         check("T22 a new quote was sent meanwhile → no 'come back' email", ql2["status"] == "stopped" and "quote_reengage" not in purposes(ql2["id"]), ql2["status"])
+        # ---- T23 weekly summary (Sunday's event, sent on demand here)
+        api(c, "activate", template="weekly_report", config={})
+        rpc("automate_emit", {"p_user": c["id"], "p_type": "schedule.weekly", "p_subject_type": None, "p_subject_id": None,
+                              "p_key": f"weekly:test-{RUN}", "p_payload": {}})
+        drain(2)
+        wk = [m for m in messages_of(c["id"]) if m["purpose"] == "weekly"]
+        check("T23 weekly summary sent to the owner (with this week's numbers)", len(wk) == 1 and wk[0]["recipient_role"] == "owner", str(wk))
+
+        # ---- T24 quote about to expire: reminder only if still unanswered
+        api(c, "activate", template="quote_expiry", config={"client_messages": "auto", "days_before": 2})
+        st, e1 = api(c, "send-quote", quote_id=qid, client_name="פג-תוקף", client_email="expiry-1@example.com", expires_days=3)
+        st, e2 = api(c, "send-quote", quote_id=qid, client_name="ענה-בזמן", client_email="expiry-2@example.com", expires_days=3)
+        drain(1)
+        fn("quote-public", {"token": e2["share"]["token"], "action": "approve", "name": "ענה-בזמן"})
+        fast_forward_runs(c["id"]); drain(3)
+        x1 = [r for r in runs_of(c["id"], "quote_expiry") if r["subject_id"] == e1["share"]["id"]][0]
+        x2 = [r for r in runs_of(c["id"], "quote_expiry") if r["subject_id"] == e2["share"]["id"]][0]
+        check("T24 unanswered quote near expiry → reminder to the client + owner told",
+              {"quote_expiring", "quote_expiring_owner"} <= set(purposes(x1["id"])), str(purposes(x1["id"])))
+        check("T24 a quote already answered gets no expiry reminder", "quote_expiring" not in purposes(x2["id"]), str(purposes(x2["id"])))
     finally:
         delete_user(c["id"])
 

@@ -12,11 +12,18 @@ export type Ctx = {
   appUrl: string;                        // the Automate app (links in owner emails)
   config: Record<string, unknown>;
   contact?: { id: string; name: string; email: string | null; phone: string | null; message: string | null; amount: number; source: string } | null;
-  quote?: { id: string; token: string; client_name: string; client_email: string; title: string | null; total: number | null; sent_at: string } | null;
+  quote?: { id: string; token: string; client_name: string; client_email: string; title: string | null; total: number | null; sent_at: string; expires_at?: string | null } | null;
   invoice?: { invoice_id: string; invoice_number: number | null; client_name: string | null; client_email: string | null; amount: number | null; due_date: string } | null;
   publicBaseUrl: string;                 // where q.html lives
   attention?: { kind: string; title: string; reason: string; amount: number | null }[];
+  weekly?: Record<string, number>;
 };
+
+// "YYYY-MM-DD…" or an ISO time → "DD/MM/YYYY" (Israel date).
+function israelDate(v: string): string {
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(v) ? new Date(v + "T12:00:00Z") : new Date(v);
+  return d.toLocaleDateString("en-GB", { timeZone: "Asia/Jerusalem" });
+}
 export type Built = { subject: string; html: string; toRole: "owner" | "client"; purpose: string };
 
 function vars(ctx: Ctx): Record<string, string> {
@@ -27,7 +34,7 @@ function vars(ctx: Ctx): Record<string, string> {
     "קישור": ctx.quote ? `${ctx.publicBaseUrl}/q.html?t=${ctx.quote.token}` : String(ctx.config.review_url || ""),
     "חשבונית": ctx.invoice?.invoice_number != null ? String(ctx.invoice.invoice_number) : "",
     "סכום": ctx.invoice?.amount != null ? shekels(ctx.invoice.amount) : "",
-    "מועד": ctx.invoice ? ctx.invoice.due_date.split("-").reverse().join("/") : "",
+    "מועד": ctx.invoice ? ctx.invoice.due_date.split("-").reverse().join("/") : ctx.quote?.expires_at ? israelDate(ctx.quote.expires_at) : "",
   };
 }
 
@@ -178,6 +185,39 @@ export function buildMessage(id: string, ctx: Ctx): Built {
     case "quote_reengage":
       return { toRole: "client", purpose: id, subject: `${ctx.business.name} — עדיין רלוונטי?`,
         html: clientEmail(ctx, textToHtml(fill(String(ctx.config.reengage_text || ""), v))) };
+    case "quote_expiring":
+      return { toRole: "client", purpose: id, subject: `הצעת המחיר מ${ctx.business.name} בתוקף עד ${v["מועד"]}`,
+        html: clientEmail(ctx, textToHtml(fill(String(ctx.config.expiry_text || ""), v))) };
+    case "quote_expiring_owner": {
+      const q = ctx.quote!;
+      return { toRole: "owner", purpose: id, subject: `ההצעה ל${q.client_name} פגה ב-${v["מועד"]}`,
+        html: ownerEmail(ctx, `<h2 style="margin:0 0 8px;font-size:20px;">הצעה לפני סוף התוקף ⏳</h2>
+          <p style="margin:0 0 6px;">ההצעה ל<b>${escapeHtml(q.client_name)}</b>${q.total != null ? ` (${shekels(q.total)})` : ""} בתוקף עד <b>${escapeHtml(v["מועד"])}</b> ועדיין לא נענתה. ${ctx.config.client_messages === "auto" ? "שלחנו ללקוח תזכורת עדינה." : "הכנו ללקוח תזכורת — היא מחכה לאישורך."} זה זמן טוב להתקשר.</p>
+          ${button("למסך היום", `${app}#today`)}`) };
+    }
+    case "weekly": {
+      const w = ctx.weekly || {};
+      const n = (k: string) => Number(w[k] || 0);
+      const row = (label: string, value: string, note = "") =>
+        `<tr><td style="padding:7px 0;border-bottom:1px solid #EEF2F1;">${label}</td><td style="padding:7px 0;border-bottom:1px solid #EEF2F1;text-align:left;font-weight:700;">${value}${note ? ` <span style="font-weight:400;color:#667085;font-size:13px;">${note}</span>` : ""}</td></tr>`;
+      const rows = [
+        row("פניות חדשות", String(n("leads_new")), n("leads_new") ? `(${n("leads_handled")} טופלו)` : ""),
+        row("לקוחות שנסגרו", String(n("clients_won"))),
+        row("הצעות מחיר שנשלחו", String(n("quotes_sent"))),
+        row("הצעות שאושרו", String(n("quotes_approved")), n("quotes_approved_total") ? `(${shekels(n("quotes_approved_total"))})` : ""),
+        row("תשלומים שהתקבלו", String(n("paid_count")), n("paid_total") ? `(${shekels(n("paid_total"))})` : ""),
+        row("משימות שהושלמו", String(n("tasks_done"))),
+      ].join("");
+      const open: string[] = [];
+      if (n("quotes_waiting")) open.push(`${n("quotes_waiting")} הצעות מחכות לתשובה`);
+      if (n("overdue_count")) open.push(`${n("overdue_count")} חשבוניות באיחור${n("overdue_total") ? ` (${shekels(n("overdue_total"))})` : ""}`);
+      if (n("tasks_overdue")) open.push(`${n("tasks_overdue")} משימות שהמועד שלהן עבר`);
+      return { toRole: "owner", purpose: id, subject: `📊 השבוע שלך: ${n("leads_new")} פניות, ${n("quotes_approved")} הצעות אושרו`,
+        html: ownerEmail(ctx, `<h2 style="margin:0 0 8px;font-size:20px;">סיכום השבוע 📊</h2>
+          <table style="width:100%;border-collapse:collapse;font-size:15px;margin:0 0 12px;">${rows}</table>
+          ${open.length ? `<p style="margin:0 0 6px;"><b>עדיין פתוח:</b> ${open.map(escapeHtml).join(" · ")}</p>` : `<p style="margin:0 0 6px;">אין דברים פתוחים — שבוע מסודר! 🎉</p>`}
+          ${button("לפתוח את DeskKit Automate", `${app}#today`)}`) };
+    }
     case "digest": {
       const items = (ctx.attention || []).slice(0, 8);
       const rows = items.map((a) => `<li style="margin:0 0 8px;"><b>${escapeHtml(a.title)}</b> — ${escapeHtml(a.reason)}${a.amount ? ` · ${shekels(a.amount)}` : ""}</li>`).join("");

@@ -585,18 +585,43 @@ function securityEmail(email: string, subject: string, whatHappened: string) {
     `${whatHappened} (${when}).<br><br><b>אם זו את/ה — אין צורך לעשות דבר.</b>` + EMERGENCY_STEPS_HTML);
 }
 
-function notifyAdminUnlock(email: string) {
-  return securityEmail(email, "כניסה לאזור הניהול של DeskKit", "נכנסו לאזור הניהול עם החשבון שלך");
+// Who is at the door: the kind of device and a short code of the network
+// (a one-way fingerprint — never the address itself), so the owner can tell
+// her own entries from anyone else's at a glance, in the email and the log.
+type Where = { device: string; net: string };
+function deviceOf(req: Request): string {
+  const ua = req.headers.get("user-agent") || "";
+  const os = /iPhone/i.test(ua) ? "iPhone" : /iPad/i.test(ua) ? "iPad" : /Android/i.test(ua) ? "Android"
+    : /Windows/i.test(ua) ? "Windows" : /Mac OS/i.test(ua) ? "Mac" : /Linux/i.test(ua) ? "Linux" : "מכשיר לא מזוהה";
+  const br = /Edg\//i.test(ua) ? "Edge" : /SamsungBrowser/i.test(ua) ? "Samsung" : /(Chrome|CriOS)\//i.test(ua) ? "Chrome"
+    : /(Firefox|FxiOS)\//i.test(ua) ? "Firefox" : /Safari\//i.test(ua) ? "Safari" : "דפדפן לא מזוהה";
+  return `${os} · ${br}`;
+}
+async function whereOf(req: Request): Promise<Where> {
+  const ip = (req.headers.get("cf-connecting-ip") || (req.headers.get("x-forwarded-for") || "").split(",")[0] || req.headers.get("x-real-ip") || "").trim();
+  let net = "?";
+  if (ip) {
+    const h = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip)));
+    net = Array.from(h.slice(0, 3)).map((b) => b.toString(16).padStart(2, "0")).join("");
+  }
+  return { device: deviceOf(req), net };
+}
+function whereText(w: Where): string {
+  return ` — מכשיר: <b>${w.device}</b>, קוד רשת: <b dir="ltr">${w.net}</b>`;
+}
+
+function notifyAdminUnlock(email: string, w: Where) {
+  return securityEmail(email, "כניסה לאזור הניהול של DeskKit", "נכנסו לאזור הניהול עם החשבון שלך" + whereText(w));
 }
 
 // One email per lock-out (not one for every request made while locked).
-async function notifyAdminLockedOnce(admin: ReturnType<typeof createClient>, email: string) {
+async function notifyAdminLockedOnce(admin: ReturnType<typeof createClient>, email: string, w?: Where) {
   const since = new Date(Date.now() - 16 * 60 * 1000).toISOString();
   const { count } = await admin.from("admin_audit_log").select("id", { count: "exact", head: true })
     .eq("admin_email", email).eq("action", "admin_unlock_locked").gte("created_at", since);
   if (count) return;
   await securityEmail(email, "⚠️ ניסיונות כושלים לסיסמת הניהול — DeskKit",
-    "הוקלדה סיסמת ניהול שגויה 5 פעמים בחשבון שלך, ולכן אזור הניהול ננעל ל-15 דקות");
+    "הוקלדה סיסמת ניהול שגויה 5 פעמים בחשבון שלך, ולכן אזור הניהול ננעל ל-15 דקות" + (w ? whereText(w) : ""));
 }
 
 Deno.serve(async (req: Request) => {
@@ -665,17 +690,18 @@ Deno.serve(async (req: Request) => {
       const result = await admin.rpc("admin_secret_check", { p_email: callerEmail, p_password: String(body.password || "") });
       if (result.error) throw result.error;
       if (result.data === "unset") return json({ error: "not-set" }, 409);
+      const where = await whereOf(req);
       if (result.data === "locked") {
-        await notifyAdminLockedOnce(admin, callerEmail);
-        await audit(admin, actor, "admin_unlock_locked", null);
+        await notifyAdminLockedOnce(admin, callerEmail, where);
+        await audit(admin, actor, "admin_unlock_locked", null, where);
         return json({ error: "locked" }, 423);
       }
       if (result.data !== "ok") {
-        await audit(admin, actor, "admin_unlock_failed", null);
+        await audit(admin, actor, "admin_unlock_failed", null, where);
         return json({ error: "bad-password" }, 401);
       }
-      await audit(admin, actor, "admin_unlock", null);
-      await notifyAdminUnlock(callerEmail);
+      await audit(admin, actor, "admin_unlock", null, where);
+      await notifyAdminUnlock(callerEmail, where);
       return json(await makeUnlockToken(actor.id, String(secretVersion)));
     }
 

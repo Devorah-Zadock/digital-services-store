@@ -9,6 +9,8 @@ name: Automate (live)
 #   preflight       live, read-only: name clashes, secrets, admin list
 #   install         live: the engine, DISABLED (emergency stop on, nobody
 #                   allowed in, no schedule) — one transaction
+#   upgrade         live: re-apply the engine to the existing install (one
+#                   transaction, settings kept) and redeploy the functions
 #   check           live, read-only: security + state
 #   pilot-prepare   live: pilot = the owner's admin account only, simulated
 #                   mail, functions deployed, worker scheduled (the
@@ -21,7 +23,7 @@ on:
       task:
         description: "Step"
         type: choice
-        options: [rehearse, preflight, install, check, pilot-prepare, pilot-check]
+        options: [rehearse, preflight, install, upgrade, check, pilot-prepare, pilot-check]
 
 permissions:
   contents: read
@@ -109,11 +111,19 @@ jobs:
           python3 .github/scripts/automate_live.py install
           python3 .github/scripts/automate_live.py counts live "$RUNNER_TEMP/after.json"
           python3 .github/scripts/automate_live.py compare "$RUNNER_TEMP/before.json" "$RUNNER_TEMP/after.json"
+      - name: Upgrade (settings kept)
+        if: inputs.task == 'upgrade'
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/automate_live.py counts live "$RUNNER_TEMP/before.json"
+          python3 .github/scripts/automate_live.py upgrade
+          python3 .github/scripts/automate_live.py counts live "$RUNNER_TEMP/after.json"
+          python3 .github/scripts/automate_live.py compare "$RUNNER_TEMP/before.json" "$RUNNER_TEMP/after.json"
       - name: Check (read-only)
         if: inputs.task == 'check'
         run: python3 .github/scripts/automate_live.py check live
       - uses: supabase/setup-cli@v1
-        if: inputs.task == 'pilot-prepare'
+        if: inputs.task == 'pilot-prepare' || inputs.task == 'upgrade'
         with:
           version: latest
       - name: Pilot — owner only, simulated mail
@@ -128,6 +138,15 @@ jobs:
           supabase functions deploy automate-api automate-worker lead-intake quote-public \
             --project-ref "$PROJECT_REF" --workdir "$RUNNER_TEMP/fx" --no-verify-jwt --use-api
           python3 .github/scripts/automate_live.py pilot-cron
+          python3 .github/scripts/automate_live.py pilot-check
+      - name: Redeploy Automate functions (after upgrade)
+        if: inputs.task == 'upgrade'
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/fx/supabase/functions"
+          cp -r automate/functions/. "$RUNNER_TEMP/fx/supabase/functions/"
+          supabase functions deploy automate-api automate-worker lead-intake quote-public \
+            --project-ref "$PROJECT_REF" --workdir "$RUNNER_TEMP/fx" --no-verify-jwt --use-api
           python3 .github/scripts/automate_live.py pilot-check
       - name: Pilot check (read-only)
         if: inputs.task == 'pilot-check'
