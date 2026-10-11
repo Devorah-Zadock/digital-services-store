@@ -1447,6 +1447,31 @@ async function callAdminStats(body) {
    The unlock token lives in sessionStorage: it's gone when the tab/browser
    closes, and the server also expires it after 8 hours. */
 const DK_UNLOCK_KEY = "dk_admin_unlock_v1";
+// "This device is recognized" (30 days) — kept per browser; useless anywhere
+// else (signed for this account and this admin password only).
+const DK_DEVICE_KEY = "dk_admin_device_v1";
+function dkGetDeviceToken() {
+  try { return localStorage.getItem(DK_DEVICE_KEY) || null; } catch (_e) { return null; }
+}
+function dkSetDeviceToken(t) {
+  try { if (t) localStorage.setItem(DK_DEVICE_KEY, t); } catch (_e) { /* storage blocked */ }
+}
+
+// Locks the admin area again after 30 minutes without any activity (a page
+// left open on an unattended computer stops being an open door).
+const DK_IDLE_MS = 30 * 60 * 1000;
+function dkStartIdleLock() {
+  let last = Date.now();
+  const bump = () => { last = Date.now(); };
+  ["mousemove", "mousedown", "keydown", "touchstart", "scroll", "wheel"].forEach((ev) =>
+    window.addEventListener(ev, bump, { passive: true }));
+  const lock = () => { dkClearUnlockToken(); window.location.reload(); };
+  setInterval(() => { if (Date.now() - last > DK_IDLE_MS) lock(); }, 30 * 1000);
+  // A computer that slept / a tab left in the background: check on return.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && Date.now() - last > DK_IDLE_MS) lock();
+  });
+}
 function dkGetUnlockToken() {
   try {
     const raw = JSON.parse(sessionStorage.getItem(DK_UNLOCK_KEY) || "null");
@@ -1459,6 +1484,8 @@ function dkSetUnlockToken(t) {
 function dkClearUnlockToken() {
   try { sessionStorage.removeItem(DK_UNLOCK_KEY); } catch (_e) { /* storage blocked */ }
 }
+
+let dkLockChallenge = null;
 
 // Shows the lock screen inside the existing gate box; resolves once the
 // admin password was set or entered correctly.
@@ -1476,6 +1503,10 @@ function dkShowAdminLock(me) {
         : ""}</p>
       <form id="dk-lock-form" style="text-align:right;">
         <input type="password" id="dk-lock-pw" class="cx-input" autocomplete="${isSetup ? "new-password" : "current-password"}" placeholder="סיסמת ניהול" style="width:100%; margin-bottom:8px;" required>
+        <div id="dk-lock-code-wrap" hidden style="margin-bottom:8px;">
+          <p style="font-size:13.5px; margin:0 0 6px;">המכשיר הזה עוד לא מוכר. שלחנו <b>קוד בן 6 ספרות</b> למייל שלך — הקלידו אותו כאן. המכשיר ייזכר ל-30 יום.</p>
+          <input type="text" id="dk-lock-code" class="cx-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="קוד מהמייל" dir="ltr" style="width:100%; letter-spacing:4px; text-align:center;">
+        </div>
         ${isSetup ? `<input type="password" id="dk-lock-pw2" class="cx-input" autocomplete="new-password" placeholder="אימות סיסמת ניהול" style="width:100%; margin-bottom:6px;" required>
         <p style="font-size:12.5px; color:var(--grey); margin:0 0 8px;">לפחות 10 תווים.</p>` : ""}
         <div id="dk-lock-err" style="color:#B23333; font-size:13px; min-height:18px; margin-bottom:6px;"></div>
@@ -1495,12 +1526,30 @@ function dkShowAdminLock(me) {
       }
       btn.disabled = true;
       try {
-        const t = await callAdminStats(isSetup ? { action: "set-admin-password", newPassword: pw } : { action: "unlock", password: pw });
+        const codeEl = document.getElementById("dk-lock-code");
+        const t = await callAdminStats(isSetup ? { action: "set-admin-password", newPassword: pw }
+          : { action: "unlock", password: pw, deviceToken: dkGetDeviceToken(),
+              ...(dkLockChallenge ? { challenge: dkLockChallenge, code: codeEl.value } : {}) });
         dkSetUnlockToken(t);
+        dkSetDeviceToken(t.deviceToken);
+        dkLockChallenge = null;
         resolve();
       } catch (ex) {
         const code = ex.message;
-        err.textContent = code === "bad-password" ? "סיסמת ניהול שגויה."
+        if (code === "device-code" && ex.data && ex.data.challenge) {
+          dkLockChallenge = ex.data.challenge;
+          document.getElementById("dk-lock-code-wrap").hidden = false;
+          const codeEl = document.getElementById("dk-lock-code");
+          if (ex.data.testCode) codeEl.value = ex.data.testCode; // test environment only
+          codeEl.focus();
+          btn.textContent = "אישור הקוד וכניסה";
+          btn.disabled = false;
+          return;
+        }
+        err.textContent = code === "bad-code" ? "הקוד שגוי או שפג תוקפו. אפשר לנסות שוב, או לרענן את הדף לקבלת קוד חדש."
+          : code === "code-limit" ? "נשלחו יותר מדי קודים בשעה האחרונה. נסו שוב מאוחר יותר."
+          : code === "code-not-sent" ? "לא הצלחנו לשלוח את הקוד למייל כרגע. נסו שוב בעוד כמה דקות."
+          : code === "bad-password" ? "סיסמת ניהול שגויה."
           : code === "locked" ? "יותר מדי ניסיונות שגויים — הכניסה נעולה ל-15 דקות."
           : code === "not signed in" ? "נראה שההתחברות לחשבון פגה — רעננו את הדף (או התחברו שוב) ונסו שוב."
           : code === "too-short" ? "סיסמת הניהול חייבת לכלול לפחות 10 תווים."

@@ -492,14 +492,32 @@ def run_tests(a, b):
         st, r = admin_fn("set-admin-password", newPassword=adm_pw)
         tok = r.get("token") if isinstance(r, dict) else None
         check("T18 admin password set → unlock token", st == 200 and tok, f"HTTP {st} {r}")
+        first_device = r.get("deviceToken") if isinstance(r, dict) else None
+        check("T18 first-time setup: this device becomes recognized", bool(first_device))
         st, r = admin_fn("unlock", password="wrong-password-123")
-        check("T18 wrong admin password refused", st == 401, f"HTTP {st}")
+        check("T18 wrong admin password refused", st == 401 and r.get("error") == "bad-password", f"HTTP {st} {r}")
         st, r = admin_fn("unlock", password=adm_pw)
-        check("T18 right admin password unlocks", st == 200 and r.get("token"), f"HTTP {st}")
+        challenge = r.get("challenge")
+        check("T18 right password on an unknown device → asks for the emailed code (no entry yet)",
+              st == 401 and r.get("error") == "device-code" and challenge and r.get("testCode") and not r.get("token"), f"HTTP {st} {str(r)[:120]}")
+        wrong = "000000" if r.get("testCode") != "000000" else "111111"
+        st, r2 = admin_fn("unlock", password=adm_pw, challenge=challenge, code=wrong)
+        check("T18 wrong code refused", st == 401 and r2.get("error") == "bad-code", f"HTTP {st} {r2}")
+        st, r2 = admin_fn("unlock", password=adm_pw, challenge=challenge, code=r["testCode"])
+        dev_tok = r2.get("deviceToken") if isinstance(r2, dict) else None
+        check("T18 right code → entry + device remembered", st == 200 and r2.get("token") and dev_tok, f"HTTP {st}")
+        st, r3 = admin_fn("unlock", password=adm_pw, challenge=challenge, code=r["testCode"])
+        check("T18 a code works only once", st == 401, f"HTTP {st} {r3}")
+        st, r3 = admin_fn("unlock", password=adm_pw, deviceToken=dev_tok)
+        check("T18 recognized device → password alone is enough", st == 200 and r3.get("token"), f"HTTP {st} {r3}")
+        st, r3 = admin_fn("unlock", password="wrong-password-123", deviceToken=dev_tok)
+        check("T18 recognized device still needs the right password", st == 401 and r3.get("error") == "bad-password", f"HTTP {st} {r3}")
+        st, r3 = admin_fn("set-admin-password", newPassword="another-password-123", currentPassword=adm_pw)
+        check("T18 admin password can't be changed from outside the admin area", st == 401 and r3.get("error") == "admin-locked", f"HTTP {st} {r3}")
         ev = rows(f"admin_audit_log?admin_user_id=eq.{adm['id']}&action=in.(admin_unlock,admin_unlock_failed)&select=action,details")
         check("T18 every admin entry records the device and a network code (not the address)",
-              len(ev) == 2 and all(e["details"].get("device") and len(e["details"].get("net", "")) == 6 for e in ev)
-              and not any("." in e["details"].get("net", "") for e in ev), str(ev))
+              len(ev) >= 3 and all(e["details"].get("device") and len(e["details"].get("net", "")) == 6 for e in ev)
+              and not any("." in e["details"].get("net", "") for e in ev), str(ev)[:300])
         st, r = fn("admin-stats", {"action": "automate-status"}, token=adm["token"])
         check("T18 card refused without the admin unlock", st == 401 and r.get("error") == "admin-locked", f"HTTP {st} {r}")
         st, r = admin_fn("automate-status", adminToken=tok)

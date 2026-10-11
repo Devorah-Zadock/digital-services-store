@@ -126,6 +126,9 @@ def cmd_secrets():
         # Like live, the admin function needs an owner list to exist; on
         # staging it names no real person (test admins are added per run).
         {"name": "ADMIN_EMAILS", "value": "owner@staging.invalid"},
+        # Staging has no email key: the admin's new-device code comes back in
+        # the reply instead (the live project must never have this secret).
+        {"name": "ADMIN_TEST_CODES", "value": "staging-only"},
     ])
     with open(os.environ["GITHUB_ENV"], "a") as f:
         f.write(f"STG_CRON_SECRET={cron}\n")

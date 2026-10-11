@@ -519,6 +519,56 @@ async function signUnlock(payload: string): Promise<string> {
   return b64url(new Uint8Array(sig));
 }
 
+// Signed, tamper-proof small objects (same key as the unlock token).
+async function signObj(o: Record<string, unknown>): Promise<string> {
+  const payload = b64url(new TextEncoder().encode(JSON.stringify(o)));
+  return payload + "." + (await signUnlock(payload));
+}
+async function readObj(t: unknown): Promise<Record<string, unknown> | null> {
+  if (typeof t !== "string" || t.length > 1000) return null;
+  const [payload, sig] = t.split(".");
+  if (!payload || !sig) return null;
+  const expected = await signUnlock(payload);
+  if (expected.length !== sig.length) return null;
+  let diff = 0;
+  for (let i = 0; i < sig.length; i++) diff |= sig.charCodeAt(i) ^ expected.charCodeAt(i);
+  if (diff !== 0) return null;
+  try { return JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/"))); } catch (_e) { return null; }
+}
+async function sha256hex(s: string): Promise<string> {
+  const h = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)));
+  return Array.from(h).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+// Recognized devices: after the admin password, a device that isn't known
+// yet must also enter a 6-digit code sent to the admin's email. The device
+// is then remembered for 30 days (until the admin password changes).
+const DEVICE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const CODE_TTL_MS = 10 * 60 * 1000;
+// Staging only (the test project has no email): return the code in the reply.
+const TEST_CODES = Deno.env.get("ADMIN_TEST_CODES") === "staging-only";
+
+async function sendAdminCode(email: string, code: string, w: Where): Promise<boolean> {
+  if (!RESEND_API_KEY || !email) return false;
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: "DeskKit <security@deskkit.co.il>", to: [email],
+        subject: `קוד כניסה לאזור הניהול: ${code}`,
+        html: `<div dir="rtl" style="font-family:Arial,sans-serif;font-size:16px;line-height:1.7">` +
+          `ביקשו להיכנס לאזור הניהול של DeskKit ממכשיר שעוד לא מוכר${whereText(w)}.<br>` +
+          `הקוד: <b style="font-size:24px;letter-spacing:4px" dir="ltr">${code}</b> (בתוקף 10 דקות).<br><br>` +
+          `<b>אם זו לא את/ה — אל תמסרו את הקוד לאף אחד</b>, והחליפו את סיסמת הניהול.` + EMERGENCY_STEPS_HTML + `</div>`,
+      }),
+    });
+    return res.ok;
+  } catch (_e) {
+    return false;
+  }
+}
+
 // v = the admin password's version: changing the password makes every
 // token issued before it invalid at once (signs other sessions out).
 async function makeUnlockToken(userId: string, version: string): Promise<{ token: string; expiresAt: number }> {
@@ -700,9 +750,51 @@ Deno.serve(async (req: Request) => {
         await audit(admin, actor, "admin_unlock_failed", null, where);
         return json({ error: "bad-password" }, 401);
       }
+      // Second factor for devices that aren't recognized yet.
+      const ver = String(secretVersion);
+      const dev = await readObj(body.deviceToken);
+      const trusted = !!dev && dev.k === "dev" && dev.u === actor.id && dev.v === ver && Number(dev.exp) > Date.now();
+      let newDeviceToken: string | null = null;
+      if (!trusted) {
+        const since15 = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+        const ch = await readObj(body.challenge);
+        const code = String(body.code || "").replace(/\D/g, "");
+        if (ch && code) {
+          const { count: fails } = await admin.from("admin_audit_log").select("id", { count: "exact", head: true })
+            .eq("admin_email", callerEmail).eq("action", "admin_code_failed").gte("created_at", since15);
+          if ((fails || 0) >= 5) return json({ error: "locked" }, 423);
+          let ok = ch.k === "code" && ch.u === actor.id && ch.v === ver && Number(ch.exp) > Date.now()
+            && ch.h === await sha256hex(code + ":" + String(ch.n));
+          if (ok) {
+            const { count: used } = await admin.from("admin_audit_log").select("id", { count: "exact", head: true })
+              .eq("admin_email", callerEmail).eq("action", "admin_device_trusted").eq("details->>n", String(ch.n));
+            ok = !used;
+          }
+          if (!ok) {
+            await audit(admin, actor, "admin_code_failed", null, where);
+            return json({ error: "bad-code" }, 401);
+          }
+          await audit(admin, actor, "admin_device_trusted", null, { ...where, n: String(ch.n) });
+          newDeviceToken = await signObj({ k: "dev", u: actor.id, v: ver, exp: Date.now() + DEVICE_TTL_MS });
+          await securityEmail(callerEmail, "מכשיר חדש אושר לאזור הניהול — DeskKit", "מכשיר חדש אושר לכניסה לאזור הניהול עם החשבון שלך" + whereText(where));
+        } else {
+          const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+          const { count: sent } = await admin.from("admin_audit_log").select("id", { count: "exact", head: true })
+            .eq("admin_email", callerEmail).eq("action", "admin_code_sent").gte("created_at", hourAgo);
+          if ((sent || 0) >= 5) return json({ error: "code-limit" }, 429);
+          const digits = crypto.getRandomValues(new Uint32Array(1))[0] % 1000000;
+          const newCode = String(digits).padStart(6, "0");
+          const nonce = b64url(crypto.getRandomValues(new Uint8Array(12)));
+          const challenge = await signObj({ k: "code", u: actor.id, v: ver, exp: Date.now() + CODE_TTL_MS, n: nonce, h: await sha256hex(newCode + ":" + nonce) });
+          const mailed = await sendAdminCode(callerEmail, newCode, where);
+          await audit(admin, actor, "admin_code_sent", null, { ...where, mailed });
+          if (!mailed && !TEST_CODES) return json({ error: "code-not-sent" }, 503);
+          return json({ error: "device-code", challenge, ...(TEST_CODES ? { testCode: newCode } : {}) }, 401);
+        }
+      }
       await audit(admin, actor, "admin_unlock", null, where);
       await notifyAdminUnlock(callerEmail, where);
-      return json(await makeUnlockToken(actor.id, String(secretVersion)));
+      return json({ ...(await makeUnlockToken(actor.id, ver)), ...(newDeviceToken ? { deviceToken: newDeviceToken } : {}) });
     }
 
     // Set (first time) or change the admin password. First time needs a
@@ -717,6 +809,9 @@ Deno.serve(async (req: Request) => {
         if (statusErr || status !== "unset") return json({ error: "try-again" }, 503);
       }
       if (adminPassword === "set") {
+        // Changing it only from inside the admin area (so a device that hasn't
+        // passed the email code can't change it), plus the current password.
+        if (!unlocked) return json({ error: "admin-locked", adminPassword }, 401);
         const check = await admin.rpc("admin_secret_check", { p_email: callerEmail, p_password: String(body.currentPassword || "") });
         if (check.error) throw check.error;
         if (check.data === "locked") {
@@ -738,7 +833,11 @@ Deno.serve(async (req: Request) => {
       if (setRes.error) throw setRes.error;
       await securityEmail(callerEmail, "נקבעה סיסמת ניהול — DeskKit", "נקבעה (או הוחלפה) סיסמת ניהול לחשבון שלך ב-DeskKit");
       const { data: newVersion } = await admin.rpc("admin_secret_version", { p_email: callerEmail });
-      return json(await makeUnlockToken(actor.id, String(newVersion)));
+      // First-time setup: this device becomes the first recognized one. (A
+      // change doesn't: every device, this one too, confirms by email again.)
+      const firstDevice = adminPassword === "unset"
+        ? { deviceToken: await signObj({ k: "dev", u: actor.id, v: String(newVersion), exp: Date.now() + DEVICE_TTL_MS }) } : {};
+      return json({ ...(await makeUnlockToken(actor.id, String(newVersion))), ...firstDevice });
     }
 
     if (action === "summary") {
