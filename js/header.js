@@ -130,6 +130,15 @@ function dkHeaderMountLangToggle() {
   const lang = document.documentElement.lang === "en" ? "en" : "he";
   toggle.textContent = lang === "en" ? "עברית" : "EN";
   toggle.addEventListener("click", () => {
+    // App pages that build most of their screen in JavaScript opt in with
+    // <html data-i18n-reload>: switching language reloads them, so every
+    // JS-built string comes back in the new language too.
+    if (document.documentElement.hasAttribute("data-i18n-reload")) {
+      const cur = typeof currentLang === "function" ? currentLang() : lang;
+      try { localStorage.setItem("deskkit_lang", cur === "en" ? "he" : "en"); } catch (err) { /* storage unavailable */ }
+      location.reload();
+      return;
+    }
     if (typeof applyLang === "function") {
       const cur = typeof currentLang === "function" ? currentLang() : lang;
       applyLang(cur === "en" ? "he" : "en");

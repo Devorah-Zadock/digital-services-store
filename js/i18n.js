@@ -1018,6 +1018,14 @@ const I18N = {
   },
 };
 
+// Per-area dictionaries (js/i18n-<area>.js), loaded BEFORE this file, each
+// pushing { he: {...}, en: {...} } onto window.I18N_EXTRA — so every app area
+// keeps its own strings without everyone editing this one big file.
+(window.I18N_EXTRA || []).forEach((extra) => {
+  if (extra && extra.he) Object.assign(I18N.he, extra.he);
+  if (extra && extra.en) Object.assign(I18N.en, extra.en);
+});
+
 const I18N_LANG_KEY = "deskkit_lang";
 
 function applyLang(lang) {
@@ -1053,6 +1061,16 @@ function applyLang(lang) {
   // data-i18n sweep above — they listen for this and re-render themselves
   // in the new language instead.
   document.dispatchEvent(new CustomEvent("deskkit:langchange", { detail: { lang } }));
+}
+
+// For text built in JavaScript: dkL("שמירה", "Save") → the current language.
+// dkT("key", "fallback") → a dictionary entry. Both safe to call anywhere.
+function dkL(he, en) {
+  return currentLang() === "en" && en !== undefined && en !== null && en !== "" ? en : he;
+}
+function dkT(key, fallback) {
+  const d = I18N[currentLang()] || I18N.he;
+  return d[key] !== undefined ? d[key] : (I18N.he[key] !== undefined ? I18N.he[key] : (fallback || key));
 }
 
 function currentLang() {
