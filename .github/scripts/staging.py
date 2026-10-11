@@ -85,7 +85,9 @@ def cmd_reset_schema(path):
     # platform owns (session settings, the schema itself); function bodies
     # are left untouched because filtering is line-based on single-line
     # statements only.
-    skip = re.compile(r'^(SET |SELECT pg_catalog\.set_config|CREATE SCHEMA IF NOT EXISTS "public"|ALTER SCHEMA "public" OWNER|COMMENT ON SCHEMA "public")', re.I)
+    # (Session settings such as check_function_bodies = off are kept: the
+    # dump relies on them to create functions before their tables.)
+    skip = re.compile(r'^(CREATE SCHEMA IF NOT EXISTS "public"|CREATE SCHEMA "public"|ALTER SCHEMA "public" OWNER|COMMENT ON SCHEMA "public")', re.I)
     body = "\n".join(line for line in dump.splitlines() if not skip.match(line))
     reset = """
       drop schema if exists public cascade;
@@ -176,6 +178,10 @@ def cmd_auth():
 
 def cmd_status():
     ref = staging_ref()
+    ready = sql(ref, "select to_regclass('public.automation_messages') is not null as ok") or []
+    if not (ready and ready[0].get("ok")):
+        print("  Automate tables not installed yet")
+        return
     rows = sql(ref, """
       select 'contacts' t, count(*)::int n from public.contacts union all
       select 'automations', count(*) from public.automations union all
