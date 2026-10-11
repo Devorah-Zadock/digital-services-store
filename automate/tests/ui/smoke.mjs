@@ -60,6 +60,7 @@ try {
   // a saved quote → send it from the app
   await admin("/rest/v1/quote_saves", { method: "POST", body: JSON.stringify({ user_id: uid, data: { eventName: "שיפוץ מטבח", recipient: "דנה", price: "9,500", businessName: "שיפוצי בדיקה", template: "classic" } }) });
   await page.goto(`${WEB}/automate.html#quotes`);
+  await page.reload();   // same page, new hash: reload to load the new quote
   await page.waitForSelector("[data-sendquote]", { timeout: 15000 });
   await page.click("[data-sendquote]");
   await page.fill("#sq-email", "client-ui@example.com");
