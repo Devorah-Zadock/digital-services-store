@@ -77,8 +77,8 @@
 <link rel="preload" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700;800&family=Secular+One&family=Space+Grotesk:wght@500;600;700&display=optional" as="style">
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700;800&family=Secular+One&family=Space+Grotesk:wght@500;600;700&display=optional" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700;800&family=Secular+One&family=Space+Grotesk:wght@500;600;700&display=optional" rel="stylesheet"></noscript>
-<link rel="stylesheet" href="css/style.css?v=102">
-<link rel="stylesheet" href="css/deskkit-ui.css?v=49">
+<link rel="stylesheet" href="css/style.css?v=103">
+<link rel="stylesheet" href="css/deskkit-ui.css?v=50">
 </head>
 <body class="dk-home dk-has-app-sidebar">
 <header class="site">
@@ -105,6 +105,10 @@
      correct for the far more common anonymous visitor, never an empty
      shell. -->
 <div id="dk-home-out">
+<div class="dk-home-switch-bar" id="dk-home-switch-bar" hidden>
+  <span id="dk-home-switch-hello"></span>
+  <a href="index.html" class="dk-home-switch-btn" data-i18n="home_to_workspace">לסביבת העבודה שלי ←</a>
+</div>
 <section class="dk-home-hero">
   <div class="container dk-home-hero-inner">
     <!-- Two zones, matching the user's reference mockup exactly (not
@@ -325,6 +329,7 @@
     <div class="dk-home-dash-greet">
       <h1 id="dk-home-greet-name">שלום 👋</h1>
       <p data-i18n="dash_subtitle">מה ניצור היום?</p>
+      <a href="index.html?view=intro" class="dk-home-switch-link" data-i18n="home_to_intro">למסך הפתיחה של DeskKit ←</a>
     </div>
     <div class="dk-home-dash-tools">
       <a href="sites.html?new=1" class="dk-home-dash-tool" data-dk-product="site"><span class="dk-home-dash-tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.3 2.5 3.6 5.5 3.6 9s-1.3 6.5-3.6 9c-2.3-2.5-3.6-5.5-3.6-9s1.3-6.5 3.6-9z"/></svg></span><span data-i18n="tool_site">אתר</span></a>
@@ -399,9 +404,9 @@
 <script src="js/mobile-nav.js?v=2"></script>
 <script src="js/app-sidebar.js?v=6"></script>
 <script src="js/projects.js?v=7"></script>
-<script src="js/index-home.js?v=2"></script>
+<script src="js/index-home.js?v=3"></script>
 <script src="js/domain-guide.js?v=5"></script>
-<script src="js/main.js?v=7"></script>
+<script src="js/main.js?v=8"></script>
 <script src="js/captcha.js?v=3"></script>
 <script src="js/widgets.js?v=18"></script>
 <script src="js/effects.js"></script>

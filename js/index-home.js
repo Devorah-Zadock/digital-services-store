@@ -12,10 +12,28 @@ function dkHomeFreeTextRoute() {
   else location.href = href;
 }
 
+// index.html?view=intro — the marketing home, also for signed-in users,
+// with a bar back to their workspace. Default (no parameter) stays the
+// workspace, so every existing link keeps working as before.
+const DK_HOME_INTRO = new URLSearchParams(location.search).get("view") === "intro";
+
+function dkHomeDisplayName(user) {
+  return (user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name)) || (user.email || "").split("@")[0];
+}
+
 async function dkHomeShowLoggedIn(user) {
   const out = document.getElementById("dk-home-out");
   const inEl = document.getElementById("dk-home-in");
   if (!out || !inEl) return;
+  if (DK_HOME_INTRO) {
+    out.hidden = false;
+    inEl.hidden = true;
+    const bar = document.getElementById("dk-home-switch-bar");
+    const hello = document.getElementById("dk-home-switch-hello");
+    if (hello) hello.textContent = "👋 " + dkHomeDisplayName(user);
+    if (bar) bar.hidden = false;
+    return;
+  }
   out.hidden = true;
   inEl.hidden = false;
 
@@ -30,7 +48,7 @@ async function dkHomeShowLoggedIn(user) {
     // though every other translated string on the page updated, because
     // nothing was wired to rebuild this one specific string, is set to
     // once at load and never touched again.
-    const displayName = (user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name)) || (user.email || "").split("@")[0];
+    const displayName = dkHomeDisplayName(user);
     nameEl.dataset.dkDisplayName = displayName;
     dkHomeRenderGreeting(nameEl);
   }
@@ -62,8 +80,10 @@ function dkHomeRenderGreeting(nameEl) {
 function dkHomeShowLoggedOut() {
   const out = document.getElementById("dk-home-out");
   const inEl = document.getElementById("dk-home-in");
+  const bar = document.getElementById("dk-home-switch-bar");
   if (out) out.hidden = false;
   if (inEl) inEl.hidden = true;
+  if (bar) bar.hidden = true;
 }
 
 document.addEventListener("DOMContentLoaded", () => {

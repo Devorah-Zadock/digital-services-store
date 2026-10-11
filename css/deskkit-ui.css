@@ -748,7 +748,12 @@ html[dir="ltr"] .dk-home-hero-visual {
    same product. */
 .dk-home-dash { max-width: var(--max-wide); margin: 0 auto; padding: 48px 32px 64px; }
 .dk-home-dash-greet h1 { font-size: 32px; font-weight: 800; margin: 0 0 6px; color: var(--text-main); }
-.dk-home-dash-greet p { font-size: 16px; color: #475569; margin: 0 0 32px; }
+.dk-home-dash-greet p { font-size: 16px; color: #475569; margin: 0 0 10px; }
+.dk-home-switch-link { display: inline-block; margin: 0 0 26px; font-size: 14px; font-weight: 600; color: var(--primary-dark, #0F766E); text-decoration: none; }
+.dk-home-switch-link:hover { text-decoration: underline; }
+.dk-home-switch-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; max-width: 1180px; margin: 12px auto 0; padding: 10px 16px; background: #F0FBF9; border: 1px solid #B9E6DF; border-radius: 12px; font-size: 14.5px; color: #12211D; box-sizing: border-box; width: calc(100% - 32px); }
+.dk-home-switch-bar[hidden] { display: none; }
+.dk-home-switch-btn { font-weight: 700; color: #fff; background: #0F766E; padding: 7px 14px; border-radius: 9px; text-decoration: none; white-space: nowrap; }
 .dk-home-dash-tools { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 48px; }
 .dk-home-dash-tool {
   display: flex; flex-direction: column; align-items: center; gap: 10px; width: 108px; box-sizing: border-box;
@@ -763,9 +768,9 @@ html[dir="ltr"] .dk-home-hero-visual {
   background: var(--primary-light); color: var(--primary-dark);
 }
 .dk-home-dash-tool-icon svg { width: 22px; height: 22px; }
-.dk-home-recent-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.dk-home-recent-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 12px; }
 .dk-home-recent-head h2 { font-size: 21px; margin: 0; }
-.dk-home-recent-head a { font-size: 13.5px; font-weight: 700; color: var(--primary-dark); text-decoration: none; }
+.dk-home-recent-head a { font-size: 13.5px; font-weight: 700; color: var(--primary-dark); text-decoration: none; white-space: nowrap; flex-shrink: 0; }
 
 /* ============ Shared project card (Home-recent + Projects page + My Websites) ============
    Rebuilt in the visual-design pass: white bg-card, soft shadow-md,
@@ -995,3 +1000,4 @@ html[dir="ltr"] .dk-home-hero-visual {
 .dk-btn.dk-pro-btn { background: linear-gradient(135deg, #D4A72C, #B8860B); border-color: #B8860B; color: #fff; }
 .dk-btn.dk-pro-btn:hover { background: linear-gradient(135deg, #C99A22, #A87A08); color: #fff; }
 .dk-pro-license { margin-top: 12px; }
+
