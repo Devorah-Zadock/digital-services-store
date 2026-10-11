@@ -16,8 +16,8 @@ Paused at the owner's request to work on the main site. Resume from "Next".
 
 ## Missing before selling
 1. Go-live (ROLLOUT.md steps 1–4) — needs owner approval at each step.
-2. Contact-form block in site templates (live builder change).
-3. Admin-area card: kill switch, today's emails, failures.
+2. ~~Contact-form block~~ — built (staging only, off by default); Turnstile decision before live (ROLLOUT step 4).
+3. ~~Admin-area card~~ — built: admin → "Automate" tab, tested on staging (e2e T18).
 4. Real email deliverability test (pilot, owner's address only).
 5. Payment / plan: how a customer buys Automate (Gumroad membership or other) — owner decision.
 6. English UI; legal review of the privacy/terms draft.

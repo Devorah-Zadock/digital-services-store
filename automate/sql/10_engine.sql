@@ -662,13 +662,65 @@ language sql stable security definer set search_path = '' as $$
   limit 50;
 $$;
 
+-- ---------------------------------------------------------------------
+-- DeskKit owner's view (admin area): one call for the Automate card.
+-- Counts only — no client content, no message bodies, no recipient emails.
+create or replace function public.automate_admin_overview()
+returns jsonb language sql stable security definer set search_path = '' as $$
+  with day0 as (
+    select ((now() at time zone 'Asia/Jerusalem')::date)::timestamp at time zone 'Asia/Jerusalem' as t
+  )
+  select jsonb_build_object(
+    'kill_switch', coalesce(public.automate_setting('kill_switch'), '{"on": false}'::jsonb),
+    'access_mode', coalesce(public.automate_setting('access') ->> 'mode', 'allowlist'),
+    'pilot_accounts', coalesce(jsonb_array_length(public.automate_setting('access') -> 'emails'), 0),
+    'daily_cap', coalesce((public.automate_setting('email_caps') ->> 'automation_daily')::int, 0),
+    'emails_today', public.automate_emails_today(),
+    'messages_today', coalesce((
+      select jsonb_object_agg(status, n) from (
+        select m.status, count(*)::int as n from public.automation_messages m, day0
+         where m.created_at >= day0.t group by m.status) x), '{}'::jsonb),
+    'waiting_approval', (select count(*)::int from public.automation_messages where status = 'pending_approval'),
+    'businesses', (select count(distinct user_id)::int from public.automations),
+    'automations_active', (select count(*)::int from public.automations where status = 'active'),
+    'automations_attention', (select count(*)::int from public.automations where status in ('needs_attention', 'blocked_quota')),
+    'runs_24h', coalesce((
+      select jsonb_object_agg(status, n) from (
+        select status, count(*)::int as n from public.automation_runs
+         where updated_at >= now() - interval '24 hours' group by status) x), '{}'::jsonb),
+    'recent_failures', coalesce((
+      select jsonb_agg(f order by at desc) from (
+        select m.created_at as at, jsonb_build_object('at', m.created_at, 'kind', 'email', 'what', m.purpose, 'error', left(coalesce(m.error, ''), 160)) as f
+          from public.automation_messages m
+         where m.status = 'failed' and m.created_at >= now() - interval '7 days'
+        union all
+        select r.updated_at, jsonb_build_object('at', r.updated_at, 'kind', 'run', 'what', r.template_key, 'error', left(coalesce(r.last_error, ''), 160))
+          from public.automation_runs r
+         where r.status = 'failed' and r.updated_at >= now() - interval '7 days'
+        order by 1 desc limit 10) y), '[]'::jsonb),
+    'system_alerts', coalesce((
+      select jsonb_agg(jsonb_build_object('at', a.created_at, 'level', a.level, 'kind', a.kind, 'message', a.message) order by a.created_at desc)
+        from (select * from public.automate_alerts where user_id is null and resolved_at is null order by created_at desc limit 10) a), '[]'::jsonb)
+  );
+$$;
+
+-- The emergency stop. While on, the worker does nothing at all (no runs,
+-- no emails); everything waits and continues when it is switched off.
+create or replace function public.automate_set_kill_switch(p_on boolean, p_reason text)
+returns jsonb language sql security definer set search_path = '' as $$
+  insert into public.automate_settings (key, value, updated_at)
+  values ('kill_switch', jsonb_build_object('on', p_on, 'reason', left(nullif(trim(p_reason), ''), 200), 'at', now()), now())
+  on conflict (key) do update set value = excluded.value, updated_at = now()
+  returning value;
+$$;
+
 do $$
 declare f text;
 begin
   foreach f in array array[
     'automate_alert(uuid,text,text,text)', 'automate_limits(uuid)', 'automate_emit(uuid,text,text,uuid,text,jsonb)',
     'automate_cancel_runs(uuid,text,uuid,text[],text)', 'automate_emit_daily()', 'automate_claim_runs(integer)',
-    'automate_claim_messages(integer)', 'automate_emails_today()', 'automate_take_email(uuid)', 'automate_attention(uuid)',
+    'automate_claim_messages(integer)', 'automate_emails_today()', 'automate_admin_overview()', 'automate_set_kill_switch(boolean,text)', 'automate_take_email(uuid)', 'automate_attention(uuid)',
     'contacts_events()', 'quote_shares_events()', 'invoice_tracking_events()'] loop
     execute format('revoke all on function public.%s from public, anon, authenticated', f);
     execute format('grant execute on function public.%s to service_role', f);

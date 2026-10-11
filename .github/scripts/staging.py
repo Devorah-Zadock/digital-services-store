@@ -123,6 +123,9 @@ def cmd_secrets():
         {"name": "AUTOMATE_PUBLIC_URL", "value": WEB_URL},
         # Staging never sends real email: anything but "live" = simulated.
         {"name": "MAIL_MODE", "value": "sink"},
+        # Like live, the admin function needs an owner list to exist; on
+        # staging it names no real person (test admins are added per run).
+        {"name": "ADMIN_EMAILS", "value": "owner@staging.invalid"},
     ])
     with open(os.environ["GITHUB_ENV"], "a") as f:
         f.write(f"STG_CRON_SECRET={cron}\n")
@@ -135,7 +138,12 @@ def cmd_secrets():
           perform vault.create_secret('{cron}', 'automate_cron_secret');
         end if;
       end $$;""")
-    print("function secrets set (mail mode: simulated only)")
+    # No real email key may exist on staging (the admin function's security
+    # emails and every other sender then simply do nothing).
+    names = {x.get("name") for x in (call("GET", f"/projects/{ref}/secrets") or [])}
+    if "RESEND_API_KEY" in names:
+        call("DELETE", f"/projects/{ref}/secrets", ["RESEND_API_KEY"])
+    print("function secrets set (mail mode: simulated only, no email key)")
 
 
 def cmd_cron():

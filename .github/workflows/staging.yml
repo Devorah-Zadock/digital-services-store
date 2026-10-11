@@ -87,6 +87,10 @@ jobs:
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/stg/supabase/functions"
           cp -r automate/functions/. "$RUNNER_TEMP/stg/supabase/functions/"
+          # The admin area's function too, so its Automate card is tested here
+          # first (staging has no email key: its security emails go nowhere).
+          cp -r supabase/functions/admin-stats "$RUNNER_TEMP/stg/supabase/functions/"
+          cp supabase/functions/_shared/mail.ts "$RUNNER_TEMP/stg/supabase/functions/_shared/"
           supabase functions deploy --project-ref "$STG_REF" --workdir "$RUNNER_TEMP/stg" --no-verify-jwt --use-api
 
       - uses: actions/setup-node@v4

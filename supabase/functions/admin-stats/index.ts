@@ -321,6 +321,8 @@ const ACTION_MIN_ROLE: Record<string, Role> = {
   "mail-test": "owner",
   "mail-create": "owner",
   "mail-send-batch": "owner",
+  "automate-status": "support",
+  "automate-kill-switch": "owner",
 };
 
 const EXPORT_BATCH = 5000;
@@ -490,7 +492,7 @@ const UNLOCK_TTL_MS = 2 * 60 * 60 * 1000;
 const STEP_UP_ACTIONS = new Set([
   "set-pro", "delete-account", "export-users", "set-admin-role", "remove-admin",
   "suspend-user", "unsuspend-user", "bulk", "delete-site", "delete-cv",
-  "mail-create",
+  "mail-create", "automate-kill-switch",
 ]);
 const UNLOCK_FREE_ACTIONS = new Set(["whoami", "unlock", "set-admin-password"]);
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
@@ -892,6 +894,28 @@ Deno.serve(async (req: Request) => {
     }
 
     // ---- "מדדים" tab: totals and trends, counts only ----
+    // DeskKit Automate card. Until Automate is installed on this project its
+    // functions don't exist yet — the card then just says "not active".
+    if (action === "automate-status") {
+      const { data, error } = await admin.rpc("automate_admin_overview");
+      if (error) {
+        if (/automate_admin_overview|does not exist|PGRST202/i.test(error.message + " " + (error as { code?: string }).code)) {
+          return json({ installed: false });
+        }
+        throw error;
+      }
+      return json({ installed: true, mailMode: Deno.env.get("MAIL_MODE") === "live" ? "live" : "simulated", ...(data as Record<string, unknown>) });
+    }
+
+    if (action === "automate-kill-switch") {
+      const on = body.on === true;
+      const reason = String(body.reason || "").slice(0, 200);
+      const { data, error } = await admin.rpc("automate_set_kill_switch", { p_on: on, p_reason: reason });
+      if (error) throw error;
+      await audit(admin, actor, on ? "automate_kill_on" : "automate_kill_off", null, { reason });
+      return json({ ok: true, kill_switch: data });
+    }
+
     if (action === "metrics") {
       const { data, error } = await admin.rpc("admin_metrics");
       if (error) throw error;

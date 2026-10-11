@@ -1366,7 +1366,7 @@ function handleSetupError(e) {
 const DK_STEP_UP_ACTIONS = new Set([
   "set-pro", "delete-account", "export-users", "set-admin-role", "remove-admin",
   "suspend-user", "unsuspend-user", "bulk", "delete-site", "delete-cv",
-  "mail-create",
+  "mail-create", "automate-kill-switch",
 ]);
 
 // Asks for the admin password again before a sensitive action. Resolves
@@ -1656,6 +1656,87 @@ async function loadMetrics() {
   }
 }
 
+/* ---------- "Automate" tab ---------- */
+
+const AU_MSG_LABELS = {
+  sent: "נשלחו", simulated: "נשלחו בסימולציה", queued: "בתור", sending: "בשליחה", deferred: "נדחו למחר / לשעה מותרת",
+  pending_approval: "מחכים לאישור העסק", failed: "נכשלו", cancelled: "בוטלו",
+};
+const AU_RUN_LABELS = {
+  queued: "בתור", running: "רצים עכשיו", waiting: "ממתינים לשלב הבא", retrying: "בניסיון חוזר",
+  succeeded: "הסתיימו בהצלחה", stopped: "נעצרו (הלקוח הגיב / הושלם)", failed: "נכשלו", cancelled: "בוטלו",
+};
+
+function auCounts(obj, labels, emptyMsg) {
+  const rows = Object.entries(obj || {}).sort((a, b) => b[1] - a[1]).map(([k, n]) => [labels[k] || k, fmtNum(n)]);
+  return mtRows(rows, emptyMsg);
+}
+
+function renderAutomate(d) {
+  const body = document.getElementById("automate-body");
+  if (!d.installed) {
+    body.innerHTML = mtCard("Automate עוד לא הופעל כאן", `<p class="cx-muted" style="font-size:13.5px;line-height:1.7;">המנוע של Automate עדיין לא הותקן באתר הזה, ולכן אין מה להציג. אחרי שתאשרי את שלב ההפעלה הראשון, הכרטיס הזה יציג כאן את המצב בזמן אמת.</p>`);
+    return;
+  }
+  const kill = d.kill_switch || {};
+  const killed = kill.on === true;
+  const cap = Number(d.daily_cap || 0);
+  const banner = killed
+    ? `<div class="au-banner bad"><b>⛔ עצירת חירום פעילה.</b> שום אוטומציה לא רצה ושום מייל לא יוצא. הכול ממתין וימשיך מאיפה שעצר ברגע שתפעילי מחדש.${kill.reason ? ` <span>סיבה: ${escapeHtml(kill.reason)}</span>` : ""}</div>`
+    : `<div class="au-banner ok"><b>✓ פועל כרגיל.</b> ${d.mailMode === "live" ? "מיילים נשלחים באמת." : "מצב סימולציה — שום מייל לא יוצא באמת."} ${d.access_mode === "open" ? "פתוח לכל המשתמשים." : `פיילוט: ${fmtNum(d.pilot_accounts)} חשבונות מאושרים.`}</div>`;
+  const killBtn = dkCan("owner")
+    ? `<button type="button" class="cx-btn ${killed ? "" : "cx-btn-danger"}" id="automate-kill-btn">${killed ? "▶ הפעלה מחדש" : "⛔ עצירת חירום"}</button>`
+    : "";
+  const kpis = `<div class="cx-kpis">
+    ${mtKpi("מיילים היום", fmtNum(d.emails_today), `מתוך ${fmtNum(cap)} ביום (תקרה לאוטומציות)`)}
+    ${mtKpi("מחכים לאישור", fmtNum(d.waiting_approval), "הודעות שהעסק צריך לאשר")}
+    ${mtKpi("עסקים", fmtNum(d.businesses), "עם אוטומציה אחת לפחות")}
+    ${mtKpi("אוטומציות פעילות", fmtNum(d.automations_active))}
+    ${mtKpi("דורשות טיפול", fmtNum(d.automations_attention), "נעצרו אחרי תקלות או מכסה")}
+  </div>`;
+  const failures = (d.recent_failures || []).map((f) => [`${fmtDateTime(f.at)} · ${f.kind === "email" ? "מייל" : "אוטומציה"} · ${f.what}`, f.error || "—"]);
+  const alerts = (d.system_alerts || []).map((a) => [`${fmtDateTime(a.at)} · ${a.kind}`, a.message]);
+  body.innerHTML = `<div class="au-top">${banner}${killBtn}</div>` + kpis + `<div class="mt-cards">
+    ${mtCard("מיילים שנוצרו היום", auCounts(d.messages_today, AU_MSG_LABELS, "עוד לא נוצרו מיילים היום."))}
+    ${mtCard("ריצות ב-24 השעות האחרונות", auCounts(d.runs_24h, AU_RUN_LABELS, "לא היו ריצות ב-24 השעות האחרונות."))}
+    ${mtCard("תקלות אחרונות (7 ימים)", mtRows(failures, "אין תקלות. 🎉"))}
+    ${mtCard("התראות מערכת פתוחות", mtRows(alerts, "אין התראות פתוחות."))}
+  </div>`;
+  const btn = document.getElementById("automate-kill-btn");
+  if (btn) btn.addEventListener("click", () => toggleAutomateKill(!killed));
+}
+
+async function toggleAutomateKill(on) {
+  let reason = "";
+  if (on) {
+    reason = window.prompt("עצירת חירום של כל האוטומציות.\nשום מייל לא ייצא עד שתפעילי מחדש. מה הסיבה? (לא חובה)", "") ;
+    if (reason === null) return;
+  } else if (!window.confirm("להפעיל מחדש את כל האוטומציות? מה שהמתין ימשיך עכשיו.")) {
+    return;
+  }
+  try {
+    await callAdminStats({ action: "automate-kill-switch", on, reason });
+    await loadAutomate();
+  } catch (e) {
+    if (e.cancelled || handleSetupError(e)) return;
+    alert("הפעולה נכשלה: " + e.message);
+  }
+}
+
+async function loadAutomate() {
+  const body = document.getElementById("automate-body");
+  const btn = document.getElementById("automate-refresh");
+  btn.disabled = true;
+  try {
+    renderAutomate(await callAdminStats({ action: "automate-status" }));
+  } catch (e) {
+    if (handleSetupError(e)) return;
+    body.innerHTML = `<p class="cx-error">שגיאה בטעינת מצב Automate: ${escapeHtml(e.message)}</p>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 /* ---------- "דיוור" tab (owner) ---------- */
 
 const mailState = { audience: 0, sending: false };
@@ -1783,6 +1864,7 @@ async function loadTemplateStats() {
 const DK_TABS = [
   { key: "customers", minRole: "support" },
   { key: "metrics", minRole: "support" },
+  { key: "automate", minRole: "support" },
   { key: "mail", minRole: "owner" },
   { key: "feedback", minRole: "support" },
   { key: "templates", minRole: "support" },
@@ -1803,6 +1885,7 @@ function activateTab(key) {
     if (key === "feedback") loadMessages();
     if (key === "metrics") loadMetrics();
     if (key === "mail") loadMailOverview();
+    if (key === "automate") loadAutomate();
     if (key === "templates") loadTemplateStats();
     if (key === "audit") loadAuditLog();
     if (key === "admins") loadAdmins();
@@ -1867,6 +1950,7 @@ async function showPanel() {
   if (dkCan("admin")) wireAuditLog();
   if (dkCan("owner")) { wireAdmins(); wireMail(); }
   document.getElementById("metrics-refresh").addEventListener("click", loadMetrics);
+  document.getElementById("automate-refresh").addEventListener("click", loadAutomate);
   document.getElementById("messages-list").addEventListener("click", handleMessagesListClick);
   document.getElementById("messages-refresh-btn").addEventListener("click", loadMessages);
   document.getElementById("stats-load-btn").addEventListener("click", loadTemplateStats);
