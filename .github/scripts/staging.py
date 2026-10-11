@@ -135,7 +135,12 @@ def cmd_secrets():
           perform vault.create_secret('{cron}', 'automate_cron_secret');
         end if;
       end $$;""")
-    print("function secrets set (mail mode: simulated only)")
+    # No real email key may exist on staging (the admin function's security
+    # emails and every other sender then simply do nothing).
+    names = {x.get("name") for x in (call("GET", f"/projects/{ref}/secrets") or [])}
+    if "RESEND_API_KEY" in names:
+        call("DELETE", f"/projects/{ref}/secrets", ["RESEND_API_KEY"])
+    print("function secrets set (mail mode: simulated only, no email key)")
 
 
 def cmd_cron():

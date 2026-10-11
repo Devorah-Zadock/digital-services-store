@@ -473,6 +473,39 @@ def run_tests(a, b):
     check("T17 pilot: an account on the list gets in", st_b == 200)
     set_setting("access", {"mode": "open", "emails": []})
 
+    # ---- T18 admin-area Automate card (behind the admin password, like every admin action)
+    adm = make_user("admin")
+    try:
+        rest("POST", "admin_users", {"email": adm["email"], "role": "owner"}, prefer="return=minimal")
+        adm_pw = secrets.token_urlsafe(16)
+
+        def admin_fn(action, **kw):
+            return fn("admin-stats", {"action": action, **kw}, token=adm["token"])
+        st, r = admin_fn("set-admin-password", newPassword=adm_pw)
+        tok = r.get("token") if isinstance(r, dict) else None
+        check("T18 admin password set → unlock token", st == 200 and tok, f"HTTP {st} {r}")
+        st, r = fn("admin-stats", {"action": "automate-status"}, token=adm["token"])
+        check("T18 card refused without the admin unlock", st == 401 and r.get("error") == "admin-locked", f"HTTP {st} {r}")
+        st, r = admin_fn("automate-status", adminToken=tok)
+        check("T18 card shows counts", st == 200 and r.get("installed") is True and r.get("businesses", 0) >= 2 and "messages_today" in r, f"HTTP {st} {str(r)[:200]}")
+        check("T18 card exposes no emails or message content", "@" not in json.dumps(r) and "html" not in r, str(r)[:200])
+        st, r = admin_fn("automate-kill-switch", adminToken=tok, on=True, reason="e2e")
+        check("T18 emergency stop needs the admin password again", st == 401 and r.get("error") == "confirm-password", f"HTTP {st} {r}")
+        st, r = admin_fn("automate-kill-switch", adminToken=tok, on=True, reason="e2e", confirmPassword=adm_pw)
+        check("T18 emergency stop from the admin card", st == 200 and get_setting("kill_switch").get("on") is True, f"HTTP {st} {r}")
+        check("T18 worker stops while the switch is on", worker().get("killed") is True)
+        st, _ = admin_fn("automate-kill-switch", adminToken=tok, on=False, confirmPassword=adm_pw)
+        check("T18 switched back on from the admin card", st == 200 and get_setting("kill_switch").get("on") is False)
+        st, _ = fn("admin-stats", {"action": "automate-status"}, token=a["token"])
+        check("T18 a business owner (not admin) is refused", st == 403, f"HTTP {st}")
+        log = rows(f"admin_audit_log?admin_user_id=eq.{adm['id']}&action=like.automate_kill*&select=action")
+        check("T18 both switches recorded in the admin log", len(log) == 2, str(log))
+    finally:
+        set_setting("kill_switch", {"on": False})
+        rest("DELETE", f"admin_users?email=eq.{adm['email']}", prefer="return=minimal")
+        rest("DELETE", f"admin_secrets?email=eq.{adm['email']}", prefer="return=minimal")
+        delete_user(adm["id"])
+
     real = rows("automation_messages?status=eq.sent&select=id")
     check("T00 not a single email was really sent from staging", real == [])
 

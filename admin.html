@@ -278,6 +278,11 @@
   .mt-status { margin-top: 12px; font-size: 14px; font-weight: 600; }
   .mt-big { font-size: 34px; font-weight: 800; color: var(--ink-dark); font-variant-numeric: tabular-nums; }
   .mt-note { font-size: 12.5px; line-height: 1.6; margin: 6px 0 0; }
+  .au-top { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+  .au-banner { flex: 1; min-width: 240px; padding: 12px 16px; border-radius: 12px; font-size: 14px; line-height: 1.6; }
+  .au-banner.ok { background: #ECFDF3; border: 1px solid #ABEFC6; color: #054F31; }
+  .au-banner.bad { background: #FEF3F2; border: 1px solid #FECDCA; color: #7A271A; }
+  #panel-automate .mt-row b { font-weight: 600; text-align: end; overflow-wrap: anywhere; max-width: 60%; }
   .mt-row { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid #EEF2F1; font-size: 13.5px; }
   .mt-row:last-child { border-bottom: 0; }
   .mt-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 16px; }
@@ -482,6 +487,7 @@
       <button type="button" class="admin-toptab" id="toptab-metrics" role="tab">מדדים</button>
       <button type="button" class="admin-toptab" id="toptab-feedback" role="tab">הודעות <span class="cx-tab-count" id="toptab-feedback-count" hidden></span></button>
       <button type="button" class="admin-toptab" id="toptab-templates" role="tab">תבניות</button>
+      <button type="button" class="admin-toptab" id="toptab-automate" role="tab">Automate</button>
       <button type="button" class="admin-toptab" id="toptab-mail" role="tab" hidden>דיוור</button>
       <button type="button" class="admin-toptab" id="toptab-audit" role="tab" hidden>יומן ניהול</button>
       <button type="button" class="admin-toptab" id="toptab-admins" role="tab" hidden>הרשאות</button>
@@ -592,6 +598,15 @@
       <div class="cx-head-actions"><button type="button" class="cx-btn" id="metrics-refresh">↻ רענון</button></div>
     </div>
     <div id="metrics-body"><div class="cx-kpis"><div class="cx-kpi cx-skeleton"></div><div class="cx-kpi cx-skeleton"></div><div class="cx-kpi cx-skeleton"></div><div class="cx-kpi cx-skeleton"></div><div class="cx-kpi cx-skeleton"></div></div></div>
+  </section>
+
+  <!-- ===== Automate ===== -->
+  <section class="admin-section" id="panel-automate" hidden>
+    <div class="cx-head">
+      <div><h2>Automate</h2><p class="cx-sub">מצב האוטומציות של כל העסקים · מספרים בלבד, בלי תוכן הודעות ובלי כתובות לקוחות</p></div>
+      <div class="cx-head-actions"><button type="button" class="cx-btn" id="automate-refresh">↻ רענון</button></div>
+    </div>
+    <div id="automate-body"><div class="cx-kpis"><div class="cx-kpi cx-skeleton"></div><div class="cx-kpi cx-skeleton"></div><div class="cx-kpi cx-skeleton"></div></div></div>
   </section>
 
   <!-- ===== דיוור ===== -->
@@ -741,7 +756,7 @@
 <script src="js/vendor/supabase-js-2.116.0.js"></script>
 <script src="js/supabase-config.js?v=2"></script>
 <script src="js/nav-auth.js?v=4"></script>
-<script src="js/admin.js?v=32"></script>
+<script src="js/admin.js?v=33"></script>
 <script src="js/contact-email.js?v=1"></script>
 </body>
 </html>

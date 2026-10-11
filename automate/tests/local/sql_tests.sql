@@ -150,3 +150,25 @@ do $$ begin
      or exists (select 1 from public.automation_messages where user_id = '00000000-0000-0000-0000-00000000000a') then raise exception 'data left after delete'; end if;
 end $$;
 select 'ALL LOCAL SQL TESTS PASSED' as result;
+
+-- Admin card: counts only, kill switch round-trip, browser roles locked out.
+insert into public.automations (user_id, template_key, trigger_type) values
+  ('00000000-0000-0000-0000-00000000000b', 'lead_autopilot', 'lead.created') on conflict do nothing;
+do $$ declare o jsonb; k jsonb; begin
+  o := public.automate_admin_overview();
+  if (o ->> 'businesses')::int < 1 then raise exception 'overview should count businesses: %', o; end if;
+  if o ? 'to_email' or o::text like '%@example.com%' then raise exception 'overview must not expose emails'; end if;
+  k := public.automate_set_kill_switch(true, 'בדיקה');
+  if not (public.automate_setting('kill_switch') ->> 'on')::boolean then raise exception 'kill switch should be on'; end if;
+  perform public.automate_set_kill_switch(false, null);
+  if (public.automate_setting('kill_switch') ->> 'on')::boolean then raise exception 'kill switch should be off'; end if;
+end $$;
+set role authenticated;
+do $$ begin
+  begin perform public.automate_set_kill_switch(true, 'x'); raise exception 'browser could flip the kill switch';
+  exception when insufficient_privilege then null; end;
+  begin perform public.automate_admin_overview(); raise exception 'browser could read the admin overview';
+  exception when insufficient_privilege then null; end;
+end $$;
+reset role;
+select 'admin card tests passed';
