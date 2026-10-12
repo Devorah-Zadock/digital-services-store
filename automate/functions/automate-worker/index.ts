@@ -195,6 +195,14 @@ async function optedOut(db: Db, userId: string, email: string): Promise<boolean>
   return (count || 0) > 0;
 }
 
+// Did the provider report this address as undeliverable, or did it mark our
+// email as spam? Then no automation sends to it again (see mail-events).
+async function suppressed(db: Db, email: string): Promise<string | null> {
+  const { data, error } = await db.from("automate_suppressions").select("reason").eq("email", normEmail(email)).maybeSingle();
+  if (error) throw new Error(error.message);   // unsure → don't send (retried)
+  return data ? String(data.reason) : null;
+}
+
 // Was this client asked for a review in the last year (by any automation)?
 async function askedForReview(rc: RunCtx, email: string): Promise<boolean> {
   const since = new Date(Date.now() - 365 * 864e5).toISOString();
@@ -226,6 +234,8 @@ async function enqueueEmail(rc: RunCtx, step: Step, messageId: string, role: "ow
   let optoutUrl: string | null = null;
   if (role === "client") {
     if (await optedOut(rc.db, rc.run.user_id, to)) return { type: "skip", summary: "הלקוח ביקש לא לקבל מיילים אוטומטיים — ההודעה לא נשלחה" };
+    const sup = await suppressed(rc.db, to);
+    if (sup) return { type: "skip", summary: sup === "complaint" ? "הלקוח סימן מייל קודם כספאם — לא שולחים לו יותר" : "הכתובת לא קיימת (המייל חזר בעבר) — ההודעה לא נשלחה" };
     optoutUrl = (await optoutLinks(PUBLIC_URL, SUPABASE_URL, rc.run.user_id, to)).page;
   }
   const built = buildMessage(messageId, { ...ctx, optoutUrl });
@@ -486,12 +496,16 @@ function tomorrowMorning(): number {
 async function dispatch(db: Db): Promise<Record<string, number>> {
   const stats: Record<string, number> = {};
   const bump = (k: string) => { stats[k] = (stats[k] || 0) + 1; };
-  const caps = await setting(db, "email_caps", { automation_daily: 30 } as { automation_daily: number });
+  const caps = await setting(db, "email_caps", { automation_daily: 30, automation_monthly: 2000 } as { automation_daily: number; automation_monthly?: number });
   const quiet = await setting(db, "quiet_hours", { start: 21, end: 8, shabbat: true } as QuietHours);
   const { data: claimed } = await db.rpc("automate_claim_messages", { p_limit: MESSAGES_PER_TICK });
   if (!claimed || !claimed.length) return stats;
   let { data: sentToday } = await db.rpc("automate_emails_today");
   sentToday = Number(sentToday || 0);
+  // Whole-system monthly cap on emails really sent (the provider bill).
+  let { data: sentMonth } = await db.rpc("automate_emails_month_sent");
+  sentMonth = Number(sentMonth || 0);
+  const monthlyCap = Number(caps.automation_monthly ?? 2000);
 
   for (const m of claimed) {
     const now = new Date();
@@ -504,6 +518,18 @@ async function dispatch(db: Db): Promise<Record<string, number>> {
       await db.rpc("automate_alert", { p_user: null, p_level: "warning", p_kind: "daily_cap",
         p_message: "הגענו לתקרת המיילים היומית של האוטומציות. ההודעות ממתינות ויישלחו מחר בבוקר." });
       bump("daily_cap"); continue;
+    }
+    let sup: string | null = null;
+    try { sup = await suppressed(db, m.to_email); } catch { await db.from("automation_messages").update({ status: "deferred", locked_until: null, next_attempt_at: new Date(Date.now() + 5 * 60e3).toISOString() }).eq("id", m.id); bump("retry"); continue; }
+    if (sup) {
+      await db.from("automation_messages").update({ status: "cancelled", locked_until: null, error: "suppressed:" + sup }).eq("id", m.id);
+      bump("suppressed"); continue;
+    }
+    if (sentMonth >= monthlyCap) {
+      await db.from("automation_messages").update({ status: "deferred", locked_until: null, next_attempt_at: new Date(tomorrowMorning()).toISOString() }).eq("id", m.id);
+      await db.rpc("automate_alert", { p_user: null, p_level: "warning", p_kind: "monthly_cap",
+        p_message: "הגענו לתקרת המיילים החודשית של האוטומציות (הגנה מחיוב לא צפוי). ההודעות ממתינות; אפשר להעלות את התקרה בהגדרות." });
+      bump("monthly_cap"); continue;
     }
     let unsubscribe: string | null = null;
     if (m.recipient_role === "client") {
@@ -524,7 +550,7 @@ async function dispatch(db: Db): Promise<Record<string, number>> {
     if (res.kind === "sent" || res.kind === "simulated") {
       await db.from("automation_messages").update({ status: res.kind, sent_at: now.toISOString(), locked_until: null, error: null,
         provider_id: res.kind === "sent" ? res.providerId : null }).eq("id", m.id);
-      sentToday++; bump(res.kind);
+      sentToday++; if (res.kind === "sent") sentMonth++; bump(res.kind);
     } else if (res.kind === "quota") {
       await db.from("automation_messages").update({ status: "deferred", locked_until: null, error: res.error, next_attempt_at: new Date(tomorrowMorning()).toISOString() }).eq("id", m.id);
       await db.rpc("automate_alert", { p_user: null, p_level: "warning", p_kind: "provider_quota",
