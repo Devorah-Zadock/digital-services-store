@@ -12,6 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=103">
+<link rel="stylesheet" href="css/deskkit-ui.css?v=50">
 <style>
   .admin-gate-wrap {
     min-height: 70vh; display: flex; align-items: center; justify-content: center; padding: 40px 24px;
@@ -231,6 +232,32 @@
   [hidden] { display: none !important; }
   body { background: #F6F8F7; }
   .admin-panel-wrap { padding: 0 0 70px; }
+  /* DeskKit app layout (same as "My projects"): side rail on desktop, a
+     big section title, tabs only as a chip row on small screens. */
+  body.dk-admin { background: var(--bg, #F7F9F8); }
+  body.dk-admin .cx-topbar { background: transparent; border-bottom: none; margin-bottom: 18px; }
+  body.dk-admin .cx-topbar-inner { align-items: center; padding-top: 28px; }
+  body.dk-admin .cx-topbar h1 { font-size: 30px; font-weight: 800; }
+  @media (min-width: 901px) { body.dk-admin.dk-app-sidebar-mounted .admin-toptabs { display: none; } }
+  /* The section title now sits at the top of the page; drop each panel's own copy (its buttons stay). */
+  body.dk-admin .admin-section > .cx-head > div:first-child:has(> h2) { display: none; }
+  body.dk-admin .admin-section > .cx-head:not(:has(> :not(div:first-child))) { display: none; }
+  @media (max-width: 900px) {
+    body.dk-admin .cx-topbar h1 { font-size: 24px; }
+    body.dk-admin .admin-toptabs { display: flex; gap: 8px; padding: 4px 16px 2px; }
+    body.dk-admin .admin-toptab { border: 1px solid var(--border, #E2E7E4); border-radius: 999px; padding: 7px 14px; white-space: nowrap; background: #fff; margin: 0; }
+    body.dk-admin .admin-toptab.active { background: var(--primary-light, #DDF5EF); border-color: transparent; color: var(--primary-dark, #0F766E); }
+  }
+  .dk-sec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 16px; }
+  .dk-sec-card { background: #fff; border: 1px solid #E6EBE9; border-radius: 14px; padding: 18px 20px; }
+  .dk-sec-card h3 { margin: 0 0 6px; font-size: 15px; color: var(--ink-dark); }
+  .dk-sec-card p { margin: 0 0 12px; font-size: 13px; color: var(--grey); line-height: 1.6; }
+  .dk-sec-big { font-size: 26px; font-weight: 800; color: var(--ink-dark); margin: 2px 0 6px; }
+  .dk-sec-list { list-style: none; margin: 0; padding: 0; }
+  .dk-sec-list li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 2px; border-bottom: 1px solid #EEF2F1; font-size: 13.5px; }
+  .dk-sec-list li:last-child { border-bottom: none; }
+  .dk-sec-list .muted { color: var(--grey); font-size: 12.5px; }
+  .dk-sec-list .bad { color: #B42318; font-weight: 700; }
   .cx-topbar { background: #fff; border-bottom: 1px solid #E6EBE9; margin-bottom: 28px; }
   .cx-topbar-inner { max-width: 1280px; margin: 0 auto; padding: 22px 24px 6px; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
   .cx-topbar h1 { font-size: 22px; margin: 0; color: var(--ink-dark); }
@@ -432,21 +459,15 @@
   }
 </style>
 </head>
-<body>
+<body class="dk-admin">
 
 <header class="site no-print">
   <nav class="nav">
     <a href="index.html" class="brand"><span class="brand-badge"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path class="bm-doc" d="M7,4 H14 L18,8 V20 H7 Z"/><path class="bm-fold" d="M14,4 L14,8 L18,8 Z"/><path class="bm-spark" d="M15,14.3 C15.3,16 16,16.7 17.7,17 C16,17.3 15.3,18 15,19.7 C14.7,18 14,17.3 12.3,17 C14,16.7 14.7,16 15,14.3 Z"/></svg></span><span class="brand-text"><span class="brand-desk">Desk</span><span class="brand-kit">Kit</span></span></a>
     <div class="nav-links">
-      <a href="index.html">בית</a>
-      <a href="products.html?type=cv">קורות חיים</a>
-      <a href="sites.html">בניית אתר</a>
-      <a href="quote-app.html">הצעות מחיר</a>
-      <a href="invoice-app.html">חשבוניות</a>
-      <a href="products.html?type=deck">מצגות</a>
-      <a href="products.html?type=xlsx">גליונות</a>
-      <a href="about.html">אודות</a>
-      <a href="contact.html">צור קשר</a>
+      <a href="projects.html">הפרויקטים שלי</a>
+      <a href="automate.html">Automate</a>
+      <a href="admin.html" class="active">ניהול</a>
     </div>
     <div class="nav-end-group">
     </div>
@@ -474,12 +495,11 @@
   <div class="cx-topbar">
     <div class="cx-topbar-inner">
       <div>
-        <h1>אזור ניהול</h1>
-        <p>DeskKit · ניהול לקוחות, הודעות והרשאות</p>
+        <h1 id="admin-page-title">לקוחות</h1>
+        <p id="admin-page-sub">אזור הניהול של DeskKit</p>
       </div>
       <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
         <span class="cx-role-pill" id="admin-role-pill"></span>
-        <button type="button" class="cx-link-btn" id="admin-change-pw" style="font-size:12.5px;">🔒 שינוי סיסמת ניהול</button>
       </div>
     </div>
     <nav class="admin-toptabs" role="tablist" aria-label="אזורי ניהול">
@@ -491,6 +511,7 @@
       <button type="button" class="admin-toptab" id="toptab-mail" role="tab" hidden>דיוור</button>
       <button type="button" class="admin-toptab" id="toptab-audit" role="tab" hidden>יומן ניהול</button>
       <button type="button" class="admin-toptab" id="toptab-admins" role="tab" hidden>הרשאות</button>
+      <button type="button" class="admin-toptab" id="toptab-security" role="tab">אבטחה</button>
     </nav>
   </div>
 
@@ -672,6 +693,27 @@
   </section>
 
   <!-- ===== הרשאות ===== -->
+  <section class="admin-section" id="panel-security" hidden>
+    <div class="dk-sec-grid">
+      <div class="dk-sec-card">
+        <h3>מכשירים מוכרים</h3>
+        <div class="dk-sec-big" id="sec-devices">—</div>
+        <p>מכשיר מוכר נכנס עם סיסמת הניהול בלבד, ובלי מייל. מכשיר חדש צריך גם קוד חד-פעמי מהמייל, ותקבלי על כך התראה.</p>
+        <button type="button" class="cx-btn" id="sec-forget">ניתוק כל המכשירים האחרים</button>
+      </div>
+      <div class="dk-sec-card">
+        <h3>סיסמת הניהול</h3>
+        <p>החלפת הסיסמה מנתקת מיד את כל המכשירים. אזור הניהול ננעל לבד אחרי 30 דקות בלי פעילות.</p>
+        <button type="button" class="cx-btn" id="admin-change-pw">🔒 שינוי סיסמת ניהול</button>
+      </div>
+    </div>
+    <div class="dk-sec-card">
+      <h3>כניסות אחרונות לאזור הניהול</h3>
+      <p>מכשיר וקוד רשת (טביעה מקוצרת של כתובת הרשת — לא הכתובת עצמה). כניסה שלא זיהית? ניתוק מכשירים והחלפת סיסמה.</p>
+      <ul class="dk-sec-list" id="sec-events"><li class="muted">טוענים…</li></ul>
+    </div>
+  </section>
+
   <section class="admin-section" id="panel-admins" hidden>
     <div class="cx-head">
       <div><h2>הרשאות</h2><p class="cx-sub">מי יכול להיכנס לאזור הניהול, ובאיזה תפקיד</p></div>
@@ -701,51 +743,6 @@
 <aside class="cx-drawer" id="cx-drawer" aria-hidden="true" aria-label="פרטי לקוח"></aside>
 <div class="cx-toasts" id="cx-toasts" aria-live="polite"></div>
 
-<footer class="site">
-  <div class="container">
-    <div class="footer-grid">
-      <div>
-        <h4>DeskKit</h4>
-        <p style="font-size:14px; max-width:320px;">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
-      </div>
-      <div>
-        <h4>ניווט</h4>
-        <ul>
-          <li><a href="builder.html">קורות חיים</a></li>
-          <li><a href="sites.html">בניית אתר</a></li>
-          <li><a href="quote-app.html">הצעות מחיר</a></li>
-          <li><a href="invoice-app.html">חשבוניות</a></li>
-          <li><a href="products.html?type=deck">מצגות</a></li>
-          <li><a href="products.html?type=xlsx">גליונות</a></li>
-          <li><a href="about.html">אודות</a></li>
-          <li><a href="contact.html">צור קשר</a></li>
-        </ul>
-      </div>
-      <div>
-        <h4>מידע</h4>
-        <ul>
-          <li><a href="guides.html">מדריכים</a></li>
-          <li><a href="faq.html">שאלות נפוצות</a></li>
-          <li><a href="terms.html">מדיניות</a></li>
-          <li><a href="security.html">אבטחת מידע</a></li>
-          <li><a href="accessibility.html">נגישות</a></li>
-        </ul>
-      </div>
-      <div>
-        <h4>צור קשר</h4>
-        <ul>
-          <li><a class="dk-email" href="contact.html">צרו קשר</a></li>
-        </ul>
-      </div>
-    </div>
-    <div class="footer-identity">
-      <p class="footer-identity-tagline" data-i18n="footer_identity_tagline">DeskKit — כלים ומסמכים דיגיטליים לעסקים</p>
-      <p class="footer-identity-owner" data-i18n="footer_identity_owner">נוצר ומופעל באופן עצמאי על ידי דבורה צדוק &middot; עוסק פטור</p>
-      <p class="footer-identity-links"><a href="contact.html" data-i18n="nav_contact">צור קשר</a> &middot; <a href="terms.html#privacy" data-i18n="footer_privacy_link">מדיניות פרטיות</a> &middot; <a href="terms.html" data-i18n="footer_terms_link">תנאי שימוש</a></p>
-    </div>
-    <div class="footer-bottom">© 2026 DeskKit. כל הזכויות שמורות.</div>
-  </div>
-</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="js/site-templates.js?v=37"></script>
@@ -756,7 +753,7 @@
 <script src="js/vendor/supabase-js-2.116.0.js"></script>
 <script src="js/supabase-config.js?v=2"></script>
 <script src="js/nav-auth.js?v=4"></script>
-<script src="js/admin.js?v=34"></script>
+<script src="js/admin.js?v=35"></script>
 <script src="js/contact-email.js?v=1"></script>
 </body>
 </html>

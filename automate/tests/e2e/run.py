@@ -527,6 +527,20 @@ def run_tests(a, b):
         check("T18 every admin entry records the device and a network code (not the address)",
               len(ev) >= 3 and all(e["details"].get("device") and len(e["details"].get("net", "")) == 6 for e in ev)
               and not any("." in e["details"].get("net", "") for e in ev), str(ev)[:300])
+        st, ok_unlock = admin_fn("unlock", password=adm_pw, deviceToken=dev_tok)
+        utok = ok_unlock.get("token") if isinstance(ok_unlock, dict) else None
+        st, sec = admin_fn("security-overview", adminToken=utok)
+        check("T18 security view lists my recent admin entries (device + network code)",
+              st == 200 and sec.get("devices", 0) >= 1 and any(e["action"] == "admin_unlock" and e["device"] for e in sec.get("events", [])), f"HTTP {st} {str(sec)[:200]}")
+        st, fr = admin_fn("forget-devices", adminToken=utok)
+        check("T18 signing out other devices needs the admin password again", st == 401 and fr.get("error") == "confirm-password", f"HTTP {st} {fr}")
+        st, fr = admin_fn("forget-devices", adminToken=utok, confirmPassword=adm_pw)
+        new_dev = fr.get("deviceToken") if isinstance(fr, dict) else None
+        check("T18 sign out all other devices → this device gets a fresh recognition", st == 200 and new_dev, f"HTTP {st} {fr}")
+        st, r4 = admin_fn("unlock", password=adm_pw, deviceToken=dev_tok)
+        check("T18 a device signed out that way needs the emailed code again", st == 401 and r4.get("error") == "device-code", f"HTTP {st} {str(r4)[:120]}")
+        st, r4 = admin_fn("unlock", password=adm_pw, deviceToken=new_dev)
+        check("T18 this device still enters with the password alone", st == 200 and r4.get("token"), f"HTTP {st} {str(r4)[:120]}")
         st, r = fn("admin-stats", {"action": "automate-status"}, token=adm["token"])
         check("T18 card refused without the admin unlock", st == 401 and r.get("error") == "admin-locked", f"HTTP {st} {r}")
         st, r = admin_fn("automate-status", adminToken=tok)

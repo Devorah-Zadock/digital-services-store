@@ -1366,7 +1366,7 @@ function handleSetupError(e) {
 const DK_STEP_UP_ACTIONS = new Set([
   "set-pro", "delete-account", "export-users", "set-admin-role", "remove-admin",
   "suspend-user", "unsuspend-user", "bulk", "delete-site", "delete-cv",
-  "mail-create", "automate-kill-switch",
+  "mail-create", "automate-kill-switch", "forget-devices",
 ]);
 
 // Asks for the admin password again before a sensitive action. Resolves
@@ -1919,14 +1919,111 @@ const DK_TABS = [
   { key: "templates", minRole: "support" },
   { key: "audit", minRole: "admin" },
   { key: "admins", minRole: "owner" },
+  { key: "security", minRole: "support" },
 ];
 const dkTabLoaded = {};
+
+/* ---------- DeskKit app layout: side rail + section title ---------- */
+const DK_ADMIN_SECTIONS = {
+  customers: ["לקוחות", "כל המשתמשים הרשומים, מהחדש לישן", '<path d="M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 17.5V19"/><circle cx="10" cy="7.5" r="3.5"/><path d="M20 19v-1.5a3.5 3.5 0 0 0-2.5-3.35M15.5 4.2a3.5 3.5 0 0 1 0 6.6"/>'],
+  metrics: ["מדדים", "כניסות, הרשמות ושימוש לאורך זמן", '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'],
+  feedback: ["הודעות", "פניות שהגיעו מטופס יצירת הקשר", '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>'],
+  templates: ["תבניות", "באילו תבניות משתמשים הכי הרבה", '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'],
+  automate: ["Automate", "מצב המנוע, עצירת חירום ונתונים כלליים", '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>'],
+  mail: ["דיוור", "רשימת התפוצה ושליחת עדכונים", '<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>'],
+  audit: ["יומן ניהול", "כל פעולה שבוצעה באזור הניהול", '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>'],
+  admins: ["הרשאות", "מי יכול להיכנס לאזור הניהול, ובאיזה תפקיד", '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/>'],
+  security: ["אבטחה", "מכשירים מוכרים, כניסות אחרונות וסיסמת הניהול", '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'],
+};
+const dkAdminIcon = (paths) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
+
+function dkMountAdminSidebar(email, role) {
+  if (document.getElementById("dk-app-sidebar")) return;
+  const header = document.querySelector("header.site");
+  if (header) document.documentElement.style.setProperty("--header-h", header.offsetHeight + "px");
+  const items = DK_TABS.filter((t) => dkCan(t.minRole)).map((t) => {
+    const [label, , icon] = DK_ADMIN_SECTIONS[t.key];
+    const count = t.key === "feedback" ? ' <span class="cx-tab-count" id="side-feedback-count" hidden></span>' : "";
+    return `<a href="#${t.key}" class="dk-app-sidebar-item" data-admin-tab="${t.key}" title="${label}"><span class="dk-app-sidebar-icon">${dkAdminIcon(icon)}</span><span class="dk-app-sidebar-item-label">${label}${count}</span></a>`;
+  }).join("");
+  const aside = document.createElement("aside");
+  aside.id = "dk-app-sidebar";
+  aside.className = "dk-app-sidebar no-print";
+  aside.innerHTML = `<button type="button" class="dk-app-sidebar-toggle" id="dk-app-sidebar-toggle" aria-label="כיווץ או הרחבת סרגל הצד">‹</button>
+    <div class="dk-app-sidebar-scroll">
+      <div class="dk-app-sidebar-label">ניהול</div>${items}
+      <div class="dk-app-sidebar-divider"></div>
+      <a href="projects.html" class="dk-app-sidebar-item" title="חזרה ל-DeskKit"><span class="dk-app-sidebar-icon">${dkAdminIcon('<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>')}</span><span class="dk-app-sidebar-item-label">חזרה ל-DeskKit</span></a>
+    </div>
+    <div class="dk-app-sidebar-account"><div class="dk-app-sidebar-account-toggle" style="cursor:default;">
+      <span class="dk-app-sidebar-icon">${dkAdminIcon('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>')}</span>
+      <span class="dk-app-sidebar-account-email" title="${escapeHtml(DK_ROLE_LABELS[role] || role)}">${escapeHtml(email)}</span></div></div>`;
+  document.body.appendChild(aside);
+  document.body.classList.add("dk-app-sidebar-mounted");
+  try { if (localStorage.getItem("dk_admin_sidebar_collapsed") === "1") document.body.classList.add("dk-app-sidebar-collapsed"); } catch (_e) { /* ignore */ }
+  document.getElementById("dk-app-sidebar-toggle").addEventListener("click", () => {
+    const c = document.body.classList.toggle("dk-app-sidebar-collapsed");
+    try { localStorage.setItem("dk_admin_sidebar_collapsed", c ? "1" : "0"); } catch (_e) { /* ignore */ }
+  });
+  aside.querySelectorAll("[data-admin-tab]").forEach((a) => a.addEventListener("click", (e) => {
+    e.preventDefault();
+    activateTab(a.dataset.adminTab);
+  }));
+  const current = (DK_TABS.find((t) => !document.getElementById("panel-" + t.key)?.hidden) || DK_TABS[0]).key;
+  dkMarkSideActive(current);
+}
+
+function dkMarkSideActive(key) {
+  document.querySelectorAll("#dk-app-sidebar [data-admin-tab]").forEach((a) => a.classList.toggle("active", a.dataset.adminTab === key));
+  const sec = DK_ADMIN_SECTIONS[key];
+  if (sec) {
+    const t = document.getElementById("admin-page-title"); if (t) t.textContent = sec[0];
+    const sub = document.getElementById("admin-page-sub"); if (sub) sub.textContent = sec[1];
+    document.title = sec[0] + " — ניהול DeskKit";
+  }
+}
+
+/* ---------- security: recognized devices + recent entries ---------- */
+const DK_SEC_EVENT = {
+  admin_unlock: "כניסה", admin_device_trusted: "מכשיר חדש אושר (קוד מהמייל)", admin_code_failed: "קוד שגוי",
+  admin_unlock_failed: "סיסמה שגויה", admin_unlock_locked: "ננעל אחרי ניסיונות שגויים",
+  admin_devices_revoked: "כל המכשירים האחרים נותקו", set_admin_password: "סיסמת הניהול הוגדרה / הוחלפה",
+};
+async function loadSecurity() {
+  const list = document.getElementById("sec-events");
+  try {
+    const d = await callAdminStats({ action: "security-overview" });
+    document.getElementById("sec-devices").textContent = String(d.devices);
+    list.innerHTML = (d.events || []).map((e) => {
+      const bad = /failed|locked/.test(e.action);
+      const when = new Date(e.at).toLocaleString("he-IL", { timeZone: "Asia/Jerusalem", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+      const what = (DK_SEC_EVENT[e.action] || e.action) + (e.action === "admin_unlock" && e.newDevice ? " · מכשיר חדש" : "");
+      return `<li><span class="${bad ? "bad" : ""}">${escapeHtml(what)}</span><span class="muted">${escapeHtml(e.device || "")}${e.net ? ` · <span dir="ltr">${escapeHtml(e.net)}</span>` : ""} · ${escapeHtml(when)}</span></li>`;
+    }).join("") || '<li class="muted">אין עדיין כניסות רשומות.</li>';
+  } catch (e) {
+    list.innerHTML = `<li class="bad">${escapeHtml(e.message)}</li>`;
+  }
+}
+async function dkForgetDevices() {
+  if (!confirm("לנתק את כל המכשירים האחרים מאזור הניהול? כל מכשיר אחר יצטרך שוב סיסמה וקוד מהמייל. המכשיר הזה נשאר מחובר.")) return;
+  try {
+    const r = await callAdminStats({ action: "forget-devices" });
+    if (r.deviceToken) dkSetDeviceToken(r.deviceToken);
+    dkToast("כל המכשירים האחרים נותקו", "ok");
+    loadSecurity();
+  } catch (e) {
+    if (!e.cancelled) dkToast(e.message, "error");
+  }
+}
 
 function activateTab(key) {
   DK_TABS.forEach((t) => {
     const btn = document.getElementById("toptab-" + t.key);
     const panel = document.getElementById("panel-" + t.key);
     if (btn) { btn.classList.toggle("active", t.key === key); btn.setAttribute("aria-selected", String(t.key === key)); }
+    if (btn && t.key === key && btn.offsetParent && btn.parentElement.scrollWidth > btn.parentElement.clientWidth) {
+      btn.parentElement.scrollTo({ left: btn.offsetLeft - btn.parentElement.clientWidth / 2 + btn.offsetWidth / 2, behavior: "smooth" });
+    }
     if (panel) panel.hidden = t.key !== key;
   });
   if (!dkTabLoaded[key]) {
@@ -1938,7 +2035,10 @@ function activateTab(key) {
     if (key === "templates") loadTemplateStats();
     if (key === "audit") loadAuditLog();
     if (key === "admins") loadAdmins();
+    if (key === "security") loadSecurity();
   }
+  dkMarkSideActive(key);
+  if (location.hash.slice(1) !== key) history.replaceState(null, "", "#" + key);
   // Chart.js sizes each canvas from its container's current width, so a
   // chart built while its tab was hidden needs a resize once visible.
   if (key === "templates" && kpiChartInstance) kpiChartInstance.resize();
@@ -1970,6 +2070,9 @@ async function showPanel() {
     dkStartIdleLock();
     const changePwBtn = document.getElementById("admin-change-pw");
     if (changePwBtn) changePwBtn.addEventListener("click", dkChangeAdminPassword);
+    const forgetBtn = document.getElementById("sec-forget");
+    if (forgetBtn) forgetBtn.addEventListener("click", dkForgetDevices);
+    dkMountAdminSidebar(me.email, me.role);
   } catch (e) {
     if (e.status === 401 || e.status === 403) { showAccessDenied(); return; }
     if (e.message === "ADMIN_EMAILS not configured") {
@@ -2003,15 +2106,18 @@ async function showPanel() {
   document.getElementById("messages-list").addEventListener("click", handleMessagesListClick);
   document.getElementById("messages-refresh-btn").addEventListener("click", loadMessages);
   document.getElementById("stats-load-btn").addEventListener("click", loadTemplateStats);
-  activateTab("customers");
+  const fromHash = location.hash.slice(1);
+  activateTab(DK_TABS.some((t) => t.key === fromHash && dkCan(t.minRole)) ? fromHash : "customers");
   cxSyncToolbar();
   cxLoadSummary();
   cxLoadUsers();
   // Unread-messages count on the tab, without opening it.
   callAdminStats({ action: "list-messages" }).then((d) => {
     const unread = (d.messages || []).filter((m) => !m.read_at).length;
-    const badge = document.getElementById("toptab-feedback-count");
-    if (badge) { badge.textContent = unread ? String(unread) : ""; badge.hidden = !unread; }
+    ["toptab-feedback-count", "side-feedback-count"].forEach((id) => {
+      const badge = document.getElementById(id);
+      if (badge) { badge.textContent = unread ? String(unread) : ""; badge.hidden = !unread; }
+    });
   }).catch(() => {});
 }
 
