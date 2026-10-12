@@ -23,7 +23,7 @@ function dkCrmLocalLeads() {
   } catch (err) { return []; }
 }
 
-const DK_CRM_STAGE_LABELS = { new: "ליד חדש", inprogress: "בטיפול / נשלחה הצעה", followup: "פולו-אפ", won: "נסגר בהצלחה" };
+const DK_CRM_STAGE_LABELS = { new: (typeof dkL === "function" ? dkL("ליד חדש", "New lead") : "ליד חדש"), inprogress: (typeof dkL === "function" ? dkL("בטיפול / נשלחה הצעה", "In progress / quote sent") : "בטיפול / נשלחה הצעה"), followup: (typeof dkL === "function" ? dkL("פולו-אפ", "Follow-up") : "פולו-אפ"), won: (typeof dkL === "function" ? dkL("נסגר בהצלחה", "Won") : "נסגר בהצלחה") };
 
 // Downloads every lead in this browser as a file: "csv" opens in Excel
 // (UTF-8 with BOM so Hebrew shows correctly), "json" keeps everything
@@ -41,7 +41,7 @@ function dkCrmDownloadBackup(format) {
       if (/^[=+\-@]/.test(t)) t = "'" + t; // never let a spreadsheet run a cell as a formula
       return '"' + t.replace(/"/g, '""') + '"';
     };
-    const rows = [["שם", "טלפון", "מייל", "סכום (₪)", "שלב", "הערות", "נוצר"]].concat(leads.map((l) => [
+    const rows = [[(typeof dkL === "function" ? dkL("שם", "Name") : "שם"), (typeof dkL === "function" ? dkL("טלפון", "Phone") : "טלפון"), (typeof dkL === "function" ? dkL("מייל", "Email") : "מייל"), (typeof dkL === "function" ? dkL("סכום (₪)", "Amount (₪)") : "סכום (₪)"), (typeof dkL === "function" ? dkL("שלב", "Stage") : "שלב"), (typeof dkL === "function" ? dkL("הערות", "Notes") : "הערות"), (typeof dkL === "function" ? dkL("נוצר", "Created") : "נוצר")]].concat(leads.map((l) => [
       l.name, l.phone, l.email, l.amount, DK_CRM_STAGE_LABELS[l.stage] || l.stage, l.notes,
       l.createdAt ? new Date(l.createdAt).toLocaleString("he-IL") : "",
     ]));
@@ -196,13 +196,13 @@ document.addEventListener("DOMContentLoaded", () => {
 document.addEventListener("click", (e) => {
   const link = e.target.closest('a[href="#"]');
   if (!link) return;
-  const isUpgradeLink = link.classList.contains("ats-upgrade-btn") || link.textContent.trim() === "שדרוג ל-Pro";
+  const isUpgradeLink = link.classList.contains("ats-upgrade-btn") || link.textContent.trim() === "שדרוג ל-Pro" || link.textContent.trim() === "Upgrade to Pro";
   if (!isUpgradeLink) return;
   e.preventDefault();
   if (link.dataset.dkUnavailableShown) return;
   link.dataset.dkUnavailableShown = "1";
   const note = document.createElement("div");
-  note.textContent = "אפשרות זו אינה זמינה כרגע";
+  note.textContent = (typeof dkL === "function" ? dkL("אפשרות זו אינה זמינה כרגע", "This option isn't available right now") : "אפשרות זו אינה זמינה כרגע");
   note.style.cssText = "margin-top:6px; font-size:12.5px; color:#A0A0A0;";
   link.insertAdjacentElement("afterend", note);
 });

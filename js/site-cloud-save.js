@@ -50,16 +50,16 @@ async function siteAutosaveTick() {
   const status = document.getElementById("site-save-status");
   if (!error) {
     siteDirty = false; // left true on failure so the NEXT tick retries this same edit
-    if (status) { status.textContent = "נשמר אוטומטית ✓"; status.classList.add("ok"); }
+    if (status) { status.textContent = dkL("נשמר אוטומטית ✓", "Autosaved ✓"); status.classList.add("ok"); }
   } else if (status) {
-    status.textContent = "לא הצלחנו לשמור — ננסה שוב";
+    status.textContent = dkL("לא הצלחנו לשמור — ננסה שוב", "Couldn't save — we'll try again");
     status.classList.remove("ok");
   }
 }
 
 // Returns the Supabase error (or null on success) so every caller can
 // tell a real failure apart from success — confirmed-live bug this
-// fixes: every caller used to show "נשמר ✓" unconditionally, regardless
+// fixes: every caller used to show dkL("נשמר ✓", "Saved ✓") unconditionally, regardless
 // of whether this upsert actually succeeded. supabase-js never throws
 // on a query error, so a caller that doesn't check the return value
 // here has no way to know the save silently failed.
@@ -319,10 +319,10 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.disabled = false;
       if (!error) {
         siteDirty = false;
-        status.textContent = "נשמר ✓";
+        status.textContent = dkL("נשמר ✓", "Saved ✓");
         status.classList.add("ok");
       } else {
-        status.textContent = "השמירה נכשלה, נסו שוב";
+        status.textContent = dkL("השמירה נכשלה, נסו שוב", "Saving failed, please try again");
         status.classList.remove("ok");
       }
       if (window.refreshMyPanel) window.refreshMyPanel();

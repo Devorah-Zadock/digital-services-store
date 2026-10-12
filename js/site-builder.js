@@ -1806,7 +1806,7 @@ async function verifySiteLicense() {
       // not just "try again" with nowhere left to go. Prefills the email
       // with exactly the key they tried, so following up doesn't start
       // from scratch.
-      const supportMailto = `mailto:${["digital.dz.studio", "gmail.com"].join("@")}?subject=${encodeURIComponent("בעיה בקוד רישוי — בניית אתר")}&body=${encodeURIComponent("הקוד שהזנתי: " + key)}`;
+      const supportMailto = `mailto:${["digital.dz.studio", "gmail.com"].join("@")}?subject=${encodeURIComponent(dkL("בעיה בקוד רישוי — בניית אתר", "License code problem — website builder"))}&body=${encodeURIComponent(dkL("הקוד שהזנתי: ", "The code I entered: ") + key)}`;
       const supportLine = dkL(`<br>עדיין תקועים? <a href="${supportMailto}" style="color:inherit; text-decoration:underline;">כתבו לנו ונפתור את זה ידנית</a>.`, `<br>Still stuck? <a href="${supportMailto}" style="color:inherit; text-decoration:underline;">Write to us and we'll sort it out manually</a>.`);
       const invalidMsg = dkL("קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב.", "Invalid code. Check the email you got from Gumroad and try again.") + (data.gumroadMessage ? ` (Gumroad: ${escapeHtmlS(data.gumroadMessage)})` : "") + supportLine;
       note.innerHTML = data.reason === "redeemed-elsewhere" || data.reason === "different-template" || data.reason === "different-site"

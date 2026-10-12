@@ -11,28 +11,30 @@
   const text = document.getElementById("unsub-text");
   const btn = document.getElementById("unsub-btn");
 
+  const L = (he, en) => (typeof dkL === "function" ? dkL(he, en) : he);
+
   function show(state) {
     if (state === "bad") {
       icon.textContent = "⚠️";
-      title.textContent = "הקישור לא תקין";
-      text.textContent = "ייתכן שהקישור הועתק חלקית. אפשר לבטל את העדכונים גם ב\"החשבון שלי\", או לכתוב לנו בעמוד יצירת הקשר.";
+      title.textContent = L("הקישור לא תקין", "This link isn't valid");
+      text.textContent = L("ייתכן שהקישור הועתק חלקית. אפשר לבטל את העדכונים גם ב\"החשבון שלי\", או לכתוב לנו בעמוד יצירת הקשר.", "The link may have been copied only partly. You can also turn off updates in \"My account\", or write to us on the contact page.");
       btn.hidden = true;
       return;
     }
     if (state === "error") {
       icon.textContent = "⚠️";
-      title.textContent = "משהו השתבש";
-      text.textContent = "לא הצלחנו לעדכן כרגע. נסו לרענן את העמוד בעוד דקה.";
+      title.textContent = L("משהו השתבש", "Something went wrong");
+      text.textContent = L("לא הצלחנו לעדכן כרגע. נסו לרענן את העמוד בעוד דקה.", "We couldn't update right now. Try refreshing the page in a minute.");
       btn.hidden = true;
       return;
     }
     const subscribed = state === true;
     icon.textContent = subscribed ? "🎉" : "✅";
-    title.textContent = subscribed ? "חזרת לרשימת העדכונים" : "הוסרת מרשימת העדכונים";
+    title.textContent = subscribed ? L("חזרת לרשימת העדכונים", "You're back on the updates list") : L("הוסרת מרשימת העדכונים", "You've been removed from the updates list");
     text.textContent = subscribed
-      ? "מעולה! נמשיך לשלוח מדי פעם עדכונים קצרים על כלים חדשים וטיפים."
-      : "לא נשלח לך יותר עדכונים ומבצעים במייל. הוסרת בטעות?";
-    btn.textContent = subscribed ? "הסרה מהרשימה" : "החזרה לרשימת העדכונים";
+      ? L("מעולה! נמשיך לשלוח מדי פעם עדכונים קצרים על כלים חדשים וטיפים.", "Great! We'll keep sending occasional short updates about new tools and tips.")
+      : L("לא נשלח לך יותר עדכונים ומבצעים במייל. הוסרת בטעות?", "We won't send you any more updates or offers by email. Removed by mistake?");
+    btn.textContent = subscribed ? L("הסרה מהרשימה", "Unsubscribe") : L("החזרה לרשימת העדכונים", "Resubscribe to updates");
     btn.dataset.next = subscribed ? "unsubscribe" : "subscribe";
     btn.hidden = false;
   }

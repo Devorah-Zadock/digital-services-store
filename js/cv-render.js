@@ -443,9 +443,9 @@ async function downloadCvPdf() {
     }
     const x = (pageW - imgW) / 2;
     pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", x, 0, imgW, imgH);
-    pdf.save(`${(state.content && state.content.name) || "קורות-חיים"}.pdf`);
+    pdf.save(`${(state.content && state.content.name) || (state.lang === "en" ? "resume" : "קורות-חיים")}.pdf`);
   } catch (err) {
     console.error("CV PDF export failed:", err);
-    alert("הורדת ה-PDF נכשלה. אפשר לנסות שוב בעוד רגע.");
+    alert(dkL("הורדת ה-PDF נכשלה. אפשר לנסות שוב בעוד רגע.", "The PDF download failed. Please try again in a moment."));
   }
 }

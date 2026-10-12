@@ -43,7 +43,7 @@ async function aiRewriteSummaryCore(text, title, lang) {
     body: JSON.stringify({ field: "summary", text, title, lang }),
   });
   const data = await res.json();
-  if (!res.ok || data.error) throw new Error(data.error || "שגיאה לא צפויה");
+  if (!res.ok || data.error) throw new Error(data.error || dkL("שגיאה לא צפויה", "Unexpected error"));
   return data;
 }
 
@@ -53,7 +53,7 @@ async function aiImproveSummary() {
 
   const text = textarea.value.trim();
   if (!text) {
-    aiWriterNote("צריך לכתוב קודם טיוטה של תקציר — אז AI יעזור לשפר אותה.");
+    aiWriterNote(dkL("צריך לכתוב קודם טיוטה של תקציר — אז AI יעזור לשפר אותה.", "Write a draft summary first — then AI can help improve it."));
     return;
   }
   if (!state.content) return;
@@ -63,15 +63,15 @@ async function aiImproveSummary() {
 
   const originalLabel = btn.textContent;
   btn.disabled = true;
-  btn.textContent = "משפר...";
+  btn.textContent = dkL("משפר...", "Improving...");
 
   try {
     const data = await aiRewriteSummaryCore(text, state.content.title, state.lang);
 
     if (data.limitReached) {
       aiWriterNote(data.isPro
-        ? "הגעת למכסת השימוש ההוגן היומית (50 שיפורים). אפשר להמשיך מחר."
-        : `${AI_UPGRADE_MESSAGE} <a href="#">שדרוג ל-Pro</a>`);
+        ? dkL("הגעת למכסת השימוש ההוגן היומית (50 שיפורים). אפשר להמשיך מחר.", "You've reached the daily fair-use limit (50 improvements). You can continue tomorrow.")
+        : `${AI_UPGRADE_MESSAGE} <a href="#">${dkL("שדרוג ל-Pro", "Upgrade to Pro")}</a>`);
       return;
     }
 
@@ -80,7 +80,7 @@ async function aiImproveSummary() {
     renderPreview();
   } catch (err) {
     console.error("AI writer improve failed:", err);
-    aiWriterNote("משהו השתבש בשיפור התקציר. אפשר לנסות שוב בעוד רגע.");
+    aiWriterNote(dkL("משהו השתבש בשיפור התקציר. אפשר לנסות שוב בעוד רגע.", "Something went wrong improving the summary. Please try again in a moment."));
   } finally {
     btn.disabled = false;
     btn.textContent = originalLabel;

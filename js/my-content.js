@@ -10,9 +10,13 @@
    quote-app profile row, or a placeholder row for content that doesn't
    exist yet). The delete button sits *beside* the link, not inside it —
    an interactive button nested in an <a> would double-fire on click. */
+function myContentL(he, en) {
+  return typeof dkL === "function" ? dkL(he, en) : he;
+}
+
 function myContentRowHtml(href, name, sub, deleteAction) {
   const del = deleteAction
-    ? `<button type="button" class="my-content-delete-btn" data-delete="${deleteAction}" title="מחיקה" aria-label="מחיקה">🗑</button>`
+    ? `<button type="button" class="my-content-delete-btn" data-delete="${deleteAction}" title="${myContentL("מחיקה", "Delete")}" aria-label="${myContentL("מחיקה", "Delete")}">🗑</button>`
     : "";
   return `<div class="my-content-row">
     <a href="${href}" class="my-site-row">
@@ -31,15 +35,15 @@ async function loadMyContent(user, list) {
   if (sites && sites.length) {
     sites.forEach((s) => {
       const bizName = s.data && s.data.businessName && s.data.businessName.trim();
-      rows.push(myContentRowHtml("sites.html?template=" + encodeURIComponent(s.template), bizName || "אתר עסקי", "אתר", "site:" + s.id));
+      rows.push(myContentRowHtml("sites.html?template=" + encodeURIComponent(s.template), bizName || myContentL("אתר עסקי", "Business site"), myContentL("אתר", "Site"), "site:" + s.id));
     });
   } else {
-    rows.push(myContentRowHtml("sites.html?browse=1", "עדיין לא בניתם אתר", "בניית אתר — להתחלה"));
+    rows.push(myContentRowHtml("sites.html?browse=1", myContentL("עדיין לא בניתם אתר", "You haven't built a site yet"), myContentL("בניית אתר — להתחלה", "Build a site — get started")));
   }
 
   const { data: profile } = await supabaseClient.from("profiles").select("business_name").eq("id", user.id).maybeSingle();
   const profileName = profile && profile.business_name && profile.business_name.trim();
-  rows.push(myContentRowHtml("quote-app.html", profileName || "עדיין לא הגדרתם פרטי עסק", "הצעות מחיר"));
+  rows.push(myContentRowHtml("quote-app.html", profileName || myContentL("עדיין לא הגדרתם פרטי עסק", "You haven't set up your business details yet"), myContentL("הצעות מחיר", "Quotes")));
 
   // cv_saves is one row per SAVED CV now (see supabase/sql/
   // cv_saves_multi.sql), not one per user — this one-row-per-product
@@ -47,7 +51,7 @@ async function loadMyContent(user, list) {
   // recently touched one (js/projects.js is the real multi-CV list).
   const { data: cv } = await supabaseClient.from("cv_saves").select("id, data").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle();
   const cvName = cv && cv.data && cv.data.content && cv.data.content.name && cv.data.content.name.trim();
-  rows.push(myContentRowHtml(cv ? "builder.html?cv=" + encodeURIComponent(cv.id) : "builder.html", cvName || "עדיין לא יצרתם קורות חיים", "קורות חיים", cv ? "cv:" + cv.id : null));
+  rows.push(myContentRowHtml(cv ? "builder.html?cv=" + encodeURIComponent(cv.id) : "builder.html", cvName || myContentL("עדיין לא יצרתם קורות חיים", "You haven't created a resume yet"), myContentL("קורות חיים", "Resume"), cv ? "cv:" + cv.id : null));
 
   const { data: schedules } = await supabaseClient
     .from("schedule_projects").select("id, data")
@@ -55,10 +59,10 @@ async function loadMyContent(user, list) {
   if (schedules && schedules.length) {
     schedules.forEach((s) => {
       const projName = s.data && s.data.name && s.data.name.trim();
-      rows.push(myContentRowHtml("schedule-builder.html?schedule=" + encodeURIComponent(s.id), projName || "מערכת שעות", "מערכת שעות", "schedule:" + s.id));
+      rows.push(myContentRowHtml("schedule-builder.html?schedule=" + encodeURIComponent(s.id), projName || myContentL("מערכת שעות", "Timetable"), myContentL("מערכת שעות", "Timetable"), "schedule:" + s.id));
     });
   } else {
-    rows.push(myContentRowHtml("schedule-builder.html", "עדיין לא בניתם מערכת שעות", "מערכת שעות — להתחלה"));
+    rows.push(myContentRowHtml("schedule-builder.html", myContentL("עדיין לא בניתם מערכת שעות", "You haven't built a timetable yet"), myContentL("מערכת שעות — להתחלה", "Timetable — get started")));
   }
 
   list.innerHTML = rows.join("");
@@ -78,10 +82,10 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       const [kind, id] = btn.dataset.delete.split(":");
       const confirmMsg = kind === "cv"
-        ? "למחוק את קורות החיים השמורים שלכם? הפעולה בלתי הפיכה."
+        ? myContentL("למחוק את קורות החיים השמורים שלכם? הפעולה בלתי הפיכה.", "Delete your saved resume? This can't be undone.")
         : kind === "schedule"
-        ? "למחוק את מערכת השעות הזו? הפעולה בלתי הפיכה."
-        : "למחוק את האתר הזה? הפעולה בלתי הפיכה — התוכן שהזנתם יימחק לצמיתות (הרכישה עצמה לא מוחזרת).";
+        ? myContentL("למחוק את מערכת השעות הזו? הפעולה בלתי הפיכה.", "Delete this timetable? This can't be undone.")
+        : myContentL("למחוק את האתר הזה? הפעולה בלתי הפיכה — התוכן שהזנתם יימחק לצמיתות (הרכישה עצמה לא מוחזרת).", "Delete this site? This can't be undone — the content you entered will be permanently deleted (the purchase itself is not refunded).");
       if (!confirm(confirmMsg)) return;
       btn.disabled = true;
       if (kind === "site") {

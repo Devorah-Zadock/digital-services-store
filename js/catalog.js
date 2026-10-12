@@ -356,9 +356,9 @@ function handleGatedDownload(p) {
     const pType = productType(p);
     if (window.showUpsellBanner) {
       if (pType === "xlsx") {
-        showUpsellBanner("מעבר לגיליונות הניהול הפנימיים, הגיע הזמן שיהיה לעסק שלך גם אתר תדמית יפהפה.", "רוצה להיראות עוד יותר מקצועי?");
+        showUpsellBanner(catalogLang() === "en" ? "Beyond your internal management spreadsheets, it's time your business had a beautiful website too." : "מעבר לגיליונות הניהול הפנימיים, הגיע הזמן שיהיה לעסק שלך גם אתר תדמית יפהפה.", catalogLang() === "en" ? "Want to look even more professional?" : "רוצה להיראות עוד יותר מקצועי?");
       } else if (pType === "deck") {
-        showUpsellBanner("מעבר למצגת המקצועית שהורדתם, הגיע הזמן שיהיה לעסק שלך גם אתר תדמית יפהפה.", "רוצה להיראות עוד יותר מקצועי?");
+        showUpsellBanner(catalogLang() === "en" ? "Beyond the professional presentation you downloaded, it's time your business had a beautiful website too." : "מעבר למצגת המקצועית שהורדתם, הגיע הזמן שיהיה לעסק שלך גם אתר תדמית יפהפה.", catalogLang() === "en" ? "Want to look even more professional?" : "רוצה להיראות עוד יותר מקצועי?");
       }
     }
   });
