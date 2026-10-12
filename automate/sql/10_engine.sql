@@ -61,6 +61,13 @@ update public.automate_settings
    set value = jsonb_set(value, '{free,active_automations}', '10'), updated_at = now()
  where key = 'plan_limits' and coalesce((value -> 'free' ->> 'active_automations')::int, 0) < 10;
 
+-- v4: a Pro tier for accounts that already have DeskKit Pro (no new
+-- payment is involved; see automate/docs/PRICING.md). Added once, never
+-- overwrites values set by hand.
+update public.automate_settings
+   set value = value || '{"pro": {"active_automations": 30, "runs_per_month": 2000, "emails_per_month": 1000}}'::jsonb, updated_at = now()
+ where key = 'plan_limits' and not (value ? 'pro');
+
 create or replace function public.automate_setting(p_key text)
 returns jsonb language sql stable security definer set search_path = '' as $$
   select value from public.automate_settings where key = p_key;
@@ -422,11 +429,20 @@ returns void language sql security definer set search_path = '' as $$
   on conflict do nothing;
 $$;
 
+-- The business's monthly limits: the "pro" tier when the account has
+-- DeskKit Pro (customer_profiles.is_pro), otherwise "free".
 create or replace function public.automate_limits(p_user uuid)
-returns jsonb language sql stable security definer set search_path = '' as $$
-  select coalesce(public.automate_setting('plan_limits') -> 'free',
+returns jsonb language plpgsql stable security definer set search_path = '' as $$
+declare
+  v_pro boolean := false;
+  v_all jsonb := public.automate_setting('plan_limits');
+begin
+  if p_user is not null and to_regclass('public.customer_profiles') is not null then
+    execute 'select coalesce(bool_or(is_pro), false) from public.customer_profiles where id = $1' into v_pro using p_user;
+  end if;
+  return coalesce(case when v_pro then v_all -> 'pro' end, v_all -> 'free',
                   '{"active_automations": 12, "runs_per_month": 300, "emails_per_month": 200}'::jsonb);
-$$;
+end $$;
 
 create or replace function public.automate_month() returns date
 language sql stable set search_path = '' as $$

@@ -698,6 +698,18 @@ def run_growth_tests():
             check("T25 after unsubscribing: no new email to that address (any capitalisation)",
                   len(later) == len(sent) and run and not purposes(run[0]["id"]), f"{len(later)} vs {len(sent)}")
 
+        # ---- T27 DeskKit Pro accounts get the Pro limits (no payment involved here)
+        before = get_setting("plan_limits")
+        set_setting("plan_limits", {**(before or {}), "pro": {"active_automations": 30, "runs_per_month": 2000, "emails_per_month": 5000}})
+        st, free_l = rpc("automate_limits", {"p_user": c["id"]})
+        rest("POST", "customer_profiles", {"id": c["id"], "email": c["email"], "is_pro": True}, prefer="resolution=merge-duplicates,return=minimal")
+        st, pro_l = rpc("automate_limits", {"p_user": c["id"]})
+        rest("PATCH", f"customer_profiles?id=eq.{c['id']}", {"is_pro": False}, prefer="return=minimal")
+        set_setting("plan_limits", before)
+        check("T27 a Pro account gets higher limits than a free one",
+              isinstance(free_l, dict) and isinstance(pro_l, dict) and pro_l.get("emails_per_month", 0) > free_l.get("emails_per_month", 0)
+              and pro_l.get("active_automations", 0) > free_l.get("active_automations", 0), f"{free_l} {pro_l}")
+
         # ---- T26 a business that chose English gets its emails in English (left to right)
         api(c, "save-profile", business_name="Studio C", lang="en")
         api(c, "activate", template="lead_nurture", config={"client_messages": "auto"})   # default texts now come in English
