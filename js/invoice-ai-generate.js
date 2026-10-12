@@ -43,7 +43,7 @@ function dkShowInvoiceIntro() {
   const panel = document.getElementById("ia-intro-ai-panel");
   if (panel) panel.hidden = true;
   const toggle = document.getElementById("ia-intro-ai-toggle");
-  if (toggle) toggle.textContent = "או, תנו ל-AI לנסח עבורכם שורות טיוטה ✨";
+  if (toggle) toggle.textContent = dkL("או, תנו ל-AI לנסח עבורכם שורות טיוטה ✨", "Or, let AI draft the line items for you ✨");
 }
 
 async function dkInvoiceIntroSubmit() {
@@ -52,21 +52,21 @@ async function dkInvoiceIntroSubmit() {
   if (!btn || !input) return;
   const description = input.value.trim();
   if (!description) {
-    dkInvoiceIntroNote("תארו קודם במשפט אחד מה מחויב — אז DeskKit תכין שורות טיוטה ראשוניות.");
+    dkInvoiceIntroNote(dkL("תארו קודם במשפט אחד מה מחויב — אז DeskKit תכין שורות טיוטה ראשוניות.", "First describe in one sentence what is being billed — then DeskKit will prepare first draft lines."));
     return;
   }
   dkInvoiceIntroNote("");
   const originalLabel = btn.textContent;
   btn.disabled = true;
-  btn.textContent = "יוצר טיוטה...";
+  btn.textContent = dkL("יוצר טיוטה...", "Creating draft...");
   try {
     const data = await dkInvoiceCallGenerate(description);
     if (!data) return; // redirected to login
     if (data.error) { dkInvoiceIntroNote(data.error); return; }
     if (data.limitReached) {
       dkInvoiceIntroNote(data.isPro
-        ? "הגעתם למכסת השימוש ההוגן היומית ביצירת טיוטה אוטומטית. אפשר להמשיך מחר."
-        : 'הגעת למכסת הניסיונות החינמיים ביצירת טיוטה אוטומטית. רוצה להמשיך ללא הגבלה? שדרג לגרסת Pro בתשלום חד-פעמי! <a href="#">שדרוג ל-Pro</a>');
+        ? dkL("הגעתם למכסת השימוש ההוגן היומית ביצירת טיוטה אוטומטית. אפשר להמשיך מחר.", "You've reached today's fair-use limit for automatic drafts. You can continue tomorrow.")
+        : dkL('הגעת למכסת הניסיונות החינמיים ביצירת טיוטה אוטומטית. רוצה להמשיך ללא הגבלה? שדרג לגרסת Pro בתשלום חד-פעמי! <a href="#">שדרוג ל-Pro</a>', 'You\'ve used your free automatic-draft tries. Want to continue without limits? Upgrade to Pro with a one-time payment! <a href="#">Upgrade to Pro</a>'));
       return;
     }
     const items = (data.invoice && Array.isArray(data.invoice.items)) ? data.invoice.items : [];
@@ -76,7 +76,7 @@ async function dkInvoiceIntroSubmit() {
     renderInvoicePreviewIA();
     if (typeof invoiceBshellActivate === "function") invoiceBshellActivate();
   } catch (err) {
-    dkInvoiceIntroNote("יצירת הטיוטה נכשלה, נסו שוב.");
+    dkInvoiceIntroNote(dkL("יצירת הטיוטה נכשלה, נסו שוב.", "Creating the draft failed, please try again."));
   } finally {
     btn.disabled = false;
     btn.textContent = originalLabel;
@@ -105,8 +105,8 @@ document.addEventListener("DOMContentLoaded", () => {
     aiToggle.addEventListener("click", () => {
       aiPanel.hidden = !aiPanel.hidden;
       aiToggle.textContent = aiPanel.hidden
-        ? "או, תנו ל-AI לנסח עבורכם שורות טיוטה ✨"
-        : "הסתירו ✕";
+        ? dkL("או, תנו ל-AI לנסח עבורכם שורות טיוטה ✨", "Or, let AI draft the line items for you ✨")
+        : dkL("הסתירו ✕", "Hide ✕");
     });
   }
 });

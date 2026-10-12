@@ -322,7 +322,7 @@ async function siteWizardSubmit() {
     if (data.limitReached) {
       body.innerHTML = data.isPro
         ? `<div class="ats-error">${dkL("הגעת למכסת השימוש ההוגן היומית ליצירת אתרים. אפשר להמשיך מחר.", "You've reached today's fair-use limit for creating websites. You can continue tomorrow.")}</div>`
-        : `<div class="ats-upgrade-card"><p>${dkL("הגעת למכסת הניסיונות החינמיים ליצירת אתר. רוצה להמשיך? שדרג לגרסת Pro בתשלום חד-פעמי!", "You've used your free website-creation tries. Want to continue? Upgrade to Pro with a one-time payment!")}</p><a href="#" class="btn btn-gold ats-upgrade-btn">שדרוג ל-Pro</a></div>`;
+        : `<div class="ats-upgrade-card"><p>${dkL("הגעת למכסת הניסיונות החינמיים ליצירת אתר. רוצה להמשיך? שדרג לגרסת Pro בתשלום חד-פעמי!", "You've used your free website-creation tries. Want to continue? Upgrade to Pro with a one-time payment!")}</p><a href="#" class="btn btn-gold ats-upgrade-btn">${dkL("שדרוג ל-Pro", "Upgrade to Pro")}</a></div>`;
       return;
     }
 
@@ -440,7 +440,7 @@ function dkShowGeneratedPreview(overlay, body, values) {
           if (data.limitReached) {
             body.innerHTML = data.isPro
               ? `<div class="ats-error">${dkL("הגעת למכסת השימוש ההוגן היומית ליצירת אתרים. אפשר להמשיך מחר.", "You've reached today's fair-use limit for creating websites. You can continue tomorrow.")}</div>`
-              : `<div class="ats-upgrade-card"><p>${dkL("הגעת למכסת הניסיונות החינמיים ליצירת אתר. רוצה להמשיך? שדרג לגרסת Pro בתשלום חד-פעמי!", "You've used your free website-creation tries. Want to continue? Upgrade to Pro with a one-time payment!")}</p><a href="#" class="btn btn-gold ats-upgrade-btn">שדרוג ל-Pro</a></div>`;
+              : `<div class="ats-upgrade-card"><p>${dkL("הגעת למכסת הניסיונות החינמיים ליצירת אתר. רוצה להמשיך? שדרג לגרסת Pro בתשלום חד-פעמי!", "You've used your free website-creation tries. Want to continue? Upgrade to Pro with a one-time payment!")}</p><a href="#" class="btn btn-gold ats-upgrade-btn">${dkL("שדרוג ל-Pro", "Upgrade to Pro")}</a></div>`;
             return;
           }
           if (!data.site || !data.site.template || typeof SITE_TEMPLATES === "undefined" || !SITE_TEMPLATES[data.site.template]) {
@@ -523,7 +523,7 @@ async function openSiteAiGenerate() {
       <div class="domain-guide-modal ats-modal" role="dialog" aria-modal="true" aria-labelledby="site-ai-generate-title">
         <button type="button" class="domain-guide-close" id="site-ai-generate-close" aria-label="${dkL("סגירה", "Close")}">✕</button>
         <h2 id="site-ai-generate-title" style="margin-bottom:4px;">${dkL("בניית אתר", "Build a website")}</h2>
-        <div class="ats-modal-body"><div class="ats-upgrade-card"><p>${dkL("הגעת למכסת הניסיונות החינמיים ליצירת אתר. רוצה להמשיך? שדרג לגרסת Pro בתשלום חד-פעמי!", "You've used your free website-creation tries. Want to continue? Upgrade to Pro with a one-time payment!")}</p><a href="#" class="btn btn-gold ats-upgrade-btn">שדרוג ל-Pro</a></div></div>
+        <div class="ats-modal-body"><div class="ats-upgrade-card"><p>${dkL("הגעת למכסת הניסיונות החינמיים ליצירת אתר. רוצה להמשיך? שדרג לגרסת Pro בתשלום חד-פעמי!", "You've used your free website-creation tries. Want to continue? Upgrade to Pro with a one-time payment!")}</p><a href="#" class="btn btn-gold ats-upgrade-btn">${dkL("שדרוג ל-Pro", "Upgrade to Pro")}</a></div></div>
       </div>
     `;
     document.body.appendChild(overlay);

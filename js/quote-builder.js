@@ -35,10 +35,10 @@ function dateBlockHtml(date, i, total) {
   return `
   <div class="job-block" data-didx="${i}">
     <div class="job-block-head">
-      <strong style="font-size:12.5px;">תאריך ${i + 1}</strong>
-      ${canRemove ? `<button type="button" class="job-remove" data-dremove="${i}">הסרה</button>` : ""}
+      <strong style="font-size:12.5px;">${(typeof dkL === "function" ? dkL(`תאריך ${i + 1}`, `Date ${i + 1}`) : `תאריך ${i + 1}`)}</strong>
+      ${canRemove ? `<button type="button" class="job-remove" data-dremove="${i}">${(typeof dkL === "function" ? dkL("הסרה", "Remove") : "הסרה")}</button>` : ""}
     </div>
-    <input type="text" placeholder="לדוגמה: 18.12.2024" data-date="${i}" value="${escapeHtmlQ(date)}">
+    <input type="text" placeholder="${(typeof dkL === "function" ? dkL("לדוגמה: 18.12.2024", "e.g. 18.12.2024") : "לדוגמה: 18.12.2024")}" data-date="${i}" value="${escapeHtmlQ(date)}">
   </div>`;
 }
 
@@ -128,7 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
       localStorage.setItem(QUOTE_AUTH_KEY, hash);
       showBuilder();
     } else {
-      err.textContent = "סיסמה שגויה.";
+      err.textContent = (typeof dkL === "function" ? dkL("סיסמה שגויה.", "Wrong password.") : "סיסמה שגויה.");
       input.value = "";
       input.focus();
     }

@@ -80,8 +80,8 @@ window.addEventListener("beforeunload", (e) => {
 });
 
 const INVOICEBSHELL_TEXT_LABELS = {
-  date: "תאריך", recipientName: "לכבוד (שם הלקוח)", recipientId: "ת.ז / ח.פ הלקוח (אופציונלי)",
-  recipientAddress: "כתובת הלקוח (אופציונלי)", paymentMethod: "אופן תשלום", notes: "הערה נוספת (אופציונלי)",
+  date: typeof dkL === "function" ? dkL("תאריך", "Date") : "תאריך", recipientName: typeof dkL === "function" ? dkL("לכבוד (שם הלקוח)", "To (client name)") : "לכבוד (שם הלקוח)", recipientId: typeof dkL === "function" ? dkL("ת.ז / ח.פ הלקוח (אופציונלי)", "Client ID / company no. (optional)") : "ת.ז / ח.פ הלקוח (אופציונלי)",
+  recipientAddress: typeof dkL === "function" ? dkL("כתובת הלקוח (אופציונלי)", "Client address (optional)") : "כתובת הלקוח (אופציונלי)", paymentMethod: typeof dkL === "function" ? dkL("אופן תשלום", "Payment method") : "אופן תשלום", notes: typeof dkL === "function" ? dkL("הערה נוספת (אופציונלי)", "Additional note (optional)") : "הערה נוספת (אופציונלי)",
 };
 // recipientId/recipientAddress/notes/paymentMethod only render an
 // element at all when truthy (see renderInvoiceHtml) — toggling
@@ -345,7 +345,7 @@ function invoiceBshellSyncLockUI() {
   document.getElementById("ibshell-locked-note").style.display = locked ? "block" : "none";
   const aiDraftGroup = document.getElementById("ibshell-ai-draft-group");
   if (aiDraftGroup) aiDraftGroup.style.display = locked ? "none" : "";
-  const name = (invoiceEventState && INVOICE_DOC_LABEL[invoiceEventState.docType]) || "מסמך חדש";
+  const name = (invoiceEventState && INVOICE_DOC_LABEL[invoiceEventState.docType] && dkL(INVOICE_DOC_LABEL[invoiceEventState.docType], ({ invoice_receipt: "Tax invoice-receipt", receipt: "Receipt", credit_note: "Credit note" })[invoiceEventState.docType] || INVOICE_DOC_LABEL[invoiceEventState.docType])) || dkL("מסמך חדש", "New document");
   document.getElementById("ibshell-top-name").textContent = name;
   invoiceBshellSyncUndoButtons();
 }
@@ -380,13 +380,13 @@ async function invoiceBshellGenerateDraft() {
   if (!btn || !input) return;
   const description = input.value.trim();
   if (!description) {
-    invoiceBshellAiDraftNote("תארו קודם בקצרה מה מחויב — אז AI יכין שורות טיוטה ראשוניות.");
+    invoiceBshellAiDraftNote(dkL("תארו קודם בקצרה מה מחויב — אז AI יכין שורות טיוטה ראשוניות.", "First briefly describe what is being billed — then AI will prepare first draft lines."));
     return;
   }
   invoiceBshellAiDraftNote("");
   const originalLabel = btn.textContent;
   btn.disabled = true;
-  btn.textContent = "יוצר טיוטה...";
+  btn.textContent = dkL("יוצר טיוטה...", "Creating draft...");
   try {
     const { data: sessionData } = await supabaseClient.auth.getSession();
     const token = sessionData.session && sessionData.session.access_token;
@@ -398,17 +398,17 @@ async function invoiceBshellGenerateDraft() {
     });
     const data = await res.json();
     if (!res.ok || data.error) {
-      invoiceBshellAiDraftNote(data.error || "יצירת הטיוטה נכשלה, נסו שוב.");
+      invoiceBshellAiDraftNote(data.error || dkL("יצירת הטיוטה נכשלה, נסו שוב.", "Creating the draft failed, please try again."));
       return;
     }
     if (data.limitReached) {
-      invoiceBshellAiDraftNote(data.isPro ? "הגעתם למכסת השימוש ההוגן היומית. אפשר להמשיך מחר." : `${INVOICEBSHELL_AI_UPGRADE_MESSAGE} <a href="#">שדרוג ל-Pro</a>`);
+      invoiceBshellAiDraftNote(data.isPro ? dkL("הגעתם למכסת השימוש ההוגן היומית. אפשר להמשיך מחר.", "You've reached today's fair-use limit. You can continue tomorrow.") : `${INVOICEBSHELL_AI_UPGRADE_MESSAGE} <a href="#">${dkL("שדרוג ל-Pro", "Upgrade to Pro")}</a>`);
       return;
     }
     if (invoiceBshellLocked()) return; // locked while the request was in flight
     const items = (data.invoice && Array.isArray(data.invoice.items)) ? data.invoice.items : [];
     if (!items.length) {
-      invoiceBshellAiDraftNote("ה-AI לא הצליח להציע שורות מהתיאור הזה — נסו לתאר בפירוט רב יותר.");
+      invoiceBshellAiDraftNote(dkL("ה-AI לא הצליח להציע שורות מהתיאור הזה — נסו לתאר בפירוט רב יותר.", "The AI couldn't suggest lines from this description — try describing it in more detail."));
       return;
     }
     invoiceBshellSnapshot();
@@ -419,7 +419,7 @@ async function invoiceBshellGenerateDraft() {
     invoiceBshellRenderHierarchy();
     invoiceBshellSyncUndoButtons();
   } catch (err) {
-    invoiceBshellAiDraftNote("יצירת הטיוטה נכשלה, נסו שוב.");
+    invoiceBshellAiDraftNote(dkL("יצירת הטיוטה נכשלה, נסו שוב.", "Creating the draft failed, please try again."));
   } finally {
     btn.disabled = false;
     btn.textContent = originalLabel;
@@ -428,14 +428,14 @@ async function invoiceBshellGenerateDraft() {
 
 async function invoiceBshellSaveNow() {
   const status = document.getElementById("ibshell-top-status");
-  status.textContent = "שומרים...";
+  status.textContent = dkL("שומרים...", "Saving...");
   status.className = "bshell-top-status saving";
   const err = await saveInvoiceDraft();
-  status.textContent = err ? "השמירה נכשלה, נסו שוב" : "נשמר ✓";
+  status.textContent = err ? dkL("השמירה נכשלה, נסו שוב", "Save failed, please try again") : dkL("נשמר ✓", "Saved ✓");
   status.className = "bshell-top-status " + (err ? "" : "saved");
   if (!err) invoiceBshellDirty = false;
   if (window.refreshMyPanel) window.refreshMyPanel();
-  setTimeout(() => { if (status.textContent === "נשמר ✓") status.textContent = ""; }, 2500);
+  setTimeout(() => { if (status.textContent === dkL("נשמר ✓", "Saved ✓")) status.textContent = ""; }, 2500);
 }
 
 /* ---------- Hierarchy sidebar ---------- */
@@ -460,15 +460,15 @@ function invoiceBshellRenderHierarchy() {
   const isSelSection = invoiceBshellSelection && invoiceBshellSelection.kind === "section" && invoiceBshellSelection.type === "items";
   const itemRows = (inv.items || []).map((it, i) => {
     const isSelItem = invoiceBshellSelection && invoiceBshellSelection.kind === "item" && invoiceBshellSelection.idx === i;
-    return `<button type="button" class="bshell-item${isSelItem ? " is-selected" : ""}" data-ibshell-select-item="${i}">${escapeHtmlI(it.desc && it.desc.trim() ? it.desc : `פריט ${i + 1}`)}</button>`;
-  }).join("") + (locked ? "" : `<button type="button" class="bshell-add-item" data-ibshell-add-item>+ הוספת פריט</button>`);
+    return `<button type="button" class="bshell-item${isSelItem ? " is-selected" : ""}" data-ibshell-select-item="${i}">${escapeHtmlI(it.desc && it.desc.trim() ? it.desc : dkL(`פריט ${i + 1}`, `Item ${i + 1}`))}</button>`;
+  }).join("") + (locked ? "" : `<button type="button" class="bshell-add-item" data-ibshell-add-item>${dkL("+ הוספת פריט", "+ Add item")}</button>`);
 
   list.innerHTML = [
     textRow("date"), textRow("recipientName"), textRow("recipientId"), textRow("recipientAddress"),
     `<details class="bshell-sec" open>
       <summary class="bshell-sec-head${isSelSection ? " is-selected" : ""}" data-ibshell-select-section="items">
         <span class="bshell-sec-chevron"></span>
-        <span>פריטים</span>
+        <span>${dkL("פריטים", "Items")}</span>
       </summary>
       <div class="bshell-sec-body">${itemRows}</div>
     </details>`,
@@ -677,10 +677,10 @@ function invoiceBshellApplySelectionVisual() {
   // a line item, same as it can't be edited at all).
   const locked = invoiceBshellLocked();
   const canDuplicateOrDelete = !locked && invoiceBshellSelection.kind === "item";
-  const toolbarButtons = [`<button type="button" data-tool="edit" title="עריכה">✎</button>`];
+  const toolbarButtons = [`<button type="button" data-tool="edit" title="${dkL("עריכה", "Edit")}">✎</button>`];
   if (canDuplicateOrDelete) {
-    toolbarButtons.push(`<button type="button" data-tool="duplicate" title="שכפול">⧉</button>`);
-    toolbarButtons.push(`<button type="button" data-tool="delete" title="מחיקה">🗑</button>`);
+    toolbarButtons.push(`<button type="button" data-tool="duplicate" title="${dkL("שכפול", "Duplicate")}">⧉</button>`);
+    toolbarButtons.push(`<button type="button" data-tool="delete" title="${dkL("מחיקה", "Delete")}">🗑</button>`);
   }
   toolbar.innerHTML = toolbarButtons.join("");
   toolbar.addEventListener("mousedown", (e) => e.stopPropagation());
@@ -762,9 +762,10 @@ function invoiceBshellPropsHtmlForText(key) {
   const label = INVOICEBSHELL_TEXT_LABELS[key];
   if (key === "paymentMethod") {
     const current = invoiceEventState.paymentMethod || "";
-    const options = [["", "בחירה..."]].concat(Object.entries(INVOICE_PAYMENT_METHODS));
+    const payEn = { cash: "Cash", check: "Check", transfer: "Bank transfer", credit: "Credit card", bit: "Bit / PayBox" };
+    const options = [["", dkL("בחירה...", "Select...")]].concat(Object.entries(INVOICE_PAYMENT_METHODS).map(([val, lbl]) => [val, dkL(lbl, payEn[val] || lbl)]));
     return `
-      <span class="bshell-props-kind">טקסט</span>
+      <span class="bshell-props-kind">${dkL("טקסט", "Text")}</span>
       <div class="bshell-props-field">
         <label class="bshell-props-label">${escapeHtmlI(label)}</label>
         <select id="ibshell-prop-content"${d}>
@@ -777,7 +778,7 @@ function invoiceBshellPropsHtmlForText(key) {
     ? `<textarea id="ibshell-prop-content" rows="3"${d}>${escapeHtmlI(value)}</textarea>`
     : `<input type="text" id="ibshell-prop-content" value="${escapeHtmlI(value).replace(/"/g, "&quot;")}"${d}>`;
   return `
-    <span class="bshell-props-kind">טקסט</span>
+    <span class="bshell-props-kind">${dkL("טקסט", "Text")}</span>
     <div class="bshell-props-field">
       <label class="bshell-props-label">${escapeHtmlI(label)}</label>
       ${inputTag}
@@ -788,14 +789,14 @@ function invoiceBshellPropsHtmlForItem(idx) {
   const it = invoiceEventState.items[idx] || { desc: "", qty: "1", unitPrice: "" };
   const d = invoiceBshellLocked() ? " disabled" : "";
   return `
-    <span class="bshell-props-kind">פריט</span>
-    <div class="bshell-props-field"><label class="bshell-props-label">תיאור</label><input type="text" id="ibshell-prop-item-desc" value="${escapeHtmlI(it.desc).replace(/"/g, "&quot;")}"${d}></div>
-    <div class="bshell-props-field"><label class="bshell-props-label">כמות</label><input type="text" id="ibshell-prop-item-qty" value="${escapeHtmlI(it.qty).replace(/"/g, "&quot;")}"${d}></div>
-    <div class="bshell-props-field"><label class="bshell-props-label">מחיר יח'</label><input type="text" id="ibshell-prop-item-unitPrice" value="${escapeHtmlI(it.unitPrice).replace(/"/g, "&quot;")}"${d}></div>`;
+    <span class="bshell-props-kind">${dkL("פריט", "Item")}</span>
+    <div class="bshell-props-field"><label class="bshell-props-label">${dkL("תיאור", "Description")}</label><input type="text" id="ibshell-prop-item-desc" value="${escapeHtmlI(it.desc).replace(/"/g, "&quot;")}"${d}></div>
+    <div class="bshell-props-field"><label class="bshell-props-label">${dkL("כמות", "Quantity")}</label><input type="text" id="ibshell-prop-item-qty" value="${escapeHtmlI(it.qty).replace(/"/g, "&quot;")}"${d}></div>
+    <div class="bshell-props-field"><label class="bshell-props-label">${dkL("מחיר יח'", "Unit price")}</label><input type="text" id="ibshell-prop-item-unitPrice" value="${escapeHtmlI(it.unitPrice).replace(/"/g, "&quot;")}"${d}></div>`;
 }
 
 function invoiceBshellPropsHtmlForSection() {
-  return `<span class="bshell-props-kind">Section</span><p style="font-size:12.5px; color:var(--text-muted); margin:0;">הפריטים מופיעים בטבלת המסמך. ניהול הפריטים מתבצע מההיררכיה או מהקנבס.</p>`;
+  return `<span class="bshell-props-kind">Section</span><p style="font-size:12.5px; color:var(--text-muted); margin:0;">${dkL("הפריטים מופיעים בטבלת המסמך. ניהול הפריטים מתבצע מההיררכיה או מהקנבס.", "The items appear in the document's table. Manage them from the hierarchy or the canvas.")}</p>`;
 }
 
 function invoiceBshellWirePropertiesPanel() {

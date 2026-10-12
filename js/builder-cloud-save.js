@@ -183,12 +183,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const error = await saveCvNow();
       btn.disabled = false;
       if (!error) {
-        status.textContent = "נשמר ✓";
+        status.textContent = dkL("נשמר ✓", "Saved ✓");
         status.classList.add("ok");
         if (window.refreshMyPanel) window.refreshMyPanel();
         setTimeout(() => { status.textContent = ""; status.classList.remove("ok"); }, 2500);
       } else {
-        status.textContent = "השמירה נכשלה, נסו שוב";
+        status.textContent = dkL("השמירה נכשלה, נסו שוב", "Saving failed, please try again");
         status.classList.remove("ok");
       }
     });

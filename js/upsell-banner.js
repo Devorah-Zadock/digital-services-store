@@ -33,12 +33,12 @@ function showUpsellBanner(message, title) {
   wrap.id = "upsell-banner";
   wrap.className = "upsell-popup-wrap no-print";
   wrap.innerHTML = `
-    <div class="upsell-popup" role="dialog" aria-label="${title || "הצעה מיוחדת"}">
-      <button type="button" class="upsell-popup-close" id="upsell-banner-close" aria-label="סגירה">✕</button>
+    <div class="upsell-popup" role="dialog" aria-label="${title || dkL("הצעה מיוחדת", "Special offer")}">
+      <button type="button" class="upsell-popup-close" id="upsell-banner-close" aria-label="${dkL("סגירה", "Close")}">✕</button>
       <div class="upsell-popup-icon">✨</div>
-      <h4>${title || "שווה להכיר"}</h4>
+      <h4>${title || dkL("שווה להכיר", "Worth knowing")}</h4>
       <p>${message}</p>
-      <a href="sites.html?browse=1" class="btn btn-gold upsell-popup-cta">בניית אתר תדמית — 199 ₪</a>
+      <a href="sites.html?browse=1" class="btn btn-gold upsell-popup-cta">${dkL("בניית אתר תדמית — 199 ₪", "Build a business website — ₪199")}</a>
     </div>
   `;
   document.body.appendChild(wrap);

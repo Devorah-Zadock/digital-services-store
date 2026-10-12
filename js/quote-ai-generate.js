@@ -53,8 +53,8 @@ function dkQuoteIntroRenderStyleRow() {
   // the Site Wizard already uses for its own style choice — rather than
   // a one-off look just for this row.
   row.innerHTML = Object.entries(QUOTE_TEMPLATES).map(([slug, t]) => `
-    <button type="button" class="dk-style-chip${slug === dkQuoteIntroStyle ? " selected" : ""}" data-style="${slug}" title="${escapeHtmlQ(t.desc)}">
-      <span>${escapeHtmlQ(t.label)}</span>
+    <button type="button" class="dk-style-chip${slug === dkQuoteIntroStyle ? " selected" : ""}" data-style="${slug}" title="${escapeHtmlQ(typeof dkL === "function" ? dkL(t.desc, t.descEn) : t.desc)}">
+      <span>${escapeHtmlQ(typeof dkL === "function" ? dkL(t.label, t.labelEn) : t.label)}</span>
     </button>
   `).join("");
   row.querySelectorAll("[data-style]").forEach((btn) => {
@@ -75,7 +75,7 @@ function dkShowQuoteIntro() {
   const panel = document.getElementById("qa-intro-ai-panel");
   if (panel) panel.hidden = true;
   const toggle = document.getElementById("qa-intro-ai-toggle");
-  if (toggle) toggle.textContent = "או, תנו ל-AI לנסח עבורכם טיוטה ראשונית ✨";
+  if (toggle) toggle.textContent = dkL("או, תנו ל-AI לנסח עבורכם טיוטה ראשונית ✨", "Or, let AI write a first draft for you ✨");
 }
 
 async function dkQuoteIntroSubmit() {
@@ -84,21 +84,21 @@ async function dkQuoteIntroSubmit() {
   if (!btn || !input) return;
   const description = input.value.trim();
   if (!description) {
-    dkQuoteIntroNote("תארו קודם במשפט אחד מה אתם רוצים להציע — אז DeskKit תכין טיוטה ראשונית.");
+    dkQuoteIntroNote(dkL("תארו קודם במשפט אחד מה אתם רוצים להציע — אז DeskKit תכין טיוטה ראשונית.", "First describe in one sentence what you want to offer — then DeskKit will prepare a first draft."));
     return;
   }
   dkQuoteIntroNote("");
   const originalLabel = btn.textContent;
   btn.disabled = true;
-  btn.textContent = "יוצר טיוטה...";
+  btn.textContent = dkL("יוצר טיוטה...", "Creating draft...");
   try {
     const data = await dkQuoteCallGenerate(description);
     if (!data) return; // redirected to login
     if (data.error) { dkQuoteIntroNote(data.error); return; }
     if (data.limitReached) {
       dkQuoteIntroNote(data.isPro
-        ? "הגעתם למכסת השימוש ההוגן היומית ביצירת טיוטה אוטומטית. אפשר להמשיך מחר."
-        : 'הגעת למכסת הניסיונות החינמיים ביצירת טיוטה אוטומטית. רוצה להמשיך ללא הגבלה? שדרג לגרסת Pro בתשלום חד-פעמי! <a href="#">שדרוג ל-Pro</a>');
+        ? dkL("הגעתם למכסת השימוש ההוגן היומית ביצירת טיוטה אוטומטית. אפשר להמשיך מחר.", "You've reached today's fair-use limit for automatic drafts. You can continue tomorrow.")
+        : dkL('הגעת למכסת הניסיונות החינמיים ביצירת טיוטה אוטומטית. רוצה להמשיך ללא הגבלה? שדרג לגרסת Pro בתשלום חד-פעמי! <a href="#">שדרוג ל-Pro</a>', 'You\'ve used your free automatic-draft tries. Want to continue without limits? Upgrade to Pro with a one-time payment! <a href="#">Upgrade to Pro</a>'));
       return;
     }
     const state = emptyQuoteEventState();
@@ -111,7 +111,7 @@ async function dkQuoteIntroSubmit() {
     showQuoteBuilder(state);
     if (typeof quoteBshellActivate === "function") quoteBshellActivate();
   } catch (err) {
-    dkQuoteIntroNote("יצירת הטיוטה נכשלה, נסו שוב.");
+    dkQuoteIntroNote(dkL("יצירת הטיוטה נכשלה, נסו שוב.", "Creating the draft failed, please try again."));
   } finally {
     btn.disabled = false;
     btn.textContent = originalLabel;
@@ -142,8 +142,8 @@ document.addEventListener("DOMContentLoaded", () => {
     aiToggle.addEventListener("click", () => {
       aiPanel.hidden = !aiPanel.hidden;
       aiToggle.textContent = aiPanel.hidden
-        ? "או, תנו ל-AI לנסח עבורכם טיוטה ראשונית ✨"
-        : "הסתירו ✕";
+        ? dkL("או, תנו ל-AI לנסח עבורכם טיוטה ראשונית ✨", "Or, let AI write a first draft for you ✨")
+        : dkL("הסתירו ✕", "Hide ✕");
     });
   }
 });

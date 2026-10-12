@@ -67,12 +67,12 @@ function atsShowUpgradeCard(isDailyProLimit) {
   if (!modal) return;
   const body = modal.querySelector(".ats-modal-body");
   if (isDailyProLimit) {
-    body.innerHTML = `<div class="ats-error">הגעת למכסת השימוש ההוגן היומית (50 בדיקות). אפשר להמשיך מחר.</div>`;
+    body.innerHTML = `<div class="ats-error">${dkL("הגעת למכסת השימוש ההוגן היומית (50 בדיקות). אפשר להמשיך מחר.", "You've reached the daily fair-use limit (50 checks). You can continue tomorrow.")}</div>`;
   } else {
     body.innerHTML = `
       <div class="ats-upgrade-card">
         <p>${AI_UPGRADE_MESSAGE}</p>
-        <a href="#" class="btn btn-gold ats-upgrade-btn">שדרוג ל-Pro</a>
+        <a href="#" class="btn btn-gold ats-upgrade-btn">${dkL("שדרוג ל-Pro", "Upgrade to Pro")}</a>
       </div>
     `;
   }
@@ -80,18 +80,18 @@ function atsShowUpgradeCard(isDailyProLimit) {
 
 function atsCheckFormHtml() {
   return `
-    <textarea class="ats-textarea" id="ats-jobdesc" placeholder="הדביקו כאן את תיאור המשרה..." rows="7"></textarea>
-    <div class="ats-attempts" id="ats-attempts-note">בודקים את היתרה שלך...</div>
-    <button type="button" class="btn btn-gold ats-submit-btn" id="ats-submit-btn">בדוק התאמה</button>
+    <textarea class="ats-textarea" id="ats-jobdesc" placeholder="${dkL("הדביקו כאן את תיאור המשרה...", "Paste the job description here...")}" rows="7"></textarea>
+    <div class="ats-attempts" id="ats-attempts-note">${dkL("בודקים את היתרה שלך...", "Checking your remaining balance...")}</div>
+    <button type="button" class="btn btn-gold ats-submit-btn" id="ats-submit-btn">${dkL("בדוק התאמה", "Check match")}</button>
     <div class="ats-error" id="ats-error" hidden></div>
     <div class="ats-result" id="ats-result" hidden>
       <div class="ats-score-row">
         <div class="ats-score-badge" id="ats-score-badge">--</div>
-        <div class="ats-score-label">ציון התאמה</div>
+        <div class="ats-score-label">${dkL("ציון התאמה", "Match score")}</div>
       </div>
-      <h3>מילות מפתח שחסרות</h3>
+      <h3>${dkL("מילות מפתח שחסרות", "Missing keywords")}</h3>
       <div class="ats-keywords" id="ats-keywords"></div>
-      <h3>טיפים לשיפור</h3>
+      <h3>${dkL("טיפים לשיפור", "Tips for improvement")}</h3>
       <ul class="ats-tips" id="ats-tips"></ul>
     </div>
   `;
@@ -107,18 +107,18 @@ async function atsRunCheck() {
   const jobDescription = textarea.value.trim();
   errorBox.hidden = true;
   if (!jobDescription) {
-    errorBox.textContent = "צריך להדביק קודם את תיאור המשרה.";
+    errorBox.textContent = dkL("צריך להדביק קודם את תיאור המשרה.", "Paste the job description first.");
     errorBox.hidden = false;
     return;
   }
   if (!state.content) {
-    errorBox.textContent = "לא נמצא קורות חיים פתוח לבדיקה.";
+    errorBox.textContent = dkL("לא נמצא קורות חיים פתוח לבדיקה.", "No open resume found to check.");
     errorBox.hidden = false;
     return;
   }
 
   submitBtn.disabled = true;
-  submitBtn.textContent = "בודק...";
+  submitBtn.textContent = dkL("בודק...", "Checking...");
   resultBox.hidden = true;
 
   try {
@@ -136,7 +136,7 @@ async function atsRunCheck() {
       }),
     });
     const data = await res.json();
-    if (!res.ok || data.error) throw new Error(data.error || "שגיאה לא צפויה");
+    if (!res.ok || data.error) throw new Error(data.error || dkL("שגיאה לא צפויה", "Unexpected error"));
 
     if (data.limitReached) {
       atsShowUpgradeCard(data.isPro);
@@ -144,8 +144,8 @@ async function atsRunCheck() {
     }
 
     attemptsNote.textContent = data.isPro
-      ? `Pro — נותרו לך ${Math.max(0, data.limit - data.count)} מתוך ${data.limit} בדיקות להיום.`
-      : `נותרו לך ${Math.max(0, data.limit - data.count)} מתוך ${data.limit} בדיקות חינם.`;
+      ? dkL(`Pro — נותרו לך ${Math.max(0, data.limit - data.count)} מתוך ${data.limit} בדיקות להיום.`, `Pro — ${Math.max(0, data.limit - data.count)} of ${data.limit} checks left today.`)
+      : dkL(`נותרו לך ${Math.max(0, data.limit - data.count)} מתוך ${data.limit} בדיקות חינם.`, `${Math.max(0, data.limit - data.count)} of ${data.limit} free checks left.`);
 
     const scoreEl = document.getElementById("ats-score-badge");
     scoreEl.textContent = data.score != null ? `${data.score}/100` : "—";
@@ -154,7 +154,7 @@ async function atsRunCheck() {
     const keywordsEl = document.getElementById("ats-keywords");
     keywordsEl.innerHTML = (data.missingKeywords || []).length
       ? data.missingKeywords.map((k) => `<span class="ats-keyword-chip">${escapeHtmlAts(k)}</span>`).join("")
-      : `<span class="ats-keywords-empty">לא נמצאו מילות מפתח חשובות שחסרות — יפה!</span>`;
+      : `<span class="ats-keywords-empty">${dkL("לא נמצאו מילות מפתח חשובות שחסרות — יפה!", "No important missing keywords found — nice!")}</span>`;
 
     const tipsEl = document.getElementById("ats-tips");
     tipsEl.innerHTML = (data.tips || []).map((t) => `<li>${escapeHtmlAts(t)}</li>`).join("");
@@ -162,11 +162,11 @@ async function atsRunCheck() {
     resultBox.hidden = false;
     submitBtn.disabled = data.count >= data.limit;
   } catch (err) {
-    errorBox.textContent = "משהו השתבש בבדיקה. אפשר לנסות שוב בעוד רגע. (" + (err.message || err) + ")";
+    errorBox.textContent = dkL("משהו השתבש בבדיקה. אפשר לנסות שוב בעוד רגע. (", "Something went wrong with the check. Please try again in a moment. (") + (err.message || err) + ")";
     errorBox.hidden = false;
   } finally {
     if (document.getElementById("ats-submit-btn")) {
-      submitBtn.textContent = "בדוק התאמה";
+      submitBtn.textContent = dkL("בדוק התאמה", "Check match");
       if (!submitBtn.disabled) submitBtn.disabled = false;
     }
   }
@@ -188,10 +188,10 @@ async function openAtsChecker() {
   overlay.className = "domain-guide-overlay";
   overlay.innerHTML = `
     <div class="domain-guide-modal ats-modal" role="dialog" aria-modal="true" aria-labelledby="ats-check-title">
-      <button type="button" class="domain-guide-close" id="ats-check-close" aria-label="סגירה">✕</button>
-      <h2 id="ats-check-title">בדיקת התאמה למשרה (ATS)</h2>
-      <p class="lead">מדביקים כאן את תיאור המשרה שאליה שולחים את קורות החיים, ומקבלים ציון התאמה, מילות מפתח שחסרות, וטיפים קצרים לשיפור — לפני ששולחים.</p>
-      <div class="ats-modal-body">בודקים את היתרה שלך...</div>
+      <button type="button" class="domain-guide-close" id="ats-check-close" aria-label="${dkL("סגירה", "Close")}">✕</button>
+      <h2 id="ats-check-title">${dkL("בדיקת התאמה למשרה (ATS)", "Job match check (ATS)")}</h2>
+      <p class="lead">${dkL("מדביקים כאן את תיאור המשרה שאליה שולחים את קורות החיים, ומקבלים ציון התאמה, מילות מפתח שחסרות, וטיפים קצרים לשיפור — לפני ששולחים.", "Paste the description of the job you're applying to and get a match score, missing keywords and short tips for improvement — before you send.")}</p>
+      <div class="ats-modal-body">${dkL("בודקים את היתרה שלך...", "Checking your remaining balance...")}</div>
     </div>
   `;
   document.body.appendChild(overlay);
@@ -208,7 +208,7 @@ async function openAtsChecker() {
   if (isPro) {
     document.querySelector(".ats-modal-body").innerHTML = atsCheckFormHtml();
     document.getElementById("ats-submit-btn").addEventListener("click", atsRunCheck);
-    document.getElementById("ats-attempts-note").textContent = "Pro — עד 50 בדיקות ביום.";
+    document.getElementById("ats-attempts-note").textContent = dkL("Pro — עד 50 בדיקות ביום.", "Pro — up to 50 checks a day.");
     return;
   }
 
@@ -221,10 +221,10 @@ async function openAtsChecker() {
     }
     document.querySelector(".ats-modal-body").innerHTML = atsCheckFormHtml();
     document.getElementById("ats-submit-btn").addEventListener("click", atsRunCheck);
-    document.getElementById("ats-attempts-note").textContent = `נותרו לך ${Math.max(0, 3 - used)} מתוך 3 בדיקות חינם.`;
+    document.getElementById("ats-attempts-note").textContent = dkL(`נותרו לך ${Math.max(0, 3 - used)} מתוך 3 בדיקות חינם.`, `${Math.max(0, 3 - used)} of 3 free checks left.`);
   } catch (e) {
     document.querySelector(".ats-modal-body").innerHTML = atsCheckFormHtml();
     document.getElementById("ats-submit-btn").addEventListener("click", atsRunCheck);
-    document.getElementById("ats-attempts-note").textContent = "עד 3 בדיקות חינם.";
+    document.getElementById("ats-attempts-note").textContent = dkL("עד 3 בדיקות חינם.", "Up to 3 free checks.");
   }
 }
