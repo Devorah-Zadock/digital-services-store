@@ -113,7 +113,7 @@ const enc = new TextEncoder();
 async function sha256Hex(data: string): Promise<string> {
   return [...new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(data)))].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
-async function hmac(key: ArrayBuffer | Uint8Array, data: string): Promise<ArrayBuffer> {
+async function hmac(key: BufferSource, data: string): Promise<ArrayBuffer> {
   const k = await crypto.subtle.importKey("raw", key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   return crypto.subtle.sign("HMAC", k, enc.encode(data));
 }
