@@ -51,7 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const err = await saveQuoteNow();
     btn.disabled = false;
     status.classList.remove("ok");
-    status.textContent = err ? "השמירה נכשלה, נסו שוב" : "נשמר ✓";
+    status.textContent = err ? dkL("השמירה נכשלה, נסו שוב", "Save failed, please try again") : dkL("נשמר ✓", "Saved ✓");
     if (!err) status.classList.add("ok");
     setTimeout(() => { status.textContent = ""; status.classList.remove("ok"); }, 2500);
   });

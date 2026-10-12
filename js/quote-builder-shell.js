@@ -64,11 +64,11 @@ window.addEventListener("beforeunload", (e) => {
 });
 
 const QUOTEBSHELL_TEXT_LABELS = {
-  today: "תאריך היום", recipient: "לכבוד (שם הנמען)", eventName: "שם האירוע / השירות",
-  description: "תיאור", price: "מחיר (₪)", vatNote: 'הערת מע"מ', policeNote: "הערה נוספת",
+  today: typeof dkL === "function" ? dkL("תאריך היום", "Today's date") : "תאריך היום", recipient: typeof dkL === "function" ? dkL("לכבוד (שם הנמען)", "To (recipient name)") : "לכבוד (שם הנמען)", eventName: typeof dkL === "function" ? dkL("שם האירוע / השירות", "Event / service name") : "שם האירוע / השירות",
+  description: typeof dkL === "function" ? dkL("תיאור", "Description") : "תיאור", price: typeof dkL === "function" ? dkL("מחיר (₪)", "Price (₪)") : "מחיר (₪)", vatNote: typeof dkL === "function" ? dkL('הערת מע"מ', 'VAT note') : 'הערת מע"מ', policeNote: typeof dkL === "function" ? dkL("הערה נוספת", "Additional note") : "הערה נוספת",
 };
 const QUOTEBSHELL_TEXT_HINTS = {
-  vatNote: 'אם משאירים ריק, יוצג מחיר כולל מע"מ אוטומטית לפי האחוז שהוגדר בפרטי העסק.',
+  vatNote: typeof dkL === "function" ? dkL('אם משאירים ריק, יוצג מחיר כולל מע"מ אוטומטית לפי האחוז שהוגדר בפרטי העסק.', 'If left empty, a VAT-inclusive price is shown automatically using the rate set in your business details.') : 'אם משאירים ריק, יוצג מחיר כולל מע"מ אוטומטית לפי האחוז שהוגדר בפרטי העסק.',
 };
 // price/vatNote both feed the auto-calculated VAT line below them,
 // which restructures its own markup depending on whether vatNote is
@@ -184,13 +184,13 @@ async function quoteBshellGenerateDraft() {
   if (!btn || !input) return;
   const description = input.value.trim();
   if (!description) {
-    quoteBshellAiDraftNote("תארו קודם בקצרה את השירות או העבודה — אז AI יכין טיוטה ראשונית.");
+    quoteBshellAiDraftNote(dkL("תארו קודם בקצרה את השירות או העבודה — אז AI יכין טיוטה ראשונית.", "First briefly describe the service or work — then AI will prepare a first draft."));
     return;
   }
   quoteBshellAiDraftNote("");
   const originalLabel = btn.textContent;
   btn.disabled = true;
-  btn.textContent = "יוצר טיוטה...";
+  btn.textContent = dkL("יוצר טיוטה...", "Creating draft...");
   try {
     const { data: sessionData } = await supabaseClient.auth.getSession();
     const token = sessionData.session && sessionData.session.access_token;
@@ -202,11 +202,11 @@ async function quoteBshellGenerateDraft() {
     });
     const data = await res.json();
     if (!res.ok || data.error) {
-      quoteBshellAiDraftNote(data.error || "יצירת הטיוטה נכשלה, נסו שוב.");
+      quoteBshellAiDraftNote(data.error || dkL("יצירת הטיוטה נכשלה, נסו שוב.", "Creating the draft failed, please try again."));
       return;
     }
     if (data.limitReached) {
-      quoteBshellAiDraftNote(data.isPro ? "הגעתם למכסת השימוש ההוגן היומית. אפשר להמשיך מחר." : `${QUOTEBSHELL_AI_UPGRADE_MESSAGE} <a href="#">שדרוג ל-Pro</a>`);
+      quoteBshellAiDraftNote(data.isPro ? dkL("הגעתם למכסת השימוש ההוגן היומית. אפשר להמשיך מחר.", "You've reached today's fair-use limit. You can continue tomorrow.") : `${QUOTEBSHELL_AI_UPGRADE_MESSAGE} <a href="#">${dkL("שדרוג ל-Pro", "Upgrade to Pro")}</a>`);
       return;
     }
     quoteBshellSnapshot();
@@ -221,7 +221,7 @@ async function quoteBshellGenerateDraft() {
     quoteBshellRenderHierarchy();
     quoteBshellSyncUndoButtons();
   } catch (err) {
-    quoteBshellAiDraftNote("יצירת הטיוטה נכשלה, נסו שוב.");
+    quoteBshellAiDraftNote(dkL("יצירת הטיוטה נכשלה, נסו שוב.", "Creating the draft failed, please try again."));
   } finally {
     btn.disabled = false;
     btn.textContent = originalLabel;
@@ -368,14 +368,14 @@ function quoteBshellWireTopBar() {
    — never auto-triggered on every edit. */
 async function quoteBshellSaveNow() {
   const status = document.getElementById("qbshell-top-status");
-  status.textContent = "שומרים...";
+  status.textContent = dkL("שומרים...", "Saving...");
   status.className = "bshell-top-status saving";
   const err = await saveQuoteNow();
-  status.textContent = err ? "השמירה נכשלה, נסו שוב" : "נשמר ✓";
+  status.textContent = err ? dkL("השמירה נכשלה, נסו שוב", "Save failed, please try again") : dkL("נשמר ✓", "Saved ✓");
   status.className = "bshell-top-status " + (err ? "" : "saved");
   if (!err) quoteBshellDirty = false;
   if (window.refreshMyPanel) window.refreshMyPanel();
-  setTimeout(() => { if (status.textContent === "נשמר ✓") status.textContent = ""; }, 2500);
+  setTimeout(() => { if (status.textContent === dkL("נשמר ✓", "Saved ✓")) status.textContent = ""; }, 2500);
 }
 
 /* ---------- Hierarchy sidebar ---------- */
@@ -399,15 +399,15 @@ function quoteBshellRenderHierarchy() {
   const isSelSection = quoteBshellSelection && quoteBshellSelection.kind === "section" && quoteBshellSelection.type === "eventDates";
   const dateRows = (q.eventDates || []).map((d, i) => {
     const isSelItem = quoteBshellSelection && quoteBshellSelection.kind === "date" && quoteBshellSelection.idx === i;
-    return `<button type="button" class="bshell-item${isSelItem ? " is-selected" : ""}" data-qbshell-select-date="${i}">${escapeHtmlQ(d && d.trim() ? d : `תאריך ${i + 1}`)}</button>`;
-  }).join("") + `<button type="button" class="bshell-add-item" data-qbshell-add-date>+ הוספת תאריך</button>`;
+    return `<button type="button" class="bshell-item${isSelItem ? " is-selected" : ""}" data-qbshell-select-date="${i}">${escapeHtmlQ(d && d.trim() ? d : dkL(`תאריך ${i + 1}`, `Date ${i + 1}`))}</button>`;
+  }).join("") + `<button type="button" class="bshell-add-item" data-qbshell-add-date>${dkL("+ הוספת תאריך", "+ Add date")}</button>`;
 
   list.innerHTML = [
     textRow("today"), textRow("recipient"), textRow("eventName"),
     `<details class="bshell-sec" open>
       <summary class="bshell-sec-head${isSelSection ? " is-selected" : ""}" data-qbshell-select-section="eventDates">
         <span class="bshell-sec-chevron"></span>
-        <span>תאריכים</span>
+        <span>${dkL("תאריכים", "Dates")}</span>
       </summary>
       <div class="bshell-sec-body">${dateRows}</div>
     </details>`,
@@ -621,10 +621,10 @@ function quoteBshellApplySelectionVisual() {
   // Same reasoning as js/builder-shell.js's bshellApplySelectionVisual —
   // only show buttons that actually apply to this selection's kind.
   const canDuplicateOrDelete = quoteBshellSelection.kind === "date";
-  const toolbarButtons = [`<button type="button" data-tool="edit" title="עריכה">✎</button>`];
+  const toolbarButtons = [`<button type="button" data-tool="edit" title="${dkL("עריכה", "Edit")}">✎</button>`];
   if (canDuplicateOrDelete) {
-    toolbarButtons.push(`<button type="button" data-tool="duplicate" title="שכפול">⧉</button>`);
-    toolbarButtons.push(`<button type="button" data-tool="delete" title="מחיקה">🗑</button>`);
+    toolbarButtons.push(`<button type="button" data-tool="duplicate" title="${dkL("שכפול", "Duplicate")}">⧉</button>`);
+    toolbarButtons.push(`<button type="button" data-tool="delete" title="${dkL("מחיקה", "Delete")}">🗑</button>`);
   }
   toolbar.innerHTML = toolbarButtons.join("");
   toolbar.addEventListener("mousedown", (e) => e.stopPropagation());
@@ -710,7 +710,7 @@ function quoteBshellPropsHtmlForText(key) {
     : `<input type="text" id="qbshell-prop-content" value="${escapeHtmlQ(value).replace(/"/g, "&quot;")}">`;
   const hint = QUOTEBSHELL_TEXT_HINTS[key];
   return `
-    <span class="bshell-props-kind">טקסט</span>
+    <span class="bshell-props-kind">${dkL("טקסט", "Text")}</span>
     <div class="bshell-props-field">
       <label class="bshell-props-label">${escapeHtmlQ(QUOTEBSHELL_TEXT_LABELS[key])}</label>
       ${inputTag}
@@ -721,15 +721,15 @@ function quoteBshellPropsHtmlForText(key) {
 function quoteBshellPropsHtmlForDate(idx) {
   const d = quoteEventState.eventDates[idx] || "";
   return `
-    <span class="bshell-props-kind">תאריך</span>
+    <span class="bshell-props-kind">${dkL("תאריך", "Date")}</span>
     <div class="bshell-props-field">
-      <label class="bshell-props-label">תאריך ${idx + 1}</label>
+      <label class="bshell-props-label">${dkL(`תאריך ${idx + 1}`, `Date ${idx + 1}`)}</label>
       <input type="text" id="qbshell-prop-date" value="${escapeHtmlQ(d).replace(/"/g, "&quot;")}">
     </div>`;
 }
 
 function quoteBshellPropsHtmlForSection() {
-  return `<span class="bshell-props-kind">Section</span><p style="font-size:12.5px; color:var(--text-muted); margin:0;">התאריכים מופיעים בהצעת המחיר. ניהול התאריכים מתבצע מההיררכיה או מהקנבס.</p>`;
+  return `<span class="bshell-props-kind">Section</span><p style="font-size:12.5px; color:var(--text-muted); margin:0;">${dkL("התאריכים מופיעים בהצעת המחיר. ניהול התאריכים מתבצע מההיררכיה או מהקנבס.", "The dates appear in the quote. Manage them from the hierarchy or the canvas.")}</p>`;
 }
 
 function quoteBshellWirePropertiesPanel() {
