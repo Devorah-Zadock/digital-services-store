@@ -123,6 +123,13 @@ Deno.serve(async (req: Request) => {
       const key = String(body.template);
       const status = action === "pause" ? "paused" : "active";
       await must(db.from("automations").update({ status, consecutive_failures: 0, updated_at: new Date().toISOString() }).eq("user_id", uid).eq("template_key", key));
+      if (action === "resume") {
+        // Runs held while paused continue now instead of up to 30 minutes later.
+        // Safe: a run inside a wait step re-reads its own wait time and holds again.
+        const { data: a } = await db.from("automations").select("id").eq("user_id", uid).eq("template_key", key).maybeSingle();
+        if (a) await db.from("automation_runs").update({ next_run_at: new Date().toISOString() })
+          .eq("automation_id", a.id).eq("status", "waiting");
+      }
       return json({ ok: true });
     }
 

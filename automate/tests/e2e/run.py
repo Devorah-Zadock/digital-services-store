@@ -361,9 +361,14 @@ def run_tests(a, b):
     check("T10 paused → new enquiries are saved but start no run", not [x for x in runs_of(a["id"], "lead_autopilot") if x["subject_id"] == lead9["id"]])
     api(a, "resume", template="lead_autopilot")
     fast_forward_runs(a["id"])
-    # The scheduled staging worker may hold this run at the same moment
-    # (SKIP LOCKED), so keep ticking until it's done instead of exactly twice.
-    wait_until(lambda: "lead_reminder" in [m["purpose"] for m in messages_of(a["id"]) if m["run_id"] == run8["id"]], timeout=30)
+    # The scheduled staging worker may be handling this run at the same moment
+    # (it may have read "paused" just before the resume), so keep ticking.
+    def reminded():
+        if "lead_reminder" in [m["purpose"] for m in messages_of(a["id"]) if m["run_id"] == run8["id"]]:
+            return True
+        fast_forward_runs(a["id"])   # undo a "check again later" the scheduled worker may have written meanwhile
+        return False
+    wait_until(reminded, timeout=40)
     msgs8 = [m["purpose"] for m in messages_of(a["id"]) if m["run_id"] == run8["id"]]
     check("T10 resumed → continues (reminder sent)", "lead_reminder" in msgs8, str(msgs8))
 
