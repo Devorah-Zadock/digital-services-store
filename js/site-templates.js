@@ -625,7 +625,7 @@ ${siteFontImport(head.fontFamily)}
 <style>${siteBaseCss(head.fontFamily)}${head.css}${SITE_RENDER_EN ? SITE_LTR_CSS : ""}</style>
 </head>
 <body>
-${head.showBsd ? `<div class="site-bsd" style="position:absolute; top:6px; right:10px; z-index:2147483000; font-size:11px; line-height:1.4; color:#333; background:rgba(255,255,255,.85); padding:1px 6px; border-radius:6px; pointer-events:none;">בס"ד</div>` : ""}
+${head.showBsd ? `<div class="site-bsd" style="position:absolute; top:6px; right:10px; z-index:2147483000; font-size:11px; line-height:1.4; color:#333; background:rgba(255,255,255,.85); padding:1px 6px; border-radius:6px; pointer-events:none;">${siteTr('בס"ד', 'BS"D')}</div>` : ""}
 ${body}${head.lead ? "\n" + siteLeadFormHtml(head.lead) : ""}
 ${heroSlideshowScript()}
 ${scrollRevealScript()}

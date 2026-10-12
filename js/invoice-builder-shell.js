@@ -131,12 +131,34 @@ function invoiceBshellWireBsdToggle() {
     if (typeof renderInvoicePreviewIA === "function") renderInvoicePreviewIA();
     invoiceBshellRenderCanvas(invoiceBshellReanchorSelection);
   });
+  // Document language + currency: stored only when not the default; locked
+  // once the document is issued, like every other field of it.
+  const langEl = document.getElementById("ibshell-set-lang");
+  if (langEl) langEl.addEventListener("change", () => {
+    if (invoiceBshellLocked()) { invoiceBshellSyncBsdToggle(); return; }
+    invoiceBshellSnapshot();
+    if (langEl.value === "en") invoiceEventState.lang = "en"; else delete invoiceEventState.lang;
+    if (typeof renderInvoicePreviewIA === "function") renderInvoicePreviewIA();
+    invoiceBshellRenderCanvas(invoiceBshellReanchorSelection);
+  });
+  const curEl = document.getElementById("ibshell-set-currency");
+  if (curEl) curEl.addEventListener("change", () => {
+    if (invoiceBshellLocked()) { invoiceBshellSyncBsdToggle(); return; }
+    invoiceBshellSnapshot();
+    if (curEl.value && curEl.value !== "₪") invoiceEventState.currency = curEl.value; else delete invoiceEventState.currency;
+    if (typeof renderInvoicePreviewIA === "function") renderInvoicePreviewIA();
+    invoiceBshellRenderCanvas(invoiceBshellReanchorSelection);
+  });
 }
 function invoiceBshellSyncBsdToggle() {
   const bsd = document.getElementById("ibshell-set-bsd");
   if (!bsd) return;
   bsd.checked = !!invoiceEventState.showBsd;
   bsd.disabled = invoiceBshellLocked();
+  const langEl = document.getElementById("ibshell-set-lang");
+  if (langEl) { langEl.value = invoiceEventState.lang === "en" ? "en" : "he"; langEl.disabled = invoiceBshellLocked(); }
+  const curEl = document.getElementById("ibshell-set-currency");
+  if (curEl) { curEl.value = invoiceEventState.currency || "₪"; curEl.disabled = invoiceBshellLocked(); }
 }
 
 /* Reparents the EXISTING #ia-profile-form wholesale (not recreating

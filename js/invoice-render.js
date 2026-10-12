@@ -40,6 +40,22 @@ const INVOICE_DOC_LABEL = {
   credit_note: "חשבונית זיכוי",
 };
 
+/* Document language: inv.lang === "en" renders the document in English
+   (left to right); anything else is the Hebrew document, unchanged.
+   inv.currency is the symbol shown with amounts (default ₪). */
+const INVOICE_PAYMENT_METHODS_EN = {
+  cash: "Cash", check: "Check", transfer: "Bank transfer", credit: "Credit card", bit: "Bit / PayBox",
+};
+const INVOICE_DOC_TITLE_EN = {
+  invoice_receipt: "Tax Invoice / Receipt",
+  receipt: "Receipt",
+  credit_note: "Credit Note",
+};
+const INVOICE_CURRENCIES = ["₪", "$", "€", "£"];
+function invoiceDocEn(inv) {
+  return !!inv && inv.lang === "en";
+}
+
 /* Everything an issued document needs to stay exactly as it looked the
    day it was issued (business name, address, VAT rate...) even if the
    business later edits its profile — a reprint of an old invoice must
@@ -81,6 +97,7 @@ const INVOICE_CSS = `
   .invoice-doc { font-family:'Heebo', Arial, sans-serif; background:#fff; color:#1E1E1E; width:794px; flex-shrink:0; margin:0 auto; box-shadow:0 10px 30px rgba(0,0,0,.12); overflow-wrap:break-word; overflow:hidden; }
   .invoice-doc .id-inner { padding:0 56px 50px; }
   .invoice-doc .bsd { font-size:12px; color:#6B6B6B; padding:14px 56px 0; }
+  .invoice-doc[dir="ltr"] .bsd { text-align:right; }
   .invoice-doc .id-credit-banner { background:#FDECEC; color:#A62B2B; font-weight:700; font-size:13.5px; padding:10px 56px; text-align:center; }
   .invoice-doc .letterhead { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:30px 56px 18px; border-bottom:2px solid #163F35; }
   .invoice-doc .letterhead-logo { max-height:60px; max-width:180px; display:block; }
@@ -109,7 +126,13 @@ const INVOICE_CSS = `
 function renderInvoiceHtml(inv, liveProfile) {
   const letterhead = invoiceLetterhead(inv, liveProfile);
   const { items, subtotal, licensed, vatRatePct, vat, total } = invoiceLineTotals(inv, letterhead);
-  const docLabel = INVOICE_DOC_LABEL[inv.docType] || INVOICE_DOC_LABEL.invoice_receipt;
+  const en = invoiceDocEn(inv);
+  const T = (he, enText) => (en ? enText : he);
+  const LABELS = en ? INVOICE_DOC_TITLE_EN : INVOICE_DOC_LABEL;
+  const cur = INVOICE_CURRENCIES.includes(inv.currency) ? inv.currency : "₪";
+  // Hebrew: "1,000.00 ₪" (unchanged); English: "₪1,000.00".
+  const money = (v) => (en ? `${cur}${v}` : `${v} ${cur}`);
+  const docLabel = LABELS[inv.docType] || LABELS.invoice_receipt;
   const sign = inv.docType === "credit_note" ? -1 : 1;
   const fmt = (n) => (sign < 0 ? `(${formatILSI(Math.abs(n))})` : formatILSI(n));
 
@@ -117,36 +140,38 @@ function renderInvoiceHtml(inv, liveProfile) {
     <tr data-i-item-idx="${i}">
       <td>${escapeHtmlI(it.desc)}</td>
       <td class="num">${it.qty}</td>
-      <td class="num">${formatILSI(it.unitPrice)} ₪</td>
-      <td class="num">${fmt(it.qty * it.unitPrice)} ₪</td>
+      <td class="num">${money(formatILSI(it.unitPrice))}</td>
+      <td class="num">${money(fmt(it.qty * it.unitPrice))}</td>
     </tr>`).join("");
 
-  const paymentLabel = INVOICE_PAYMENT_METHODS[inv.paymentMethod] || "";
+  const paymentLabel = (en ? INVOICE_PAYMENT_METHODS_EN : INVOICE_PAYMENT_METHODS)[inv.paymentMethod] || "";
 
   return `
   <style>${INVOICE_CSS}</style>
-  <div class="invoice-doc" dir="rtl">
-    ${inv.showBsd ? `<div class="bsd">בס"ד</div>` : ""}
+  <div class="invoice-doc" dir="${en ? "ltr" : "rtl"}"${en ? ' lang="en"' : ""}>
+    ${inv.showBsd ? `<div class="bsd">${T('בס"ד', 'BS"D')}</div>` : ""}
     ${inv.docType === "credit_note" && inv.originalNumber
-      ? `<div class="id-credit-banner">מסמך זה מבטל/מתקן את ${escapeHtmlI(INVOICE_DOC_LABEL[inv.originalDocType] || "המסמך")} מס' ${escapeHtmlI(inv.originalNumber)}</div>`
+      ? `<div class="id-credit-banner">${en
+          ? `This document cancels/corrects ${escapeHtmlI(LABELS[inv.originalDocType] || "the document")} No. ${escapeHtmlI(inv.originalNumber)}`
+          : `מסמך זה מבטל/מתקן את ${escapeHtmlI(INVOICE_DOC_LABEL[inv.originalDocType] || "המסמך")} מס' ${escapeHtmlI(inv.originalNumber)}`}</div>`
       : ""}
     <div class="letterhead">
       <div>
-        ${letterhead.logoUrl ? `<img class="letterhead-logo" src="${escapeHtmlI(letterhead.logoUrl)}" alt="${escapeHtmlI("לוגו " + (letterhead.businessName || ""))}">` : ""}
+        ${letterhead.logoUrl ? `<img class="letterhead-logo" src="${escapeHtmlI(letterhead.logoUrl)}" alt="${escapeHtmlI(T("לוגו ", "Logo ") + (letterhead.businessName || ""))}">` : ""}
         <div class="biz-name">${escapeHtmlI(letterhead.businessName)}</div>
         <div class="tagline">${escapeHtmlI(letterhead.tagline1)}</div>
         <div class="tagline">${escapeHtmlI(letterhead.tagline2)}</div>
-        <div class="contact-line">${escapeHtmlI(letterhead.email)} &nbsp;•&nbsp; ${escapeHtmlI(letterhead.phone)} &nbsp;•&nbsp; ע.מ/ח.פ ${escapeHtmlI(letterhead.businessNumber)}</div>
+        <div class="contact-line">${escapeHtmlI(letterhead.email)} &nbsp;•&nbsp; ${escapeHtmlI(letterhead.phone)} &nbsp;•&nbsp; ${T("ע.מ/ח.פ", "Business ID")} ${escapeHtmlI(letterhead.businessNumber)}</div>
       </div>
       <div class="id-titlebox">
         <div class="id-doctitle">${escapeHtmlI(docLabel)}</div>
-        <div class="id-docnum">${inv.number ? `מס' ${escapeHtmlI(inv.number)}` : "טיוטה — טרם הופקה"}</div>
+        <div class="id-docnum">${inv.number ? `${T("מס'", "No.")} ${escapeHtmlI(inv.number)}` : T("טיוטה — טרם הופקה", "Draft — not issued yet")}</div>
       </div>
     </div>
     <div class="id-meta-row">
-      <div><div class="lbl">תאריך</div><div class="val" data-ikey="date">${escapeHtmlI(inv.date)}</div></div>
+      <div><div class="lbl">${T("תאריך", "Date")}</div><div class="val" data-ikey="date">${escapeHtmlI(inv.date)}</div></div>
       <div style="text-align:end;">
-        <div class="lbl">לכבוד</div>
+        <div class="lbl">${T("לכבוד", "Bill to")}</div>
         <div class="val" data-ikey="recipientName">${escapeHtmlI(inv.recipientName)}</div>
         ${inv.recipientId ? `<div style="font-size:12px; color:#6B6B6B;" data-ikey="recipientId">${escapeHtmlI(inv.recipientId)}</div>` : ""}
         ${inv.recipientAddress ? `<div style="font-size:12px; color:#6B6B6B;" data-ikey="recipientAddress">${escapeHtmlI(inv.recipientAddress)}</div>` : ""}
@@ -154,18 +179,18 @@ function renderInvoiceHtml(inv, liveProfile) {
     </div>
     <div class="id-inner">
       <table class="id-items">
-        <thead><tr><th>תיאור</th><th class="num">כמות</th><th class="num">מחיר יח'</th><th class="num">סה"כ</th></tr></thead>
+        <thead><tr><th>${T("תיאור", "Description")}</th><th class="num">${T("כמות", "Qty")}</th><th class="num">${T("מחיר יח'", "Unit price")}</th><th class="num">${T('סה"כ', "Total")}</th></tr></thead>
         <tbody>${rowsHtml}</tbody>
       </table>
       <div class="id-totals">
         ${licensed ? `
-          <div class="id-totals-row"><span>סכום ביניים</span><span>${fmt(subtotal)} ₪</span></div>
-          <div class="id-totals-row"><span>מע"מ (${vatRatePct}%)</span><span>${fmt(vat)} ₪</span></div>
+          <div class="id-totals-row"><span>${T("סכום ביניים", "Subtotal")}</span><span>${money(fmt(subtotal))}</span></div>
+          <div class="id-totals-row"><span>${T('מע"מ', "VAT")} (${vatRatePct}%)</span><span>${money(fmt(vat))}</span></div>
         ` : ""}
-        <div class="id-totals-row grand"><span>${inv.docType === "credit_note" ? 'סה"כ לזיכוי' : 'סה"כ לתשלום'}</span><span>${fmt(total)} ₪</span></div>
+        <div class="id-totals-row grand"><span>${inv.docType === "credit_note" ? T('סה"כ לזיכוי', "Total credit") : T('סה"כ לתשלום', "Total due")}</span><span>${money(fmt(total))}</span></div>
       </div>
-      ${!licensed ? `<div class="id-exempt-note">"עוסק פטור" — פטור מגביית מע"מ לפי סעיף 31(2) לחוק מס ערך מוסף.</div>` : ""}
-      ${paymentLabel ? `<div class="id-payment">אופן תשלום: <span data-ikey="paymentMethod">${escapeHtmlI(paymentLabel)}</span></div>` : ""}
+      ${!licensed ? `<div class="id-exempt-note">${T('"עוסק פטור" — פטור מגביית מע"מ לפי סעיף 31(2) לחוק מס ערך מוסף.', "Exempt dealer (עוסק פטור) — not charging VAT under section 31(2) of the Israeli VAT Law.")}</div>` : ""}
+      ${paymentLabel ? `<div class="id-payment">${T("אופן תשלום", "Payment method")}: <span data-ikey="paymentMethod">${escapeHtmlI(paymentLabel)}</span></div>` : ""}
       ${inv.notes ? `<div class="id-notes" data-ikey="notes">${escapeHtmlI(inv.notes)}</div>` : ""}
       <div class="id-signature">${escapeHtmlI(letterhead.businessName)}</div>
     </div>

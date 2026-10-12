@@ -6,6 +6,8 @@
    dkL("עברית", "English") inside the tool scripts themselves instead. */
 (window.I18N_EXTRA = window.I18N_EXTRA || []).push({
   he: {
+    tools_doc_lang_label: "שפת המסמך", tools_doc_lang_he: "עברית", tools_doc_currency_label: "מטבע",
+    tools_doc_lang_hint: "השפה של המסמך עצמו: כיוון הכתיבה, הכותרות והתוויות. הטקסטים שכתבתם לא משתנים.",
     tools_auth_checking: "בודקים חיבור…",
     tools_business_tools: "כלים לעסק",
     tools_footer_blurb_full: "תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות, אתרים ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.",
@@ -199,6 +201,8 @@
     tools_sch_export_csv: "ייצוא ל-CSV",
   },
   en: {
+    tools_doc_lang_label: "Document language", tools_doc_lang_he: "Hebrew", tools_doc_currency_label: "Currency",
+    tools_doc_lang_hint: "The language of the document itself: text direction, headings and labels. Text you wrote stays as it is.",
     tools_auth_checking: "Checking your sign-in…",
     tools_business_tools: "Business tools",
     tools_footer_blurb_full: "Ready-to-use business templates — resumes, decks, websites and more, professionally designed to save you hours of work.",
@@ -216,7 +220,7 @@
     tools_ai_draft_btn: "✨ Generate draft",
     tools_ai_draft_cta: "✨ Create a draft with AI",
     tools_intro_start: "Start creating",
-    tools_bsd_label: "Show \"בס\"ד\" at the top of the page",
+    tools_bsd_label: "Show \"BS\"D\" (בס\"ד) at the top of the page",
     tools_edit_profile: "Edit business details",
     tools_profile_h: "Your business details",
     tools_pf_business_name: "Business name",

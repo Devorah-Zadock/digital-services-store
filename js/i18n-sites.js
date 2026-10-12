@@ -237,7 +237,7 @@
     sites_sb_ai_help: "✨ AI help",
     sites_sb_ai_undo: "↶ Undo last change",
     sites_sb_biz: "Business details",
-    sites_sb_bsd: "Show a small \"B'H\" (בס\"ד) in the top corner of the site",
+    sites_sb_bsd: "Show a small \"BS\"D\" (בס\"ד) in the top corner of the site",
     sites_sb_contact: "Contact details",
     sites_sb_design: "Site design",
     sites_sb_finalized: "This site was purchased and its design is locked — editing and republishing it stay free forever. To build another site with a different design, go to \"Sites\" in the top menu and purchase it separately.",

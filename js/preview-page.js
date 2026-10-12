@@ -1,3 +1,10 @@
+// UI text: English when the interface is English (the slides/sheets show
+// the real file content as it is).
+function pvL(he, en) {
+  return typeof dkL === "function" ? dkL(he, en) : he;
+}
+const PV_EN = typeof currentLang === "function" && currentLang() === "en";
+
 function escapeHtmlPV(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
@@ -34,9 +41,9 @@ function renderDeckPreview(root, product, data) {
     root.innerHTML = `
       <div class="pv-slide-card" style="background:${bg};">${linesHtml}</div>
       <div class="pv-slide-nav">
-        <button type="button" id="pv-prev"${idx === 0 ? " disabled" : ""}>הקודם</button>
-        <span class="pv-slide-counter">שקופית ${idx + 1} מתוך ${slides.length}</span>
-        <button type="button" id="pv-next"${idx === slides.length - 1 ? " disabled" : ""}>הבא</button>
+        <button type="button" id="pv-prev"${idx === 0 ? " disabled" : ""}>${pvL("הקודם", "Previous")}</button>
+        <span class="pv-slide-counter">${pvL(`שקופית ${idx + 1} מתוך ${slides.length}`, `Slide ${idx + 1} of ${slides.length}`)}</span>
+        <button type="button" id="pv-next"${idx === slides.length - 1 ? " disabled" : ""}>${pvL("הבא", "Next")}</button>
       </div>
       <div class="pv-slide-dots" id="pv-dots">
         ${slides.map((_, i) => `<span class="${i === idx ? "active" : ""}" data-i="${i}"></span>`).join("")}
@@ -52,8 +59,11 @@ function renderDeckPreview(root, product, data) {
   }
 
   document.addEventListener("keydown", (e) => {
-    if (e.key === "ArrowRight" && idx > 0) { idx--; render(); }
-    if (e.key === "ArrowLeft" && idx < slides.length - 1) { idx++; render(); }
+    // Right-to-left page: ← is "next"; left-to-right (English): → is "next".
+    const back = PV_EN ? "ArrowLeft" : "ArrowRight";
+    const fwd = PV_EN ? "ArrowRight" : "ArrowLeft";
+    if (e.key === back && idx > 0) { idx--; render(); }
+    if (e.key === fwd && idx < slides.length - 1) { idx++; render(); }
   });
 
   render();
@@ -88,13 +98,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const backLink = document.getElementById("pv-back");
 
   if (!product || !data) {
-    content.innerHTML = `<p style="text-align:center; color:var(--grey);">התבנית לא נמצאה.</p>`;
+    content.innerHTML = `<p style="text-align:center; color:var(--grey);">${pvL("התבנית לא נמצאה.", "Template not found.")}</p>`;
     return;
   }
 
-  document.title = "תצוגה מלאה — " + product.title + " — DeskKit";
+  document.title = pvL("תצוגה מלאה — ", "Full preview — ") + product.title + " — DeskKit";
   document.getElementById("pv-title").textContent = product.title;
-  document.getElementById("pv-sub").textContent = data.type === "deck" ? "תצוגת שקופיות מלאה" : "תצוגת גיליון מלאה";
+  document.getElementById("pv-sub").textContent = data.type === "deck" ? pvL("תצוגת שקופיות מלאה", "Full slide preview") : pvL("תצוגת גיליון מלאה", "Full spreadsheet preview");
   backLink.href = "product.html?slug=" + encodeURIComponent(slug);
 
   if (data.type === "deck") {

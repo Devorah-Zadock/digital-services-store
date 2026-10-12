@@ -913,7 +913,7 @@ function bshellBsdHeroRow(d) {
   return `
     <div class="bshell-props-field">
         <div class="bshell-toggle-row">
-          <label class="bshell-props-label" style="margin:0;">${bsL("הצגת בס\"ד בראש האתר", "Show \"B'H\" (בס\"ד) at the top of the site")}</label>
+          <label class="bshell-props-label" style="margin:0;">${bsL("הצגת בס\"ד בראש האתר", "Show \"BS\"D\" (בס\"ד) at the top of the site")}</label>
           <label class="bshell-switch">
             <input type="checkbox" id="bshell-prop-bsd"${d.showBsd ? " checked" : ""}>
             <span class="bshell-switch-track"></span>
@@ -940,7 +940,7 @@ function bshellPropsHtmlForSettings() {
     <div class="bshell-settings-group">
       <div class="bshell-props-field">
         <div class="bshell-toggle-row">
-          <label class="bshell-props-label" style="margin:0;">${bsL("הצגת בס\"ד בראש האתר", "Show \"B'H\" (בס\"ד) at the top of the site")}</label>
+          <label class="bshell-props-label" style="margin:0;">${bsL("הצגת בס\"ד בראש האתר", "Show \"BS\"D\" (בס\"ד) at the top of the site")}</label>
           <label class="bshell-switch">
             <input type="checkbox" id="bshell-set-bsd"${d.showBsd ? " checked" : ""}>
             <span class="bshell-switch-track"></span>

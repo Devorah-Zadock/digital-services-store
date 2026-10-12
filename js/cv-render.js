@@ -88,8 +88,9 @@ function sharedCss(tc, rtl) {
    comment) — and top-right is the customary spot in both languages. In
    the sidebar layout that corner is always the white main column (the
    colored column sits on the left in both directions). */
-function bsdHtml(content) {
-  return content.showBsd ? `<div class="cv-bsd" style="position:absolute; top:10px; right:16px; z-index:3; font-size:11px; color:#8A8A8A;">בס"ד</div>` : "";
+// English CVs show the Latin "BS\"D" (the usual English form of בס"ד).
+function bsdHtml(content, lang) {
+  return content.showBsd ? `<div class="cv-bsd" style="position:absolute; top:10px; right:16px; z-index:3; font-size:11px; color:#8A8A8A;">${lang === "en" ? 'BS"D' : 'בס"ד'}</div>` : "";
 }
 
 function chipHtml(text, chipBg, chipColor, chipFont) {
@@ -183,7 +184,7 @@ function renderSidebar({ font, palette, content, lang, textColor }) {
     .tl-dot { position:absolute; ${rtl ? "right" : "left"}:0px; top:3px; width:10px; height:10px; border-radius:50%; box-shadow:0 0 0 3px #fff; }
   </style>
   <div class="cv-doc" dir="${dir}">
-    ${bsdHtml(content)}
+    ${bsdHtml(content, lang)}
     <div class="cv-sidebar-wrap">
       <aside class="cv-side">
         ${content.photo ? `<div class="avatar avatar-photo">${photoCircleHtml(content.photo, 78)}</div>` : `<div class="avatar">${escapeHtml(initialsOf(content.name))}</div>`}
@@ -244,7 +245,7 @@ function renderBold({ font, palette, content, lang, textColor }) {
     .cv-bold-body h2 .n { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:6px; background:#${palette.primary}; color:#fff; font-size:11px; font-weight:700; flex:none; }
   </style>
   <div class="cv-doc" dir="${dir}">
-    ${bsdHtml(content)}
+    ${bsdHtml(content, lang)}
     <div class="cv-bold-head">
       ${content.photo ? `<div style="position:absolute; z-index:2; top:28px; ${rtl ? "left" : "right"}:32px; box-shadow:0 8px 20px rgba(0,0,0,.15); border-radius:50%;">${photoCircleHtml(content.photo, 72)}</div>` : ""}
       <div class="inner">
@@ -294,7 +295,7 @@ function renderClassicMono({ font, palette, content, lang, textColor }) {
     .cv-cm-body h2 .n { font-size:11px; color:#${palette.primary}; font-weight:700; }
   </style>
   <div class="cv-doc" dir="${dir}">
-    ${bsdHtml(content)}
+    ${bsdHtml(content, lang)}
     <div class="cv-cm-head">
       ${content.photo ? `<div style="margin:0 auto 14px; box-shadow:0 4px 14px rgba(0,0,0,.12); border-radius:50%; display:inline-block;">${photoCircleHtml(content.photo, 64)}</div>` : ""}
       <h1 data-cvkey="name">${escapeHtml(content.name)}</h1>

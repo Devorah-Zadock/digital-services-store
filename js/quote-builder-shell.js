@@ -249,6 +249,22 @@ function quoteBshellWireStyleSwitcher() {
   });
   // showBsd — see quoteShowsBsd() in js/quote-render.js for how quotes
   // saved before this switch existed are handled.
+  // Document language + currency (stored only when not the default, so an
+  // existing Hebrew quote's data never changes just by opening settings).
+  const langEl = document.getElementById("qbshell-set-lang");
+  if (langEl) langEl.addEventListener("change", () => {
+    quoteBshellSnapshot();
+    if (langEl.value === "en") quoteEventState.lang = "en"; else delete quoteEventState.lang;
+    renderQuotePreviewQA();
+    quoteBshellRenderCanvas(quoteBshellReanchorSelection);
+  });
+  const curEl = document.getElementById("qbshell-set-currency");
+  if (curEl) curEl.addEventListener("change", () => {
+    quoteBshellSnapshot();
+    if (curEl.value && curEl.value !== "₪") quoteEventState.currency = curEl.value; else delete quoteEventState.currency;
+    renderQuotePreviewQA();
+    quoteBshellRenderCanvas(quoteBshellReanchorSelection);
+  });
   const bsd = document.getElementById("qbshell-set-bsd");
   if (bsd) {
     bsd.addEventListener("change", () => {
@@ -268,6 +284,10 @@ function quoteBshellSyncStyleButtons() {
   });
   const bsd = document.getElementById("qbshell-set-bsd");
   if (bsd) bsd.checked = quoteShowsBsd(quoteEventState);
+  const langEl = document.getElementById("qbshell-set-lang");
+  if (langEl) langEl.value = quoteEventState.lang === "en" ? "en" : "he";
+  const curEl = document.getElementById("qbshell-set-currency");
+  if (curEl) curEl.value = quoteEventState.currency || "₪";
 }
 
 /* ---------- Undo / Redo — scoped to quoteEventState only. The shared

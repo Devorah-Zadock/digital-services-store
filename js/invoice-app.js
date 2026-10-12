@@ -40,6 +40,8 @@ function emptyInvoiceEventState(docType) {
     recipientName: "", recipientId: "", recipientAddress: "",
     items: [{ desc: "", qty: "1", unitPrice: "" }],
     paymentMethod: "", notes: "",
+    // A document started from the English interface is an English document.
+    ...(typeof currentLang === "function" && currentLang() === "en" ? { lang: "en" } : {}),
   };
 }
 
