@@ -1,0 +1,43 @@
+/* DeskKit Automate (automate.html → /automate-app.html) — static-text
+   dictionary for js/i18n.js (loaded BEFORE it). Text built in JavaScript
+   lives in automate-app.js itself, via dkL("עברית", "English"). */
+(window.I18N_EXTRA = window.I18N_EXTRA || []).push({
+  he: {
+    au_doc_title: "DeskKit Automate — אוטומציות לעסק",
+    au_nav_home: "בית", au_nav_automate: "אוטומציות", au_nav_projects: "הפרויקטים שלי", au_nav_login: "כניסה",
+    au_loading: "טוענים…",
+    au_h1: "האוטומציות שלי", au_tagline: "תהליכים שעובדים בשבילך ברקע",
+    au_tab_today: "היום", au_tab_automations: "אוטומציות", au_tab_contacts: "לקוחות ופניות",
+    au_tab_quotes: "הצעות מחיר", au_tab_invoices: "חשבוניות", au_tab_history: "מה קרה",
+    au_needs_attention: "דורש טיפול", au_open_tasks: "משימות פתוחות",
+    au_pack_h2: "מצב טייס למכירות 🚀",
+    au_pack_p: "בוחרים סוג עסק — ואנחנו מפעילים חבילה שלמה עם ניסוחים מוכנים: פניות, הצעות מחיר, גבייה, קליטת לקוחות וסיכום בוקר.",
+    au_pack_btn: "להפעלה בלחיצה",
+    au_add_contact_title: "הוספת לקוח או פנייה", au_add_contact_sub: "פניות מטופס האתר נוספות לכאן לבד.",
+    au_demo_lead: "הדמיית פנייה מהאתר",
+    au_c_name: "שם", au_c_phone: "טלפון", au_c_email: "מייל", au_c_amount: "סכום עסקה (₪)", au_c_add: "הוספה",
+    au_quotes_intro: "שולחים הצעה ללקוח כקישור עם כפתור \"מאשר/ת\". כך המערכת יודעת אם אושרה, ותזכורות נעצרות לבד. (הצעה ששלחתם כ-PDF ידנית — המערכת לא יכולה לדעת אם נענתה.)",
+    au_quotes_sent: "הצעות שנשלחו", au_quotes_saved: "ההצעות השמורות שלך",
+    au_invoices_intro: "החשבונית עצמה לא משתנה. כאן רק עוקבים אחרי התשלום. DeskKit לא מחובר לבנק — \"שולם\" הוא סימון שלך.",
+    au_invoices_tracked: "במעקב", au_invoices_issued: "חשבוניות שהופקו",
+  },
+  en: {
+    au_doc_title: "DeskKit Automate — Business automations",
+    au_nav_home: "Home", au_nav_automate: "Automations", au_nav_projects: "My projects", au_nav_login: "Log in",
+    au_loading: "Loading…",
+    au_h1: "My automations", au_tagline: "Processes that work for you in the background",
+    au_tab_today: "Today", au_tab_automations: "Automations", au_tab_contacts: "Clients & leads",
+    au_tab_quotes: "Quotes", au_tab_invoices: "Invoices", au_tab_history: "Activity",
+    au_needs_attention: "Needs attention", au_open_tasks: "Open tasks",
+    au_pack_h2: "Sales autopilot 🚀",
+    au_pack_p: "Pick your type of business and we'll turn on a complete package with ready-made wording: leads, quotes, collections, client onboarding and a morning brief.",
+    au_pack_btn: "Turn on in one click",
+    au_add_contact_title: "Add a client or lead", au_add_contact_sub: "Enquiries from your website form are added here automatically.",
+    au_demo_lead: "Simulate a website enquiry",
+    au_c_name: "Name", au_c_phone: "Phone", au_c_email: "Email", au_c_amount: "Deal amount (₪)", au_c_add: "Add",
+    au_quotes_intro: "Send the client a quote as a link with an \"I approve\" button. That way the system knows when it's approved, and reminders stop on their own. (For a quote you sent manually as a PDF, the system can't tell whether it was answered.)",
+    au_quotes_sent: "Sent quotes", au_quotes_saved: "Your saved quotes",
+    au_invoices_intro: "The invoice itself doesn't change. This is only for tracking payment. DeskKit isn't connected to your bank, so \"Paid\" is a mark you set.",
+    au_invoices_tracked: "Tracked", au_invoices_issued: "Issued invoices",
+  },
+});

@@ -137,6 +137,8 @@ Deno.serve(async (req: Request) => {
   try {
     const body = await readJsonCapped(req) as any;
     if (!body) return jsonResponse({ error: "request too large" }, 413);
+    // Language of the text the AI writes back ("en" from the English UI; Hebrew otherwise).
+    const outLang = (body as any)?.lang === "en" ? "English" : "Hebrew";
     const command = typeof body.command === "string" ? body.command.trim().slice(0, 300) : "";
     const availableTypes = Array.isArray(body.availableTypes) ? body.availableTypes.filter((t: unknown) => typeof t === "string") : [];
     const activeTypes = Array.isArray(body.activeTypes) ? body.activeTypes.filter((t: unknown) => typeof t === "string") : [];
@@ -185,11 +187,11 @@ Deno.serve(async (req: Request) => {
             role: "system",
             content:
               "You translate a site-builder command into ONE structured operation. Respond with ONLY a JSON object. You may ONLY use one of these exact shapes:\n" +
-              '{"op": "reorder", "order": [<every type in activeTypes, in the new order>], "explanation": "<short Hebrew sentence describing the change>"}\n' +
-              '{"op": "addSection", "type": "<a type from availableTypes that is NOT already in activeTypes>", "explanation": "<short Hebrew sentence>"}\n' +
-              '{"op": "removeSection", "type": "<a type currently in activeTypes, never \\"hero\\">", "explanation": "<short Hebrew sentence>"}\n' +
-              '{"op": "setVariant", "type": "<a key from variantOptions>", "variant": "<one of that key\'s listed options>", "explanation": "<short Hebrew sentence>"}\n' +
-              '{"op": "unsupported", "explanation": "<short Hebrew sentence explaining this site does not support that request>"}\n' +
+              '{"op": "reorder", "order": [<every type in activeTypes, in the new order>], "explanation": "<short ' + outLang + ' sentence describing the change>"}\n' +
+              '{"op": "addSection", "type": "<a type from availableTypes that is NOT already in activeTypes>", "explanation": "<short ' + outLang + ' sentence>"}\n' +
+              '{"op": "removeSection", "type": "<a type currently in activeTypes, never \\"hero\\">", "explanation": "<short ' + outLang + ' sentence>"}\n' +
+              '{"op": "setVariant", "type": "<a key from variantOptions>", "variant": "<one of that key\'s listed options>", "explanation": "<short ' + outLang + ' sentence>"}\n' +
+              '{"op": "unsupported", "explanation": "<short ' + outLang + ' sentence explaining this site does not support that request>"}\n' +
               "If the command asks for a section type, variant, or action not present in availableTypes/variantOptions below (for example a section type this site simply does not have), you MUST respond with \"unsupported\" — never invent a type or variant that isn't listed, and never guess at an operation shape not listed above.\n\n" +
               `availableTypes: ${JSON.stringify(availableTypes)}\nactiveTypes (current order): ${JSON.stringify(activeTypes)}\nvariantOptions: ${JSON.stringify(variantOptions)}`,
           },

@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="he" dir="rtl">
+<html lang="he" dir="rtl" data-i18n-reload>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>הצעות מחיר לעסק שלכם — DeskKit</title>
+<title data-i18n="tools_qa_meta_title">הצעות מחיר לעסק שלכם — DeskKit</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -45,24 +45,24 @@
 <body class="dk-has-app-sidebar">
 <div id="auth-gate-overlay" class="auth-gate-overlay">
   <div class="auth-gate-spinner"></div>
-  <p style="color:var(--grey); font-size:14px; margin:0;">בודקים חיבור…</p>
+  <p style="color:var(--grey); font-size:14px; margin:0;" data-i18n="tools_auth_checking">בודקים חיבור…</p>
 </div>
 <header class="site no-print">
   <nav class="nav">
     <a href="index.html" class="brand"><span class="brand-badge"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path class="bm-doc" d="M7,4 H14 L18,8 V20 H7 Z"/><path class="bm-fold" d="M14,4 L14,8 L18,8 Z"/><path class="bm-spark" d="M15,14.3 C15.3,16 16,16.7 17.7,17 C16,17.3 15.3,18 15,19.7 C14.7,18 14,17.3 12.3,17 C14,16.7 14.7,16 15,14.3 Z"/></svg></span><span class="brand-text"><span class="brand-desk">Desk</span><span class="brand-kit">Kit</span></span></a>
     <div class="nav-links">
-      <a href="index.html">בית</a>
-      <a href="products.html?type=cv">קורות חיים</a>
-      <a href="sites.html">בניית אתר</a>
-      <a href="quote-app.html" class="active">הצעות מחיר</a>
-      <a href="invoice-app.html">חשבוניות</a>
-      <a href="products.html?type=deck">מצגות</a>
-      <a href="products.html?type=xlsx">גליונות</a>
-      <a href="about.html">אודות</a>
-      <a href="contact.html">צור קשר</a>
+      <a href="index.html" data-i18n="nav_home">בית</a>
+      <a href="products.html?type=cv" data-i18n="nav_cv">קורות חיים</a>
+      <a href="sites.html" data-i18n="nav_sites">בניית אתר</a>
+      <a href="quote-app.html" class="active" data-i18n="nav_quotes">הצעות מחיר</a>
+      <a href="invoice-app.html" data-i18n="nav_invoices">חשבוניות</a>
+      <a href="products.html?type=deck" data-i18n="nav_decks">מצגות</a>
+      <a href="products.html?type=xlsx" data-i18n="nav_xlsx">גליונות</a>
+      <a href="about.html" data-i18n="nav_about">אודות</a>
+      <a href="contact.html" data-i18n="nav_contact">צור קשר</a>
     </div>
     <div class="nav-end-group">
-      <a href="#" id="nav-login-link" class="nav-login nav-login-pending">כניסה</a>
+      <a href="#" id="nav-login-link" class="nav-login nav-login-pending" data-i18n="nav_login">כניסה</a>
     </div>
     <button class="burger" aria-label="תפריט">☰</button>
   </nav>
@@ -75,8 +75,8 @@
 <div id="qa-catalog" style="display:none;">
   <section class="builder-top no-print">
     <div class="container">
-      <h1 style="font-size:26px; margin:6px 0 4px;">הצעות מחיר לעסק שלכם</h1>
-      <p style="color:var(--grey); font-size:14px; margin:0;">בוחרים עיצוב, ממלאים פרטים ורואים תצוגה חיה — חינם לגמרי.</p>
+      <h1 style="font-size:26px; margin:6px 0 4px;" data-i18n="tools_qa_catalog_h">הצעות מחיר לעסק שלכם</h1>
+      <p style="color:var(--grey); font-size:14px; margin:0;" data-i18n="tools_qa_catalog_lead">בוחרים עיצוב, ממלאים פרטים ורואים תצוגה חיה — חינם לגמרי.</p>
     </div>
   </section>
   <section class="no-print">
@@ -84,7 +84,7 @@
       <div class="tpl-search-row">
         <div class="tpl-search-wrap">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-          <input type="search" id="qa-tpl-search" class="tpl-search" placeholder="חיפוש עיצוב לפי שם...">
+          <input type="search" id="qa-tpl-search" class="tpl-search" placeholder="חיפוש עיצוב לפי שם..." data-i18n-placeholder="tools_qa_search_ph">
         </div>
       </div>
       <div class="tabs" id="qa-tpl-tabs"></div>
@@ -98,41 +98,41 @@
   <section class="builder-top no-print">
     <div class="container qa-topbar">
       <div>
-        <h2 style="font-size:26px; margin:6px 0 4px;">פרטי העסק שלכם</h2>
-        <p style="color:var(--grey); font-size:14px; margin:0;">ממלאים פעם אחת — הפרטים האלה יופיעו אוטומטית בכל הצעת מחיר.</p>
+        <h2 style="font-size:26px; margin:6px 0 4px;" data-i18n="tools_profile_h">פרטי העסק שלכם</h2>
+        <p style="color:var(--grey); font-size:14px; margin:0;" data-i18n="tools_qa_profile_lead">ממלאים פעם אחת — הפרטים האלה יופיעו אוטומטית בכל הצעת מחיר.</p>
       </div>
       <div class="qa-account">
-        <a href="index.html">← לעמוד הבית</a>
+        <a href="index.html" data-i18n="tools_back_home">← לעמוד הבית</a>
       </div>
     </div>
   </section>
   <div class="container" style="max-width:520px; padding-bottom:60px;">
     <form id="qa-profile-form" class="builder-form">
-      <div class="field"><label>שם העסק</label><input type="text" id="pf-businessName" required></div>
-      <div class="field"><label>שורת תיאור 1</label><input type="text" id="pf-tagline1"></div>
-      <div class="field"><label>שורת תיאור 2</label><input type="text" id="pf-tagline2"></div>
-      <div class="field"><label>אימייל להצגה בהצעת המחיר</label><input type="text" id="pf-email" dir="ltr"></div>
-      <div class="field"><label>מספר עוסק / ת.ז</label><input type="text" id="pf-idNumber"></div>
-      <div class="field"><label>טלפון</label><input type="text" id="pf-phone" dir="ltr"></div>
-      <div class="field"><label>פקס (אופציונלי)</label><input type="text" id="pf-fax" dir="ltr"></div>
-      <div class="field"><label>שם החותם</label><input type="text" id="pf-signerName"></div>
-      <div class="field"><label>אחוז מע"מ (לחישוב אוטומטי)</label><input type="text" id="pf-vatRate" dir="ltr" style="max-width:100px;"></div>
+      <div class="field"><label data-i18n="tools_pf_business_name">שם העסק</label><input type="text" id="pf-businessName" required></div>
+      <div class="field"><label data-i18n="tools_qa_pf_tagline1">שורת תיאור 1</label><input type="text" id="pf-tagline1"></div>
+      <div class="field"><label data-i18n="tools_qa_pf_tagline2">שורת תיאור 2</label><input type="text" id="pf-tagline2"></div>
+      <div class="field"><label data-i18n="tools_qa_pf_email">אימייל להצגה בהצעת המחיר</label><input type="text" id="pf-email" dir="ltr"></div>
+      <div class="field"><label data-i18n="tools_qa_pf_id">מספר עוסק / ת.ז</label><input type="text" id="pf-idNumber"></div>
+      <div class="field"><label data-i18n="tools_pf_phone">טלפון</label><input type="text" id="pf-phone" dir="ltr"></div>
+      <div class="field"><label data-i18n="tools_qa_pf_fax">פקס (אופציונלי)</label><input type="text" id="pf-fax" dir="ltr"></div>
+      <div class="field"><label data-i18n="tools_qa_pf_signer">שם החותם</label><input type="text" id="pf-signerName"></div>
+      <div class="field"><label data-i18n="tools_pf_vat_rate">אחוז מע"מ (לחישוב אוטומטי)</label><input type="text" id="pf-vatRate" dir="ltr" style="max-width:100px;"></div>
 
       <div class="field">
-        <label>לוגו</label>
+        <label data-i18n="tools_pf_logo">לוגו</label>
         <div class="photo-row">
           <div class="photo-preview" id="pf-logo-preview"><span>🖼</span></div>
           <div class="photo-actions">
-            <label for="pf-logo-file" class="btn-mini photo-upload-btn">העלאת לוגו</label>
+            <label for="pf-logo-file" class="btn-mini photo-upload-btn" data-i18n="tools_pf_logo_upload">העלאת לוגו</label>
             <input type="file" id="pf-logo-file" accept="image/*" style="display:none;">
-            <button type="button" class="photo-remove" id="pf-logo-remove" style="display:none;">הסרה</button>
+            <button type="button" class="photo-remove" id="pf-logo-remove" style="display:none;" data-i18n="tools_remove">הסרה</button>
           </div>
         </div>
-        <p style="font-size:12px; color:var(--grey); margin:6px 0 0;">קובץ עד 4MB. הלוגו יופיע בראש כל הצעת מחיר.</p>
+        <p style="font-size:12px; color:var(--grey); margin:6px 0 0;" data-i18n="tools_qa_pf_logo_hint">קובץ עד 4MB. הלוגו יופיע בראש כל הצעת מחיר.</p>
       </div>
 
       <div class="qa-err" id="qa-profile-err"></div>
-      <button type="submit" class="btn btn-gold" id="qa-profile-submit" style="width:100%; margin-top:8px;">שמירת פרטי העסק</button>
+      <button type="submit" class="btn btn-gold" id="qa-profile-submit" style="width:100%; margin-top:8px;" data-i18n="tools_qa_pf_submit">שמירת פרטי העסק</button>
     </form>
   </div>
 </div>
@@ -142,16 +142,16 @@
      empty Builder-Shell -- js/quote-ai-generate.js owns this screen. -->
 <section class="no-print" id="qa-intro" style="display:none;">
   <div class="dk-form-intro">
-    <h1>מה אתם צריכים להכין?</h1>
-    <p class="lead">בחרו עיצוב, ותתחילו ליצור את הצעת המחיר ישירות עם DeskKit.</p>
-    <p class="qa-intro-style-label">איזה עיצוב?</p>
+    <h1 data-i18n="tools_qa_intro_h">מה אתם צריכים להכין?</h1>
+    <p class="lead" data-i18n="tools_qa_intro_lead">בחרו עיצוב, ותתחילו ליצור את הצעת המחיר ישירות עם DeskKit.</p>
+    <p class="qa-intro-style-label" data-i18n="tools_qa_intro_style">איזה עיצוב?</p>
     <div class="dk-style-grid" id="qa-intro-style-row"></div>
-    <button type="button" class="dk-btn dk-btn-primary dk-btn-lg" id="qa-intro-start-btn">התחילו ליצור</button>
+    <button type="button" class="dk-btn dk-btn-primary dk-btn-lg" id="qa-intro-start-btn" data-i18n="tools_intro_start">התחילו ליצור</button>
 
-    <button type="button" class="dk-intro-ai-toggle" id="qa-intro-ai-toggle">או, תנו ל-AI לנסח עבורכם טיוטה ראשונית ✨</button>
+    <button type="button" class="dk-intro-ai-toggle" id="qa-intro-ai-toggle" data-i18n="tools_qa_intro_ai_toggle">או, תנו ל-AI לנסח עבורכם טיוטה ראשונית ✨</button>
     <div class="dk-intro-ai-panel" id="qa-intro-ai-panel" hidden>
-      <textarea id="qa-intro-input" class="dk-form-intro-textarea" rows="3" placeholder="לדוגמה: הצעת מחיר לעיצוב לוגו לאור כהן, 3,500 ש״ח, כולל 2 סבבי תיקונים"></textarea>
-      <button type="button" class="dk-btn dk-btn-ghost dk-btn-lg" id="qa-intro-cta">✨ צור טיוטה עם AI</button>
+      <textarea id="qa-intro-input" class="dk-form-intro-textarea" rows="3" placeholder="לדוגמה: הצעת מחיר לעיצוב לוגו לאור כהן, 3,500 ש״ח, כולל 2 סבבי תיקונים" data-i18n-placeholder="tools_qa_intro_ai_ph"></textarea>
+      <button type="button" class="dk-btn dk-btn-ghost dk-btn-lg" id="qa-intro-cta" data-i18n="tools_ai_draft_cta">✨ צור טיוטה עם AI</button>
       <div id="qa-intro-note" class="ai-limit-note"></div>
     </div>
   </div>
@@ -162,20 +162,20 @@
   <section class="builder-top no-print">
     <div class="container qa-topbar">
       <div>
-        <h2 style="font-size:26px; margin:6px 0 4px;">הצעת מחיר חדשה</h2>
-        <p style="color:var(--grey); font-size:14px; margin:0;">פרטי העסק כבר מולאו — משלימים את פרטי האירוע ורואים תצוגה חיה.</p>
+        <h2 style="font-size:26px; margin:6px 0 4px;" data-i18n="tools_qa_new_h">הצעת מחיר חדשה</h2>
+        <p style="color:var(--grey); font-size:14px; margin:0;" data-i18n="tools_qa_new_lead">פרטי העסק כבר מולאו — משלימים את פרטי האירוע ורואים תצוגה חיה.</p>
       </div>
       <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
         <div class="qa-account">
-          <a href="index.html">← לעמוד הבית</a>
+          <a href="index.html" data-i18n="tools_back_home">← לעמוד הבית</a>
           <span>·</span>
-          <a href="quote-app.html">שינוי עיצוב</a>
+          <a href="quote-app.html" data-i18n="tools_qa_change_design">שינוי עיצוב</a>
           <span>·</span>
-          <button type="button" id="qa-edit-profile">עריכת פרטי העסק</button>
+          <button type="button" id="qa-edit-profile" data-i18n="tools_edit_profile">עריכת פרטי העסק</button>
         </div>
         <div class="builder-save-ctrl" id="quote-save-ctrl">
           <span class="builder-save-status" id="quote-save-status"></span>
-          <button type="button" class="btn btn-teal builder-save-btn" id="quote-save-btn">שמירה</button>
+          <button type="button" class="btn btn-teal builder-save-btn" id="quote-save-btn" data-i18n="tools_save">שמירה</button>
         </div>
       </div>
     </div>
@@ -183,32 +183,32 @@
 
   <div class="container builder-wrap">
     <aside class="builder-form no-print">
-      <div class="field"><label>תאריך היום</label><input id="qf-today" type="text"></div>
-      <div class="field"><label>לכבוד (שם הנמען)</label><input id="qf-recipient" type="text"></div>
-      <div class="field"><label>שם האירוע / השירות</label><input id="qf-eventName" type="text"></div>
+      <div class="field"><label data-i18n="tools_qa_f_today">תאריך היום</label><input id="qf-today" type="text"></div>
+      <div class="field"><label data-i18n="tools_qa_f_recipient">לכבוד (שם הנמען)</label><input id="qf-recipient" type="text"></div>
+      <div class="field"><label data-i18n="tools_qa_f_event">שם האירוע / השירות</label><input id="qf-eventName" type="text"></div>
 
       <div class="jobs-head">
-        <label>תאריכים</label>
-        <button type="button" class="btn-mini" id="add-date">+ הוספת תאריך</button>
+        <label data-i18n="tools_qa_f_dates">תאריכים</label>
+        <button type="button" class="btn-mini" id="add-date" data-i18n="tools_qa_f_add_date">+ הוספת תאריך</button>
       </div>
       <div id="dates-list"></div>
 
-      <div class="field"><label>תיאור</label><textarea id="qf-description" rows="3"></textarea></div>
-      <div class="field"><label>מחיר (₪)</label><input id="qf-price" type="text"></div>
+      <div class="field"><label data-i18n="tools_qa_f_desc">תיאור</label><textarea id="qf-description" rows="3"></textarea></div>
+      <div class="field"><label data-i18n="tools_qa_f_price">מחיר (₪)</label><input id="qf-price" type="text"></div>
       <div class="field">
-        <label>הערת מע"מ</label>
+        <label data-i18n="tools_qa_f_vatnote">הערת מע"מ</label>
         <input id="qf-vatNote" type="text">
-        <p style="font-size:12px; color:var(--grey); margin:6px 0 0;">אם משאירים ריק, יוצג מחיר כולל מע"מ אוטומטית לפי האחוז שהוגדר בפרטי העסק.</p>
+        <p style="font-size:12px; color:var(--grey); margin:6px 0 0;" data-i18n="tools_qa_f_vatnote_hint">אם משאירים ריק, יוצג מחיר כולל מע"מ אוטומטית לפי האחוז שהוגדר בפרטי העסק.</p>
       </div>
-      <div class="field"><label>הערה נוספת</label><input id="qf-policeNote" type="text"></div>
+      <div class="field"><label data-i18n="tools_qa_f_extra_note">הערה נוספת</label><input id="qf-policeNote" type="text"></div>
     </aside>
 
     <main class="builder-preview">
       <div class="preview-sticky">
         <div id="quote-preview"></div>
         <div class="export-panel no-print">
-          <p style="margin:0 0 12px; font-size:14px; font-weight:600; color:var(--ink-dark);">הורדת PDF</p>
-          <button type="button" class="btn btn-gold" id="quote-download-btn">הורדת PDF</button>
+          <p style="margin:0 0 12px; font-size:14px; font-weight:600; color:var(--ink-dark);" data-i18n="tools_download_pdf">הורדת PDF</p>
+          <button type="button" class="btn btn-gold" id="quote-download-btn" data-i18n="tools_download_pdf">הורדת PDF</button>
         </div>
       </div>
     </main>
@@ -217,27 +217,27 @@
 
 <div id="qbshell-root" class="bshell no-print">
   <div class="bshell-top">
-    <span class="bshell-top-name">הצעת מחיר</span>
+    <span class="bshell-top-name" data-i18n="tools_qa_doc_name">הצעת מחיר</span>
     <span class="bshell-top-status" id="qbshell-top-status"></span>
     <div class="bshell-top-spacer"></div>
-    <button type="button" class="bshell-top-btn" id="qbshell-undo-btn" disabled title="בטל (Ctrl+Z)">↶ בטל</button>
-    <button type="button" class="bshell-top-btn" id="qbshell-redo-btn" disabled title="בצע שוב (Ctrl+Shift+Z)">↷ חזור</button>
-    <button type="button" class="bshell-top-btn" id="qbshell-download-btn">הורדת PDF</button>
-    <button type="button" class="bshell-top-btn bshell-top-btn-primary" id="qbshell-save-btn">שמירה</button>
-    <a href="index.html" class="bshell-exit-link" id="qbshell-exit-link">יציאה</a>
+    <button type="button" class="bshell-top-btn" id="qbshell-undo-btn" disabled title="בטל (Ctrl+Z)" data-i18n-title="tools_undo_title" data-i18n="tools_undo">↶ בטל</button>
+    <button type="button" class="bshell-top-btn" id="qbshell-redo-btn" disabled title="בצע שוב (Ctrl+Shift+Z)" data-i18n-title="tools_redo_title" data-i18n="tools_redo">↷ חזור</button>
+    <button type="button" class="bshell-top-btn" id="qbshell-download-btn" data-i18n="tools_download_pdf">הורדת PDF</button>
+    <button type="button" class="bshell-top-btn bshell-top-btn-primary" id="qbshell-save-btn" data-i18n="tools_save">שמירה</button>
+    <a href="index.html" class="bshell-exit-link" id="qbshell-exit-link" data-i18n="tools_exit">יציאה</a>
   </div>
 
   <div class="bshell-mobile-tabs no-print" style="padding:8px 14px; background:var(--surface); border-bottom:1px solid var(--border);">
-    <button type="button" class="bshell-top-btn" id="qbshell-mobile-hier-btn" style="flex:1;">מבנה</button>
-    <button type="button" class="bshell-top-btn" id="qbshell-mobile-props-btn" style="flex:1;">עיצוב</button>
+    <button type="button" class="bshell-top-btn" id="qbshell-mobile-hier-btn" style="flex:1;" data-i18n="tools_mobile_structure">מבנה</button>
+    <button type="button" class="bshell-top-btn" id="qbshell-mobile-props-btn" style="flex:1;" data-i18n="tools_mobile_design">עיצוב</button>
   </div>
 
   <div class="bshell-body">
     <aside class="bshell-hier" id="qbshell-hier">
-      <div class="bshell-hier-title">מבנה הצעת המחיר</div>
+      <div class="bshell-hier-title" data-i18n="tools_qa_hier_title">מבנה הצעת המחיר</div>
       <button type="button" class="bshell-settings-btn" id="qbshell-settings-btn">
         <span class="bshell-settings-icon">⚙</span>
-        <span>עיצוב ופרטי העסק</span>
+        <span data-i18n="tools_qa_settings">עיצוב ופרטי העסק</span>
       </button>
       <div id="qbshell-hier-list"></div>
     </aside>
@@ -245,46 +245,46 @@
     <div class="bshell-canvas-wrap">
       <div class="bshell-canvas-frame-holder">
         <div class="bshell-canvas-shadow">
-          <iframe class="bshell-canvas-iframe" id="qbshell-canvas-iframe" title="עריכת הצעת המחיר"></iframe>
+          <iframe class="bshell-canvas-iframe" id="qbshell-canvas-iframe" title="עריכת הצעת המחיר" data-i18n-title="tools_qa_canvas_title"></iframe>
         </div>
       </div>
     </div>
 
     <aside class="bshell-props" id="qbshell-props">
-      <div class="bshell-props-empty" id="qbshell-props-empty">בחרו שדה בהצעת המחיר כדי לערוך אותו</div>
+      <div class="bshell-props-empty" id="qbshell-props-empty" data-i18n="tools_qa_props_empty">בחרו שדה בהצעת המחיר כדי לערוך אותו</div>
       <div id="qbshell-props-dynamic" style="display:none;"></div>
       <div id="qbshell-props-settings" style="display:none;">
-        <span class="bshell-props-kind">עיצוב ופרטי העסק</span>
+        <span class="bshell-props-kind" data-i18n="tools_qa_settings">עיצוב ופרטי העסק</span>
         <div class="bshell-settings-group">
-          <div class="bshell-settings-group-title">✨ יצירת טיוטה אוטומטית</div>
-          <p class="bshell-settings-field-hint">תארו בקצרה את השירות או העבודה, ו-AI ימלא עבורכם טיוטה ראשונית של ההצעה — אפשר לערוך הכל אחר כך.</p>
-          <textarea id="qbshell-ai-draft-input" class="bshell-ai-draft-textarea" rows="3" placeholder="לדוגמה: אספקת והגשת קייטרינג לחתונה ל-150 אורחים, כולל מנה ראשונה, עיקרית וקינוח"></textarea>
-          <button type="button" class="btn-mini ai-improve-btn" id="qbshell-ai-draft-btn">✨ צור טיוטה אוטומטית</button>
+          <div class="bshell-settings-group-title" data-i18n="tools_ai_draft_title">✨ יצירת טיוטה אוטומטית</div>
+          <p class="bshell-settings-field-hint" data-i18n="tools_qa_ai_hint">תארו בקצרה את השירות או העבודה, ו-AI ימלא עבורכם טיוטה ראשונית של ההצעה — אפשר לערוך הכל אחר כך.</p>
+          <textarea id="qbshell-ai-draft-input" class="bshell-ai-draft-textarea" rows="3" placeholder="לדוגמה: אספקת והגשת קייטרינג לחתונה ל-150 אורחים, כולל מנה ראשונה, עיקרית וקינוח" data-i18n-placeholder="tools_qa_ai_ph"></textarea>
+          <button type="button" class="btn-mini ai-improve-btn" id="qbshell-ai-draft-btn" data-i18n="tools_ai_draft_btn">✨ צור טיוטה אוטומטית</button>
           <div id="qbshell-ai-draft-note" class="ai-limit-note"></div>
         </div>
         <div class="bshell-settings-group">
-          <div class="bshell-settings-group-title">סגנון עיצוב</div>
+          <div class="bshell-settings-group-title" data-i18n="tools_qa_style_title">סגנון עיצוב</div>
           <div class="bshell-align-row" id="qbshell-style-row">
-            <button type="button" class="bshell-align-btn" data-q-style="classic">קלאסי</button>
-            <button type="button" class="bshell-align-btn" data-q-style="modern">מודרני</button>
-            <button type="button" class="bshell-align-btn" data-q-style="elegant">אלגנטי</button>
-            <button type="button" class="bshell-align-btn" data-q-style="noir">יוקרתי כהה</button>
+            <button type="button" class="bshell-align-btn" data-q-style="classic" data-i18n="tools_qa_style_classic">קלאסי</button>
+            <button type="button" class="bshell-align-btn" data-q-style="modern" data-i18n="tools_qa_style_modern">מודרני</button>
+            <button type="button" class="bshell-align-btn" data-q-style="elegant" data-i18n="tools_qa_style_elegant">אלגנטי</button>
+            <button type="button" class="bshell-align-btn" data-q-style="noir" data-i18n="tools_qa_style_noir">יוקרתי כהה</button>
           </div>
-          <p class="bshell-settings-field-hint">משנה רק את העיצוב — התוכן שלכם נשאר כמו שהוא.</p>
+          <p class="bshell-settings-field-hint" data-i18n="tools_qa_style_hint">משנה רק את העיצוב — התוכן שלכם נשאר כמו שהוא.</p>
         </div>
         <div class="bshell-settings-group">
           <div class="bshell-toggle-row">
-            <label class="bshell-props-label" for="qbshell-set-bsd" style="margin:0;">הצגת בס"ד בראש הדף</label>
+            <label class="bshell-props-label" for="qbshell-set-bsd" style="margin:0;" data-i18n="tools_bsd_label">הצגת בס"ד בראש הדף</label>
             <label class="bshell-switch">
               <input type="checkbox" id="qbshell-set-bsd">
               <span class="bshell-switch-track"></span>
               <span class="bshell-switch-thumb"></span>
             </label>
           </div>
-          <p class="bshell-settings-field-hint">מופיע קטן בפינה הימנית העליונה של הצעת המחיר.</p>
+          <p class="bshell-settings-field-hint" data-i18n="tools_qa_bsd_hint">מופיע קטן בפינה הימנית העליונה של הצעת המחיר.</p>
         </div>
         <div class="bshell-settings-group" id="qbshell-settings-group-profile">
-          <div class="bshell-settings-group-title">פרטי העסק (משותפים לכל הצעות המחיר)</div>
+          <div class="bshell-settings-group-title" data-i18n="tools_qa_profile_group">פרטי העסק (משותפים לכל הצעות המחיר)</div>
         </div>
       </div>
     </aside>
@@ -296,32 +296,32 @@
     <div class="footer-grid">
       <div>
         <h4>DeskKit</h4>
-        <p style="font-size:14px; max-width:320px;">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות, אתרים ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
+        <p style="font-size:14px; max-width:320px;" data-i18n="tools_footer_blurb_full">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות, אתרים ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
       </div>
       <div>
-        <h4>ניווט</h4>
+        <h4 data-i18n="footer_nav_heading">ניווט</h4>
         <ul>
-          <li><a href="builder.html">קורות חיים</a></li>
-          <li><a href="sites.html">בניית אתר</a></li>
-          <li><a href="invoice-app.html">חשבוניות</a></li>
-          <li><a href="products.html?type=deck">מצגות</a></li>
-          <li><a href="products.html?type=xlsx">גליונות</a></li>
-          <li><a href="about.html">אודות</a></li>
-          <li><a href="contact.html">צור קשר</a></li>
+          <li><a href="builder.html" data-i18n="nav_cv">קורות חיים</a></li>
+          <li><a href="sites.html" data-i18n="nav_sites">בניית אתר</a></li>
+          <li><a href="invoice-app.html" data-i18n="nav_invoices">חשבוניות</a></li>
+          <li><a href="products.html?type=deck" data-i18n="nav_decks">מצגות</a></li>
+          <li><a href="products.html?type=xlsx" data-i18n="nav_xlsx">גליונות</a></li>
+          <li><a href="about.html" data-i18n="nav_about">אודות</a></li>
+          <li><a href="contact.html" data-i18n="nav_contact">צור קשר</a></li>
         </ul>
       </div>
       <div>
-        <h4>מידע</h4>
+        <h4 data-i18n="footer_info_heading">מידע</h4>
         <ul>
-          <li><a href="guides.html">מדריכים</a></li>
-          <li><a href="faq.html">שאלות נפוצות</a></li>
-          <li><a href="terms.html">מדיניות</a></li>
-          <li><a href="security.html">אבטחת מידע</a></li>
-          <li><a href="accessibility.html">נגישות</a></li>
+          <li><a href="guides.html" data-i18n="footer_guides">מדריכים</a></li>
+          <li><a href="faq.html" data-i18n="footer_faq">שאלות נפוצות</a></li>
+          <li><a href="terms.html" data-i18n="footer_terms">מדיניות</a></li>
+          <li><a href="security.html" data-i18n="footer_security">אבטחת מידע</a></li>
+          <li><a href="accessibility.html" data-i18n="footer_accessibility">נגישות</a></li>
         </ul>
       </div>
       <div>
-        <h4>צור קשר</h4>
+        <h4 data-i18n="nav_contact">צור קשר</h4>
         <ul>
           <li><a class="dk-email" href="contact.html">צרו קשר</a></li>
         </ul>
@@ -332,13 +332,15 @@
       <p class="footer-identity-owner" data-i18n="footer_identity_owner">נוצר ומופעל באופן עצמאי על ידי דבורה צדוק &middot; עוסק פטור</p>
       <p class="footer-identity-links"><a href="contact.html" data-i18n="nav_contact">צור קשר</a> &middot; <a href="terms.html#privacy" data-i18n="footer_privacy_link">מדיניות פרטיות</a> &middot; <a href="terms.html" data-i18n="footer_terms_link">תנאי שימוש</a></p>
     </div>
-    <div class="footer-bottom">© 2026 DeskKit. כל הזכויות שמורות.</div>
+    <div class="footer-bottom" data-i18n="footer_copyright">© 2026 DeskKit. כל הזכויות שמורות.</div>
   </div>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/quote-render.js?v=17"></script>
+<script src="js/i18n-tools.js?v=2"></script>
+<script src="js/i18n.js?v=36"></script>
+<script src="js/quote-render.js?v=18"></script>
 <script src="js/supabase-config.js?v=2"></script>
 <script src="js/require-auth.js"></script>
 <script src="js/nav-auth.js?v=4"></script>
@@ -346,17 +348,17 @@
 <script src="js/create-chooser.js?v=4"></script>
 <script src="js/mobile-nav.js?v=2"></script>
 <script src="js/app-sidebar.js?v=6"></script>
-<script src="js/dk-shell-breadcrumb.js?v=1"></script>
+<script src="js/dk-shell-breadcrumb.js?v=2"></script>
 <script src="js/domain-guide.js?v=5"></script>
 <script src="js/upsell-banner.js?v=2"></script>
 <script src="js/main.js?v=8"></script>
 <script src="js/captcha.js?v=3"></script>
-<script src="js/widgets.js?v=18"></script>
+<script src="js/widgets.js?v=19"></script>
 <script src="js/usage-log.js?v=1"></script>
 <script src="js/quote-cloud-save.js?v=2"></script>
-<script src="js/quote-app.js?v=15"></script>
-<script src="js/quote-ai-generate.js?v=3"></script>
-<script src="js/quote-builder-shell.js?v=13"></script>
+<script src="js/quote-app.js?v=17"></script>
+<script src="js/quote-ai-generate.js?v=4"></script>
+<script src="js/quote-builder-shell.js?v=14"></script>
 <script src="js/contact-email.js?v=1"></script>
 </body>
 </html>

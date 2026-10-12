@@ -283,7 +283,7 @@ function genericServicesVariantGrid(d, pal, dd) {
   return `
     <section style="padding:56px 24px;">
       <div style="max-width:1000px; margin:0 auto;">
-        <div style="text-align:center; margin-bottom:32px;"><h2 style="font-size:28px; font-weight:800; margin:0;">${heading(d, "services", "השירותים שלנו")}</h2></div>
+        <div style="text-align:center; margin-bottom:32px;"><h2 style="font-size:28px; font-weight:800; margin:0;">${heading(d, "services", siteTr("השירותים שלנו", "Our Services"))}</h2></div>
         <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:20px;">
           ${dd._services.map((s) => `
             <div style="border:1.5px solid #EEE; border-radius:16px; padding:24px; text-align:center;">

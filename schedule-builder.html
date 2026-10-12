@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="he" dir="rtl">
+<html lang="he" dir="rtl" data-i18n-reload>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>בונה מערכת שעות — DeskKit</title>
+<title data-i18n="tools_sch_meta_title">בונה מערכת שעות — DeskKit</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -38,25 +38,25 @@
 <body>
 <div id="auth-gate-overlay" class="auth-gate-overlay">
   <div class="auth-gate-spinner"></div>
-  <p style="color:var(--grey); font-size:14px; margin:0;">בודקים חיבור…</p>
+  <p style="color:var(--grey); font-size:14px; margin:0;" data-i18n="tools_auth_checking">בודקים חיבור…</p>
 </div>
 
 <header class="site no-print">
   <nav class="nav">
     <a href="index.html" class="brand"><span class="brand-badge"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path class="bm-doc" d="M7,4 H14 L18,8 V20 H7 Z"/><path class="bm-fold" d="M14,4 L14,8 L18,8 Z"/><path class="bm-spark" d="M15,14.3 C15.3,16 16,16.7 17.7,17 C16,17.3 15.3,18 15,19.7 C14.7,18 14,17.3 12.3,17 C14,16.7 14.7,16 15,14.3 Z"/></svg></span><span class="brand-text"><span class="brand-desk">Desk</span><span class="brand-kit">Kit</span></span></a>
     <div class="nav-links">
-      <a href="index.html">בית</a>
-      <a href="products.html?type=cv">קורות חיים</a>
-      <a href="sites.html">בניית אתר</a>
-      <a href="quote-app.html">הצעות מחיר</a>
-      <a href="invoice-app.html">חשבוניות</a>
-      <a href="products.html?type=deck">מצגות</a>
-      <a href="products.html?type=xlsx">גליונות</a>
-      <a href="about.html">אודות</a>
-      <a href="contact.html">צור קשר</a>
+      <a href="index.html" data-i18n="nav_home">בית</a>
+      <a href="products.html?type=cv" data-i18n="nav_cv">קורות חיים</a>
+      <a href="sites.html" data-i18n="nav_sites">בניית אתר</a>
+      <a href="quote-app.html" data-i18n="nav_quotes">הצעות מחיר</a>
+      <a href="invoice-app.html" data-i18n="nav_invoices">חשבוניות</a>
+      <a href="products.html?type=deck" data-i18n="nav_decks">מצגות</a>
+      <a href="products.html?type=xlsx" data-i18n="nav_xlsx">גליונות</a>
+      <a href="about.html" data-i18n="nav_about">אודות</a>
+      <a href="contact.html" data-i18n="nav_contact">צור קשר</a>
     </div>
     <div class="nav-end-group">
-      <a href="account.html?redirect=schedule-builder.html" id="nav-login-link" class="nav-login nav-login-pending">כניסה</a>
+      <a href="account.html?redirect=schedule-builder.html" id="nav-login-link" class="nav-login nav-login-pending" data-i18n="nav_login">כניסה</a>
     </div>
     <button class="burger" aria-label="תפריט">☰</button>
   </nav>
@@ -65,55 +65,55 @@
 <section class="builder-top no-print">
   <div class="container builder-top-row">
     <div class="sched-name-wrap">
-      <div class="breadcrumb"><a href="tools.html">כלים לעסק</a> / בונה מערכת שעות · <a href="guide-school-schedule.html">איך זה עובד? מדריך קצר</a></div>
-      <h1 style="font-size:22px; margin:4px 0 10px;">בונה מערכת שעות אוטומטי</h1>
-      <input type="text" id="sched-name-input" class="sched-name-input" placeholder="שם הפרויקט (למשל: תשפ״ו סמסטר א׳)">
+      <div class="breadcrumb"><a href="tools.html" data-i18n="tools_business_tools">כלים לעסק</a> / <span data-i18n="tools_sch_crumb_self">בונה מערכת שעות</span> · <a href="guide-school-schedule.html" data-i18n="tools_sch_crumb_guide">איך זה עובד? מדריך קצר</a></div>
+      <h1 style="font-size:22px; margin:4px 0 10px;" data-i18n="tools_sch_h1">בונה מערכת שעות אוטומטי</h1>
+      <input type="text" id="sched-name-input" class="sched-name-input" placeholder="שם הפרויקט (למשל: תשפ״ו סמסטר א׳)" data-i18n-placeholder="tools_sch_name_ph">
     </div>
     <div class="builder-save-ctrl">
       <span class="builder-save-status" id="schedule-save-status"></span>
-      <button type="button" class="btn btn-teal builder-save-btn" id="schedule-save-btn">שמירה</button>
+      <button type="button" class="btn btn-teal builder-save-btn" id="schedule-save-btn" data-i18n="tools_save">שמירה</button>
     </div>
   </div>
 </section>
 
 <div class="container sched-tabs-nav no-print" role="tablist">
-  <button type="button" class="sched-tab-btn active" data-tab="settings">הגדרות</button>
-  <button type="button" class="sched-tab-btn" data-tab="subjects">מקצועות</button>
-  <button type="button" class="sched-tab-btn" data-tab="classes">כיתות</button>
-  <button type="button" class="sched-tab-btn" data-tab="teachers">מורים</button>
-  <button type="button" class="sched-tab-btn" data-tab="rooms">חדרים מיוחדים</button>
-  <button type="button" class="sched-tab-btn" data-tab="assignments">שיבוצי הוראה</button>
-  <button type="button" class="sched-tab-btn" data-tab="result">תוצאה</button>
+  <button type="button" class="sched-tab-btn active" data-tab="settings" data-i18n="tools_sch_tab_settings">הגדרות</button>
+  <button type="button" class="sched-tab-btn" data-tab="subjects" data-i18n="tools_sch_tab_subjects">מקצועות</button>
+  <button type="button" class="sched-tab-btn" data-tab="classes" data-i18n="tools_sch_tab_classes">כיתות</button>
+  <button type="button" class="sched-tab-btn" data-tab="teachers" data-i18n="tools_sch_tab_teachers">מורים</button>
+  <button type="button" class="sched-tab-btn" data-tab="rooms" data-i18n="tools_sch_tab_rooms">חדרים מיוחדים</button>
+  <button type="button" class="sched-tab-btn" data-tab="assignments" data-i18n="tools_sch_tab_assignments">שיבוצי הוראה</button>
+  <button type="button" class="sched-tab-btn" data-tab="result" data-i18n="tools_sch_tab_result">תוצאה</button>
 </div>
 
 <div class="container sched-main">
 
   <div class="sched-tab-panel active no-print" data-tab-panel="settings">
     <div class="sched-card">
-      <h3>הגדרות בית הספר</h3>
+      <h3 data-i18n="tools_sch_settings_h">הגדרות בית הספר</h3>
       <div class="field">
-        <label for="sched-days-select">ימי לימוד</label>
+        <label for="sched-days-select" data-i18n="tools_sch_days">ימי לימוד</label>
         <select id="sched-days-select">
-          <option value="5">א׳–ה׳ (5 ימים)</option>
-          <option value="6">א׳–ו׳ (6 ימים)</option>
+          <option value="5" data-i18n="tools_sch_days5">א׳–ה׳ (5 ימים)</option>
+          <option value="6" data-i18n="tools_sch_days6">א׳–ו׳ (6 ימים)</option>
         </select>
       </div>
       <div class="field">
-        <label for="sched-periods-input">שיעורים ביום</label>
+        <label for="sched-periods-input" data-i18n="tools_sch_periods">שיעורים ביום</label>
         <input type="number" id="sched-periods-input" min="1" max="12" style="max-width:120px;">
       </div>
-      <p class="sched-hint">שינוי בהגדרות אלו יאפס מערכת שעות שכבר נוצרה (השיבוצים והאילוצים שהזנתם נשארים).</p>
+      <p class="sched-hint" data-i18n="tools_sch_settings_hint">שינוי בהגדרות אלו יאפס מערכת שעות שכבר נוצרה (השיבוצים והאילוצים שהזנתם נשארים).</p>
     </div>
   </div>
 
   <div class="sched-tab-panel no-print" data-tab-panel="subjects">
     <div class="sched-card">
       <div class="sched-card-head">
-        <h3>מקצועות</h3>
-        <button type="button" class="btn-mini" id="sched-add-subject">+ הוספת מקצוע</button>
+        <h3 data-i18n="tools_sch_tab_subjects">מקצועות</h3>
+        <button type="button" class="btn-mini" id="sched-add-subject" data-i18n="tools_sch_add_subject">+ הוספת מקצוע</button>
       </div>
-      <p class="sched-hint">"מקס׳ שעות רצופות" — משאירים ריק אם אין הגבלה; ממלאים למשל 2 כדי שהמקצוע לא יופיע 3 שעות ברצף לאותה כיתה באותו יום.</p>
-      <div class="sched-col-labels sched-subject-cols"><span>צבע</span><span>שם המקצוע</span><span>חדר נדרש</span><span>מקס׳ שעות רצופות</span><span></span></div>
+      <p class="sched-hint" data-i18n="tools_sch_subjects_hint">"מקס׳ שעות רצופות" — משאירים ריק אם אין הגבלה; ממלאים למשל 2 כדי שהמקצוע לא יופיע 3 שעות ברצף לאותה כיתה באותו יום.</p>
+      <div class="sched-col-labels sched-subject-cols"><span data-i18n="tools_sch_col_color">צבע</span><span data-i18n="tools_sch_col_subject_name">שם המקצוע</span><span data-i18n="tools_sch_col_room_needed">חדר נדרש</span><span data-i18n="tools_sch_col_max_consec">מקס׳ שעות רצופות</span><span></span></div>
       <div id="sched-subjects-list"></div>
     </div>
   </div>
@@ -121,11 +121,11 @@
   <div class="sched-tab-panel no-print" data-tab-panel="classes">
     <div class="sched-card">
       <div class="sched-card-head">
-        <h3>כיתות</h3>
-        <button type="button" class="btn-mini" id="sched-add-class">+ הוספת כיתה</button>
+        <h3 data-i18n="tools_sch_tab_classes">כיתות</h3>
+        <button type="button" class="btn-mini" id="sched-add-class" data-i18n="tools_sch_add_class">+ הוספת כיתה</button>
       </div>
-      <p class="sched-hint">"עד כמה שעות ביום" — משאירים ריק אם הכיתה יכולה ללמוד כל שעות היום; ממלאים למשל 6 אם הכיתה מסיימת אחרי השיעור השישי.</p>
-      <div class="sched-col-labels sched-class-cols"><span>שם הכיתה</span><span>עד כמה שעות ביום</span><span></span></div>
+      <p class="sched-hint" data-i18n="tools_sch_classes_hint">"עד כמה שעות ביום" — משאירים ריק אם הכיתה יכולה ללמוד כל שעות היום; ממלאים למשל 6 אם הכיתה מסיימת אחרי השיעור השישי.</p>
+      <div class="sched-col-labels sched-class-cols"><span data-i18n="tools_sch_col_class_name">שם הכיתה</span><span data-i18n="tools_sch_col_max_daily">עד כמה שעות ביום</span><span></span></div>
       <div id="sched-classes-list"></div>
     </div>
   </div>
@@ -133,8 +133,8 @@
   <div class="sched-tab-panel no-print" data-tab-panel="teachers">
     <div class="sched-card">
       <div class="sched-card-head">
-        <h3>מורים</h3>
-        <button type="button" class="btn-mini" id="sched-add-teacher">+ הוספת מורה</button>
+        <h3 data-i18n="tools_sch_tab_teachers">מורים</h3>
+        <button type="button" class="btn-mini" id="sched-add-teacher" data-i18n="tools_sch_add_teacher">+ הוספת מורה</button>
       </div>
       <div id="sched-teachers-list"></div>
     </div>
@@ -143,11 +143,11 @@
   <div class="sched-tab-panel no-print" data-tab-panel="rooms">
     <div class="sched-card">
       <div class="sched-card-head">
-        <h3>חדרים מיוחדים</h3>
-        <button type="button" class="btn-mini" id="sched-add-room">+ הוספת חדר</button>
+        <h3 data-i18n="tools_sch_tab_rooms">חדרים מיוחדים</h3>
+        <button type="button" class="btn-mini" id="sched-add-room" data-i18n="tools_sch_add_room">+ הוספת חדר</button>
       </div>
-      <p class="sched-hint">רק חדרים עם מספר מוגבל (מעבדת מחשבים, אולם ספורט וכד׳) — כיתת אם רגילה לא צריכה חדר כאן.</p>
-      <div class="sched-col-labels sched-room-cols"><span>שם החדר</span><span>כמות זהה</span><span></span></div>
+      <p class="sched-hint" data-i18n="tools_sch_rooms_hint">רק חדרים עם מספר מוגבל (מעבדת מחשבים, אולם ספורט וכד׳) — כיתת אם רגילה לא צריכה חדר כאן.</p>
+      <div class="sched-col-labels sched-room-cols"><span data-i18n="tools_sch_col_room_name">שם החדר</span><span data-i18n="tools_sch_col_room_count">כמות זהה</span><span></span></div>
       <div id="sched-rooms-list"></div>
     </div>
   </div>
@@ -155,11 +155,11 @@
   <div class="sched-tab-panel no-print" data-tab-panel="assignments">
     <div class="sched-card">
       <div class="sched-card-head">
-        <h3>שיבוצי הוראה</h3>
-        <button type="button" class="btn-mini" id="sched-add-assignment">+ הוספת שיבוץ</button>
+        <h3 data-i18n="tools_sch_tab_assignments">שיבוצי הוראה</h3>
+        <button type="button" class="btn-mini" id="sched-add-assignment" data-i18n="tools_sch_add_assignment">+ הוספת שיבוץ</button>
       </div>
-      <p class="sched-hint">מי מלמד איזה מקצוע באיזו כיתה, וכמה שעות בשבוע.</p>
-      <div class="sched-col-labels sched-assign-cols"><span>כיתה</span><span>מקצוע</span><span>מורה</span><span>שעות/שבוע</span><span></span></div>
+      <p class="sched-hint" data-i18n="tools_sch_assign_hint">מי מלמד איזה מקצוע באיזו כיתה, וכמה שעות בשבוע.</p>
+      <div class="sched-col-labels sched-assign-cols"><span data-i18n="tools_sch_col_class">כיתה</span><span data-i18n="tools_sch_col_subject">מקצוע</span><span data-i18n="tools_sch_col_teacher">מורה</span><span data-i18n="tools_sch_col_weekly">שעות/שבוע</span><span></span></div>
       <div id="sched-assignments-list"></div>
     </div>
   </div>
@@ -167,22 +167,22 @@
   <div class="sched-tab-panel" data-tab-panel="result">
     <div class="sched-card no-print" id="sched-result-controls">
       <div id="sched-unlock-gate">
-        <h3 style="margin:0 0 6px;">יצירת מערכת שעות אוטומטית <span class="price" style="font-size:15px;">499 ₪ <small>חד-פעמי</small></span></h3>
-        <p class="sched-hint" style="margin:0 0 10px;">מילוי המקצועות, הכיתות, המורים והאילוצים חינמי וללא הגבלה. יצירת מערכת השעות עצמה — השיבוץ האוטומטי החכם שפותר את כל ההתנגשויות — היא כלי בתשלום חד-פעמי.</p>
-        <p class="sched-hint" style="margin:0 0 14px;">התוכנה פועלת באופן אוטומטי לחלוטין וללא תמיכה אנושית/טלפונית — המחיר הנמוך והחד-פעמי מתאפשר הודות לשירות עצמי מלא (Self-Service).</p>
-        <a href="#" id="sched-buy-link" target="_blank" rel="noopener" class="btn btn-gold" style="width:100%; box-sizing:border-box; text-align:center; display:block; margin-bottom:14px;">רכישת קוד פתיחה</a>
+        <h3 style="margin:0 0 6px;"><span data-i18n="tools_sch_unlock_h">יצירת מערכת שעות אוטומטית</span> <span class="price" style="font-size:15px;">499 ₪ <small data-i18n="tools_sch_one_time">חד-פעמי</small></span></h3>
+        <p class="sched-hint" style="margin:0 0 10px;" data-i18n="tools_sch_unlock_p1">מילוי המקצועות, הכיתות, המורים והאילוצים חינמי וללא הגבלה. יצירת מערכת השעות עצמה — השיבוץ האוטומטי החכם שפותר את כל ההתנגשויות — היא כלי בתשלום חד-פעמי.</p>
+        <p class="sched-hint" style="margin:0 0 14px;" data-i18n="tools_sch_unlock_p2">התוכנה פועלת באופן אוטומטי לחלוטין וללא תמיכה אנושית/טלפונית — המחיר הנמוך והחד-פעמי מתאפשר הודות לשירות עצמי מלא (Self-Service).</p>
+        <a href="#" id="sched-buy-link" target="_blank" rel="noopener" class="btn btn-gold" style="width:100%; box-sizing:border-box; text-align:center; display:block; margin-bottom:14px;" data-i18n="tools_sch_buy">רכישת קוד פתיחה</a>
         <div class="unlock-box">
-          <input type="text" id="sched-license-input" placeholder="קוד רישוי (מהמייל של הרכישה)" dir="ltr">
+          <input type="text" id="sched-license-input" placeholder="קוד רישוי (מהמייל של הרכישה)" dir="ltr" data-i18n-placeholder="tools_sch_license_ph">
           <div class="unlock-note" id="sched-license-note"></div>
-          <button type="button" class="btn btn-teal" id="sched-verify-btn" style="width:100%;">אימות ופתיחה</button>
+          <button type="button" class="btn btn-teal" id="sched-verify-btn" style="width:100%;" data-i18n="tools_sch_verify">אימות ופתיחה</button>
         </div>
       </div>
       <div id="sched-unlock-done" hidden>
         <div class="sched-result-head">
-          <h3>יצירת מערכת שעות</h3>
+          <h3 data-i18n="tools_sch_gen_h">יצירת מערכת שעות</h3>
           <div class="sched-result-actions">
-            <button type="button" class="btn btn-gold" id="sched-generate-btn">🎲 צור מערכת שעות</button>
-            <button type="button" class="btn-mini" id="sched-improve-btn" hidden>המשך לשפר</button>
+            <button type="button" class="btn btn-gold" id="sched-generate-btn" data-i18n="tools_sch_gen_btn">🎲 צור מערכת שעות</button>
+            <button type="button" class="btn-mini" id="sched-improve-btn" hidden data-i18n="tools_sch_improve">המשך לשפר</button>
           </div>
         </div>
         <div id="sched-solver-status" class="sched-solver-status"></div>
@@ -193,15 +193,15 @@
       <div class="sched-card no-print">
         <div class="sched-result-viewbar">
           <div class="sched-view-toggle">
-            <button type="button" class="sched-view-btn active" data-view-kind="class">לפי כיתה</button>
-            <button type="button" class="sched-view-btn" data-view-kind="teacher">לפי מורה</button>
+            <button type="button" class="sched-view-btn active" data-view-kind="class" data-i18n="tools_sch_by_class">לפי כיתה</button>
+            <button type="button" class="sched-view-btn" data-view-kind="teacher" data-i18n="tools_sch_by_teacher">לפי מורה</button>
           </div>
           <select id="sched-entity-select"></select>
           <span id="sched-conflict-badge" class="sched-conflict-badge" hidden></span>
           <div class="sched-result-export">
-            <button type="button" class="btn-mini" id="sched-print-current">הדפסת התצוגה הנוכחית</button>
-            <button type="button" class="btn-mini" id="sched-print-all">הדפסת כל הכיתות</button>
-            <button type="button" class="btn-mini" id="sched-export-csv">ייצוא ל-CSV</button>
+            <button type="button" class="btn-mini" id="sched-print-current" data-i18n="tools_sch_print_current">הדפסת התצוגה הנוכחית</button>
+            <button type="button" class="btn-mini" id="sched-print-all" data-i18n="tools_sch_print_all">הדפסת כל הכיתות</button>
+            <button type="button" class="btn-mini" id="sched-export-csv" data-i18n="tools_sch_export_csv">ייצוא ל-CSV</button>
           </div>
         </div>
       </div>
@@ -218,32 +218,32 @@
     <div class="footer-grid">
       <div>
         <h4>DeskKit</h4>
-        <p style="font-size:14px; max-width:320px;">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
+        <p style="font-size:14px; max-width:320px;" data-i18n="footer_blurb">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
       </div>
       <div>
-        <h4>ניווט</h4>
+        <h4 data-i18n="footer_nav_heading">ניווט</h4>
         <ul>
-          <li><a href="builder.html">קורות חיים</a></li>
-          <li><a href="sites.html">בניית אתר</a></li>
-          <li><a href="products.html?type=deck">מצגות</a></li>
-          <li><a href="products.html?type=xlsx">גליונות</a></li>
-          <li><a href="about.html">אודות</a></li>
-          <li><a href="contact.html">צור קשר</a></li>
-          <li><a href="tools.html">כלים לעסק</a></li>
+          <li><a href="builder.html" data-i18n="nav_cv">קורות חיים</a></li>
+          <li><a href="sites.html" data-i18n="nav_sites">בניית אתר</a></li>
+          <li><a href="products.html?type=deck" data-i18n="nav_decks">מצגות</a></li>
+          <li><a href="products.html?type=xlsx" data-i18n="nav_xlsx">גליונות</a></li>
+          <li><a href="about.html" data-i18n="nav_about">אודות</a></li>
+          <li><a href="contact.html" data-i18n="nav_contact">צור קשר</a></li>
+          <li><a href="tools.html" data-i18n="tools_business_tools">כלים לעסק</a></li>
         </ul>
       </div>
       <div>
-        <h4>מידע</h4>
+        <h4 data-i18n="footer_info_heading">מידע</h4>
         <ul>
-          <li><a href="guides.html">מדריכים</a></li>
-          <li><a href="faq.html">שאלות נפוצות</a></li>
-          <li><a href="terms.html">מדיניות</a></li>
-          <li><a href="security.html">אבטחת מידע</a></li>
-          <li><a href="accessibility.html">נגישות</a></li>
+          <li><a href="guides.html" data-i18n="footer_guides">מדריכים</a></li>
+          <li><a href="faq.html" data-i18n="footer_faq">שאלות נפוצות</a></li>
+          <li><a href="terms.html" data-i18n="footer_terms">מדיניות</a></li>
+          <li><a href="security.html" data-i18n="footer_security">אבטחת מידע</a></li>
+          <li><a href="accessibility.html" data-i18n="footer_accessibility">נגישות</a></li>
         </ul>
       </div>
       <div>
-        <h4>צור קשר</h4>
+        <h4 data-i18n="nav_contact">צור קשר</h4>
         <ul>
           <li><a class="dk-email" href="contact.html">צרו קשר</a></li>
         </ul>
@@ -254,12 +254,14 @@
       <p class="footer-identity-owner" data-i18n="footer_identity_owner">נוצר ומופעל באופן עצמאי על ידי דבורה צדוק &middot; עוסק פטור</p>
       <p class="footer-identity-links"><a href="contact.html" data-i18n="nav_contact">צור קשר</a> &middot; <a href="terms.html#privacy" data-i18n="footer_privacy_link">מדיניות פרטיות</a> &middot; <a href="terms.html" data-i18n="footer_terms_link">תנאי שימוש</a></p>
     </div>
-    <div class="footer-bottom">© 2026 DeskKit. כל הזכויות שמורות.</div>
+    <div class="footer-bottom" data-i18n="footer_copyright">© 2026 DeskKit. כל הזכויות שמורות.</div>
   </div>
 </footer>
 
-<script src="js/schedule-content.js"></script>
-<script src="js/schedule-render.js?v=5"></script>
+<script src="js/i18n-tools.js?v=2"></script>
+<script src="js/i18n.js?v=36"></script>
+<script src="js/schedule-content.js?v=3"></script>
+<script src="js/schedule-render.js?v=6"></script>
 <script>window.deferReveal = true;</script>
 <script src="js/vendor/supabase-js-2.116.0.js"></script>
 <script src="js/supabase-config.js?v=2"></script>
@@ -270,10 +272,10 @@
 <script src="js/domain-guide.js?v=5"></script>
 <script src="js/require-auth.js"></script>
 <script src="js/usage-log.js?v=1"></script>
-<script src="js/schedule-cloud-save.js?v=3"></script>
+<script src="js/schedule-cloud-save.js?v=4"></script>
 <script src="js/main.js?v=8"></script>
 <script src="js/captcha.js?v=3"></script>
-<script src="js/widgets.js?v=18"></script>
+<script src="js/widgets.js?v=19"></script>
 <script src="js/effects.js"></script>
 <script src="js/contact-email.js?v=1"></script>
 </body>

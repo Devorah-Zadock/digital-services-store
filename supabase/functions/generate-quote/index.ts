@@ -102,6 +102,8 @@ Deno.serve(async (req: Request) => {
   try {
     const body = await readJsonCapped(req) as any;
     if (!body) return jsonResponse({ error: "request too large" }, 413);
+    // Language of the text the AI writes back ("en" from the English UI; Hebrew otherwise).
+    const outLang = (body as any)?.lang === "en" ? "English" : "Hebrew";
     const description = clampStr(body.description, 600);
     const businessName = clampStr(body.businessName, 60);
 
@@ -147,7 +149,7 @@ Deno.serve(async (req: Request) => {
               content:
                 "You help a small-business owner draft a price quote (הצעת מחיר) for a job they described in one or two sentences. Respond with ONLY a JSON object shaped exactly like: " +
                 '{"eventName": "<short string, 2-6 words>", "description": "<1-3 sentences describing the job/service being offered>", "price": "<a single plain number in ILS, no currency symbol, as a string — your best reasonable estimate for this kind of job in Israel, or an empty string if you genuinely cannot estimate>", "vatNote": "<optional short string, usually just an empty string>"}. ' +
-                "Write every string value in Hebrew, even if the input is in another language. Base eventName and description ONLY on what the business described — never invent extra services, quantities, dates, or any client-identifying detail (no client name, company, address, or contact info — those are filled in separately by the business owner). Do NOT include HTML or markup — plain text only.",
+                "Write every string value in " + outLang + ", even if the input is in another language. Base eventName and description ONLY on what the business described — never invent extra services, quantities, dates, or any client-identifying detail (no client name, company, address, or contact info — those are filled in separately by the business owner). Do NOT include HTML or markup — plain text only.",
             },
             {
               role: "user",

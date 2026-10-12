@@ -211,13 +211,13 @@ const CHAT_FALLBACK = {
    gets shadowed by this. */
 function chatUtilityAnswer(q) {
   const en = dkWidgetsEn();
-  if (/שעה/.test(q)) {
+  if (/שעה|what time|the time/.test(q)) {
     const time = new Date().toLocaleTimeString(en ? "en-US" : "he-IL", { hour: "2-digit", minute: "2-digit" });
     return { a: en
       ? `That's a bit outside what we cover here 🙂 Anyway — the time right now is ${time}. Now seriously: can I help with resumes, sites, quotes or invoices?`
       : `זו שאלה שקצת חורגת מהנושא שלנו כאן 🙂 בכל מקרה — השעה עכשיו היא ${time}. עכשיו ברצינות: אפשר לעזור עם קורות חיים, אתרים, הצעות מחיר או חשבוניות?` };
   }
-  if (/תאריך|איזה יום/.test(q)) {
+  if (/תאריך|איזה יום|what day|today's date|what date/.test(q)) {
     const date = new Date().toLocaleDateString(en ? "en-US" : "he-IL", { day: "numeric", month: "long", year: "numeric" });
     return { a: en
       ? `That's not really related to our tools, but customer service mode: today is ${date}. What can I help you with here on DeskKit?`
@@ -408,7 +408,7 @@ function dkWidgetsLinkLabel(link) {
 
 function bubbleHtml(text, link, who) {
   return `<div class="chat-msg chat-msg-${who}">
-    <div class="chat-bubble">${escapeHtml(text)}${link ? `<a href="${link.href}" class="chat-link">${escapeHtml(dkWidgetsLinkLabel(link))} ←</a>` : ""}</div>
+    <div class="chat-bubble">${escapeHtml(text)}${link ? `<a href="${link.href}" class="chat-link">${escapeHtml(dkWidgetsLinkLabel(link))} ${dkWidgetsT("←", "→")}</a>` : ""}</div>
   </div>`;
 }
 
@@ -687,7 +687,7 @@ function wireBuyLinkOnce(link) {
   link.addEventListener("click", () => {
     link.classList.add("btn-disabled");
     link.setAttribute("aria-disabled", "true");
-    link.textContent = "דף הרכישה נפתח ✓";
+    link.textContent = dkWidgetsT("דף הרכישה נפתח ✓", "Checkout page opened ✓");
   });
 }
 

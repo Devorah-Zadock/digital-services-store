@@ -198,7 +198,7 @@ async function quoteBshellGenerateDraft() {
     const res = await fetch(SUPABASE_URL + "/functions/v1/generate-quote", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + token, apikey: SUPABASE_ANON_KEY },
-      body: JSON.stringify({ description, businessName: currentProfile && currentProfile.business_name }),
+      body: JSON.stringify({ lang: (typeof currentLang === "function" ? currentLang() : "he"), description, businessName: currentProfile && currentProfile.business_name }),
     });
     const data = await res.json();
     if (!res.ok || data.error) {

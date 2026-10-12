@@ -62,7 +62,7 @@ function siteAiCommandUndo() {
   if (typeof renderHierarchyPanel === "function") renderHierarchyPanel();
   const undoBtn = document.getElementById("site-ai-command-undo");
   if (undoBtn && !siteAiCommandUndoStack.length) undoBtn.style.display = "none";
-  siteAiCommandNote("השינוי בוטל.");
+  siteAiCommandNote(dkL("השינוי בוטל.", "Change undone."));
 }
 
 /* Pure mutation, no rendering/undo-bookkeeping of its own — shared by
@@ -103,7 +103,7 @@ function siteAiCommandApply(result) {
   }
   renderSitePreview();
   if (typeof renderHierarchyPanel === "function") renderHierarchyPanel();
-  siteAiCommandNote(`בוצע: ${escapeHtmlS(result.explanation || "")}`);
+  siteAiCommandNote(dkL(`בוצע: ${escapeHtmlS(result.explanation || "")}`, `Done: ${escapeHtmlS(result.explanation || "")}`));
 }
 
 async function siteAiCommandSubmit() {
@@ -113,10 +113,10 @@ async function siteAiCommandSubmit() {
   if (!command) return;
 
   siteAiCommandPending = null;
-  siteAiCommandNote("ה-AI מעבד את הפקודה…");
+  siteAiCommandNote(dkL("ה-AI מעבד את הפקודה…", "The AI is working on it…"));
   const originalLabel = btn.textContent;
   btn.disabled = true;
-  btn.textContent = "מעבד...";
+  btn.textContent = dkL("מעבד...", "Working...");
 
   try {
     const { data: sessionData } = await supabaseClient.auth.getSession();
@@ -127,21 +127,21 @@ async function siteAiCommandSubmit() {
     const res = await fetch(SUPABASE_URL + "/functions/v1/site-ai-command", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + token, apikey: SUPABASE_ANON_KEY },
-      body: JSON.stringify({ command, availableTypes: ctx.availableTypes, activeTypes: ctx.activeTypes, variantOptions: ctx.variantOptions }),
+      body: JSON.stringify({ lang: (typeof currentLang === "function" ? currentLang() : "he"), command, availableTypes: ctx.availableTypes, activeTypes: ctx.activeTypes, variantOptions: ctx.variantOptions }),
     });
     const data = await res.json();
-    if (!res.ok || data.error) throw new Error(data.error || "שגיאה לא צפויה");
+    if (!res.ok || data.error) throw new Error(data.error || dkL("שגיאה לא צפויה", "Unexpected error"));
 
     if (data.limitReached) {
       siteAiCommandNote(data.isPro
-        ? "הגעת למכסת השימוש ההוגן היומית לפקודות AI. אפשר להמשיך מחר."
-        : "הגעת למכסת הניסיונות החינמיים לפקודות AI. רוצה להמשיך? שדרג לגרסת Pro בתשלום חד-פעמי!");
+        ? dkL("הגעת למכסת השימוש ההוגן היומית לפקודות AI. אפשר להמשיך מחר.", "You've reached today's fair-use limit for AI commands. You can continue tomorrow.")
+        : dkL("הגעת למכסת הניסיונות החינמיים לפקודות AI. רוצה להמשיך? שדרג לגרסת Pro בתשלום חד-פעמי!", "You've used your free AI-command tries. Want to continue? Upgrade to Pro with a one-time payment!"));
       return;
     }
 
     const result = data.result;
     if (!result || result.op === "unsupported") {
-      siteAiCommandNote(escapeHtmlS((result && result.explanation) || "לא הצלחתי לבצע את הפעולה הזו."));
+      siteAiCommandNote(escapeHtmlS((result && result.explanation) || dkL("לא הצלחתי לבצע את הפעולה הזו.", "I couldn't do that.")));
       return;
     }
 
@@ -150,9 +150,9 @@ async function siteAiCommandSubmit() {
     // deliberately lightweight rather than a full visual diff.
     siteAiCommandPending = result;
     siteAiCommandNote(`
-      <div>${escapeHtmlS(result.explanation || "לבצע את השינוי?")}</div>
-      <button type="button" class="btn-mini" id="site-ai-command-confirm">אישור</button>
-      <button type="button" class="btn-mini" id="site-ai-command-cancel">ביטול</button>
+      <div>${escapeHtmlS(result.explanation || dkL("לבצע את השינוי?", "Make this change?"))}</div>
+      <button type="button" class="btn-mini" id="site-ai-command-confirm">${dkL("אישור", "Confirm")}</button>
+      <button type="button" class="btn-mini" id="site-ai-command-cancel">${dkL("ביטול", "Cancel")}</button>
     `);
     document.getElementById("site-ai-command-confirm").addEventListener("click", () => {
       if (siteAiCommandPending) siteAiCommandApply(siteAiCommandPending);
@@ -161,11 +161,11 @@ async function siteAiCommandSubmit() {
     });
     document.getElementById("site-ai-command-cancel").addEventListener("click", () => {
       siteAiCommandPending = null;
-      siteAiCommandNote("בוטל.");
+      siteAiCommandNote(dkL("בוטל.", "Cancelled."));
     });
   } catch (err) {
     console.error("site AI command failed:", err);
-    siteAiCommandNote("משהו השתבש. אפשר לנסות שוב בעוד רגע.");
+    siteAiCommandNote(dkL("משהו השתבש. אפשר לנסות שוב בעוד רגע.", "Something went wrong. Please try again in a moment."));
   } finally {
     btn.disabled = false;
     btn.textContent = originalLabel;

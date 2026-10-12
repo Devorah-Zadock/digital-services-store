@@ -7,6 +7,15 @@
    letter or a CV, so there's exactly one clean layout (see
    js/invoice-render.js). */
 
+// English names for the confirm dialog only — INVOICE_DOC_LABEL (in
+// js/invoice-render.js) stays the Hebrew document title printed on the
+// document itself.
+const INVOICE_DOC_LABEL_EN = {
+  invoice_receipt: "tax invoice-receipt",
+  receipt: "receipt",
+  credit_note: "credit note",
+};
+
 let invoiceUser = null;
 let currentInvoiceProfile = null;
 let invoiceEventState = null;
@@ -47,7 +56,7 @@ function showInvoiceSection(id) {
 function renderInvoiceLogoPreview(url) {
   const el = document.getElementById("ipf-logo-preview");
   const removeBtn = document.getElementById("ipf-logo-remove");
-  if (url) { el.innerHTML = `<img src="${url}" alt="הלוגו שהעליתם">`; removeBtn.style.display = ""; }
+  if (url) { el.innerHTML = `<img src="${url}" alt="${dkL("הלוגו שהעליתם", "Your uploaded logo")}">`; removeBtn.style.display = ""; }
   else { el.innerHTML = `<span>🖼</span>`; removeBtn.style.display = "none"; }
 }
 
@@ -77,11 +86,11 @@ function wireInvoiceProfileForm() {
   document.getElementById("ipf-logo-file").addEventListener("change", async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (file.size > 4 * 1024 * 1024) { alert("הקובץ גדול מדי — בחרו לוגו עד 4MB."); e.target.value = ""; return; }
+    if (file.size > 4 * 1024 * 1024) { alert(dkL("הקובץ גדול מדי — בחרו לוגו עד 4MB.", "That file is too large — choose a logo up to 4MB.")); e.target.value = ""; return; }
     const ext = (file.name.split(".").pop() || "png").toLowerCase();
     const path = `${invoiceUser.id}/logo.${ext}`;
     const { error: upErr } = await supabaseClient.storage.from("logos").upload(path, file, { upsert: true });
-    if (upErr) { alert("העלאת הלוגו נכשלה, נסו שוב."); e.target.value = ""; return; }
+    if (upErr) { alert(dkL("העלאת הלוגו נכשלה, נסו שוב.", "Logo upload failed, please try again.")); e.target.value = ""; return; }
     const { data } = supabaseClient.storage.from("logos").getPublicUrl(path);
     pendingInvoiceLogoUrl = data.publicUrl + "?t=" + Date.now();
     renderInvoiceLogoPreview(pendingInvoiceLogoUrl);
@@ -112,7 +121,7 @@ function wireInvoiceProfileForm() {
       logo_url: pendingInvoiceLogoUrl,
     };
     const { data, error } = await supabaseClient.from("profiles").upsert(row).select().single();
-    if (error) { err.textContent = "השמירה נכשלה, נסו שוב."; return; }
+    if (error) { err.textContent = dkL("השמירה נכשלה, נסו שוב.", "Saving failed, please try again."); return; }
     currentInvoiceProfile = data;
     // This same form is now also reachable from INSIDE an already-open
     // Shell (js/invoice-builder-shell.js moves it into Settings) —
@@ -143,10 +152,10 @@ function invoiceLineItemHtml(it, i, total) {
   const canRemove = total > 1;
   return `
   <div class="ia-item-row" data-idx="${i}">
-    <input type="text" placeholder="תיאור" data-item="${i}" data-key="desc" value="${escapeHtmlI(it.desc)}">
-    <input type="text" placeholder="כמות" data-item="${i}" data-key="qty" value="${escapeHtmlI(it.qty)}" style="max-width:70px;">
-    <input type="text" placeholder="מחיר יח'" data-item="${i}" data-key="unitPrice" value="${escapeHtmlI(it.unitPrice)}" style="max-width:100px;">
-    ${canRemove ? `<button type="button" class="job-remove" data-item-remove="${i}">הסרה</button>` : ""}
+    <input type="text" placeholder="${dkL("תיאור", "Description")}" data-item="${i}" data-key="desc" value="${escapeHtmlI(it.desc)}">
+    <input type="text" placeholder="${dkL("כמות", "Qty")}" data-item="${i}" data-key="qty" value="${escapeHtmlI(it.qty)}" style="max-width:70px;">
+    <input type="text" placeholder="${dkL("מחיר יח'", "Unit price")}" data-item="${i}" data-key="unitPrice" value="${escapeHtmlI(it.unitPrice)}" style="max-width:100px;">
+    ${canRemove ? `<button type="button" class="job-remove" data-item-remove="${i}">${dkL("הסרה", "Remove")}</button>` : ""}
   </div>`;
 }
 
@@ -229,15 +238,16 @@ function wireInvoiceFormIA() {
     }
     const hasItems = invoiceEventState.items.some((it) => it.desc.trim() && parseILSI(it.unitPrice) > 0);
     if (!invoiceEventState.recipientName.trim() || !hasItems) {
-      alert("צריך למלא לכבוד מי המסמך, ולפחות שורה אחת עם תיאור ומחיר.");
+      alert(dkL("צריך למלא לכבוד מי המסמך, ולפחות שורה אחת עם תיאור ומחיר.", "Please fill in who the document is for, and at least one line with a description and price."));
       return;
     }
-    if (!confirm(`הפקת ${INVOICE_DOC_LABEL[invoiceEventState.docType]} היא סופית ולא ניתנת לעריכה או מחיקה לאחר מכן (רק תיקון באמצעות חשבונית זיכוי נפרדת). להמשיך?`)) return;
+    if (!confirm(dkL(`הפקת ${INVOICE_DOC_LABEL[invoiceEventState.docType]} היא סופית ולא ניתנת לעריכה או מחיקה לאחר מכן (רק תיקון באמצעות חשבונית זיכוי נפרדת). להמשיך?`,
+      `Issuing a ${INVOICE_DOC_LABEL_EN[invoiceEventState.docType] || "document"} is final — it can't be edited or deleted afterwards (only corrected with a separate credit note). Continue?`))) return;
     const btn = document.getElementById("invoice-finalize-btn");
     btn.disabled = true;
     const result = await finalizeInvoice(currentInvoiceProfile);
     btn.disabled = false;
-    if (result.error) { alert("ההפקה נכשלה, נסו שוב."); return; }
+    if (result.error) { alert(dkL("ההפקה נכשלה, נסו שוב.", "Issuing failed, please try again.")); return; }
     renderInvoiceFormIA();
     renderInvoicePreviewIA();
   });
@@ -338,7 +348,7 @@ function routeAsInvoiceGuest() {
   if (!hadUnsavedWork) { window.location.href = redirectUrl; return; }
   const status = document.getElementById("ibshell-top-status");
   if (status) {
-    status.textContent = "ההתחברות הסתיימה — שינויים שלא נשמרו עלולים ללכת לאיבוד";
+    status.textContent = dkL("ההתחברות הסתיימה — שינויים שלא נשמרו עלולים ללכת לאיבוד", "You've been signed out — unsaved changes may be lost");
     status.className = "bshell-top-status failed";
   }
   setTimeout(() => { window.location.href = redirectUrl; }, 2200);

@@ -8,11 +8,17 @@
 const CRM_LEADS_KEY = "deskkit_crm_leads";
 const CRM_UNLOCK_KEY = "deskkit_crm_unlocked";
 
+// dkL comes from js/i18n.js (loaded before this file on crm.html and
+// crm-product.html); the fallback keeps the board working without it.
+function crmL(he, en) {
+  return typeof dkL === "function" ? dkL(he, en) : he;
+}
+
 const CRM_STAGES = [
-  { key: "new", label: "ליד חדש" },
-  { key: "inprogress", label: "בטיפול / נשלחה הצעה" },
-  { key: "followup", label: "פולו-אפ" },
-  { key: "won", label: "נסגר בהצלחה!" },
+  { key: "new", label: crmL("ליד חדש", "New lead") },
+  { key: "inprogress", label: crmL("בטיפול / נשלחה הצעה", "In progress / quote sent") },
+  { key: "followup", label: crmL("פולו-אפ", "Follow-up") },
+  { key: "won", label: crmL("נסגר בהצלחה!", "Won!") },
 ];
 
 function crmIsUnlocked() {
@@ -59,18 +65,20 @@ function crmInit() {
     window.location.href = "crm-product.html";
     return;
   }
+  const closeBtn = document.getElementById("crm-modal-close");
+  if (closeBtn) closeBtn.setAttribute("aria-label", crmL("סגירה", "Close"));
   crmLeads = loadLeads();
   crmRenderBoard();
   crmWireModal();
   crmWireAddButtons();
   const backupBtn = document.getElementById("crm-backup-btn");
   if (backupBtn) backupBtn.addEventListener("click", () => {
-    if (!crmLeads.length) { alert("אין עדיין לידים לגבות."); return; }
+    if (!crmLeads.length) { alert(crmL("אין עדיין לידים לגבות.", "There are no leads to back up yet.")); return; }
     dkCrmDownloadBackup("csv");
   });
   const jsonBtn = document.getElementById("crm-backup-json");
   if (jsonBtn) jsonBtn.addEventListener("click", () => {
-    if (!crmLeads.length) { alert("אין עדיין לידים לגבות."); return; }
+    if (!crmLeads.length) { alert(crmL("אין עדיין לידים לגבות.", "There are no leads to back up yet.")); return; }
     dkCrmDownloadBackup("json");
   });
   crmReportLocalCount();
@@ -107,9 +115,9 @@ function crmRenderBoard() {
         </div>
         <div class="crm-col-total">${formatIls(stageTotal)}</div>
         <div class="crm-col-body" data-stage="${stage.key}">
-          ${stageLeads.map(crmCardHtml).join("") || `<p class="crm-col-empty">אין כאן לידים עדיין</p>`}
+          ${stageLeads.map(crmCardHtml).join("") || `<p class="crm-col-empty">${crmL("אין כאן לידים עדיין", "No leads here yet")}</p>`}
         </div>
-        <button type="button" class="crm-col-add" data-stage="${stage.key}">+ הוספת ליד</button>
+        <button type="button" class="crm-col-add" data-stage="${stage.key}">${crmL("+ הוספת ליד", "+ Add lead")}</button>
       </div>`;
   }).join("");
 
@@ -126,7 +134,7 @@ function crmCardHtml(lead) {
     <div class="crm-card" draggable="true" data-id="${lead.id}">
       <div class="crm-card-top">
         <span class="crm-card-name">${escapeHtmlCrm(lead.name)}</span>
-        <button type="button" class="crm-card-del" data-id="${lead.id}" aria-label="מחיקה" title="מחיקה">✕</button>
+        <button type="button" class="crm-card-del" data-id="${lead.id}" aria-label="${crmL("מחיקה", "Delete")}" title="${crmL("מחיקה", "Delete")}">✕</button>
       </div>
       ${lead.phone ? `<a class="crm-card-line" href="tel:${escapeHtmlCrm(lead.phone)}" onclick="event.stopPropagation()">📞 ${escapeHtmlCrm(lead.phone)}</a>` : ""}
       ${lead.email ? `<a class="crm-card-line" href="mailto:${escapeHtmlCrm(lead.email)}" onclick="event.stopPropagation()">✉️ ${escapeHtmlCrm(lead.email)}</a>` : ""}
@@ -134,8 +142,8 @@ function crmCardHtml(lead) {
       <div class="crm-card-bottom">
         <span class="crm-card-amount">${formatIls(lead.amount)}</span>
         <span class="crm-card-moves">
-          <button type="button" class="crm-move-btn" data-id="${lead.id}" data-dir="back" ${canBack ? "" : "disabled"} title="שלב אחורה">◂</button>
-          <button type="button" class="crm-move-btn" data-id="${lead.id}" data-dir="forward" ${canForward ? "" : "disabled"} title="שלב קדימה">▸</button>
+          <button type="button" class="crm-move-btn" data-id="${lead.id}" data-dir="back" ${canBack ? "" : "disabled"} title="${crmL("שלב אחורה", "Previous stage")}">◂</button>
+          <button type="button" class="crm-move-btn" data-id="${lead.id}" data-dir="forward" ${canForward ? "" : "disabled"} title="${crmL("שלב קדימה", "Next stage")}">▸</button>
         </span>
       </div>
     </div>`;
@@ -168,7 +176,7 @@ function crmWireCardEvents() {
   document.querySelectorAll(".crm-card-del").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
-      if (!confirm("למחוק את הליד הזה?")) return;
+      if (!confirm(crmL("למחוק את הליד הזה?", "Delete this lead?"))) return;
       crmLeads = crmLeads.filter((l) => l.id !== btn.dataset.id);
       saveLeads(crmLeads);
       crmRenderBoard();
@@ -220,7 +228,7 @@ function crmWireAddButtons() {
 function crmOpenModal(id, presetStage) {
   crmEditingId = id;
   const lead = id ? crmLeads.find((l) => l.id === id) : null;
-  document.getElementById("crm-modal-title").textContent = lead ? "עריכת ליד" : "הוספת ליד חדש";
+  document.getElementById("crm-modal-title").textContent = lead ? crmL("עריכת ליד", "Edit lead") : crmL("הוספת ליד חדש", "Add a new lead");
   document.getElementById("crm-f-name").value = lead ? lead.name : "";
   document.getElementById("crm-f-phone").value = lead ? lead.phone : "";
   document.getElementById("crm-f-email").value = lead ? lead.email : "";
@@ -244,7 +252,7 @@ function crmWireModal() {
   });
   document.getElementById("crm-modal-delete").addEventListener("click", () => {
     if (!crmEditingId) return;
-    if (!confirm("למחוק את הליד הזה?")) return;
+    if (!confirm(crmL("למחוק את הליד הזה?", "Delete this lead?"))) return;
     crmLeads = crmLeads.filter((l) => l.id !== crmEditingId);
     saveLeads(crmLeads);
     crmCloseModal();

@@ -79,12 +79,12 @@ function siteWizardStepBodyHtml(question) {
   if (question.type === "choice") {
     const otherSelected = question.allowOther && siteWizardAnswers[question.id] && !(question.options || []).some((o) => o.value === siteWizardAnswers[question.id]);
     return `
-      ${question.searchable ? `<input type="text" id="wizard-search" class="wizard-search" placeholder="הקלידו לחיפוש..." autocomplete="off">` : ""}
+      ${question.searchable ? `<input type="text" id="wizard-search" class="wizard-search" placeholder="${dkL("הקלידו לחיפוש...", "Type to search...")}" autocomplete="off">` : ""}
       <div class="wizard-chip-grid" id="wizard-chip-grid">
         ${(question.options || []).map((o) => siteWizardChipHtml(question, o)).join("")}
-        ${question.allowOther ? `<button type="button" class="wizard-chip wizard-chip-other${otherSelected ? " selected" : ""}" data-chip-other="1">✏️ אחר</button>` : ""}
+        ${question.allowOther ? `<button type="button" class="wizard-chip wizard-chip-other${otherSelected ? " selected" : ""}" data-chip-other="1">✏️ ${dkL("אחר", "Other")}</button>` : ""}
       </div>
-      ${question.allowOther ? `<input type="text" id="wizard-other-input" class="wizard-other-input" placeholder="כתבו כאן..." maxlength="60" ${otherSelected ? "" : "hidden"} value="${escapeHtmlS(otherSelected ? siteWizardAnswers[question.id] : (siteWizardOtherDrafts[question.id] || ""))}">` : ""}
+      ${question.allowOther ? `<input type="text" id="wizard-other-input" class="wizard-other-input" placeholder="${dkL("כתבו כאן...", "Type here...")}" maxlength="60" ${otherSelected ? "" : "hidden"} value="${escapeHtmlS(otherSelected ? siteWizardAnswers[question.id] : (siteWizardOtherDrafts[question.id] || ""))}">` : ""}
     `;
   }
   const value = escapeHtmlS(siteWizardAnswers[question.id] || "");
@@ -100,14 +100,14 @@ function siteWizardStepHtml() {
   if (!question) return "";
   const isLast = siteWizardStepIndex === questions.length - 1;
   return `
-    <div class="wizard-progress">שאלה ${siteWizardStepIndex + 1} מתוך ${questions.length}</div>
+    <div class="wizard-progress">${dkL(`שאלה ${siteWizardStepIndex + 1} מתוך ${questions.length}`, `Question ${siteWizardStepIndex + 1} of ${questions.length}`)}</div>
     <div class="wizard-progress-bar"><div class="wizard-progress-fill" style="width:${Math.round(((siteWizardStepIndex + 1) / questions.length) * 100)}%"></div></div>
     <h3 class="wizard-question">${escapeHtmlS(question.label)}</h3>
     <div id="wizard-step-body">${siteWizardStepBodyHtml(question)}</div>
     <div class="wizard-nav-row">
-      <button type="button" class="btn-mini" id="wizard-back" ${siteWizardStepIndex === 0 ? "disabled" : ""}>→ הקודם</button>
-      ${question.optional ? `<button type="button" class="btn-mini" id="wizard-skip">דלג</button>` : ""}
-      <button type="button" class="btn btn-teal" id="wizard-next">${isLast ? "✨ יצירת האתר שלי" : "הבא ←"}</button>
+      <button type="button" class="btn-mini" id="wizard-back" ${siteWizardStepIndex === 0 ? "disabled" : ""}>${dkL("→ הקודם", "← Back")}</button>
+      ${question.optional ? `<button type="button" class="btn-mini" id="wizard-skip">${dkL("דלג", "Skip")}</button>` : ""}
+      <button type="button" class="btn btn-teal" id="wizard-next">${isLast ? dkL("✨ יצירת האתר שלי", "✨ Create my website") : dkL("הבא ←", "Next →")}</button>
     </div>
     <div class="wizard-note" id="wizard-note"></div>
   `;
@@ -202,7 +202,7 @@ function siteWizardAdvance() {
   const value = siteWizardCurrentAnswerValue(question);
   if (!value && !question.optional) {
     const note = document.getElementById("wizard-note");
-    if (note) note.textContent = "צריך לבחור או לכתוב תשובה כדי להמשיך.";
+    if (note) note.textContent = dkL("צריך לבחור או לכתוב תשובה כדי להמשיך.", "Please choose or type an answer to continue.");
     return;
   }
   if (question.type === "choice" && question.allowOther) siteWizardOtherDrafts[question.id] = value;
@@ -224,11 +224,13 @@ function siteWizardGoNext() {
    keeps this from feeling like the request silently hung for a few
    seconds. Returns a small controller the caller advances once the
    real fetch settles. */
-const DK_TRANSITION_STEPS = ["מבינים את העסק...", "בונים מבנה...", "מתאימים עיצוב...", "מכינים את האתר..."];
+const DK_TRANSITION_STEPS = typeof currentLang === "function" && currentLang() === "en"
+  ? ["Understanding the business...", "Building the structure...", "Matching a design...", "Preparing the site..."]
+  : ["מבינים את העסק...", "בונים מבנה...", "מתאימים עיצוב...", "מכינים את האתר..."];
 function dkTransitionHtml() {
   return `
     <div class="dk-transition-wrap">
-      <h2>מעולה. יש לנו כיוון.</h2>
+      <h2>${dkL("מעולה. יש לנו כיוון.", "Great. We have a direction.")}</h2>
       <div class="dk-transition-steps" id="dk-transition-steps">
         ${DK_TRANSITION_STEPS.map((s, i) => `<div class="dk-transition-step${i === 0 ? " active" : ""}" data-step="${i}"><span class="dk-transition-dot"></span>${escapeHtmlS(s)}</div>`).join("")}
       </div>
@@ -247,6 +249,7 @@ function dkRunTransitionSteps() {
 }
 
 const DK_STYLE_LABELS = { auto: "", minimal: "מינימליסטי", luxury: "יוקרתי", bold: "נועז", warm: "חם", modern: "מודרני" };
+const DK_STYLE_LABELS_EN = { auto: "", minimal: "Minimalist", luxury: "Luxurious", bold: "Bold", warm: "Warm", modern: "Modern" };
 const DK_SECTION_LABELS = { services: "שירותים", about: "אודות", testimonials: "המלצות", gallery: "גלריה", faq: "שאלות נפוצות", contact: "יצירת קשר", map: "מפה", whatsapp: "WhatsApp", hours: "שעות פעילות" };
 
 /* The ONE AI call in the whole flow (plus, optionally, one more if the
@@ -291,10 +294,10 @@ async function dkCallGenerateSite(values) {
   const res = await fetch(SUPABASE_URL + "/functions/v1/generate-site", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: "Bearer " + token, apikey: SUPABASE_ANON_KEY },
-    body: JSON.stringify(values),
+    body: JSON.stringify({ ...values, lang: (typeof currentLang === "function" ? currentLang() : "he") }),
   });
   const data = await res.json();
-  if (!res.ok || data.error) throw new Error(data.error || "שגיאה לא צפויה");
+  if (!res.ok || data.error) throw new Error(data.error || dkL("שגיאה לא צפויה", "Unexpected error"));
   return data;
 }
 
@@ -318,13 +321,13 @@ async function siteWizardSubmit() {
 
     if (data.limitReached) {
       body.innerHTML = data.isPro
-        ? `<div class="ats-error">הגעת למכסת השימוש ההוגן היומית ליצירת אתרים. אפשר להמשיך מחר.</div>`
-        : `<div class="ats-upgrade-card"><p>הגעת למכסת הניסיונות החינמיים ליצירת אתר. רוצה להמשיך? שדרג לגרסת Pro בתשלום חד-פעמי!</p><a href="#" class="btn btn-gold ats-upgrade-btn">שדרוג ל-Pro</a></div>`;
+        ? `<div class="ats-error">${dkL("הגעת למכסת השימוש ההוגן היומית ליצירת אתרים. אפשר להמשיך מחר.", "You've reached today's fair-use limit for creating websites. You can continue tomorrow.")}</div>`
+        : `<div class="ats-upgrade-card"><p>${dkL("הגעת למכסת הניסיונות החינמיים ליצירת אתר. רוצה להמשיך? שדרג לגרסת Pro בתשלום חד-פעמי!", "You've used your free website-creation tries. Want to continue? Upgrade to Pro with a one-time payment!")}</p><a href="#" class="btn btn-gold ats-upgrade-btn">שדרוג ל-Pro</a></div>`;
       return;
     }
 
     if (!data.site || !data.site.template || typeof SITE_TEMPLATES === "undefined" || !SITE_TEMPLATES[data.site.template]) {
-      throw new Error("לא התקבל עיצוב תקין מהשרת");
+      throw new Error(dkL("לא התקבל עיצוב תקין מהשרת", "The server didn't return a valid design"));
     }
 
     await dkApplyGeneratedSite(data.site, values);
@@ -337,7 +340,7 @@ async function siteWizardSubmit() {
     // instead; the visible message stays a plain, actionable Hebrew
     // sentence regardless of what actually failed underneath.
     console.error("site generate failed:", err);
-    body.innerHTML = `<div class="ats-error">משהו השתבש ביצירת האתר. אפשר לנסות שוב בעוד רגע.</div>`;
+    body.innerHTML = `<div class="ats-error">${dkL("משהו השתבש ביצירת האתר. אפשר לנסות שוב בעוד רגע.", "Something went wrong creating the site. Please try again in a moment.")}</div>`;
   }
 }
 
@@ -370,37 +373,37 @@ async function dkApplyGeneratedSite(site, values) {
    latter opens the Shell's own existing "✨ עזרה מ-DeskKit" AI panel
    instead of inventing a second one. */
 const DK_RESTYLE_HINTS = [
-  { label: "יותר יוקרתי", hint: "יותר יוקרתי" },
-  { label: "יותר מינימלי", hint: "יותר מינימליסטי" },
-  { label: "יותר צבעוני", hint: "יותר צבעוני ותוסס" },
-  { label: "יותר צעיר", hint: "יותר צעיר וקליל" },
-  { label: "יותר מקצועי", hint: "יותר מקצועי ורשמי" },
-  { label: "יותר נועז", hint: "יותר נועז ובולט" },
+  { label: dkL("יותר יוקרתי", "More luxurious"), hint: "יותר יוקרתי" },
+  { label: dkL("יותר מינימלי", "More minimal"), hint: "יותר מינימליסטי" },
+  { label: dkL("יותר צבעוני", "More colorful"), hint: "יותר צבעוני ותוסס" },
+  { label: dkL("יותר צעיר", "More youthful"), hint: "יותר צעיר וקליל" },
+  { label: dkL("יותר מקצועי", "More professional"), hint: "יותר מקצועי ורשמי" },
+  { label: dkL("יותר נועז", "More bold"), hint: "יותר נועז ובולט" },
 ];
 
 function dkShowGeneratedPreview(overlay, body, values) {
   const modal = overlay.querySelector(".domain-guide-modal");
   if (modal) { modal.style.maxWidth = "900px"; }
   const tplLabel = (typeof SITE_TEMPLATES !== "undefined" && SITE_TEMPLATES[siteState.template] && SITE_TEMPLATES[siteState.template].label) || siteState.template;
-  const styleLabel = DK_STYLE_LABELS[siteWizardAnswers.style] || "מתאים לעסק שלכם";
+  const styleLabel = (typeof currentLang === "function" && currentLang() === "en" ? DK_STYLE_LABELS_EN : DK_STYLE_LABELS)[siteWizardAnswers.style] || dkL("מתאים לעסק שלכם", "Suited to your business");
 
   body.innerHTML = `
     <div class="dk-genpreview-wrap" style="padding:0;">
       <div class="dk-genpreview-head">
-        <h1>הכנו לכם נקודת התחלה</h1>
+        <h1>${dkL("הכנו לכם נקודת התחלה", "We've prepared a starting point")}</h1>
         <div class="dk-genpreview-tags">
-          <span class="dk-pill">${escapeHtmlS(values.businessName || "העסק שלכם")}</span>
+          <span class="dk-pill">${escapeHtmlS(values.businessName || dkL("העסק שלכם", "Your business"))}</span>
           <span class="dk-pill">${escapeHtmlS(tplLabel)}</span>
           <span class="dk-pill">${escapeHtmlS(styleLabel)}</span>
         </div>
       </div>
       <div class="dk-genpreview-frame-wrap">
-        <iframe id="dk-genpreview-frame" title="תצוגה מקדימה של האתר שנוצר"></iframe>
+        <iframe id="dk-genpreview-frame" title="${dkL("תצוגה מקדימה של האתר שנוצר", "Preview of the generated site")}"></iframe>
       </div>
       <div class="dk-genpreview-actions">
-        <button type="button" class="dk-btn dk-btn-primary dk-btn-lg" id="dk-genpreview-open">נראה טוב — פתחו ב-Builder →</button>
-        <button type="button" class="dk-btn dk-btn-ghost" id="dk-genpreview-restyle">שנה סגנון</button>
-        <button type="button" class="dk-btn dk-btn-ghost" id="dk-genpreview-improve">✨ תנו ל-DeskKit לשפר</button>
+        <button type="button" class="dk-btn dk-btn-primary dk-btn-lg" id="dk-genpreview-open">${dkL("נראה טוב — פתחו ב-Builder →", "Looks good — open in the Builder →")}</button>
+        <button type="button" class="dk-btn dk-btn-ghost" id="dk-genpreview-restyle">${dkL("שנה סגנון", "Change style")}</button>
+        <button type="button" class="dk-btn dk-btn-ghost" id="dk-genpreview-improve">✨ ${dkL("תנו ל-DeskKit לשפר", "Let DeskKit improve it")}</button>
       </div>
       <div id="dk-genpreview-restyle-opts" class="dk-genpreview-style-opts" hidden></div>
     </div>`;
@@ -436,19 +439,19 @@ function dkShowGeneratedPreview(overlay, body, values) {
           // showing this same limit message siteWizardSubmit already has.
           if (data.limitReached) {
             body.innerHTML = data.isPro
-              ? `<div class="ats-error">הגעת למכסת השימוש ההוגן היומית ליצירת אתרים. אפשר להמשיך מחר.</div>`
-              : `<div class="ats-upgrade-card"><p>הגעת למכסת הניסיונות החינמיים ליצירת אתר. רוצה להמשיך? שדרג לגרסת Pro בתשלום חד-פעמי!</p><a href="#" class="btn btn-gold ats-upgrade-btn">שדרוג ל-Pro</a></div>`;
+              ? `<div class="ats-error">${dkL("הגעת למכסת השימוש ההוגן היומית ליצירת אתרים. אפשר להמשיך מחר.", "You've reached today's fair-use limit for creating websites. You can continue tomorrow.")}</div>`
+              : `<div class="ats-upgrade-card"><p>${dkL("הגעת למכסת הניסיונות החינמיים ליצירת אתר. רוצה להמשיך? שדרג לגרסת Pro בתשלום חד-פעמי!", "You've used your free website-creation tries. Want to continue? Upgrade to Pro with a one-time payment!")}</p><a href="#" class="btn btn-gold ats-upgrade-btn">שדרוג ל-Pro</a></div>`;
             return;
           }
           if (!data.site || !data.site.template || typeof SITE_TEMPLATES === "undefined" || !SITE_TEMPLATES[data.site.template]) {
-            throw new Error("לא התקבל עיצוב תקין מהשרת");
+            throw new Error(dkL("לא התקבל עיצוב תקין מהשרת", "The server didn't return a valid design"));
           }
 
           await dkApplyGeneratedSite(data.site, revalues);
           dkShowGeneratedPreview(overlay, body, revalues);
         } catch (err) {
           console.error("site restyle failed:", err);
-          body.innerHTML = `<div class="ats-error">משהו השתבש. אפשר לנסות שוב.</div>`;
+          body.innerHTML = `<div class="ats-error">${dkL("משהו השתבש. אפשר לנסות שוב.", "Something went wrong. Please try again.")}</div>`;
         }
       });
     });
@@ -518,9 +521,9 @@ async function openSiteAiGenerate() {
     overlay.className = "domain-guide-overlay";
     overlay.innerHTML = `
       <div class="domain-guide-modal ats-modal" role="dialog" aria-modal="true" aria-labelledby="site-ai-generate-title">
-        <button type="button" class="domain-guide-close" id="site-ai-generate-close" aria-label="סגירה">✕</button>
-        <h2 id="site-ai-generate-title" style="margin-bottom:4px;">בניית אתר</h2>
-        <div class="ats-modal-body"><div class="ats-upgrade-card"><p>הגעת למכסת הניסיונות החינמיים ליצירת אתר. רוצה להמשיך? שדרג לגרסת Pro בתשלום חד-פעמי!</p><a href="#" class="btn btn-gold ats-upgrade-btn">שדרוג ל-Pro</a></div></div>
+        <button type="button" class="domain-guide-close" id="site-ai-generate-close" aria-label="${dkL("סגירה", "Close")}">✕</button>
+        <h2 id="site-ai-generate-title" style="margin-bottom:4px;">${dkL("בניית אתר", "Build a website")}</h2>
+        <div class="ats-modal-body"><div class="ats-upgrade-card"><p>${dkL("הגעת למכסת הניסיונות החינמיים ליצירת אתר. רוצה להמשיך? שדרג לגרסת Pro בתשלום חד-פעמי!", "You've used your free website-creation tries. Want to continue? Upgrade to Pro with a one-time payment!")}</p><a href="#" class="btn btn-gold ats-upgrade-btn">שדרוג ל-Pro</a></div></div>
       </div>
     `;
     document.body.appendChild(overlay);
@@ -542,9 +545,9 @@ async function openSiteAiGenerate() {
   overlay.className = "domain-guide-overlay";
   overlay.innerHTML = `
     <div class="domain-guide-modal ats-modal wizard-modal" role="dialog" aria-modal="true" aria-labelledby="site-ai-generate-title">
-      <button type="button" class="domain-guide-close" id="site-ai-generate-close" aria-label="סגירה">✕</button>
-      <h2 id="site-ai-generate-title" style="margin-bottom:4px;">בניית אתר</h2>
-      <p class="lead" style="margin-top:0;">כמה שאלות קצרות, ואז האתר שלכם מוכן לעריכה.</p>
+      <button type="button" class="domain-guide-close" id="site-ai-generate-close" aria-label="${dkL("סגירה", "Close")}">✕</button>
+      <h2 id="site-ai-generate-title" style="margin-bottom:4px;">${dkL("בניית אתר", "Build a website")}</h2>
+      <p class="lead" style="margin-top:0;">${dkL("כמה שאלות קצרות, ואז האתר שלכם מוכן לעריכה.", "A few short questions, then your site is ready to edit.")}</p>
       <div class="ats-modal-body"></div>
     </div>
   `;

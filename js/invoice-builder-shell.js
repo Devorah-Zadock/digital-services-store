@@ -394,7 +394,7 @@ async function invoiceBshellGenerateDraft() {
     const res = await fetch(SUPABASE_URL + "/functions/v1/generate-invoice", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + token, apikey: SUPABASE_ANON_KEY },
-      body: JSON.stringify({ description, businessName: currentInvoiceProfile && currentInvoiceProfile.business_name }),
+      body: JSON.stringify({ lang: (typeof currentLang === "function" ? currentLang() : "he"), description, businessName: currentInvoiceProfile && currentInvoiceProfile.business_name }),
     });
     const data = await res.json();
     if (!res.ok || data.error) {

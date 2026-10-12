@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="he" dir="rtl">
+<html lang="he" dir="rtl" data-i18n-reload>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>בניית אתר עסקי בלי לדעת קוד — DeskKit</title>
+<title data-i18n="sites_meta_title">בניית אתר עסקי בלי לדעת קוד — DeskKit</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -139,27 +139,27 @@
 <body class="dk-has-app-sidebar">
 <div id="auth-gate-overlay" class="auth-gate-overlay">
   <div class="auth-gate-spinner"></div>
-  <p style="color:var(--grey); font-size:14px; margin:0;">בודקים חיבור…</p>
+  <p style="color:var(--grey); font-size:14px; margin:0;" data-i18n="sites_auth_checking">בודקים חיבור…</p>
 </div>
 
 <header class="site no-print">
   <nav class="nav">
     <a href="index.html" class="brand"><span class="brand-badge"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path class="bm-doc" d="M7,4 H14 L18,8 V20 H7 Z"/><path class="bm-fold" d="M14,4 L14,8 L18,8 Z"/><path class="bm-spark" d="M15,14.3 C15.3,16 16,16.7 17.7,17 C16,17.3 15.3,18 15,19.7 C14.7,18 14,17.3 12.3,17 C14,16.7 14.7,16 15,14.3 Z"/></svg></span><span class="brand-text"><span class="brand-desk">Desk</span><span class="brand-kit">Kit</span></span></a>
     <div class="nav-links">
-      <a href="index.html">בית</a>
-      <a href="products.html?type=cv">קורות חיים</a>
-      <a href="sites.html" class="active">בניית אתר</a>
-      <a href="quote-app.html">הצעות מחיר</a>
-      <a href="invoice-app.html">חשבוניות</a>
-      <a href="products.html?type=deck">מצגות</a>
-      <a href="products.html?type=xlsx">גליונות</a>
-      <a href="about.html">אודות</a>
-      <a href="contact.html">צור קשר</a>
+      <a href="index.html" data-i18n="nav_home">בית</a>
+      <a href="products.html?type=cv" data-i18n="nav_cv">קורות חיים</a>
+      <a href="sites.html" class="active" data-i18n="nav_sites">בניית אתר</a>
+      <a href="quote-app.html" data-i18n="nav_quotes">הצעות מחיר</a>
+      <a href="invoice-app.html" data-i18n="nav_invoices">חשבוניות</a>
+      <a href="products.html?type=deck" data-i18n="nav_decks">מצגות</a>
+      <a href="products.html?type=xlsx" data-i18n="nav_xlsx">גליונות</a>
+      <a href="about.html" data-i18n="nav_about">אודות</a>
+      <a href="contact.html" data-i18n="nav_contact">צור קשר</a>
     </div>
     <div class="nav-end-group">
-      <a href="account.html?redirect=tools.html" id="nav-login-link" class="nav-login nav-login-pending">כניסה</a>
+      <a href="account.html?redirect=tools.html" id="nav-login-link" class="nav-login nav-login-pending" data-i18n="nav_login">כניסה</a>
     </div>
-    <button class="burger" aria-label="תפריט">☰</button>
+    <button class="burger" aria-label="תפריט" data-i18n-aria="sites_menu_aria">☰</button>
   </nav>
 </header>
 
@@ -167,9 +167,9 @@
   <div class="sites-hero-blob" aria-hidden="true"></div>
   <div class="container builder-top-row">
     <div>
-      <span class="sites-hero-eyebrow">✨ אתר עסקי אמיתי, מותאם לעסק שלכם</span>
-      <h1 class="sites-hero-h1">מספרים לנו על העסק, והאתר שלכם מוכן</h1>
-      <p class="sites-hero-sub">כמה שאלות קצרות וחכמות — והאתר שלכם כבר מוכן לעריכה, עם עיצוב, טקסטים ורשימת שירותים שמתאימים בדיוק אליכם. ללא התחייבות, תשלום חד-פעמי וללא דמי מנוי חודשיים. <a href="guide-business-website.html" target="_blank" rel="noopener">מדריך קצר: מה חייב להיות באתר העסקי שלך? ›</a></p>
+      <span class="sites-hero-eyebrow" data-i18n="sites_hero_eyebrow">✨ אתר עסקי אמיתי, מותאם לעסק שלכם</span>
+      <h1 class="sites-hero-h1" data-i18n="sites_hero_h1">מספרים לנו על העסק, והאתר שלכם מוכן</h1>
+      <p class="sites-hero-sub"><span data-i18n="sites_hero_sub">כמה שאלות קצרות וחכמות — והאתר שלכם כבר מוכן לעריכה, עם עיצוב, טקסטים ורשימת שירותים שמתאימים בדיוק אליכם. ללא התחייבות, תשלום חד-פעמי וללא דמי מנוי חודשיים.</span> <a href="guide-business-website.html" target="_blank" rel="noopener" data-i18n="sites_hero_guide_link">מדריך קצר: מה חייב להיות באתר העסקי שלך? ›</a></p>
     </div>
   </div>
 </section>
@@ -177,7 +177,7 @@
 <section class="no-print" id="tpl-catalog-section" style="display:none;">
   <div class="container">
     <div class="site-primary-cta-row">
-      <button type="button" class="btn btn-teal site-primary-cta-btn" id="site-ai-generate-btn">🚀 בניית אתר</button>
+      <button type="button" class="btn btn-teal site-primary-cta-btn" id="site-ai-generate-btn" data-i18n="sites_cta_build">🚀 בניית אתר</button>
     </div>
   </div>
 </section>
@@ -189,22 +189,22 @@
      Neither ever shows a template name or a template grid. -->
 <section class="no-print" id="dk-sites-intro-section" style="display:none;">
   <div class="dk-sites-intro">
-    <h1>בואו נבנה לכם אתר.</h1>
-    <p class="lead">ענו על כמה שאלות קצרות, ו-DeskKit יבנה עבורכם נקודת התחלה מותאמת.</p>
+    <h1 data-i18n="sites_intro_h1">בואו נבנה לכם אתר.</h1>
+    <p class="lead" data-i18n="sites_intro_lead">ענו על כמה שאלות קצרות, ו-DeskKit יבנה עבורכם נקודת התחלה מותאמת.</p>
     <div class="dk-sites-intro-facts">
-      <span>⏱ כ-3 דקות</span>
-      <span>❓ עד 8 שאלות (אפשר לדלג על חלק)</span>
-      <span>✓ ללא צורך בידע טכני</span>
+      <span data-i18n="sites_intro_fact1">⏱ כ-3 דקות</span>
+      <span data-i18n="sites_intro_fact2">❓ עד 8 שאלות (אפשר לדלג על חלק)</span>
+      <span data-i18n="sites_intro_fact3">✓ ללא צורך בידע טכני</span>
     </div>
-    <button type="button" class="dk-btn dk-btn-primary dk-btn-lg" id="dk-sites-intro-cta">בואו נתחיל ←</button>
+    <button type="button" class="dk-btn dk-btn-primary dk-btn-lg" id="dk-sites-intro-cta" data-i18n="sites_intro_cta">בואו נתחיל ←</button>
   </div>
 </section>
 
 <section class="no-print" id="dk-mysites-section" style="display:none;">
   <div class="dk-mysites-wrap">
     <div class="dk-mysites-head">
-      <h1>האתרים שלי</h1>
-      <button type="button" class="dk-btn dk-btn-primary" id="dk-mysites-new-btn">+ צור אתר חדש</button>
+      <h1 data-i18n="sites_mysites_title">האתרים שלי</h1>
+      <button type="button" class="dk-btn dk-btn-primary" id="dk-mysites-new-btn" data-i18n="sites_mysites_new">+ צור אתר חדש</button>
     </div>
     <div class="dk-pcard-grid" id="dk-mysites-grid"></div>
   </div>
@@ -214,25 +214,25 @@
 <section class="bg-ice no-print">
   <div class="container">
     <div class="section-head">
-      <div class="kicker">איך זה עובד</div>
-      <h2>מכמה שאלות קצרות לאתר חי, בלי לדעת לתכנת</h2>
-      <p>עונים על כמה שאלות קצרות על העסק, והאתר כבר מוכן לעריכה — עם עיצוב, טקסטים ורשימת שירותים שמתאימים אליכם. משם, כל שינוי בטקסט, בצבע או בתמונה מופיע מיד בתצוגה חיה — בלי צורך בידע טכני ובלי לחכות למעצב.</p>
+      <div class="kicker" data-i18n="sites_how_kicker">איך זה עובד</div>
+      <h2 data-i18n="sites_how_h2">מכמה שאלות קצרות לאתר חי, בלי לדעת לתכנת</h2>
+      <p data-i18n="sites_how_p">עונים על כמה שאלות קצרות על העסק, והאתר כבר מוכן לעריכה — עם עיצוב, טקסטים ורשימת שירותים שמתאימים אליכם. משם, כל שינוי בטקסט, בצבע או בתמונה מופיע מיד בתצוגה חיה — בלי צורך בידע טכני ובלי לחכות למעצב.</p>
     </div>
     <div class="features">
       <div class="feature">
         <div class="icon">👁️</div>
-        <h4>תצוגה חיה בזמן אמת</h4>
-        <p>כל שינוי בטקסט, בצבע או בתמונה מופיע מיד בתצוגה המקדימה — רואים בדיוק את האתר הסופי לפני שמורידים אותו.</p>
+        <h4 data-i18n="sites_f1_h">תצוגה חיה בזמן אמת</h4>
+        <p data-i18n="sites_f1_p">כל שינוי בטקסט, בצבע או בתמונה מופיע מיד בתצוגה המקדימה — רואים בדיוק את האתר הסופי לפני שמורידים אותו.</p>
       </div>
       <div class="feature">
         <div class="icon">📱</div>
-        <h4>מותאם לנייד מהיסוד</h4>
-        <p>כל אחד מ-18 העיצובים בנוי כך שיישאר קריא ונוח גם במסך טלפון, בלי צורך בעריכה נפרדת לגרסת המובייל.</p>
+        <h4 data-i18n="sites_f2_h">מותאם לנייד מהיסוד</h4>
+        <p data-i18n="sites_f2_p">כל אחד מ-18 העיצובים בנוי כך שיישאר קריא ונוח גם במסך טלפון, בלי צורך בעריכה נפרדת לגרסת המובייל.</p>
       </div>
       <div class="feature">
         <div class="icon">🔓</div>
-        <h4>שליטה מלאה בתוכן</h4>
-        <p>עריכת הטקסטים, הצבעים והתמונות של האתר נשארת חינמית וללא הגבלה לתמיד — גם אחרי שהאתר כבר עלה לאוויר.</p>
+        <h4 data-i18n="sites_f3_h">שליטה מלאה בתוכן</h4>
+        <p data-i18n="sites_f3_p">עריכת הטקסטים, הצבעים והתמונות של האתר נשארת חינמית וללא הגבלה לתמיד — גם אחרי שהאתר כבר עלה לאוויר.</p>
       </div>
     </div>
   </div>
@@ -241,34 +241,34 @@
 <section class="no-print">
   <div class="container">
     <div class="section-head">
-      <div class="kicker">18 עיצובים, 5 סגנונות</div>
-      <h2>איזה סגנון הכי מתאים לעסק שלכם?</h2>
+      <div class="kicker" data-i18n="sites_styles_kicker">18 עיצובים, 5 סגנונות</div>
+      <h2 data-i18n="sites_styles_h2">איזה סגנון הכי מתאים לעסק שלכם?</h2>
     </div>
     <div class="features">
       <div class="feature">
         <div class="icon">🎨</div>
-        <h4>יוצרים וסטודיו</h4>
-        <p>הירו א-סימטרי, טיפוגרפיה גדולה ואנימציות גלילה — לסטודיו, למותג אופנה או לכל עסק שרוצה להתבלט חזותית.</p>
+        <h4 data-i18n="sites_s1_h">יוצרים וסטודיו</h4>
+        <p data-i18n="sites_s1_p">הירו א-סימטרי, טיפוגרפיה גדולה ואנימציות גלילה — לסטודיו, למותג אופנה או לכל עסק שרוצה להתבלט חזותית.</p>
       </div>
       <div class="feature">
         <div class="icon">🥂</div>
-        <h4>אירועים ובוטיק</h4>
-        <p>רקעים כהים, טיפוגרפיה איטלקית עדינה וגוונים יוקרתיים — לאירועים, קייטרינג ועסקי בוטיק.</p>
+        <h4 data-i18n="sites_s2_h">אירועים ובוטיק</h4>
+        <p data-i18n="sites_s2_p">רקעים כהים, טיפוגרפיה איטלקית עדינה וגוונים יוקרתיים — לאירועים, קייטרינג ועסקי בוטיק.</p>
       </div>
       <div class="feature">
         <div class="icon">👤</div>
-        <h4>תדמית אישית</h4>
-        <p>מבנה ממורכז ומינימלי סביב שם אחד — לפרילנסרים, יועצים ובעלי מקצוע עצמאיים.</p>
+        <h4 data-i18n="sites_s3_h">תדמית אישית</h4>
+        <p data-i18n="sites_s3_p">מבנה ממורכז ומינימלי סביב שם אחד — לפרילנסרים, יועצים ובעלי מקצוע עצמאיים.</p>
       </div>
       <div class="feature">
         <div class="icon">🛍️</div>
-        <h4>קטלוג ומכירות</h4>
-        <p>רשת מוצרים עם תגי מחיר וכרטיסי מוצר בולטים — לחנויות בוטיק ועסקים עם קטלוג מוצרים.</p>
+        <h4 data-i18n="sites_s4_h">קטלוג ומכירות</h4>
+        <p data-i18n="sites_s4_p">רשת מוצרים עם תגי מחיר וכרטיסי מוצר בולטים — לחנויות בוטיק ועסקים עם קטלוג מוצרים.</p>
       </div>
       <div class="feature">
         <div class="icon">🧰</div>
-        <h4>עסקי שירות</h4>
-        <p>כרטיסי שירותים, ציר זמן של תהליך העבודה וכפתור וואטסאפ צף — לעסקי שירות מקומיים ונותני שירות.</p>
+        <h4 data-i18n="sites_s5_h">עסקי שירות</h4>
+        <p data-i18n="sites_s5_p">כרטיסי שירותים, ציר זמן של תהליך העבודה וכפתור וואטסאפ צף — לעסקי שירות מקומיים ונותני שירות.</p>
       </div>
     </div>
   </div>
@@ -281,52 +281,52 @@
     <div class="builder-sidebar-head">
       <div class="builder-sidebar-head-row">
         <span id="current-tpl-info" class="builder-topbar-v2-tpl"></span>
-        <a href="sites.html?browse=1" class="btn-mini" id="change-template-link">בניית אתר חדש</a>
+        <a href="sites.html?browse=1" class="btn-mini" id="change-template-link" data-i18n="sites_sb_new_site">בניית אתר חדש</a>
       </div>
       <div class="builder-save-ctrl" id="site-save-ctrl">
-        <button type="button" class="btn btn-teal builder-save-btn" id="site-save-btn">שמירה</button>
+        <button type="button" class="btn btn-teal builder-save-btn" id="site-save-btn" data-i18n="sites_save">שמירה</button>
         <span class="builder-save-status" id="site-save-status"></span>
       </div>
-      <button type="button" class="btn btn-outline-dark builder-ai-review-btn" id="site-ai-review-btn">✨ עזרה עם AI</button>
+      <button type="button" class="btn btn-outline-dark builder-ai-review-btn" id="site-ai-review-btn" data-i18n="sites_sb_ai_help">✨ עזרה עם AI</button>
     </div>
-    <p id="finalized-note" class="no-print" style="display:none; font-size:12px; color:var(--grey); margin:0 0 14px;">האתר הזה נרכש והתבנית שלו נעולה — עריכה ופרסום חוזר שלו נשארים חינמיים לתמיד. לבניית אתר נוסף עם תבנית אחרת, יש להיכנס מ"אתרים" בתפריט העליון ולרכוש בנפרד.</p>
+    <p id="finalized-note" class="no-print" style="display:none; font-size:12px; color:var(--grey); margin:0 0 14px;" data-i18n="sites_sb_finalized">האתר הזה נרכש והתבנית שלו נעולה — עריכה ופרסום חוזר שלו נשארים חינמיים לתמיד. לבניית אתר נוסף עם תבנית אחרת, יש להיכנס מ"אתרים" בתפריט העליון ולרכוש בנפרד.</p>
 
     <div class="builder-hier-block">
       <div class="preview-tabs" id="preview-tabs" style="display:none;"></div>
       <div class="hier-tree" id="hier-tree"></div>
       <div class="hier-add-block-row" id="hier-add-block-row" style="display:none;">
-        <button type="button" class="btn-mini hier-add-block-btn" id="hier-add-block-btn">+ הוספת בלוק</button>
+        <button type="button" class="btn-mini hier-add-block-btn" id="hier-add-block-btn" data-i18n="sites_sb_add_block">+ הוספת בלוק</button>
       </div>
       <div class="site-ai-command-row" id="site-ai-command-row" style="display:none;">
-        <input type="text" id="site-ai-command-input" placeholder="✨ פקודה ל-AI, לדוגמה: הזז את השירותים לפני האודות" maxlength="300">
-        <button type="button" class="btn-mini" id="site-ai-command-btn">שליחה</button>
-        <button type="button" class="btn-mini" id="site-ai-command-undo" style="display:none;">↶ בטל שינוי אחרון</button>
+        <input type="text" id="site-ai-command-input" placeholder="✨ פקודה ל-AI, לדוגמה: הזז את השירותים לפני האודות" data-i18n-placeholder="sites_sb_ai_cmd_ph" maxlength="300">
+        <button type="button" class="btn-mini" id="site-ai-command-btn" data-i18n="sites_send">שליחה</button>
+        <button type="button" class="btn-mini" id="site-ai-command-undo" style="display:none;" data-i18n="sites_sb_ai_undo">↶ בטל שינוי אחרון</button>
         <div class="site-ai-command-note" id="site-ai-command-note"></div>
       </div>
     </div>
 
     <details class="builder-section" open>
-      <summary class="builder-section-head">פרטי העסק</summary>
+      <summary class="builder-section-head" data-i18n="sites_sb_biz">פרטי העסק</summary>
       <div class="builder-section-body">
         <div class="field">
-          <label for="h-heroTitle" title="הכותרת הגדולה שמופיעה בראש האתר. השאירו ריק כדי שתהיה זהה לשם העסק.">כותרת ראשית</label>
-          <input id="h-heroTitle" type="text" placeholder="לדוגמה: מעצבים את המרחב שלכם מחדש" maxlength="60">
+          <label for="h-heroTitle" title="הכותרת הגדולה שמופיעה בראש האתר. השאירו ריק כדי שתהיה זהה לשם העסק." data-i18n="sites_sb_hero_title" data-i18n-title="sites_sb_hero_title_tip">כותרת ראשית</label>
+          <input id="h-heroTitle" type="text" placeholder="לדוגמה: מעצבים את המרחב שלכם מחדש" data-i18n-placeholder="sites_sb_hero_title_ph" maxlength="60">
         </div>
         <div class="field">
-          <label for="s-name" title="מוצג בתפריט הניווט ובתחתית העמוד">שם העסק</label>
-          <input id="s-name" type="text" placeholder="שם העסק" maxlength="40">
+          <label for="s-name" title="מוצג בתפריט הניווט ובתחתית העמוד" data-i18n="sites_sb_name" data-i18n-title="sites_sb_name_tip">שם העסק</label>
+          <input id="s-name" type="text" placeholder="שם העסק" data-i18n-placeholder="sites_sb_name" maxlength="40">
         </div>
         <div class="field">
           <div class="field-label-row">
-            <label for="s-tagline">שורת תיאור קצרה</label>
-            <button type="button" class="btn-mini ai-improve-btn" data-ai-field="tagline" data-ai-input="s-tagline">✨ שפר עם AI</button>
+            <label for="s-tagline" data-i18n="sites_sb_tagline">שורת תיאור קצרה</label>
+            <button type="button" class="btn-mini ai-improve-btn" data-ai-field="tagline" data-ai-input="s-tagline" data-i18n="sites_ai_improve">✨ שפר עם AI</button>
           </div>
           <input id="s-tagline" type="text" maxlength="90">
         </div>
         <div class="field">
           <div class="field-label-row">
-            <label for="s-about">קצת עלינו</label>
-            <button type="button" class="btn-mini ai-improve-btn" data-ai-field="about" data-ai-input="s-about">✨ שפר עם AI</button>
+            <label for="s-about" data-i18n="sites_sb_about">קצת עלינו</label>
+            <button type="button" class="btn-mini ai-improve-btn" data-ai-field="about" data-ai-input="s-about" data-i18n="sites_ai_improve">✨ שפר עם AI</button>
           </div>
           <textarea id="s-about" rows="3" maxlength="500"></textarea>
         </div>
@@ -334,111 +334,119 @@
     </details>
 
     <details class="builder-section">
-      <summary class="builder-section-head">✏️ כותרות מותאמות אישית <span class="builder-section-optional">(אופציונלי)</span></summary>
+      <summary class="builder-section-head"><span data-i18n="sites_sb_headings">✏️ כותרות מותאמות אישית</span> <span class="builder-section-optional" data-i18n="sites_optional">(אופציונלי)</span></summary>
       <div class="builder-section-body">
-        <p class="builder-section-hint">לכל תבנית יש כותרות ברירת מחדל לחלקים הראשיים באתר. אפשר לבחור ניסוח חלופי מהרשימה, או להקליד כותרת משלכם.</p>
+        <p class="builder-section-hint" data-i18n="sites_sb_headings_hint">לכל תבנית יש כותרות ברירת מחדל לחלקים הראשיים באתר. אפשר לבחור ניסוח חלופי מהרשימה, או להקליד כותרת משלכם.</p>
         <div class="field heading-field">
-          <label for="h-services-pick">כותרת חלק השירותים/מוצרים</label>
+          <label for="h-services-pick" data-i18n="sites_sb_h_services">כותרת חלק השירותים/מוצרים</label>
           <select id="h-services-pick"></select>
-          <input type="text" id="h-services" placeholder="הקלידו כותרת משלכם" maxlength="40" hidden>
+          <input type="text" id="h-services" placeholder="הקלידו כותרת משלכם" data-i18n-placeholder="sites_sb_h_custom_ph" maxlength="40" hidden>
         </div>
         <div class="field heading-field">
-          <label for="h-about-pick">כותרת חלק "אודות"</label>
+          <label for="h-about-pick" data-i18n="sites_sb_h_about">כותרת חלק "אודות"</label>
           <select id="h-about-pick"></select>
-          <input type="text" id="h-about" placeholder="הקלידו כותרת משלכם" maxlength="40" hidden>
+          <input type="text" id="h-about" placeholder="הקלידו כותרת משלכם" data-i18n-placeholder="sites_sb_h_custom_ph" maxlength="40" hidden>
         </div>
         <div class="field heading-field">
-          <label for="h-contact-pick">כותרת חלק יצירת הקשר</label>
+          <label for="h-contact-pick" data-i18n="sites_sb_h_contact">כותרת חלק יצירת הקשר</label>
           <select id="h-contact-pick"></select>
-          <input type="text" id="h-contact" placeholder="הקלידו כותרת משלכם" maxlength="40" hidden>
+          <input type="text" id="h-contact" placeholder="הקלידו כותרת משלכם" data-i18n-placeholder="sites_sb_h_custom_ph" maxlength="40" hidden>
         </div>
       </div>
     </details>
 
     <details class="builder-section" open>
-      <summary class="builder-section-head">עיצוב האתר</summary>
+      <summary class="builder-section-head" data-i18n="sites_sb_design">עיצוב האתר</summary>
       <div class="builder-section-body">
         <div class="field">
-          <label for="s-color">צבע ראשי</label>
+          <label for="s-color" data-i18n="sites_primary_color">צבע ראשי</label>
           <div class="color-row"><input type="color" id="s-color" value="#1F5C4E"></div>
         </div>
         <div class="field">
-          <label for="s-font">גופן הטקסט באתר</label>
+          <label for="s-font" data-i18n="sites_sb_font">גופן הטקסט באתר</label>
           <select id="s-font"></select>
         </div>
         <div class="field">
-          <label class="page-toggle"><input type="checkbox" id="s-show-bsd"> הצגת בס"ד קטן בפינה הימנית העליונה של האתר</label>
+          <label for="s-site-lang" data-i18n="sites_site_lang">שפת האתר</label>
+          <select id="s-site-lang">
+            <option value="he" data-i18n="sites_lang_he">עברית</option>
+            <option value="en">English</option>
+          </select>
+          <p class="field-hint" data-i18n="sites_site_lang_hint">השפה של האתר עצמו: כיוון הטקסט והכותרות והתוויות שמופיעות כברירת מחדל. הטקסטים שכתבתם לא משתנים.</p>
         </div>
         <div class="field">
-          <label class="page-toggle"><input type="checkbox" id="s-hide-copyright"> הסתרת שורת "© שנה ושם העסק" מתחתית העמוד</label>
+          <label class="page-toggle"><input type="checkbox" id="s-show-bsd"> <span data-i18n="sites_sb_bsd">הצגת בס"ד קטן בפינה הימנית העליונה של האתר</span></label>
+        </div>
+        <div class="field">
+          <label class="page-toggle"><input type="checkbox" id="s-hide-copyright"> <span data-i18n="sites_sb_hide_copyright">הסתרת שורת "© שנה ושם העסק" מתחתית העמוד</span></label>
         </div>
       </div>
     </details>
 
     <details class="builder-section">
-      <summary class="builder-section-head">תמונות ומדיה <span class="builder-section-optional">(אופציונלי)</span></summary>
+      <summary class="builder-section-head"><span data-i18n="sites_media">תמונות ומדיה</span> <span class="builder-section-optional" data-i18n="sites_optional">(אופציונלי)</span></summary>
       <div class="builder-section-body">
         <div class="field">
-          <label>תמונה ראשית</label>
+          <label data-i18n="sites_hero_image">תמונה ראשית</label>
           <div class="photo-row">
             <div class="photo-preview" id="s-photo-preview"></div>
             <div class="photo-actions">
-              <label class="btn-mini photo-upload-btn" for="s-photo">העלאת תמונה</label>
+              <label class="btn-mini photo-upload-btn" for="s-photo" data-i18n="sites_upload_image">העלאת תמונה</label>
               <input type="file" id="s-photo" accept="image/*" style="display:none;">
-              <button type="button" class="photo-remove" id="s-photo-remove">הסרת תמונה</button>
+              <button type="button" class="photo-remove" id="s-photo-remove" data-i18n="sites_remove_image">הסרת תמונה</button>
             </div>
           </div>
         </div>
         <div class="field">
-          <label>גלריית תמונות מתחלפות</label>
-          <p class="field-hint">מעלים כמה תמונות — התמונה הראשית באתר תתחלף ביניהן אוטומטית. אם יש כאן תמונות, הן מחליפות את "התמונה הראשית" שלמעלה. עד 5 תמונות.</p>
+          <label data-i18n="sites_sb_gallery">גלריית תמונות מתחלפות</label>
+          <p class="field-hint" data-i18n="sites_sb_gallery_hint">מעלים כמה תמונות — התמונה הראשית באתר תתחלף ביניהן אוטומטית. אם יש כאן תמונות, הן מחליפות את "התמונה הראשית" שלמעלה. עד 5 תמונות.</p>
           <div id="s-gallery-preview" class="site-gallery-preview"></div>
-          <label class="btn-mini photo-upload-btn" for="s-gallery">הוספת תמונה לגלריה</label>
+          <label class="btn-mini photo-upload-btn" for="s-gallery" data-i18n="sites_add_gallery">הוספת תמונה לגלריה</label>
           <input type="file" id="s-gallery" accept="image/*" multiple style="display:none;">
         </div>
         <div class="field">
-          <label for="s-video">קישור לסרטון (יוטיוב)</label>
+          <label for="s-video" data-i18n="sites_video_link">קישור לסרטון (יוטיוב)</label>
           <input id="s-video" type="text" dir="ltr" placeholder="https://youtube.com/watch?v=...">
-          <label class="page-toggle" style="margin-top:8px;"><input type="checkbox" id="s-video-bg"> הצגת הסרטון כרקע לכותרת הראשית (ללא קול, מתנגן אוטומטית בלולאה) — נתמך כרגע בחלק מהעיצובים</label>
+          <label class="page-toggle" style="margin-top:8px;"><input type="checkbox" id="s-video-bg"> <span data-i18n="sites_sb_video_bg">הצגת הסרטון כרקע לכותרת הראשית (ללא קול, מתנגן אוטומטית בלולאה) — נתמך כרגע בחלק מהעיצובים</span></label>
         </div>
       </div>
     </details>
 
     <details class="builder-section" open>
-      <summary class="builder-section-head">שירותים / מוצרים</summary>
+      <summary class="builder-section-head" data-i18n="sites_sb_services">שירותים / מוצרים</summary>
       <div class="builder-section-body">
         <div class="jobs-head">
-          <label>רשימת השירותים/המוצרים</label>
-          <button type="button" class="btn-mini" id="add-service">+ הוספת שירות</button>
+          <label data-i18n="sites_sb_services_list">רשימת השירותים/המוצרים</label>
+          <button type="button" class="btn-mini" id="add-service" data-i18n="sites_add_service">+ הוספת שירות</button>
         </div>
         <div id="services-list"></div>
       </div>
     </details>
 
     <details class="builder-section" open>
-      <summary class="builder-section-head">פרטי יצירת קשר</summary>
+      <summary class="builder-section-head" data-i18n="sites_sb_contact">פרטי יצירת קשר</summary>
       <div class="builder-section-body">
-        <div class="field"><label for="s-phone">טלפון</label><input id="s-phone" type="text" dir="ltr"></div>
-        <div class="field"><label class="page-toggle"><input type="checkbox" id="s-has-whatsapp" checked> המספר הזה הוא גם מספר הוואטסאפ שלי</label></div>
-        <div class="field"><label for="s-whatsapp">מספר וואטסאפ (אם שונה מהטלפון)</label><input id="s-whatsapp" type="text" dir="ltr"></div>
-        <div class="field"><label for="s-email">מייל</label><input id="s-email" type="text" dir="ltr"></div>
-        <div class="field"><label for="s-address">כתובת</label><input id="s-address" type="text"></div>
+        <div class="field"><label for="s-phone" data-i18n="sites_phone">טלפון</label><input id="s-phone" type="text" dir="ltr"></div>
+        <div class="field"><label class="page-toggle"><input type="checkbox" id="s-has-whatsapp" checked> <span data-i18n="sites_sb_has_whatsapp">המספר הזה הוא גם מספר הוואטסאפ שלי</span></label></div>
+        <div class="field"><label for="s-whatsapp" data-i18n="sites_sb_whatsapp">מספר וואטסאפ (אם שונה מהטלפון)</label><input id="s-whatsapp" type="text" dir="ltr"></div>
+        <div class="field"><label for="s-email" data-i18n="sites_email">מייל</label><input id="s-email" type="text" dir="ltr"></div>
+        <div class="field"><label for="s-address" data-i18n="sites_address">כתובת</label><input id="s-address" type="text"></div>
       </div>
     </details>
 
     <details class="builder-section">
-      <summary class="builder-section-head" title="כשמפעילים דף נפרד, הוא נוצר כקובץ משלו באתר, עם ניווט לכל הדפים הקיימים בראש ובתחתית.">דפים נוספים <span class="builder-section-optional">(לא חובה)</span></summary>
+      <summary class="builder-section-head" title="כשמפעילים דף נפרד, הוא נוצר כקובץ משלו באתר, עם ניווט לכל הדפים הקיימים בראש ובתחתית." data-i18n-title="sites_sb_pages_tip"><span data-i18n="sites_sb_pages">דפים נוספים</span> <span class="builder-section-optional" data-i18n="sites_not_required">(לא חובה)</span></summary>
       <div class="builder-section-body">
-        <label class="page-toggle"><input type="checkbox" id="s-page-about"> דף "אודות" נפרד</label>
-        <label class="page-toggle"><input type="checkbox" id="s-page-contact"> דף "צור קשר" נפרד</label>
+        <label class="page-toggle"><input type="checkbox" id="s-page-about"> <span data-i18n="sites_sb_page_about">דף "אודות" נפרד</span></label>
+        <label class="page-toggle"><input type="checkbox" id="s-page-contact"> <span data-i18n="sites_sb_page_contact">דף "צור קשר" נפרד</span></label>
       </div>
     </details>
   </aside>
 
   <main class="builder-preview">
     <div class="preview-sticky">
-      <iframe id="site-preview-frame" title="תצוגה מקדימה של האתר"></iframe>
-      <button type="button" class="dk-btn dk-btn-ghost full-preview-btn no-print" id="full-preview-btn">תצוגה מלאה במסך חדש ⤢</button>
+      <iframe id="site-preview-frame" title="תצוגה מקדימה של האתר" data-i18n-title="sites_preview_frame_title"></iframe>
+      <button type="button" class="dk-btn dk-btn-ghost full-preview-btn no-print" id="full-preview-btn" data-i18n="sites_full_preview">תצוגה מלאה במסך חדש ⤢</button>
 
       <!-- Reparented wholesale (never duplicated) into the new Publish
            modal (js/site-wizard-router.js: dkOpenPublishModal) when
@@ -451,21 +459,21 @@
            informational boxes changed here, for a calmer default view. -->
       <div class="export-panel no-print" id="export-panel" style="margin-top:20px;">
         <div id="finish-gate">
-          <button type="button" class="dk-btn dk-btn-primary" id="finish-btn" style="width:100%;">סיימתי לערוך, רוצה לפרסם את האתר</button>
-          <p class="finish-gate-note">עריכת התוכן, הצבע והתמונות נשארת <b>חינמית לתמיד</b>. פרסום עם תגית "נבנה ב-DeskKit" קטנה הוא בחינם; אפשר להסיר אותה בתשלום חד-פעמי בכל שלב.</p>
+          <button type="button" class="dk-btn dk-btn-primary" id="finish-btn" style="width:100%;" data-i18n="sites_finish_btn">סיימתי לערוך, רוצה לפרסם את האתר</button>
+          <p class="finish-gate-note" data-i18n-html="sites_finish_note">עריכת התוכן, הצבע והתמונות נשארת <b>חינמית לתמיד</b>. פרסום עם תגית "נבנה ב-DeskKit" קטנה הוא בחינם; אפשר להסיר אותה בתשלום חד-פעמי בכל שלב.</p>
           <details class="dk-details">
-            <summary>💡 איך האתר שלכם עולה לאוויר?</summary>
+            <summary data-i18n="sites_how_live">💡 איך האתר שלכם עולה לאוויר?</summary>
             <div class="host-info-box">
               <ul>
-                <li><b>אחסון וקישור:</b> חינם לתמיד! האתר שלכם יעלה לרשת באופן מיידי ותקבלו קישור ייחודי (בסיומת <bdi>deskkit.co.il</bdi>).</li>
-                <li><b>כתובת פרטית משלכם:</b> אם תרצו בעתיד לחבר דומיין אישי (כמו <bdi>www.yourname.co.il</bdi>), תוכלו לרכוש אותו מכל ספק ולחבר בקלות לפי המדריך שנציג לכם בסיום.</li>
+                <li data-i18n-html="sites_host_li1"><b>אחסון וקישור:</b> חינם לתמיד! האתר שלכם יעלה לרשת באופן מיידי ותקבלו קישור ייחודי (בסיומת <bdi>deskkit.co.il</bdi>).</li>
+                <li data-i18n-html="sites_host_li2"><b>כתובת פרטית משלכם:</b> אם תרצו בעתיד לחבר דומיין אישי (כמו <bdi>www.yourname.co.il</bdi>), תוכלו לרכוש אותו מכל ספק ולחבר בקלות לפי המדריך שנציג לכם בסיום.</li>
               </ul>
             </div>
           </details>
         </div>
         <div id="unlock-done" style="display:none;">
-          <p id="unlock-done-heading" style="margin:0 0 14px; font-size:15px; font-weight:700; color:var(--text);">האתר שלכם מוכן לפרסום.</p>
-          <button type="button" class="dk-btn dk-btn-primary" id="publish-site-btn" style="width:100%;">פרסום — קבלת קישור חי</button>
+          <p id="unlock-done-heading" style="margin:0 0 14px; font-size:15px; font-weight:700; color:var(--text);" data-i18n="sites_ready_to_publish">האתר שלכם מוכן לפרסום.</p>
+          <button type="button" class="dk-btn dk-btn-primary" id="publish-site-btn" style="width:100%;" data-i18n="sites_publish_get_link">פרסום — קבלת קישור חי</button>
           <p class="finish-gate-note" id="publish-remaining"></p>
           <p class="finish-gate-note" id="publish-note"></p>
 
@@ -480,43 +488,43 @@
           <div id="watermark-upsell" class="unlock-box dk-pro-card" style="margin-top:18px;">
             <div class="dk-pro-head">
               <span class="dk-pro-chip">PRO</span>
-              <p class="dk-pro-title">האתר שלכם — המותג שלכם בלבד</p>
+              <p class="dk-pro-title" data-i18n="sites_pro_title">האתר שלכם — המותג שלכם בלבד</p>
             </div>
-            <p class="dk-pro-sub">הסירו את התגית "נבנה ב-DeskKit" ותנו ללקוחות לראות רק את העסק שלכם.</p>
+            <p class="dk-pro-sub" data-i18n="sites_pro_sub">הסירו את התגית "נבנה ב-DeskKit" ותנו ללקוחות לראות רק את העסק שלכם.</p>
             <ul class="dk-pro-perks">
-              <li>מראה נקי ומקצועי, בלי פרסום של אף אחד אחר</li>
-              <li>תשלום חד-פעמי — בלי מנוי ובלי הפתעות</li>
-              <li>ההסרה מיידית, עם קבלה למייל</li>
+              <li data-i18n="sites_pro_perk1">מראה נקי ומקצועי, בלי פרסום של אף אחד אחר</li>
+              <li data-i18n="sites_pro_perk2">תשלום חד-פעמי — בלי מנוי ובלי הפתעות</li>
+              <li data-i18n="sites_pro_perk3">ההסרה מיידית, עם קבלה למייל</li>
             </ul>
             <div id="buy-new-block">
-              <a href="#" id="buy-link" target="_blank" rel="noopener" class="dk-btn dk-btn-primary dk-pro-btn">✨ שדרוג לאתר נקי — הסרת התגית</a>
+              <a href="#" id="buy-link" target="_blank" rel="noopener" class="dk-btn dk-btn-primary dk-pro-btn" data-i18n="sites_pro_btn">✨ שדרוג לאתר נקי — הסרת התגית</a>
               <details class="dk-details">
-                <summary>מה כלול בשדרוג?</summary>
-                <div class="host-info-box">
+                <summary data-i18n="sites_pro_whats_included">מה כלול בשדרוג?</summary>
+                <div class="host-info-box" data-i18n-html="sites_pro_details">
                   הסרת תגית DeskKit, חד-פעמית, לאתר שבניתם כרגע — <b>199 ₪, תשלום חד-פעמי, ללא מנוי</b>. המוכר: דבורה צדוק (DeskKit), עוסק פטור. התשלום עצמו מעובד באופן מאובטח דרך Gumroad, ותקבלו קבלה למייל. התוכנה פועלת באופן אוטומטי לחלוטין וללא תמיכה אנושית/טלפונית — המחיר הנמוך מתאפשר הודות לשירות עצמי מלא (Self-Service).
                 </div>
               </details>
             </div>
             <div id="hosting-paused" style="display:none;">
-              <div class="host-info-box" style="margin-bottom:14px; background:#FFF6E8; color:#8A5A1A;">
+              <div class="host-info-box" style="margin-bottom:14px; background:#FFF6E8; color:#8A5A1A;" data-i18n-html="sites_hosting_paused">
                 <b>⏸️ רכישת שדרוגים סגורה זמנית</b><br>
                 עקב עומס זמני אצל ספק האחסון שלנו, אפשרות הרכישה סגורה זמנית. אנו מתנצלים על אי הנוחות. יש לכם כבר קוד רישוי ממייל קודם? אפשר להזין אותו למטה כרגיל.
               </div>
             </div>
             <details class="dk-details dk-pro-license">
-              <summary>כבר רכשתם? הזינו קוד רישוי</summary>
-              <input type="text" id="license-input" placeholder="קוד רישוי (מהמייל של הרכישה)" dir="ltr" style="margin-top:8px;">
+              <summary data-i18n="sites_license_summary">כבר רכשתם? הזינו קוד רישוי</summary>
+              <input type="text" id="license-input" placeholder="קוד רישוי (מהמייל של הרכישה)" data-i18n-placeholder="sites_license_ph" dir="ltr" style="margin-top:8px;">
               <div class="unlock-note" id="license-note"></div>
-              <button type="button" class="dk-btn dk-btn-ghost" id="verify-btn" style="width:100%;">אימות והסרת התגית</button>
+              <button type="button" class="dk-btn dk-btn-ghost" id="verify-btn" style="width:100%;" data-i18n="sites_verify_btn">אימות והסרת התגית</button>
             </details>
           </div>
-          <div id="watermark-removed" class="unlock-box" style="display:none; margin-top:18px; text-align:center; color:var(--success); font-weight:700;">
+          <div id="watermark-removed" class="unlock-box" style="display:none; margin-top:18px; text-align:center; color:var(--success); font-weight:700;" data-i18n="sites_watermark_removed">
             ✓ האתר שלכם מתפרסם בלי תגית DeskKit
           </div>
 
           <details class="dk-details" style="margin-top:14px;">
-            <summary>איך אנשים ימצאו את האתר בגוגל?</summary>
-            <div class="go-live-box">
+            <summary data-i18n="sites_google_summary">איך אנשים ימצאו את האתר בגוגל?</summary>
+            <div class="go-live-box" data-i18n-html="sites_google_body">
               שני דברים עוזרים הכי הרבה: לרשום את העסק בחינם ב־<a href="https://www.google.com/business/" target="_blank" rel="noopener">Google עסקים שלי</a>, ולחבר דומיין משלכם (כ-60–150 ₪ לשנה) — עושה רושם הרבה יותר מקצועי.
             </div>
           </details>
@@ -536,7 +544,7 @@
 <div id="bshell-root" class="bshell no-print">
   <div class="bshell-top">
     <span class="dk-crumb" id="bshell-breadcrumb">
-      <a href="index.html">DeskKit</a><span class="dk-crumb-sep">/</span><a href="projects.html">הפרויקטים שלי</a><span class="dk-crumb-sep">/</span><span class="dk-crumb-current" id="bshell-breadcrumb-current"></span>
+      <a href="index.html">DeskKit</a><span class="dk-crumb-sep">/</span><a href="projects.html" data-i18n="sites_my_projects">הפרויקטים שלי</a><span class="dk-crumb-sep">/</span><span class="dk-crumb-current" id="bshell-breadcrumb-current"></span>
     </span>
     <span class="bshell-top-name" id="bshell-top-name" style="display:none;"></span>
     <span class="bshell-top-status" id="bshell-top-status"></span>
@@ -553,34 +561,34 @@
       </button>
     </div>
     <div class="bshell-ai-wrap" id="bshell-ai-wrap">
-      <button type="button" class="bshell-top-btn" id="bshell-ai-btn" aria-expanded="false">✨ עזרה מ-DeskKit</button>
+      <button type="button" class="bshell-top-btn" id="bshell-ai-btn" aria-expanded="false" data-i18n="sites_bs_ai_btn">✨ עזרה מ-DeskKit</button>
       <div class="bshell-ai-panel" id="bshell-ai-panel" hidden>
-        <input type="text" id="bshell-ai-input" placeholder="מה תרצו לשנות?" maxlength="200">
+        <input type="text" id="bshell-ai-input" placeholder="מה תרצו לשנות?" data-i18n-placeholder="sites_bs_ai_ph" maxlength="200">
         <p class="bshell-ai-hint" id="bshell-ai-hint"></p>
         <div class="bshell-ai-examples" id="bshell-ai-examples"></div>
-        <button type="button" class="bshell-top-btn bshell-top-btn-primary" id="bshell-ai-submit" style="width:100%;">שליחה</button>
+        <button type="button" class="bshell-top-btn bshell-top-btn-primary" id="bshell-ai-submit" style="width:100%;" data-i18n="sites_send">שליחה</button>
         <div class="bshell-ai-note" id="bshell-ai-note"></div>
       </div>
     </div>
-    <button type="button" class="bshell-top-btn" id="bshell-undo-btn" disabled title="בטל (Ctrl+Z)">↶ בטל</button>
-    <button type="button" class="bshell-top-btn" id="bshell-redo-btn" disabled title="בצע שוב (Ctrl+Shift+Z)">↷ חזור</button>
-    <button type="button" class="bshell-top-btn" id="bshell-preview-btn">תצוגה מקדימה ⤢</button>
-    <button type="button" class="bshell-top-btn" id="bshell-save-btn">שמירה</button>
-    <button type="button" class="bshell-top-btn bshell-top-btn-primary" id="bshell-publish-btn">פרסום</button>
-    <a href="sites.html" class="bshell-exit-link">יציאה</a>
+    <button type="button" class="bshell-top-btn" id="bshell-undo-btn" disabled title="בטל (Ctrl+Z)" data-i18n="sites_undo" data-i18n-title="sites_undo_title">↶ בטל</button>
+    <button type="button" class="bshell-top-btn" id="bshell-redo-btn" disabled title="בצע שוב (Ctrl+Shift+Z)" data-i18n="sites_redo" data-i18n-title="sites_redo_title">↷ חזור</button>
+    <button type="button" class="bshell-top-btn" id="bshell-preview-btn" data-i18n="sites_preview">תצוגה מקדימה ⤢</button>
+    <button type="button" class="bshell-top-btn" id="bshell-save-btn" data-i18n="sites_save">שמירה</button>
+    <button type="button" class="bshell-top-btn bshell-top-btn-primary" id="bshell-publish-btn" data-i18n="sites_publish">פרסום</button>
+    <a href="sites.html" class="bshell-exit-link" data-i18n="sites_exit">יציאה</a>
   </div>
 
   <div class="bshell-mobile-tabs no-print" style="padding:8px 14px; background:var(--surface); border-bottom:1px solid var(--border);">
-    <button type="button" class="bshell-top-btn" id="bshell-mobile-hier-btn" style="flex:1;">מבנה</button>
-    <button type="button" class="bshell-top-btn" id="bshell-mobile-props-btn" style="flex:1;">עיצוב</button>
+    <button type="button" class="bshell-top-btn" id="bshell-mobile-hier-btn" style="flex:1;" data-i18n="sites_mobile_structure">מבנה</button>
+    <button type="button" class="bshell-top-btn" id="bshell-mobile-props-btn" style="flex:1;" data-i18n="sites_mobile_design">עיצוב</button>
   </div>
 
   <div class="bshell-body">
     <aside class="bshell-hier" id="bshell-hier">
-      <div class="bshell-hier-title">מבנה האתר</div>
+      <div class="bshell-hier-title" data-i18n="sites_bs_hier_title">מבנה האתר</div>
       <button type="button" class="bshell-settings-btn" id="bshell-settings-btn">
         <span class="bshell-settings-icon">⚙</span>
-        <span>פרטי העסק ועיצוב</span>
+        <span data-i18n="sites_bs_settings_btn">פרטי העסק ועיצוב</span>
       </button>
       <div id="bshell-hier-list"></div>
     </aside>
@@ -588,13 +596,13 @@
     <div class="bshell-canvas-wrap">
       <div class="bshell-canvas-frame-holder" id="bshell-canvas-holder">
         <div class="bshell-canvas-shadow">
-          <iframe class="bshell-canvas-iframe" id="bshell-canvas-iframe" title="עריכת האתר"></iframe>
+          <iframe class="bshell-canvas-iframe" id="bshell-canvas-iframe" title="עריכת האתר" data-i18n-title="sites_bs_canvas_title"></iframe>
         </div>
       </div>
     </div>
 
     <aside class="bshell-props" id="bshell-props">
-      <div class="bshell-props-empty" id="bshell-props-empty">בחרו אלמנט באתר כדי לערוך אותו</div>
+      <div class="bshell-props-empty" id="bshell-props-empty" data-i18n="sites_bs_props_empty">בחרו אלמנט באתר כדי לערוך אותו</div>
       <div id="bshell-props-body" style="display:none;"></div>
     </aside>
   </div>
@@ -605,32 +613,32 @@
     <div class="footer-grid">
       <div>
         <h4>DeskKit</h4>
-        <p style="font-size:14px; max-width:320px;">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות, אתרים ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
+        <p style="font-size:14px; max-width:320px;" data-i18n="sites_footer_blurb">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות, אתרים ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
       </div>
       <div>
-        <h4>ניווט</h4>
+        <h4 data-i18n="footer_nav_heading">ניווט</h4>
         <ul>
-          <li><a href="builder.html">קורות חיים</a></li>
-          <li><a href="quote-app.html">הצעות מחיר</a></li>
-          <li><a href="invoice-app.html">חשבוניות</a></li>
-          <li><a href="products.html?type=deck">מצגות</a></li>
-          <li><a href="products.html?type=xlsx">גליונות</a></li>
-          <li><a href="about.html">אודות</a></li>
-          <li><a href="contact.html">צור קשר</a></li>
+          <li><a href="builder.html" data-i18n="nav_cv">קורות חיים</a></li>
+          <li><a href="quote-app.html" data-i18n="nav_quotes">הצעות מחיר</a></li>
+          <li><a href="invoice-app.html" data-i18n="nav_invoices">חשבוניות</a></li>
+          <li><a href="products.html?type=deck" data-i18n="nav_decks">מצגות</a></li>
+          <li><a href="products.html?type=xlsx" data-i18n="nav_xlsx">גליונות</a></li>
+          <li><a href="about.html" data-i18n="nav_about">אודות</a></li>
+          <li><a href="contact.html" data-i18n="nav_contact">צור קשר</a></li>
         </ul>
       </div>
       <div>
-        <h4>מידע</h4>
+        <h4 data-i18n="footer_info_heading">מידע</h4>
         <ul>
-          <li><a href="guides.html">מדריכים</a></li>
-          <li><a href="faq.html">שאלות נפוצות</a></li>
-          <li><a href="terms.html">מדיניות</a></li>
-          <li><a href="security.html">אבטחת מידע</a></li>
-          <li><a href="accessibility.html">נגישות</a></li>
+          <li><a href="guides.html" data-i18n="footer_guides">מדריכים</a></li>
+          <li><a href="faq.html" data-i18n="footer_faq">שאלות נפוצות</a></li>
+          <li><a href="terms.html" data-i18n="footer_terms">מדיניות</a></li>
+          <li><a href="security.html" data-i18n="footer_security">אבטחת מידע</a></li>
+          <li><a href="accessibility.html" data-i18n="footer_accessibility">נגישות</a></li>
         </ul>
       </div>
       <div>
-        <h4>צור קשר</h4>
+        <h4 data-i18n="nav_contact">צור קשר</h4>
         <ul>
           <li><a class="dk-email" href="contact.html">צרו קשר</a></li>
         </ul>
@@ -641,19 +649,21 @@
       <p class="footer-identity-owner" data-i18n="footer_identity_owner">נוצר ומופעל באופן עצמאי על ידי דבורה צדוק &middot; עוסק פטור</p>
       <p class="footer-identity-links"><a href="contact.html" data-i18n="nav_contact">צור קשר</a> &middot; <a href="terms.html#privacy" data-i18n="footer_privacy_link">מדיניות פרטיות</a> &middot; <a href="terms.html" data-i18n="footer_terms_link">תנאי שימוש</a></p>
     </div>
-    <div class="footer-bottom">© 2026 DeskKit. כל הזכויות שמורות.</div>
+    <div class="footer-bottom" data-i18n="footer_copyright">© 2026 DeskKit. כל הזכויות שמורות.</div>
   </div>
 </footer>
 
+<script src="js/i18n-sites.js?v=2"></script>
+<script src="js/i18n.js?v=36"></script>
 <script src="js/color-utils.js"></script>
-<script src="js/site-templates.js?v=36"></script>
-<script src="js/site-blocks.js?v=2"></script>
+<script src="js/site-templates.js?v=37"></script>
+<script src="js/site-blocks.js?v=3"></script>
 <!-- JSZip (was only for downloadSiteZip()'s "ייצוא קובצי האתר" action)
      removed — per explicit product decision, DeskKit never offers a
      downloadable code export, only a published, DeskKit-managed site.
      See js/site-builder.js's own comment on downloadSiteZip() for the
      removed implementation. -->
-<script src="js/site-builder.js?v=70"></script>
+<script src="js/site-builder.js?v=71"></script>
 <script>window.deferReveal = true;</script>
 <script src="js/vendor/supabase-js-2.116.0.js"></script>
 <script src="js/supabase-config.js?v=2"></script>
@@ -665,16 +675,16 @@
 <script src="js/app-sidebar.js?v=6"></script>
 <script src="js/domain-guide.js?v=5"></script>
 <script src="js/site-cloud-save.js?v=15"></script>
-<script src="js/builder-shell.js?v=13"></script>
-<script src="js/site-ai-review.js?v=2"></script>
-<script src="js/site-wizard-questions.js?v=2"></script>
-<script src="js/site-ai-generate.js?v=6"></script>
-<script src="js/site-ai-field-edit.js?v=2"></script>
-<script src="js/site-ai-command.js?v=2"></script>
-<script src="js/site-wizard-router.js?v=6"></script>
+<script src="js/builder-shell.js?v=14"></script>
+<script src="js/site-ai-review.js?v=3"></script>
+<script src="js/site-wizard-questions.js?v=3"></script>
+<script src="js/site-ai-generate.js?v=7"></script>
+<script src="js/site-ai-field-edit.js?v=3"></script>
+<script src="js/site-ai-command.js?v=3"></script>
+<script src="js/site-wizard-router.js?v=7"></script>
 <script src="js/main.js?v=8"></script>
 <script src="js/captcha.js?v=3"></script>
-<script src="js/widgets.js?v=18"></script>
+<script src="js/widgets.js?v=19"></script>
 <script src="js/contact-email.js?v=1"></script>
 </body>
 </html>

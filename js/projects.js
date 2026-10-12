@@ -8,13 +8,26 @@
    the same Design Starting Point is a real, separate project and must
    show as its own card. */
 
+// Hebrew/English pick for text built here — dkL from js/i18n.js when it's
+// loaded, otherwise the same stored-preference rule it uses.
+function dkAppL(he, en) {
+  if (typeof dkL === "function") return dkL(he, en);
+  try {
+    const stored = localStorage.getItem("deskkit_lang");
+    const isEn = stored ? stored === "en" : !(navigator.languages || [navigator.language || ""]).some((l) => (l || "").toLowerCase().startsWith("he"));
+    return isEn ? en : he;
+  } catch (e) { return he; }
+}
+
+// Labels are read at render time (labelEn in English), so a language
+// change re-renders them without a refetch.
 const DK_PROJECTS_TABS = [
-  { key: "all", label: "הכול" },
-  { key: "site", label: "אתרים" },
-  { key: "cv", label: "קורות חיים" },
-  { key: "quote", label: "הצעות מחיר" },
-  { key: "invoice", label: "חשבוניות" },
-  { key: "schedule", label: "גליונות" },
+  { key: "all", label: "הכול", labelEn: "All" },
+  { key: "site", label: "אתרים", labelEn: "Sites" },
+  { key: "cv", label: "קורות חיים", labelEn: "Resumes" },
+  { key: "quote", label: "הצעות מחיר", labelEn: "Quotes" },
+  { key: "invoice", label: "חשבוניות", labelEn: "Invoices" },
+  { key: "schedule", label: "גליונות", labelEn: "Spreadsheets" },
 ];
 
 let dkProjectsAll = [];
@@ -29,13 +42,13 @@ function dkProjectsTimeAgo(iso) {
   if (!iso) return "";
   const diffMs = Date.now() - new Date(iso).getTime();
   const mins = Math.round(diffMs / 60000);
-  if (mins < 1) return "עודכן הרגע";
-  if (mins < 60) return `עודכן לפני ${mins} דקות`;
+  if (mins < 1) return dkAppL("עודכן הרגע", "Updated just now");
+  if (mins < 60) return dkAppL(`עודכן לפני ${mins} דקות`, `Updated ${mins} min ago`);
   const hours = Math.round(mins / 60);
-  if (hours < 24) return `עודכן לפני ${hours} שעות`;
+  if (hours < 24) return dkAppL(`עודכן לפני ${hours} שעות`, `Updated ${hours} ${hours === 1 ? "hour" : "hours"} ago`);
   const days = Math.round(hours / 24);
-  if (days < 30) return `עודכן לפני ${days} ימים`;
-  return `עודכן ב-${new Date(iso).toLocaleDateString("he-IL")}`;
+  if (days < 30) return dkAppL(`עודכן לפני ${days} ימים`, `Updated ${days} ${days === 1 ? "day" : "days"} ago`);
+  return dkAppL(`עודכן ב-${new Date(iso).toLocaleDateString("he-IL")}`, `Updated ${new Date(iso).toLocaleDateString("en-US")}`);
 }
 
 const DK_PCARD_ICONS = {
@@ -104,10 +117,13 @@ async function dkProjectsFetchAll(user) {
   (sitesRes.data || []).forEach((s) => {
     const biz = s.data && s.data.businessName && s.data.businessName.trim();
     items.push({
-      kind: "site", id: s.id, name: biz || "אתר תדמית (ללא שם)",
+      kind: "site", id: s.id,
+      // Getters, not fixed strings: the default name and status label
+      // follow the current language whenever a card is (re)rendered.
+      get name() { return biz || dkAppL("אתר תדמית (ללא שם)", "Business site (untitled)"); },
       sub: MY_PANEL_TEMPLATE_LABELS_FALLBACK[s.template] || s.template,
       status: s.published_url ? "live" : "draft",
-      statusLabel: s.published_url ? "מפורסם" : "טיוטה",
+      get statusLabel() { return s.published_url ? dkAppL("מפורסם", "Published") : dkAppL("טיוטה", "Draft"); },
       updatedAt: s.updated_at || s.created_at,
       href: "sites.html?site=" + encodeURIComponent(s.id),
       raw: s,
@@ -120,7 +136,7 @@ async function dkProjectsFetchAll(user) {
   (cvRes.data || []).forEach((c) => {
     const cvName = c.data && c.data.content && c.data.content.name && c.data.content.name.trim();
     items.push({
-      kind: "cv", id: c.id, name: cvName || "קורות חיים (ללא שם)", sub: "",
+      kind: "cv", id: c.id, get name() { return cvName || dkAppL("קורות חיים (ללא שם)", "Resume (untitled)"); }, sub: "",
       status: "draft", statusLabel: "",
       updatedAt: c.updated_at,
       href: "builder.html?cv=" + encodeURIComponent(c.id), raw: c,
@@ -130,21 +146,26 @@ async function dkProjectsFetchAll(user) {
     const d = q.data || {};
     const label = (d.recipient && d.recipient.trim()) || (d.eventName && d.eventName.trim());
     items.push({
-      kind: "quote", id: q.id, name: label || "הצעת מחיר (ללא שם)",
+      kind: "quote", id: q.id, get name() { return label || dkAppL("הצעת מחיר (ללא שם)", "Quote (untitled)"); },
       sub: d.eventName && d.recipient ? d.eventName : "",
       status: "draft", statusLabel: "",
       updatedAt: q.updated_at,
       href: "quote-app.html?quote=" + encodeURIComponent(q.id), raw: q,
     });
   });
-  const invoiceDocLabels = { invoice_receipt: "חשבונית מס-קבלה", receipt: "קבלה", credit_note: "חשבונית זיכוי" };
+  const invoiceDocLabels = () => ({
+    invoice_receipt: dkAppL("חשבונית מס-קבלה", "Tax invoice-receipt"),
+    receipt: dkAppL("קבלה", "Receipt"),
+    credit_note: dkAppL("חשבונית זיכוי", "Credit note"),
+  });
   (invoicesRes.data || []).forEach((inv) => {
     const d = inv.data || {};
     items.push({
-      kind: "invoice", id: inv.id, name: (d.recipientName && d.recipientName.trim()) || "מסמך (ללא שם)",
-      sub: invoiceDocLabels[inv.doc_type] || "מסמך",
+      kind: "invoice", id: inv.id,
+      get name() { return (d.recipientName && d.recipientName.trim()) || dkAppL("מסמך (ללא שם)", "Document (untitled)"); },
+      get sub() { return invoiceDocLabels()[inv.doc_type] || dkAppL("מסמך", "Document"); },
       status: inv.status === "issued" ? "live" : "draft",
-      statusLabel: inv.status === "issued" ? `מס' ${inv.number}` : "טיוטה",
+      get statusLabel() { return inv.status === "issued" ? dkAppL(`מס' ${inv.number}`, `No. ${inv.number}`) : dkAppL("טיוטה", "Draft"); },
       updatedAt: inv.updated_at,
       href: "invoice-app.html?invoice=" + encodeURIComponent(inv.id), raw: inv,
     });
@@ -152,7 +173,7 @@ async function dkProjectsFetchAll(user) {
   (scheduleRes.data || []).forEach((sc) => {
     const name = sc.data && sc.data.name && sc.data.name.trim();
     items.push({
-      kind: "schedule", id: sc.id, name: name || "גליון (ללא שם)", sub: "",
+      kind: "schedule", id: sc.id, get name() { return name || dkAppL("גליון (ללא שם)", "Spreadsheet (untitled)"); }, sub: "",
       status: "draft", statusLabel: "",
       updatedAt: sc.updated_at,
       href: "schedule-builder.html?schedule=" + encodeURIComponent(sc.id), raw: sc,
@@ -170,7 +191,7 @@ function dkPcardHtml(item) {
     <div class="dk-pcard" data-dk-product="${product}" data-dk-pcard-kind="${item.kind}" data-dk-pcard-id="${dkProjectsEscape(item.id)}">
       <div class="dk-pcard-thumb">
         <span class="dk-pcard-thumb-icon">${DK_PCARD_ICONS[item.kind] || ""}</span>
-        <button type="button" class="dk-pcard-more" data-dk-pcard-more aria-label="עוד">⋮</button>
+        <button type="button" class="dk-pcard-more" data-dk-pcard-more aria-label="${dkAppL("עוד", "More")}">⋮</button>
       </div>
       <div class="dk-pcard-body">
         <p class="dk-pcard-name">${dkProjectsEscape(item.name)}</p>
@@ -179,7 +200,7 @@ function dkPcardHtml(item) {
           ${item.statusLabel ? `<span class="dk-pcard-status ${item.status === "live" ? "live" : "draft"}">${dkProjectsEscape(item.statusLabel)}</span>` : ""}
         </p>
         <p class="dk-pcard-date">${dkProjectsTimeAgo(item.updatedAt)}</p>
-        <a href="${item.href}" class="dk-pcard-cta">פתיחה</a>
+        <a href="${item.href}" class="dk-pcard-cta">${dkAppL("פתיחה", "Open")}</a>
       </div>
     </div>`;
 }
@@ -193,13 +214,13 @@ function dkProjectsRender() {
   // site items AND a flagged fetch error, this is "we couldn't load your
   // sites", not "create your first one".
   if (!filtered.length && dkProjectsAll.siteFetchFailed && (dkProjectsActiveTab === "all" || dkProjectsActiveTab === "site")) {
-    grid.innerHTML = `<div class="dk-pcard-empty dk-pcard-error">לא הצלחנו לטעון את האתרים שלכם כרגע — זו תקלה בטעינה, לא אומר שאין לכם אתרים. <a href="#" id="dk-projects-retry">נסו לרענן</a></div>`;
+    grid.innerHTML = `<div class="dk-pcard-empty dk-pcard-error">${dkAppL("לא הצלחנו לטעון את האתרים שלכם כרגע — זו תקלה בטעינה, לא אומר שאין לכם אתרים.", "We couldn't load your sites right now — this is a loading error; it doesn't mean you have no sites.")} <a href="#" id="dk-projects-retry">${dkAppL("נסו לרענן", "Try refreshing")}</a></div>`;
     const retryBtn = document.getElementById("dk-projects-retry");
     if (retryBtn) retryBtn.addEventListener("click", (e) => { e.preventDefault(); dkProjectsLoad(); });
     return;
   }
   if (!filtered.length) {
-    grid.innerHTML = `<div class="dk-pcard-empty">עדיין אין כאן פרויקטים. <a href="#" id="dk-projects-empty-create">+ צרו את הראשון שלכם</a></div>`;
+    grid.innerHTML = `<div class="dk-pcard-empty">${dkAppL("עדיין אין כאן פרויקטים.", "No projects here yet.")} <a href="#" id="dk-projects-empty-create">${dkAppL("+ צרו את הראשון שלכם", "+ Create your first one")}</a></div>`;
     const btn = document.getElementById("dk-projects-empty-create");
     if (btn) btn.addEventListener("click", (e) => { e.preventDefault(); if (typeof openCreateChooser === "function") openCreateChooser(); });
     return;
@@ -217,7 +238,7 @@ function dkProjectsRenderTabs() {
     // dkProjectsFetchAll's own comment). "⚠" instead signals "couldn't
     // check", not "none exist".
     const countLabel = t.key === "site" && dkProjectsAll.siteFetchFailed ? " ⚠" : count ? ` (${count})` : "";
-    return `<button type="button" class="dk-tab${t.key === dkProjectsActiveTab ? " active" : ""}" data-dk-tab="${t.key}">${t.label}${countLabel}</button>`;
+    return `<button type="button" class="dk-tab${t.key === dkProjectsActiveTab ? " active" : ""}" data-dk-tab="${t.key}">${dkAppL(t.label, t.labelEn)}${countLabel}</button>`;
   }).join("");
   wrap.querySelectorAll("[data-dk-tab]").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -238,26 +259,27 @@ async function dkProjectsDuplicate(item) {
     const s = item.raw;
     const row = { user_id: dkProjectsUser.id, template: s.template, data: s.data };
     const { error } = await supabaseClient.from("site_projects").insert(row);
-    if (error) { console.error("duplicate site failed:", error); alert("שכפול נכשל. אפשר לנסות שוב."); return; }
+    if (error) { console.error("duplicate site failed:", error); alert(dkAppL("שכפול נכשל. אפשר לנסות שוב.", "Duplicating failed. Please try again.")); return; }
   } else if (item.kind === "cv") {
     const c = item.raw;
     const { error } = await supabaseClient.from("cv_saves").insert({ user_id: dkProjectsUser.id, data: c.data });
-    if (error) { console.error("duplicate cv failed:", error); alert("שכפול נכשל. אפשר לנסות שוב."); return; }
+    if (error) { console.error("duplicate cv failed:", error); alert(dkAppL("שכפול נכשל. אפשר לנסות שוב.", "Duplicating failed. Please try again.")); return; }
   } else if (item.kind === "quote") {
     const q = item.raw;
     const { error } = await supabaseClient.from("quote_saves").insert({ user_id: dkProjectsUser.id, data: q.data });
-    if (error) { console.error("duplicate quote failed:", error); alert("שכפול נכשל. אפשר לנסות שוב."); return; }
+    if (error) { console.error("duplicate quote failed:", error); alert(dkAppL("שכפול נכשל. אפשר לנסות שוב.", "Duplicating failed. Please try again.")); return; }
   } else if (item.kind === "schedule") {
     const sc = item.raw;
     const { error } = await supabaseClient.from("schedule_projects").insert({ user_id: dkProjectsUser.id, data: sc.data, updated_at: new Date().toISOString() });
-    if (error) { console.error("duplicate schedule failed:", error); alert("שכפול נכשל. אפשר לנסות שוב."); return; }
+    if (error) { console.error("duplicate schedule failed:", error); alert(dkAppL("שכפול נכשל. אפשר לנסות שוב.", "Duplicating failed. Please try again.")); return; }
   }
   await dkProjectsLoad(true);
 }
 
 async function dkProjectsDelete(item) {
   const label = item.kind === "cv" ? "את קורות החיים האלה" : item.kind === "quote" ? "את הצעת המחיר הזו" : item.kind === "invoice" ? "את הטיוטה הזו" : item.kind === "schedule" ? "את הגליון הזה" : "את האתר הזה";
-  if (!confirm(`למחוק לצמיתות ${label}? הפעולה בלתי הפיכה.`)) return;
+  const labelEn = item.kind === "cv" ? "this resume" : item.kind === "quote" ? "this quote" : item.kind === "invoice" ? "this draft" : item.kind === "schedule" ? "this spreadsheet" : "this site";
+  if (!confirm(dkAppL(`למחוק לצמיתות ${label}? הפעולה בלתי הפיכה.`, `Permanently delete ${labelEn}? This can't be undone.`))) return;
   if (item.kind === "site") await supabaseClient.from("site_projects").delete().eq("id", item.id).eq("user_id", dkProjectsUser.id);
   else if (item.kind === "cv") await supabaseClient.from("cv_saves").delete().eq("id", item.id).eq("user_id", dkProjectsUser.id);
   else if (item.kind === "quote") await supabaseClient.from("quote_saves").delete().eq("id", item.id).eq("user_id", dkProjectsUser.id);
@@ -274,9 +296,9 @@ function dkProjectsOpenMenu(card, item) {
   const menu = document.createElement("div");
   menu.className = "dk-pcard-menu";
   menu.innerHTML = `
-    <button type="button" data-act="open">עריכה</button>
-    ${canDuplicate ? `<button type="button" data-act="dup">שכפול</button>` : ""}
-    ${canDelete ? `<button type="button" class="danger" data-act="del">מחיקה</button>` : ""}
+    <button type="button" data-act="open">${dkAppL("עריכה", "Edit")}</button>
+    ${canDuplicate ? `<button type="button" data-act="dup">${dkAppL("שכפול", "Duplicate")}</button>` : ""}
+    ${canDelete ? `<button type="button" class="danger" data-act="del">${dkAppL("מחיקה", "Delete")}</button>` : ""}
   `;
   card.appendChild(menu);
   menu.querySelector('[data-act="open"]').addEventListener("click", () => { location.href = item.href; });
@@ -323,5 +345,14 @@ document.addEventListener("DOMContentLoaded", () => {
   // helpers for its own logged-in "recent projects" strip via
   // js/index-home.js, which calls dkProjectsFetchAll/dkPcardHtml
   // directly instead of this auto-loader.
-  if (document.getElementById("dk-projects-grid")) dkProjectsLoad();
+  if (document.getElementById("dk-projects-grid")) {
+    dkProjectsLoad();
+    // Cards and tabs are built here, so they re-render in the new language
+    // (no refetch — names/labels are computed at render time).
+    document.addEventListener("deskkit:langchange", () => {
+      if (!dkProjectsUser) return;
+      dkProjectsRenderTabs();
+      dkProjectsRender();
+    });
+  }
 });

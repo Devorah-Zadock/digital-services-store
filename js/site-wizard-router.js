@@ -71,31 +71,31 @@ const DK_MYSITES_LABELS = typeof MY_PANEL_TEMPLATE_LABELS !== "undefined" ? MY_P
 function dkMySitesTimeAgo(iso) {
   if (!iso) return "";
   const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
-  if (mins < 1) return "עודכן הרגע";
-  if (mins < 60) return `עודכן לפני ${mins} דקות`;
+  if (mins < 1) return dkL("עודכן הרגע", "Updated just now");
+  if (mins < 60) return dkL(`עודכן לפני ${mins} דקות`, `Updated ${mins} min ago`);
   const hours = Math.round(mins / 60);
-  if (hours < 24) return `עודכן לפני ${hours} שעות`;
-  return `עודכן לפני ${Math.round(hours / 24)} ימים`;
+  if (hours < 24) return dkL(`עודכן לפני ${hours} שעות`, `Updated ${hours} h ago`);
+  return dkL(`עודכן לפני ${Math.round(hours / 24)} ימים`, `Updated ${Math.round(hours / 24)} days ago`);
 }
 
 function dkMySitesCardHtml(row) {
-  const biz = (row.data && row.data.businessName && row.data.businessName.trim()) || "אתר תדמית (ללא שם)";
+  const biz = (row.data && row.data.businessName && row.data.businessName.trim()) || dkL("אתר תדמית (ללא שם)", "Website (untitled)");
   const tplLabel = (typeof SITE_TEMPLATES !== "undefined" && SITE_TEMPLATES[row.template] && SITE_TEMPLATES[row.template].label) || DK_MYSITES_LABELS[row.template] || row.template;
   const isLive = !!row.published_url;
   return `
     <div class="dk-pcard" data-dk-product="site" data-dk-site-id="${row.id}">
       <div class="dk-pcard-thumb">
         <span class="dk-pcard-thumb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.3 2.5 3.6 5.5 3.6 9s-1.3 6.5-3.6 9c-2.3-2.5-3.6-5.5-3.6-9s1.3-6.5 3.6-9z"/></svg></span>
-        <button type="button" class="dk-pcard-more" data-dk-site-more aria-label="עוד">⋮</button>
+        <button type="button" class="dk-pcard-more" data-dk-site-more aria-label="${dkL("עוד", "More")}">⋮</button>
       </div>
       <div class="dk-pcard-body">
         <p class="dk-pcard-name">${dkProjectsEscape ? dkProjectsEscape(biz) : biz}</p>
         <p class="dk-pcard-meta">
           <span>${tplLabel}</span>
-          <span class="dk-pcard-status ${isLive ? "live" : "draft"}">${isLive ? "מפורסם" : "טיוטה"}</span>
+          <span class="dk-pcard-status ${isLive ? "live" : "draft"}">${isLive ? dkL("מפורסם", "Published") : dkL("טיוטה", "Draft")}</span>
         </p>
         <p class="dk-pcard-date">${dkMySitesTimeAgo(row.updated_at || row.created_at)}</p>
-        <a href="sites.html?site=${encodeURIComponent(row.id)}" class="dk-pcard-cta">פתחו ב-Builder</a>
+        <a href="sites.html?site=${encodeURIComponent(row.id)}" class="dk-pcard-cta">${dkL("פתחו ב-Builder", "Open in Builder")}</a>
       </div>
     </div>`;
 }
@@ -110,12 +110,12 @@ async function dkMySitesDuplicate(row) {
   const user = session.session && session.session.user;
   if (!user) return;
   const { error } = await supabaseClient.from("site_projects").insert({ user_id: user.id, template: row.template, data: row.data });
-  if (error) { console.error("duplicate site failed:", error); alert("שכפול נכשל. אפשר לנסות שוב."); return; }
+  if (error) { console.error("duplicate site failed:", error); alert(dkL("שכפול נכשל. אפשר לנסות שוב.", "Duplicating failed. Please try again.")); return; }
   location.reload();
 }
 
 async function dkMySitesDelete(row) {
-  if (!confirm("למחוק לצמיתות את האתר הזה? הפעולה בלתי הפיכה.")) return;
+  if (!confirm(dkL("למחוק לצמיתות את האתר הזה? הפעולה בלתי הפיכה.", "Permanently delete this site? This can't be undone."))) return;
   const { data: session } = await supabaseClient.auth.getSession();
   const user = session.session && session.session.user;
   if (!user) return;
@@ -129,10 +129,10 @@ function dkMySitesOpenMenu(card, row) {
   const menu = document.createElement("div");
   menu.className = "dk-pcard-menu";
   menu.innerHTML = `
-    <button type="button" data-act="open">עריכה</button>
-    <button type="button" data-act="dup">שכפול</button>
-    <button type="button" data-act="rename">שינוי שם</button>
-    <button type="button" class="danger" data-act="del">מחיקה</button>
+    <button type="button" data-act="open">${dkL("עריכה", "Edit")}</button>
+    <button type="button" data-act="dup">${dkL("שכפול", "Duplicate")}</button>
+    <button type="button" data-act="rename">${dkL("שינוי שם", "Rename")}</button>
+    <button type="button" class="danger" data-act="del">${dkL("מחיקה", "Delete")}</button>
   `;
   card.appendChild(menu);
   menu.querySelector('[data-act="open"]').addEventListener("click", () => { location.href = "sites.html?site=" + encodeURIComponent(row.id); });
@@ -241,8 +241,8 @@ function dkOpenPublishModal() {
   overlay.className = "dk-publish-overlay";
   overlay.innerHTML = `
     <div class="dk-publish-modal" role="dialog" aria-modal="true" aria-labelledby="dk-publish-modal-title">
-      <button type="button" class="domain-guide-close" id="dk-publish-modal-close" aria-label="סגירה">✕</button>
-      <h2 id="dk-publish-modal-title">פרסום האתר</h2>
+      <button type="button" class="domain-guide-close" id="dk-publish-modal-close" aria-label="${dkL("סגירה", "Close")}">✕</button>
+      <h2 id="dk-publish-modal-title">${dkL("פרסום האתר", "Publish your site")}</h2>
       <div id="dk-publish-modal-slot"></div>
     </div>`;
   document.body.appendChild(overlay);
@@ -276,16 +276,16 @@ function dkShowPublishChecklist(onConfirm) {
   overlay.className = "domain-guide-overlay";
   overlay.innerHTML = `
     <div class="domain-guide-modal" role="dialog" aria-modal="true" style="max-width:460px;">
-      <button type="button" class="domain-guide-close" id="dk-checklist-close" aria-label="סגירה">✕</button>
-      <h2>האתר כמעט מוכן 🚀</h2>
+      <button type="button" class="domain-guide-close" id="dk-checklist-close" aria-label="${dkL("סגירה", "Close")}">✕</button>
+      <h2>${dkL("האתר כמעט מוכן 🚀", "Your site is almost ready 🚀")}</h2>
       <div class="dk-checklist">
-        ${dkChecklistRow(hasName, "שם העסק")}
-        ${dkChecklistRow(hasContact, "פרטי קשר", "מומלץ להוסיף דרך יצירת קשר (טלפון, מייל או וואטסאפ)")}
-        ${dkChecklistRow(hasContent, "תוכן", "מומלץ להשלים תיאור או רשימת שירותים")}
-        ${dkChecklistRow(hasImages, "תמונות", "מומלץ להוסיף תמונה ראשית")}
-        ${dkChecklistRow(true, "תצוגת מובייל")}
+        ${dkChecklistRow(hasName, dkL("שם העסק", "Business name"))}
+        ${dkChecklistRow(hasContact, dkL("פרטי קשר", "Contact details"), dkL("מומלץ להוסיף דרך יצירת קשר (טלפון, מייל או וואטסאפ)", "Add a way to reach you (phone, email or WhatsApp)"))}
+        ${dkChecklistRow(hasContent, dkL("תוכן", "Content"), dkL("מומלץ להשלים תיאור או רשימת שירותים", "Add a description or a list of services"))}
+        ${dkChecklistRow(hasImages, dkL("תמונות", "Images"), dkL("מומלץ להוסיף תמונה ראשית", "Add a main image"))}
+        ${dkChecklistRow(true, dkL("תצוגת מובייל", "Mobile view"))}
       </div>
-      <button type="button" class="dk-btn dk-btn-primary" style="width:100%;" id="dk-checklist-confirm">פרסום האתר</button>
+      <button type="button" class="dk-btn dk-btn-primary" style="width:100%;" id="dk-checklist-confirm">${dkL("פרסום האתר", "Publish the site")}</button>
     </div>`;
   document.body.appendChild(overlay);
   const close = () => overlay.remove();
