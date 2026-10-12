@@ -154,7 +154,7 @@ function quoteBshellWireLogoLiveUpdate() {
   }).observe(preview, { childList: true });
 }
 
-const QUOTEBSHELL_AI_UPGRADE_MESSAGE = "הגעת למכסת הניסיונות החינמיים ביצירת טיוטה אוטומטית. רוצה להמשיך ללא הגבלה? שדרג לגרסת Pro בתשלום חד-פעמי!";
+const QUOTEBSHELL_AI_UPGRADE_MESSAGE = typeof dkL === "function" ? dkL("הגעת למכסת הניסיונות החינמיים ביצירת טיוטה אוטומטית. רוצה להמשיך ללא הגבלה? שדרג לגרסת Pro בתשלום חד-פעמי!", "You've used your free automatic-draft tries. Want to continue without limits? Upgrade to Pro with a one-time payment!") : "הגעת למכסת הניסיונות החינמיים ביצירת טיוטה אוטומטית. רוצה להמשיך ללא הגבלה? שדרג לגרסת Pro בתשלום חד-פעמי!";
 
 /* "✨ יצירת טיוטה אוטומטית" — a brand-new control (no old-UI
    equivalent to move/reuse), mirroring js/site-ai-generate.js's
@@ -198,7 +198,7 @@ async function quoteBshellGenerateDraft() {
     const res = await fetch(SUPABASE_URL + "/functions/v1/generate-quote", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + token, apikey: SUPABASE_ANON_KEY },
-      body: JSON.stringify({ description, businessName: currentProfile && currentProfile.business_name }),
+      body: JSON.stringify({ lang: (typeof currentLang === "function" ? currentLang() : "he"), description, businessName: currentProfile && currentProfile.business_name }),
     });
     const data = await res.json();
     if (!res.ok || data.error) {

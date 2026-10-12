@@ -124,6 +124,8 @@ Deno.serve(async (req: Request) => {
   try {
     const body = await readJsonCapped(req) as any;
     if (!body) return jsonResponse({ error: "request too large" }, 413);
+    // Language of the text the AI writes back ("en" from the English UI; Hebrew otherwise).
+    const outLang = (body as any)?.lang === "en" ? "English" : "Hebrew";
     const summary = (body.summary && typeof body.summary === "object") ? body.summary : null;
     if (!summary) return jsonResponse({ error: "missing summary" }, 400);
 
@@ -162,7 +164,7 @@ Deno.serve(async (req: Request) => {
     const reservedResponse = await (async (): Promise<Response> => {
 
     const structuralContextText = hasStructuralContext
-      ? `This site also has a reorderable Section system you may suggest structural actions for. availableTypes: ${JSON.stringify(availableTypes)}\nactiveTypes (current order): ${JSON.stringify(activeTypes)}\nvariantOptions: ${JSON.stringify(variantOptions)}\nYou may suggest 0-3 structural actions using ONLY these exact shapes: {"op":"reorder","order":[...every active type, new order...]}, {"op":"addSection","type":"<available, not already active>"}, {"op":"removeSection","type":"<active, never \\"hero\\">"}, {"op":"setVariant","type":"<a variantOptions key>","variant":"<one of its listed options>"}. Each needs its own short Hebrew "explanation". NEVER suggest a type/variant not listed above — if nothing structural is worth changing, or this site has no Section system, return an empty actions array.`
+      ? `This site also has a reorderable Section system you may suggest structural actions for. availableTypes: ${JSON.stringify(availableTypes)}\nactiveTypes (current order): ${JSON.stringify(activeTypes)}\nvariantOptions: ${JSON.stringify(variantOptions)}\nYou may suggest 0-3 structural actions using ONLY these exact shapes: {"op":"reorder","order":[...every active type, new order...]}, {"op":"addSection","type":"<available, not already active>"}, {"op":"removeSection","type":"<active, never \\"hero\\">"}, {"op":"setVariant","type":"<a variantOptions key>","variant":"<one of its listed options>"}. Each needs its own short ${outLang} "explanation". NEVER suggest a type/variant not listed above — if nothing structural is worth changing, or this site has no Section system, return an empty actions array.`
       : `This site has no reorderable Section system — always return an empty actions array, never invent one.`;
 
     const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -176,7 +178,7 @@ Deno.serve(async (req: Request) => {
             role: "system",
             content:
               "You are a website-content AND structure reviewer for a small-business owner building their own site from a template. You'll receive a JSON summary of their content plus (optionally) their site's structural context. Respond with ONLY a JSON object shaped exactly like: " +
-              '{"score": <integer 1-100>, "strengths": [<up to 3 short Hebrew strings>], "tips": [<2-4 short, concrete, actionable Hebrew strings>], "actions": [<0-3 structural action objects, see below>]}. ' +
+              '{"score": <integer 1-100>, "strengths": [<up to 3 short ' + outLang + ' strings>], "tips": [<2-4 short, concrete, actionable ' + outLang + ' strings>], "actions": [<0-3 structural action objects, see below>]}. ' +
               '"score"/"strengths"/"tips" follow the same rules as before: honest, specific, tied to what is actually present or missing in the summary — never generic. ' +
               structuralContextText,
           },

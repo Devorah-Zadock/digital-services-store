@@ -13,6 +13,7 @@ import { afterCheck, backoffMs, clientSendAllowed, type ExecResult, israelMornin
 import { type Step, type Template, TEMPLATES } from "../_shared/automate/templates.ts";
 import { buildMessage, type Ctx } from "../_shared/automate/messages.ts";
 import { deliver } from "../_shared/automate/mailer.ts";
+import { normEmail, optoutLinks } from "../_shared/automate/optout.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -94,10 +95,11 @@ class RunCtx {
     if (!this.business) {
       const { data } = await this.db.from("business_profiles").select("*").eq("user_id", this.run.user_id).maybeSingle();
       this.business = {
-        name: data?.business_name || "העסק",
+        name: data?.business_name || (data?.lang === "en" ? "Your business" : "העסק"),
         replyEmail: data?.reply_email || (await this.owner()),
         phone: data?.phone || null,
         type: data?.business_type || null,
+        lang: data?.lang === "en" ? "en" : null,
         // @ts-ignore extra field kept for owner alerts
         notifyEmail: data?.notify_email || null,
       };
@@ -186,6 +188,13 @@ function exactLike(v: string): string {
   return String(v).replace(/[\\%_]/g, (m) => "\\" + m);
 }
 
+async function optedOut(db: Db, userId: string, email: string): Promise<boolean> {
+  const { count, error } = await db.from("automate_optouts").select("email", { count: "exact", head: true })
+    .eq("user_id", userId).eq("email", normEmail(email));
+  if (error) throw new Error(error.message);   // unsure → don't send (the run retries)
+  return (count || 0) > 0;
+}
+
 // Was this client asked for a review in the last year (by any automation)?
 async function askedForReview(rc: RunCtx, email: string): Promise<boolean> {
   const since = new Date(Date.now() - 365 * 864e5).toISOString();
@@ -203,7 +212,6 @@ async function enqueueEmail(rc: RunCtx, step: Step, messageId: string, role: "ow
   if (existing) return { type: "ok", summary: "ההודעה כבר הוכנה" };
 
   const ctx = await rc.messageCtx();
-  const built = buildMessage(messageId, ctx);
   const biz = await rc.biz();
   let to: string | null;
   let toName: string | null = null;
@@ -215,6 +223,12 @@ async function enqueueEmail(rc: RunCtx, step: Step, messageId: string, role: "ow
     toName = ctx.contact?.name || ctx.quote?.client_name || ctx.invoice?.client_name || null;
   }
   if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) return { type: "skip", summary: "אין כתובת מייל — ההודעה לא נשלחה" };
+  let optoutUrl: string | null = null;
+  if (role === "client") {
+    if (await optedOut(rc.db, rc.run.user_id, to)) return { type: "skip", summary: "הלקוח ביקש לא לקבל מיילים אוטומטיים — ההודעה לא נשלחה" };
+    optoutUrl = (await optoutLinks(PUBLIC_URL, SUPABASE_URL, rc.run.user_id, to)).page;
+  }
+  const built = buildMessage(messageId, { ...ctx, optoutUrl });
 
   const { data: allowed } = await rc.db.rpc("automate_take_email", { p_user: rc.run.user_id });
   if (!allowed) return { type: "blocked", reason: "quota_emails" };
@@ -491,12 +505,22 @@ async function dispatch(db: Db): Promise<Record<string, number>> {
         p_message: "הגענו לתקרת המיילים היומית של האוטומציות. ההודעות ממתינות ויישלחו מחר בבוקר." });
       bump("daily_cap"); continue;
     }
+    let unsubscribe: string | null = null;
+    if (m.recipient_role === "client") {
+      let out: boolean;
+      try { out = await optedOut(db, m.user_id, m.to_email); } catch { await db.from("automation_messages").update({ status: "deferred", locked_until: null, next_attempt_at: new Date(Date.now() + 5 * 60e3).toISOString() }).eq("id", m.id); bump("retry"); continue; }
+      if (out) {
+        await db.from("automation_messages").update({ status: "cancelled", locked_until: null, error: "opted-out" }).eq("id", m.id);
+        bump("opted_out"); continue;
+      }
+      unsubscribe = (await optoutLinks(PUBLIC_URL, SUPABASE_URL, m.user_id, m.to_email)).oneClick;
+    }
     let fault: string | null = null;
     if (IS_STAGING) {
       const { data } = await db.rpc("automate_test_take_fault", { p_key: "mail" });
       fault = data || null;
     }
-    const res = await deliver({ id: m.id, to: m.to_email, toName: m.to_name, fromName: m.from_name || "DeskKit", replyTo: m.reply_to, subject: m.subject, html: m.html }, fault);
+    const res = await deliver({ id: m.id, to: m.to_email, toName: m.to_name, fromName: m.from_name || "DeskKit", replyTo: m.reply_to, subject: m.subject, html: m.html, unsubscribe }, fault);
     if (res.kind === "sent" || res.kind === "simulated") {
       await db.from("automation_messages").update({ status: res.kind, sent_at: now.toISOString(), locked_until: null, error: null,
         provider_id: res.kind === "sent" ? res.providerId : null }).eq("id", m.id);

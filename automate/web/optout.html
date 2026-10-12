@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>הסרה מרשימת תפוצה</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<style>
+  body { margin: 0; background: #F1F5F4; font-family: Heebo, Arial, sans-serif; color: #12211D; }
+  .ov-box { max-width: 480px; margin: 40px auto; background: #fff; border: 1px solid #E3EAE7; border-radius: 14px; padding: 24px 20px; box-sizing: border-box; }
+  @media (max-width: 520px) { .ov-box { margin: 16px; } }
+  h1 { font-size: 21px; margin: 0 0 10px; }
+  p { line-height: 1.7; margin: 0 0 12px; }
+  .ov-btn { font: inherit; font-weight: 700; font-size: 16px; border-radius: 10px; padding: 12px 22px; border: 0; background: #0F766E; color: #fff; cursor: pointer; }
+  .ov-btn[disabled] { opacity: .6; }
+  .ov-ok { background: #E6F4EC; color: #067647; border-radius: 10px; padding: 12px 14px; font-weight: 600; }
+  .ov-err { color: #B42318; }
+  .ov-foot { color: #667085; font-size: 12.5px; margin-top: 18px; }
+</style>
+</head>
+<body>
+<div class="ov-box">
+  <h1 id="ov-title">הסרה ממיילים אוטומטיים</h1>
+  <p id="ov-text">טוענים…</p>
+  <p><button class="ov-btn" id="ov-go" hidden></button></p>
+  <p id="ov-done" class="ov-ok" hidden></p>
+  <p id="ov-err" class="ov-err"></p>
+  <p class="ov-foot" id="ov-foot">נשלח באמצעות DeskKit</p>
+</div>
+<script src="js/vendor/supabase-js-2.116.0.js"></script>
+<script src="js/supabase-config.js?v=2"></script>
+<script src="js/optout-view.js?v=1"></script>
+</body>
+</html>

@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="he" dir="rtl">
+<html lang="he" dir="rtl" data-i18n-reload>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>מערכת CRM — DeskKit</title>
+<title data-i18n="tools_crm_meta_title">מערכת CRM — DeskKit</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -41,18 +41,18 @@
   <nav class="nav">
     <a href="index.html" class="brand"><span class="brand-badge"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path class="bm-doc" d="M7,4 H14 L18,8 V20 H7 Z"/><path class="bm-fold" d="M14,4 L14,8 L18,8 Z"/><path class="bm-spark" d="M15,14.3 C15.3,16 16,16.7 17.7,17 C16,17.3 15.3,18 15,19.7 C14.7,18 14,17.3 12.3,17 C14,16.7 14.7,16 15,14.3 Z"/></svg></span><span class="brand-text"><span class="brand-desk">Desk</span><span class="brand-kit">Kit</span></span></a>
     <div class="nav-links">
-      <a href="index.html">בית</a>
-      <a href="products.html?type=cv">קורות חיים</a>
-      <a href="sites.html">בניית אתר</a>
-      <a href="quote-app.html">הצעות מחיר</a>
-      <a href="invoice-app.html">חשבוניות</a>
-      <a href="products.html?type=deck">מצגות</a>
-      <a href="products.html?type=xlsx">גליונות</a>
-      <a href="about.html">אודות</a>
-      <a href="contact.html">צור קשר</a>
+      <a href="index.html" data-i18n="nav_home">בית</a>
+      <a href="products.html?type=cv" data-i18n="nav_cv">קורות חיים</a>
+      <a href="sites.html" data-i18n="nav_sites">בניית אתר</a>
+      <a href="quote-app.html" data-i18n="nav_quotes">הצעות מחיר</a>
+      <a href="invoice-app.html" data-i18n="nav_invoices">חשבוניות</a>
+      <a href="products.html?type=deck" data-i18n="nav_decks">מצגות</a>
+      <a href="products.html?type=xlsx" data-i18n="nav_xlsx">גליונות</a>
+      <a href="about.html" data-i18n="nav_about">אודות</a>
+      <a href="contact.html" data-i18n="nav_contact">צור קשר</a>
     </div>
     <div class="nav-end-group">
-      <a href="account.html?redirect=tools.html" id="nav-login-link" class="nav-login nav-login-pending">כניסה</a>
+      <a href="account.html?redirect=tools.html" id="nav-login-link" class="nav-login nav-login-pending" data-i18n="nav_login">כניסה</a>
     </div>
     <button class="burger" aria-label="תפריט">☰</button>
   </nav>
@@ -62,20 +62,20 @@
   <div class="container">
     <div class="crm-header-bar">
       <div>
-        <h1>ניהול לקוחות</h1>
-        <p style="margin:4px 0 0; color:var(--grey); font-size:13.5px;">כל הלידים שלכם, לפי שלב במכירה.</p>
-        <p class="crm-local-note" style="margin:8px 0 0; font-size:13px; color:#8A5A00; background:#FFF6E5; border:1px solid #F0C36D; border-radius:8px; padding:6px 10px; display:inline-block;">⚠️ המידע נשמר <b>רק בדפדפן הזה</b>, בלי גיבוי. ניקוי נתוני גלישה ימחק אותו — מומלץ להוריד גיבוי מדי פעם.</p>
+        <h1 data-i18n="tools_crm_h1">ניהול לקוחות</h1>
+        <p style="margin:4px 0 0; color:var(--grey); font-size:13.5px;" data-i18n="tools_crm_lead">כל הלידים שלכם, לפי שלב במכירה.</p>
+        <p class="crm-local-note" style="margin:8px 0 0; font-size:13px; color:#8A5A00; background:#FFF6E5; border:1px solid #F0C36D; border-radius:8px; padding:6px 10px; display:inline-block;">⚠️ <span data-i18n="tools_crm_local_1">המידע נשמר</span> <b data-i18n="tools_crm_local_b">רק בדפדפן הזה</b><span data-i18n="tools_crm_local_2">, בלי גיבוי. ניקוי נתוני גלישה ימחק אותו — מומלץ להוריד גיבוי מדי פעם.</span></p>
       </div>
       <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
         <div class="crm-summary">
-          <span class="crm-summary-label">סה"כ בעסקאות פתוחות</span>
+          <span class="crm-summary-label" data-i18n="tools_crm_open_total">סה"כ בעסקאות פתוחות</span>
           <span class="crm-summary-total" id="crm-summary-total">₪0</span>
         </div>
         <span style="display:inline-flex; flex-direction:column; align-items:center; gap:2px;">
-          <button type="button" class="btn btn-outline" id="crm-backup-btn" title="הורדת כל הלידים לקובץ שנפתח באקסל">⬇ הורדת גיבוי</button>
-          <button type="button" id="crm-backup-json" style="background:none; border:0; color:var(--grey); font-size:12px; text-decoration:underline; cursor:pointer;">גיבוי מלא (JSON)</button>
+          <button type="button" class="btn btn-outline" id="crm-backup-btn" title="הורדת כל הלידים לקובץ שנפתח באקסל" data-i18n-title="tools_crm_backup_title" data-i18n="tools_crm_backup">⬇ הורדת גיבוי</button>
+          <button type="button" id="crm-backup-json" style="background:none; border:0; color:var(--grey); font-size:12px; text-decoration:underline; cursor:pointer;" data-i18n="tools_crm_backup_json">גיבוי מלא (JSON)</button>
         </span>
-        <button type="button" class="btn btn-gold" id="crm-add-lead-btn">+ הוספת ליד</button>
+        <button type="button" class="btn btn-gold" id="crm-add-lead-btn" data-i18n="tools_crm_add_lead">+ הוספת ליד</button>
       </div>
     </div>
 
@@ -86,34 +86,34 @@
 <div class="crm-modal" id="crm-modal">
   <div class="crm-modal-card">
     <button type="button" class="crm-modal-close" id="crm-modal-close" aria-label="סגירה">✕</button>
-    <h3 id="crm-modal-title">הוספת ליד חדש</h3>
+    <h3 id="crm-modal-title" data-i18n="tools_crm_modal_new">הוספת ליד חדש</h3>
     <form id="crm-form">
-      <label for="crm-f-name">שם *</label>
+      <label for="crm-f-name" data-i18n="tools_crm_f_name">שם *</label>
       <input type="text" id="crm-f-name" required>
 
-      <label for="crm-f-phone">טלפון</label>
+      <label for="crm-f-phone" data-i18n="tools_pf_phone">טלפון</label>
       <input type="tel" id="crm-f-phone" dir="ltr">
 
-      <label for="crm-f-email">אימייל</label>
+      <label for="crm-f-email" data-i18n="tools_crm_f_email">אימייל</label>
       <input type="email" id="crm-f-email" dir="ltr">
 
-      <label for="crm-f-amount">סכום עסקה (₪)</label>
+      <label for="crm-f-amount" data-i18n="tools_crm_f_amount">סכום עסקה (₪)</label>
       <input type="number" id="crm-f-amount" min="0" step="1">
 
-      <label for="crm-f-stage">שלב</label>
+      <label for="crm-f-stage" data-i18n="tools_crm_f_stage">שלב</label>
       <select id="crm-f-stage">
-        <option value="new">ליד חדש</option>
-        <option value="inprogress">בטיפול / נשלחה הצעה</option>
-        <option value="followup">פולו-אפ</option>
-        <option value="won">נסגר בהצלחה!</option>
+        <option value="new" data-i18n="tools_crm_stage_new">ליד חדש</option>
+        <option value="inprogress" data-i18n="tools_crm_stage_inprogress">בטיפול / נשלחה הצעה</option>
+        <option value="followup" data-i18n="tools_crm_stage_followup">פולו-אפ</option>
+        <option value="won" data-i18n="tools_crm_stage_won">נסגר בהצלחה!</option>
       </select>
 
-      <label for="crm-f-notes">הערות</label>
+      <label for="crm-f-notes" data-i18n="tools_crm_f_notes">הערות</label>
       <textarea id="crm-f-notes"></textarea>
 
       <div class="crm-modal-actions">
-        <button type="button" id="crm-modal-delete" style="display:none;">מחיקת ליד</button>
-        <button type="submit" class="btn btn-teal">שמירה</button>
+        <button type="button" id="crm-modal-delete" style="display:none;" data-i18n="tools_crm_delete_lead">מחיקת ליד</button>
+        <button type="submit" class="btn btn-teal" data-i18n="tools_save">שמירה</button>
       </div>
     </form>
   </div>
@@ -124,33 +124,33 @@
     <div class="footer-grid">
       <div>
         <h4>DeskKit</h4>
-        <p style="font-size:14px; max-width:320px;">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
+        <p style="font-size:14px; max-width:320px;" data-i18n="footer_blurb">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
       </div>
       <div>
-        <h4>ניווט</h4>
+        <h4 data-i18n="footer_nav_heading">ניווט</h4>
         <ul>
-          <li><a href="builder.html">קורות חיים</a></li>
-          <li><a href="sites.html">בניית אתר</a></li>
-          <li><a href="quote-app.html">הצעות מחיר</a></li>
-          <li><a href="invoice-app.html">חשבוניות</a></li>
-          <li><a href="products.html?type=deck">מצגות</a></li>
-          <li><a href="products.html?type=xlsx">גליונות</a></li>
-          <li><a href="about.html">אודות</a></li>
-          <li><a href="contact.html">צור קשר</a></li>
+          <li><a href="builder.html" data-i18n="nav_cv">קורות חיים</a></li>
+          <li><a href="sites.html" data-i18n="nav_sites">בניית אתר</a></li>
+          <li><a href="quote-app.html" data-i18n="nav_quotes">הצעות מחיר</a></li>
+          <li><a href="invoice-app.html" data-i18n="nav_invoices">חשבוניות</a></li>
+          <li><a href="products.html?type=deck" data-i18n="nav_decks">מצגות</a></li>
+          <li><a href="products.html?type=xlsx" data-i18n="nav_xlsx">גליונות</a></li>
+          <li><a href="about.html" data-i18n="nav_about">אודות</a></li>
+          <li><a href="contact.html" data-i18n="nav_contact">צור קשר</a></li>
         </ul>
       </div>
       <div>
-        <h4>מידע</h4>
+        <h4 data-i18n="footer_info_heading">מידע</h4>
         <ul>
-          <li><a href="guides.html">מדריכים</a></li>
-          <li><a href="faq.html">שאלות נפוצות</a></li>
-          <li><a href="terms.html">מדיניות</a></li>
-          <li><a href="security.html">אבטחת מידע</a></li>
-          <li><a href="accessibility.html">נגישות</a></li>
+          <li><a href="guides.html" data-i18n="footer_guides">מדריכים</a></li>
+          <li><a href="faq.html" data-i18n="footer_faq">שאלות נפוצות</a></li>
+          <li><a href="terms.html" data-i18n="footer_terms">מדיניות</a></li>
+          <li><a href="security.html" data-i18n="footer_security">אבטחת מידע</a></li>
+          <li><a href="accessibility.html" data-i18n="footer_accessibility">נגישות</a></li>
         </ul>
       </div>
       <div>
-        <h4>צור קשר</h4>
+        <h4 data-i18n="nav_contact">צור קשר</h4>
         <ul>
           <li><a class="dk-email" href="contact.html">צרו קשר</a></li>
         </ul>
@@ -161,19 +161,21 @@
       <p class="footer-identity-owner" data-i18n="footer_identity_owner">נוצר ומופעל באופן עצמאי על ידי דבורה צדוק &middot; עוסק פטור</p>
       <p class="footer-identity-links"><a href="contact.html" data-i18n="nav_contact">צור קשר</a> &middot; <a href="terms.html#privacy" data-i18n="footer_privacy_link">מדיניות פרטיות</a> &middot; <a href="terms.html" data-i18n="footer_terms_link">תנאי שימוש</a></p>
     </div>
-    <div class="footer-bottom">© 2026 DeskKit. כל הזכויות שמורות.</div>
+    <div class="footer-bottom" data-i18n="footer_copyright">© 2026 DeskKit. כל הזכויות שמורות.</div>
   </div>
 </footer>
 
+<script src="js/i18n-tools.js?v=2"></script>
+<script src="js/i18n.js?v=36"></script>
 <script src="js/vendor/supabase-js-2.116.0.js"></script>
 <script src="js/supabase-config.js?v=2"></script>
 <script src="js/nav-auth.js?v=4"></script>
-<script src="js/my-panel.js?v=16"></script>
+<script src="js/my-panel.js?v=17"></script>
 <script src="js/domain-guide.js?v=5"></script>
 <script src="js/main.js?v=8"></script>
 <script src="js/captcha.js?v=3"></script>
-<script src="js/widgets.js?v=18"></script>
-<script src="js/crm.js?v=3"></script>
+<script src="js/widgets.js?v=19"></script>
+<script src="js/crm.js?v=4"></script>
 <script src="js/contact-email.js?v=1"></script>
 </body>
 </html>

@@ -28,15 +28,19 @@ function formatILS(n) {
 }
 
 const QUOTE_CATEGORIES = [
-  { slug: "business", label: "עסקי כללי" },
-  { slug: "events", label: "אירועים ובוטיק" },
+  { slug: "business", label: "עסקי כללי", labelEn: "General business" },
+  { slug: "events", label: "אירועים ובוטיק", labelEn: "Events & boutique" },
 ];
 
 const QUOTE_TEMPLATES = {
-  classic: { label: "קלאסי", category: "עסקי כללי", categorySlug: "business", desc: "נקי ומסודר, כותרת מרכזית וקו מפריד עדין — מתאים לכל עסק" },
-  modern: { label: "מודרני", category: "עסקי כללי", categorySlug: "business", desc: "רצועת כותרת צבעונית ובולטת, טיפוגרפיה עבה וביטחון עסקי" },
-  elegant: { label: "אלגנטי", category: "אירועים ובוטיק", categorySlug: "events", desc: "גופן סריפי מעודן וקו זהב — לעסקי אירועים ובוטיק" },
-  noir: { label: "יוקרתי כהה", category: "אירועים ובוטיק", categorySlug: "events", desc: "רצועת כותרת כהה ומינימליסטית, מרשימה ומדויקת" },
+  classic: { label: "קלאסי", category: "עסקי כללי", categorySlug: "business", desc: "נקי ומסודר, כותרת מרכזית וקו מפריד עדין — מתאים לכל עסק",
+    labelEn: "Classic", categoryEn: "General business", descEn: "Clean and tidy, centered heading and a subtle divider — fits any business" },
+  modern: { label: "מודרני", category: "עסקי כללי", categorySlug: "business", desc: "רצועת כותרת צבעונית ובולטת, טיפוגרפיה עבה וביטחון עסקי",
+    labelEn: "Modern", categoryEn: "General business", descEn: "A bold colored header band, heavy type and business confidence" },
+  elegant: { label: "אלגנטי", category: "אירועים ובוטיק", categorySlug: "events", desc: "גופן סריפי מעודן וקו זהב — לעסקי אירועים ובוטיק",
+    labelEn: "Elegant", categoryEn: "Events & boutique", descEn: "A refined serif font and a gold line — for events and boutique businesses" },
+  noir: { label: "יוקרתי כהה", category: "אירועים ובוטיק", categorySlug: "events", desc: "רצועת כותרת כהה ומינימליסטית, מרשימה ומדויקת",
+    labelEn: "Dark luxury", categoryEn: "Events & boutique", descEn: "A dark, minimalist header band — striking and precise" },
 };
 const QUOTE_TEMPLATE_DEFAULT = "classic";
 

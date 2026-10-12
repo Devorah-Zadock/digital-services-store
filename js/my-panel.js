@@ -23,6 +23,11 @@ const MY_PANEL_TEMPLATE_LABELS = {
   "noir": "יוקרתי כהה",
   "studio": "סטודיו מעוצב",
 };
+const MY_PANEL_TEMPLATE_LABELS_EN = {
+  "local-service": "Local service business", "freelancer": "Freelancer / consultant", "catalog": "Small catalog",
+  "gallery": "Modern gallery", "bold": "Bold & modern", "elegant": "Elegant & designed", "process": "Work process",
+  "portfolio": "Creative portfolio", "boutique": "Boutique shop", "noir": "Dark luxury", "studio": "Designed studio",
+};
 
 const MY_PANEL_COLLAPSE_KEY = "deskkit_panel_collapsed";
 const MY_PANEL_RAIL_W_KEY = "deskkit_rail_w";
@@ -101,13 +106,13 @@ function openPanelAccountMenu(wrap, email) {
   dd.className = "nav-account-dropdown dropup";
   dd.innerHTML = `
     <div class="nav-account-email">${myPanelEscapeHtml(email)}</div>
-    <a href="account-settings.html" class="nav-account-settings">החשבון שלי</a>
-    <button type="button" class="nav-account-logout">התנתקות</button>
+    <a href="account-settings.html" class="nav-account-settings">${dkL("החשבון שלי", "My account")}</a>
+    <button type="button" class="nav-account-logout">${dkL("התנתקות", "Log out")}</button>
     <div class="nav-account-confirm" hidden>
-      <p>להתנתק?</p>
+      <p>${dkL("להתנתק?", "Log out?")}</p>
       <div class="nav-account-confirm-row">
-        <button type="button" class="nav-confirm-yes">כן, להתנתק</button>
-        <button type="button" class="nav-confirm-no">ביטול</button>
+        <button type="button" class="nav-confirm-yes">${dkL("כן, להתנתק", "Yes, log out")}</button>
+        <button type="button" class="nav-confirm-no">${dkL("ביטול", "Cancel")}</button>
       </div>
     </div>
   `;
@@ -117,7 +122,7 @@ function openPanelAccountMenu(wrap, email) {
     const confirmBox = dd.querySelector(".nav-account-confirm");
     const warn = confirmBox.querySelector(".nav-account-unsaved-warn");
     if (warn) warn.remove();
-    if (typeof dkAnyUnsavedWork === "function" && dkAnyUnsavedWork()) confirmBox.insertAdjacentHTML("afterbegin", '<p class="nav-account-unsaved-warn">יש לך שינויים שלא נשמרו — הם יאבדו אם תתנתקו בלי לשמור.</p>');
+    if (typeof dkAnyUnsavedWork === "function" && dkAnyUnsavedWork()) confirmBox.insertAdjacentHTML("afterbegin", `<p class="nav-account-unsaved-warn">${dkL("יש לך שינויים שלא נשמרו — הם יאבדו אם תתנתקו בלי לשמור.", "You have unsaved changes — they'll be lost if you log out without saving.")}</p>`);
     dd.querySelector(".nav-account-logout").hidden = true;
     dd.querySelector(".nav-account-confirm").hidden = false;
   });
@@ -155,13 +160,13 @@ function openPanelAccountMenu(wrap, email) {
    apology, and takes far less vertical space per empty category. */
 function myPanelEmptyRowHtml(opts) {
   return `<a href="${opts.href}" class="my-panel-empty-cta">
-    <span class="my-panel-empty-plus">+</span> צור חדש
+    <span class="my-panel-empty-plus">+</span> ${dkL("צור חדש", "Create new")}
   </a>`;
 }
 
 function myPanelRowHtml(opts) {
   const del = opts.deleteAttr
-    ? `<button type="button" class="my-content-delete-btn" data-panel-delete="${opts.deleteAttr}" title="מחיקה" aria-label="מחיקה">${myPanelTrashIcon()}</button>`
+    ? `<button type="button" class="my-content-delete-btn" data-panel-delete="${opts.deleteAttr}" title="${dkL("מחיקה", "Delete")}" aria-label="${dkL("מחיקה", "Delete")}">${myPanelTrashIcon()}</button>`
     : "";
   // Custom-domain connect button removed for now (per explicit request
   // — feature not ready to expose yet). js/domain-guide.js still has
@@ -217,8 +222,8 @@ function myPanelRenderSites(sites, ctx, el) {
       return myPanelRowHtml({
         kind: "site",
         href: "sites.html?template=" + encodeURIComponent(s.template),
-        name: bizName || "אתר תדמית (ללא שם)",
-        sub: MY_PANEL_TEMPLATE_LABELS[s.template] || s.template,
+        name: bizName || dkL("אתר תדמית (ללא שם)", "Website (untitled)"),
+        sub: dkL(MY_PANEL_TEMPLATE_LABELS[s.template] || s.template, MY_PANEL_TEMPLATE_LABELS_EN[s.template] || s.template),
         deleteAttr: "site:" + s.id,
         active: !!(ctx && ctx.kind === "site" && ctx.template === s.template),
         showDomainBtn: !!s.published_url,
@@ -236,7 +241,7 @@ function myPanelRenderCv(cv, ctx, el) {
     el.innerHTML = myPanelRowHtml({
       kind: "cv",
       href: "builder.html?cv=" + encodeURIComponent(cv.id),
-      name: cvName || "קורות חיים (ללא שם)",
+      name: cvName || dkL("קורות חיים (ללא שם)", "CV (untitled)"),
       deleteAttr: "cv:" + cv.id,
       active: !!(ctx && ctx.kind === "cv"),
     });
@@ -253,7 +258,7 @@ function myPanelRenderQuotes(quotes, ctx, el) {
       return myPanelRowHtml({
         kind: "quote",
         href: "quote-app.html?quote=" + encodeURIComponent(q.id),
-        name: label || "הצעת מחיר (ללא שם)",
+        name: label || dkL("הצעת מחיר (ללא שם)", "Quote (untitled)"),
         sub: d.eventName && d.recipient ? d.eventName : "",
         deleteAttr: "quote:" + q.id,
         active: !!(ctx && ctx.kind === "quote" && ctx.id === q.id),
@@ -269,7 +274,7 @@ function myPanelRenderInvoices(invoices, ctx, el) {
   if (invoices && invoices.length) {
     el.innerHTML = invoices.map((inv) => {
       const d = inv.data || {};
-      const docLabel = MY_PANEL_INVOICE_DOC_LABELS[inv.doc_type] || "מסמך";
+      const docLabel = dkL(MY_PANEL_INVOICE_DOC_LABELS[inv.doc_type] || "מסמך", ({ invoice_receipt: "Tax invoice-receipt", receipt: "Receipt", credit_note: "Credit note" })[inv.doc_type] || "Document");
       // Issued documents are permanently locked (see supabase/sql/invoices.sql
       // — the table's own RLS policy refuses updates/deletes once status
       // flips) — omitting deleteAttr here just keeps the UI honest about
@@ -278,8 +283,8 @@ function myPanelRenderInvoices(invoices, ctx, el) {
       return myPanelRowHtml({
         kind: "invoice",
         href: "invoice-app.html?invoice=" + encodeURIComponent(inv.id),
-        name: (d.recipientName && d.recipientName.trim()) || "מסמך (ללא שם)",
-        sub: inv.status === "issued" ? `${docLabel} מס' ${inv.number}` : `${docLabel} — טיוטה`,
+        name: (d.recipientName && d.recipientName.trim()) || dkL("מסמך (ללא שם)", "Document (untitled)"),
+        sub: inv.status === "issued" ? dkL(`${docLabel} מס' ${inv.number}`, `${docLabel} #${inv.number}`) : dkL(`${docLabel} — טיוטה`, `${docLabel} — draft`),
         deleteAttr: inv.status === "draft" ? "invoice:" + inv.id : null,
         active: !!(ctx && ctx.kind === "invoice" && ctx.id === inv.id),
       });
@@ -411,8 +416,8 @@ async function loadMyPanel(user, opts) {
 }
 
 async function deleteMyPanelItem(kind, id, button) {
-  const label = kind === "cv" ? "את קורות החיים האלה" : kind === "quote" ? "את הצעת המחיר הזו" : kind === "invoice" ? "את הטיוטה הזו" : "את האתר הזה";
-  if (!confirm(`למחוק לצמיתות ${label}? הפעולה בלתי הפיכה.`)) return;
+  const label = kind === "cv" ? dkL("את קורות החיים האלה", "this CV") : kind === "quote" ? dkL("את הצעת המחיר הזו", "this quote") : kind === "invoice" ? dkL("את הטיוטה הזו", "this draft") : dkL("את האתר הזה", "this website");
+  if (!confirm(dkL(`למחוק לצמיתות ${label}? הפעולה בלתי הפיכה.`, `Permanently delete ${label}? This can't be undone.`))) return;
   button.disabled = true;
   const { data } = await supabaseClient.auth.getSession();
   const user = data.session && data.session.user;
@@ -446,10 +451,10 @@ function myPanelSectionsHtml() {
   // quotes/invoices start hidden — myPanelToggleBusinessSections reveals
   // them once the account is shown to actually use either (see its own
   // comment above loadMyPanel for why).
-  return section("sites", "אתרים", "my-panel-sites")
-    + section("cv", "קורות חיים", "my-panel-cv")
-    + section("quotes", "הצעות מחיר", "my-panel-quotes", { hidden: true })
-    + section("invoices", "חשבוניות", "my-panel-invoices", { hidden: true });
+  return section("sites", dkL("אתרים", "Websites"), "my-panel-sites")
+    + section("cv", dkL("קורות חיים", "CVs"), "my-panel-cv")
+    + section("quotes", dkL("הצעות מחיר", "Quotes"), "my-panel-quotes", { hidden: true })
+    + section("invoices", dkL("חשבוניות", "Invoices"), "my-panel-invoices", { hidden: true });
 }
 
 /* Reads back the width/collapsed state the pre-paint inline script (first
@@ -481,8 +486,8 @@ function mountMyPanel() {
   aside.innerHTML = `
     <div class="my-panel-resize-handle" id="my-panel-resize-handle"></div>
     <div class="my-panel-head">
-      <div class="my-panel-subtitle">התבניות שלי</div>
-      <button type="button" class="my-panel-collapse" id="my-panel-collapse-btn" title="הסתרת הסרגל" aria-label="הסתרת הסרגל">${myPanelCollapseIcon()}</button>
+      <div class="my-panel-subtitle">${dkL("התבניות שלי", "My templates")}</div>
+      <button type="button" class="my-panel-collapse" id="my-panel-collapse-btn" title="${dkL("הסתרת הסרגל", "Hide the panel")}" aria-label="${dkL("הסתרת הסרגל", "Hide the panel")}">${myPanelCollapseIcon()}</button>
     </div>
     <div class="my-panel-body">${myPanelSectionsHtml()}</div>
     <div class="my-panel-account">
@@ -500,8 +505,8 @@ function mountMyPanel() {
     reopen.type = "button";
     reopen.id = "my-panel-reopen";
     reopen.className = "my-panel-reopen no-print";
-    reopen.title = "הצגת הסרגל";
-    reopen.setAttribute("aria-label", "הצגת הסרגל");
+    reopen.title = dkL("הצגת הסרגל", "Show the panel");
+    reopen.setAttribute("aria-label", dkL("הצגת הסרגל", "Show the panel"));
     reopen.innerHTML = myPanelCollapseIcon();
     reopen.addEventListener("click", () => myPanelSetCollapsed(false));
     document.body.appendChild(reopen);

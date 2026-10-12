@@ -41,7 +41,7 @@
 <body class="dk-has-app-sidebar">
 <div id="auth-gate-overlay" class="auth-gate-overlay">
   <div class="auth-gate-spinner"></div>
-  <p style="color:var(--grey); font-size:14px; margin:0;">בודקים חיבור…</p>
+  <p style="color:var(--grey); font-size:14px; margin:0;" data-i18n="cvb_checking">בודקים חיבור…</p>
 </div>
 <header class="site no-print">
   <nav class="nav">
@@ -67,16 +67,16 @@
 <section class="builder-top no-print" id="builder-top-section">
   <div class="container builder-top-row">
     <div>
-      <div class="breadcrumb"><a href="products.html?type=cv">קורות חיים</a> / בילדר קורות חיים</div>
-      <h1 style="font-size:26px; margin:6px 0 4px;">התאימו אישית ותצפו בזמן אמת</h1>
+      <div class="breadcrumb"><a href="products.html?type=cv" data-i18n="nav_cv">קורות חיים</a> / <span data-i18n="cvb_crumb">בילדר קורות חיים</span></div>
+      <h1 style="font-size:26px; margin:6px 0 4px;" data-i18n="cvb_h1">התאימו אישית ותצפו בזמן אמת</h1>
     </div>
-    <div class="lang-switch-big" id="lang-switch-big" role="radiogroup" aria-label="שפת קורות החיים">
+    <div class="lang-switch-big" id="lang-switch-big" role="radiogroup" aria-label="שפת קורות החיים / CV language">
       <button type="button" class="lang-big active" data-lang="he"><span class="dot"></span>עברית</button>
       <button type="button" class="lang-big" data-lang="en"><span class="dot"></span>English</button>
     </div>
     <div class="builder-save-ctrl">
       <span class="builder-save-status" id="cv-save-status"></span>
-      <button type="button" class="btn btn-teal builder-save-btn" id="cv-save-btn">שמירה</button>
+      <button type="button" class="btn btn-teal builder-save-btn" id="cv-save-btn" data-i18n="cvb_save">שמירה</button>
     </div>
   </div>
 </section>
@@ -84,7 +84,7 @@
 <div class="container builder-wrap" id="builder-wrap-section">
   <aside class="builder-form no-print">
     <div class="field">
-      <label for="tpl-select">בחרו תבנית</label>
+      <label for="tpl-select" data-i18n="cvb_pick_tpl">בחרו תבנית</label>
       <select id="tpl-select"></select>
     </div>
     <div class="field">
@@ -92,7 +92,7 @@
       <select id="font-select"></select>
     </div>
     <div class="field">
-      <label for="color-picker">צבע ראשי</label>
+      <label for="color-picker" data-i18n="cvb_main_color">צבע ראשי</label>
       <div class="color-row">
         <input type="color" id="color-picker" value="#1F5C4E">
         <div class="swatches" id="swatches"></div>
@@ -127,7 +127,7 @@
     <div class="field">
       <div class="field-label-row">
         <label for="f-summary" data-label="summary">תקציר מקצועי</label>
-        <button type="button" class="btn-mini ai-improve-btn" id="ai-improve-summary">✨ שפר עם AI</button>
+        <button type="button" class="btn-mini ai-improve-btn" id="ai-improve-summary" data-i18n="cvb_ai_improve">✨ שפר עם AI</button>
       </div>
       <textarea id="f-summary" rows="3"></textarea>
     </div>
@@ -155,8 +155,8 @@
     <div class="preview-sticky">
       <div id="preview-doc"></div>
       <div class="export-panel no-print" id="export-panel">
-        <button type="button" class="btn btn-gold" id="download-btn">הורדת PDF — חינם</button>
-        <button type="button" class="btn btn-outline-dark" id="ats-check-btn">🎯 בדיקת התאמה למשרה (ATS)</button>
+        <button type="button" class="btn btn-gold" id="download-btn" data-i18n="cvb_download_free">הורדת PDF — חינם</button>
+        <button type="button" class="btn btn-outline-dark" id="ats-check-btn" data-i18n="cvb_ats_full">🎯 בדיקת התאמה למשרה (ATS)</button>
       </div>
     </div>
   </main>
@@ -177,7 +177,7 @@
     <span class="bshell-top-name" data-i18n="cvb_top_doc_name">קורות חיים</span>
     <span class="bshell-top-status" id="cvbshell-top-status"></span>
     <div class="bshell-top-spacer"></div>
-    <div class="lang-switch-big" id="cvbshell-lang-switch" role="radiogroup" aria-label="שפת קורות החיים">
+    <div class="lang-switch-big" id="cvbshell-lang-switch" role="radiogroup" aria-label="שפת קורות החיים / CV language">
       <button type="button" class="lang-big" data-lang="he"><span class="dot"></span>עברית</button>
       <button type="button" class="lang-big" data-lang="en"><span class="dot"></span>English</button>
     </div>
@@ -207,7 +207,7 @@
     <div class="bshell-canvas-wrap">
       <div class="bshell-canvas-frame-holder">
         <div class="bshell-canvas-shadow">
-          <iframe class="bshell-canvas-iframe" id="cvbshell-canvas-iframe" title="עריכת קורות החיים"></iframe>
+          <iframe class="bshell-canvas-iframe" id="cvbshell-canvas-iframe" title="עריכת קורות החיים" data-i18n-title="cvb_canvas_title"></iframe>
         </div>
       </div>
     </div>
@@ -249,33 +249,33 @@
     <div class="footer-grid">
       <div>
         <h4>DeskKit</h4>
-        <p style="font-size:14px; max-width:320px;">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
+        <p style="font-size:14px; max-width:320px;" data-i18n="footer_blurb">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
       </div>
       <div>
-        <h4>ניווט</h4>
+        <h4 data-i18n="footer_nav_heading">ניווט</h4>
         <ul>
-          <li><a href="builder.html">קורות חיים</a></li>
-          <li><a href="sites.html">בניית אתר</a></li>
-          <li><a href="quote-app.html">הצעות מחיר</a></li>
-          <li><a href="invoice-app.html">חשבוניות</a></li>
-          <li><a href="products.html?type=deck">מצגות</a></li>
-          <li><a href="products.html?type=xlsx">גליונות</a></li>
-          <li><a href="about.html">אודות</a></li>
-          <li><a href="contact.html">צור קשר</a></li>
+          <li><a href="builder.html" data-i18n="nav_cv">קורות חיים</a></li>
+          <li><a href="sites.html" data-i18n="nav_sites">בניית אתר</a></li>
+          <li><a href="quote-app.html" data-i18n="nav_quotes">הצעות מחיר</a></li>
+          <li><a href="invoice-app.html" data-i18n="nav_invoices">חשבוניות</a></li>
+          <li><a href="products.html?type=deck" data-i18n="nav_decks">מצגות</a></li>
+          <li><a href="products.html?type=xlsx" data-i18n="nav_xlsx">גליונות</a></li>
+          <li><a href="about.html" data-i18n="nav_about">אודות</a></li>
+          <li><a href="contact.html" data-i18n="nav_contact">צור קשר</a></li>
         </ul>
       </div>
       <div>
-        <h4>מידע</h4>
+        <h4 data-i18n="footer_info_heading">מידע</h4>
         <ul>
-          <li><a href="guides.html">מדריכים</a></li>
-          <li><a href="faq.html">שאלות נפוצות</a></li>
-          <li><a href="terms.html">מדיניות</a></li>
-          <li><a href="security.html">אבטחת מידע</a></li>
-          <li><a href="accessibility.html">נגישות</a></li>
+          <li><a href="guides.html" data-i18n="footer_guides">מדריכים</a></li>
+          <li><a href="faq.html" data-i18n="footer_faq">שאלות נפוצות</a></li>
+          <li><a href="terms.html" data-i18n="footer_terms">מדיניות</a></li>
+          <li><a href="security.html" data-i18n="footer_security">אבטחת מידע</a></li>
+          <li><a href="accessibility.html" data-i18n="footer_accessibility">נגישות</a></li>
         </ul>
       </div>
       <div>
-        <h4>צור קשר</h4>
+        <h4 data-i18n="nav_contact">צור קשר</h4>
         <ul>
           <li><a class="dk-email" href="contact.html">צרו קשר</a></li>
         </ul>
@@ -286,40 +286,40 @@
       <p class="footer-identity-owner" data-i18n="footer_identity_owner">נוצר ומופעל באופן עצמאי על ידי דבורה צדוק &middot; עוסק פטור</p>
       <p class="footer-identity-links"><a href="contact.html" data-i18n="nav_contact">צור קשר</a> &middot; <a href="terms.html#privacy" data-i18n="footer_privacy_link">מדיניות פרטיות</a> &middot; <a href="terms.html" data-i18n="footer_terms_link">תנאי שימוש</a></p>
     </div>
-    <div class="footer-bottom">© 2026 DeskKit. כל הזכויות שמורות.</div>
+    <div class="footer-bottom" data-i18n="footer_copyright">© 2026 DeskKit. כל הזכויות שמורות.</div>
   </div>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/cv-content.js"></script>
+<script src="js/i18n.js?v=36"></script>
+<script src="js/cv-content.js?v=2"></script>
 <script src="js/color-utils.js"></script>
 <script src="js/cv-render.js?v=13"></script>
-<script src="js/builder.js?v=12"></script>
+<script src="js/builder.js?v=13"></script>
 <script>window.deferReveal = true;</script>
 <script src="js/vendor/supabase-js-2.116.0.js"></script>
 <script src="js/supabase-config.js?v=2"></script>
 <script src="js/require-auth.js"></script>
 <script src="js/nav-auth.js?v=4"></script>
-<script src="js/header.js?v=5"></script>
-<script src="js/i18n.js?v=34"></script>
+<script src="js/header.js?v=6"></script>
 <script src="js/create-chooser.js?v=4"></script>
 <script src="js/mobile-nav.js?v=2"></script>
 <script src="js/app-sidebar.js?v=6"></script>
-<script src="js/dk-shell-breadcrumb.js?v=1"></script>
+<script src="js/dk-shell-breadcrumb.js?v=2"></script>
 <script src="js/domain-guide.js?v=5"></script>
 <script src="js/upsell-banner.js?v=2"></script>
 <script src="js/auth-prompt.js?v=1"></script>
 <script src="js/usage-log.js?v=1"></script>
 <script src="js/builder-cloud-save.js?v=8"></script>
-<script src="js/ats-checker.js?v=3"></script>
+<script src="js/ats-checker.js?v=4"></script>
 <script src="js/ai-writer.js?v=3"></script>
-<script src="js/cv-builder-shell.js?v=13"></script>
-<script src="js/cv-saves-router.js?v=1"></script>
+<script src="js/cv-builder-shell.js?v=14"></script>
+<script src="js/cv-saves-router.js?v=2"></script>
 <script src="js/cv-style-picker.js?v=3"></script>
 <script src="js/main.js?v=8"></script>
 <script src="js/captcha.js?v=3"></script>
-<script src="js/widgets.js?v=18"></script>
+<script src="js/widgets.js?v=19"></script>
 <script src="js/effects.js"></script>
 <script src="js/contact-email.js?v=1"></script>
 </body>

@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const crumb = document.createElement("span");
   crumb.className = "dk-crumb";
   crumb.id = "bshell-breadcrumb";
-  crumb.innerHTML = `<a href="index.html">DeskKit</a><span class="dk-crumb-sep">/</span><a href="projects.html">הפרויקטים שלי</a><span class="dk-crumb-sep">/</span><span class="dk-crumb-current" id="bshell-breadcrumb-current"></span>`;
+  crumb.innerHTML = `<a href="index.html">DeskKit</a><span class="dk-crumb-sep">/</span><a href="projects.html">${typeof dkT === "function" ? dkT("nav_my_projects", "הפרויקטים שלי") : "הפרויקטים שלי"}</a><span class="dk-crumb-sep">/</span><span class="dk-crumb-current" id="bshell-breadcrumb-current"></span>`;
   nameEl.insertAdjacentElement("beforebegin", crumb);
   nameEl.style.display = "none";
 

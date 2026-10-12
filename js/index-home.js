@@ -4,6 +4,17 @@
    for the logged-in "recent projects" strip instead of re-implementing
    that query — same data, same cards as projects.html itself. */
 
+// Hebrew/English pick for text built here — dkL from js/i18n.js when it's
+// loaded, otherwise the same stored-preference rule it uses.
+function dkAppL(he, en) {
+  if (typeof dkL === "function") return dkL(he, en);
+  try {
+    const stored = localStorage.getItem("deskkit_lang");
+    const isEn = stored ? stored === "en" : !(navigator.languages || [navigator.language || ""]).some((l) => (l || "").toLowerCase().startsWith("he"));
+    return isEn ? en : he;
+  } catch (e) { return he; }
+}
+
 function dkHomeFreeTextRoute() {
   const input = document.getElementById("dk-home-freetext");
   const text = input ? input.value.trim() : "";
@@ -57,15 +68,27 @@ async function dkHomeShowLoggedIn(user) {
   if (grid && typeof dkProjectsFetchAll === "function") {
     try {
       const items = (await dkProjectsFetchAll(user)).slice(0, 4);
-      grid.innerHTML = items.length
-        ? items.map(dkPcardHtml).join("")
-        : `<div class="dk-pcard-empty">עדיין אין כאן פרויקטים. <a href="#" id="dk-home-empty-create">+ צרו את הראשון שלכם</a></div>`;
-      const btn = document.getElementById("dk-home-empty-create");
-      if (btn) btn.addEventListener("click", (e) => { e.preventDefault(); if (typeof openCreateChooser === "function") openCreateChooser(); });
+      dkHomeRecentItems = items;
+      dkHomeRenderRecent();
       dkProjectsAll = items; // so the shared more-menu delegated click handler (js/projects.js) can resolve these cards too
       dkProjectsUser = user;
     } catch (err) { /* non-fatal — the quick-create row above still works */ }
   }
+}
+
+// Kept so a language change can redraw the recent-projects cards without a
+// refetch (card text is computed at render time, see js/projects.js).
+let dkHomeRecentItems = null;
+
+function dkHomeRenderRecent() {
+  const grid = document.getElementById("dk-home-recent-grid");
+  if (!grid || !dkHomeRecentItems || typeof dkPcardHtml !== "function") return;
+  const items = dkHomeRecentItems;
+  grid.innerHTML = items.length
+    ? items.map(dkPcardHtml).join("")
+    : `<div class="dk-pcard-empty">${dkAppL("עדיין אין כאן פרויקטים.", "No projects here yet.")} <a href="#" id="dk-home-empty-create">${dkAppL("+ צרו את הראשון שלכם", "+ Create your first one")}</a></div>`;
+  const btn = document.getElementById("dk-home-empty-create");
+  if (btn) btn.addEventListener("click", (e) => { e.preventDefault(); if (typeof openCreateChooser === "function") openCreateChooser(); });
 }
 
 function dkHomeRenderGreeting(nameEl) {
@@ -95,6 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("deskkit:langchange", () => {
     const nameEl = document.getElementById("dk-home-greet-name");
     if (nameEl) dkHomeRenderGreeting(nameEl);
+    dkHomeRenderRecent();
   });
 
   if (typeof supabaseClient === "undefined") return;

@@ -132,6 +132,10 @@ function freshSiteData(template) {
   // saved data), so this never overrides a variant choice the user
   // already made and saved.
   if (template === "blank") data.blockVariants = { hero: "centered", services: "grid" };
+  // A site started while DeskKit's own UI is in English starts as an
+  // English site too (d.siteLang, read by site-templates.js). Hebrew is
+  // the default and is never written, so Hebrew sites' data is unchanged.
+  if (typeof currentLang === "function" && currentLang() === "en") data.siteLang = "en";
   return data;
 }
 
@@ -172,12 +176,12 @@ function serviceItemHtml(s, i, total) {
   return `
   <div class="services-item" data-idx="${i}">
     <div class="services-item-head">
-      <strong style="font-size:12.5px;">שירות ${i + 1}</strong>
-      ${canRemove ? `<button type="button" class="job-remove" data-service-remove="${i}">הסרה</button>` : ""}
+      <strong style="font-size:12.5px;">${dkL("שירות", "Service")} ${i + 1}</strong>
+      ${canRemove ? `<button type="button" class="job-remove" data-service-remove="${i}">${dkL("הסרה", "Remove")}</button>` : ""}
     </div>
-    <input type="text" placeholder="שם השירות/מוצר" data-service="${i}" data-key="name" value="${escapeHtmlS(s.name)}" maxlength="40">
-    <input type="text" placeholder="תיאור קצר (לא חובה)" data-service="${i}" data-key="desc" value="${escapeHtmlS(s.desc)}" maxlength="90">
-    <input type="text" placeholder="מחיר (לא חובה)" data-service="${i}" data-key="price" value="${escapeHtmlS(s.price)}" maxlength="20">
+    <input type="text" placeholder="${dkL("שם השירות/מוצר", "Service/product name")}" data-service="${i}" data-key="name" value="${escapeHtmlS(s.name)}" maxlength="40">
+    <input type="text" placeholder="${dkL("תיאור קצר (לא חובה)", "Short description (optional)")}" data-service="${i}" data-key="desc" value="${escapeHtmlS(s.desc)}" maxlength="90">
+    <input type="text" placeholder="${dkL("מחיר (לא חובה)", "Price (optional)")}" data-service="${i}" data-key="price" value="${escapeHtmlS(s.price)}" maxlength="20">
   </div>`;
 }
 
@@ -188,7 +192,7 @@ function renderServicesList() {
 
 function renderCurrentTplInfo() {
   const t = SITE_TEMPLATES[siteState.template];
-  document.getElementById("current-tpl-info").textContent = t ? t.label : "";
+  document.getElementById("current-tpl-info").textContent = t ? (typeof dkSitesLabel === "function" ? dkSitesLabel(t.label) : t.label) : "";
 }
 
 /* The landing screen before the Wizard starts — just the primary "בניית
@@ -231,10 +235,12 @@ function renderFormValues() {
   const fontSelect = document.getElementById("s-font");
   if (fontSelect && !fontSelect.options.length) {
     fontSelect.innerHTML = Object.keys(SITE_FONTS)
-      .map((key) => `<option value="${key}">${SITE_FONTS[key].name}</option>`)
+      .map((key) => `<option value="${key}">${dkSitesLabel(SITE_FONTS[key].name)}</option>`)
       .join("");
   }
   if (fontSelect) fontSelect.value = d.fontFamily || "heebo";
+  const siteLangSelect = document.getElementById("s-site-lang");
+  if (siteLangSelect) siteLangSelect.value = d.siteLang === "en" ? "en" : "he";
   document.getElementById("s-phone").value = d.phone;
   const hasWhatsappCheckbox = document.getElementById("s-has-whatsapp");
   if (hasWhatsappCheckbox) hasWhatsappCheckbox.checked = !d.noWhatsapp;
@@ -280,12 +286,12 @@ function renderHeadingsFields() {
     const select = document.getElementById(`h-${spec.key}-pick`);
     const input = document.getElementById(`h-${spec.key}`);
     if (!select || !input) return;
-    const options = HEADING_SUGGESTIONS[spec.bank] || [];
+    const options = ((d.siteLang === "en" && typeof HEADING_SUGGESTIONS_EN !== "undefined") ? HEADING_SUGGESTIONS_EN : HEADING_SUGGESTIONS)[spec.bank] || [];
     const current = d.headings[spec.key] || "";
     const isCustom = current && !options.includes(current);
-    select.innerHTML = `<option value="">בחירת ניסוח מוכן…</option>` +
+    select.innerHTML = `<option value="">${dkL("בחירת ניסוח מוכן…", "Pick a ready-made wording…")}</option>` +
       options.map((o) => `<option value="${escapeHtmlS(o)}"${o === current ? " selected" : ""}>${escapeHtmlS(o)}</option>`).join("") +
-      `<option value="__custom__"${isCustom ? " selected" : ""}>✏️ אחר</option>`;
+      `<option value="__custom__"${isCustom ? " selected" : ""}>${dkL("✏️ אחר", "✏️ Other")}</option>`;
     input.value = current;
     input.hidden = !isCustom;
     if (isCustom) customHeadingDrafts[spec.key] = current;
@@ -313,19 +319,19 @@ const TEXT_STYLE_FIELDS = [
 function textStyleControlHtml(key) {
   return `
     <span class="ts-wrap">
-      <button type="button" class="ts-toggle" data-style-toggle="${key}" title="עיצוב טקסט מותאם (גופן, צבע, גודל, יישור)">Aa</button>
+      <button type="button" class="ts-toggle" data-style-toggle="${key}" title="${dkL("עיצוב טקסט מותאם (גופן, צבע, גודל, יישור)", "Custom text style (font, color, size, alignment)")}">Aa</button>
       <div class="ts-row" data-style-row="${key}" hidden>
         <div class="ts-row-grid">
           <select data-style-font="${key}"></select>
           <input type="color" data-style-color="${key}" value="#000000">
-          <input type="number" data-style-size="${key}" placeholder="גודל (px)" min="8" max="140">
+          <input type="number" data-style-size="${key}" placeholder="${dkL("גודל (px)", "Size (px)")}" min="8" max="140">
         </div>
         <div class="ts-align" data-style-align-group="${key}">
-          <button type="button" data-style-align="${key}" data-align-val="right">ימין</button>
-          <button type="button" data-style-align="${key}" data-align-val="center">מרכז</button>
-          <button type="button" data-style-align="${key}" data-align-val="left">שמאל</button>
+          <button type="button" data-style-align="${key}" data-align-val="right">${dkL("ימין", "Right")}</button>
+          <button type="button" data-style-align="${key}" data-align-val="center">${dkL("מרכז", "Center")}</button>
+          <button type="button" data-style-align="${key}" data-align-val="left">${dkL("שמאל", "Left")}</button>
         </div>
-        <button type="button" class="ts-clear" data-style-clear="${key}">איפוס עיצוב מותאם</button>
+        <button type="button" class="ts-clear" data-style-clear="${key}">${dkL("איפוס עיצוב מותאם", "Reset custom style")}</button>
       </div>
     </span>`;
 }
@@ -351,8 +357,8 @@ function mountTextStyleControls() {
     else field.insertBefore(wrap, input);
     const row = wrap.querySelector("[data-style-row]");
     const fontSel = row.querySelector(`[data-style-font="${key}"]`);
-    fontSel.innerHTML = `<option value="">(גופן ברירת המחדל)</option>` +
-      Object.keys(SITE_FONTS).map((k) => `<option value="${k}">${SITE_FONTS[k].name}</option>`).join("");
+    fontSel.innerHTML = `<option value="">${dkL("(גופן ברירת המחדל)", "(Default font)")}</option>` +
+      Object.keys(SITE_FONTS).map((k) => `<option value="${k}">${dkSitesLabel(SITE_FONTS[k].name)}</option>`).join("");
   });
 }
 
@@ -714,7 +720,7 @@ async function uploadSiteImage(file, name) {
 function renderPhotoPreview() {
   const el = document.getElementById("s-photo-preview");
   el.innerHTML = siteState.data.heroImage
-    ? `<img src="${siteState.data.heroImage}" alt="תמונת הכותרת שהעליתם">`
+    ? `<img src="${siteState.data.heroImage}" alt="${dkL("תמונת הכותרת שהעליתם", "Your uploaded header image")}">`
     : `<span class="site-photo-placeholder">🖼️</span>`;
 }
 
@@ -723,7 +729,7 @@ function renderGalleryPreview() {
   const el = document.getElementById("s-gallery-preview");
   const images = siteState.data.heroImages || [];
   el.innerHTML = images.map((src, i) =>
-    `<div class="site-gallery-thumb" data-idx="${i}"><img src="${src}" alt="תמונה ${i + 1} בגלריה"><button type="button" data-action="remove-gallery-photo" aria-label="הסרה">✕</button></div>`
+    `<div class="site-gallery-thumb" data-idx="${i}"><img src="${src}" alt="${dkL(`תמונה ${i + 1} בגלריה`, `Gallery image ${i + 1}`)}"><button type="button" data-action="remove-gallery-photo" aria-label="${dkL("הסרה", "Remove")}">✕</button></div>`
   ).join("");
 }
 
@@ -756,7 +762,7 @@ function enabledSitePages() {
 // file's constant.
 const DESKKIT_WATERMARK_ID = "deskkit-badge";
 function siteWatermarkHtml() {
-  return `<a id="${DESKKIT_WATERMARK_ID}" href="https://deskkit.co.il" target="_blank" rel="noopener" style="position:fixed;bottom:14px;inset-inline-start:14px;z-index:999999;background:rgba(20,20,20,.86);color:#fff;font-family:Heebo,Arial,sans-serif;font-size:12px;font-weight:600;padding:7px 14px;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,.25);text-decoration:none;">נבנה ב-DeskKit ✨</a>`;
+  return `<a id="${DESKKIT_WATERMARK_ID}" href="https://deskkit.co.il" target="_blank" rel="noopener" style="position:fixed;bottom:14px;inset-inline-start:14px;z-index:999999;background:rgba(20,20,20,.86);color:#fff;font-family:Heebo,Arial,sans-serif;font-size:12px;font-weight:600;padding:7px 14px;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,.25);text-decoration:none;">${siteState.data && siteState.data.siteLang === "en" ? "Built with DeskKit ✨" : "נבנה ב-DeskKit ✨"}</a>`;
 }
 function currentSiteHtml(page) {
   const html = SITE_TEMPLATES[siteState.template].render(siteState.data, page || "index");
@@ -770,7 +776,7 @@ function renderPreviewTabs() {
   const pages = enabledSitePages();
   if (!pages.includes(previewPage)) previewPage = "index";
   if (pages.length < 2) { wrap.style.display = "none"; wrap.innerHTML = ""; return; }
-  const labels = { index: "בית", about: "אודות", contact: "צור קשר" };
+  const labels = { index: dkL("בית", "Home"), about: dkL("אודות", "About"), contact: dkL("צור קשר", "Contact") };
   wrap.style.display = "flex";
   wrap.innerHTML = pages.map((p) =>
     `<button type="button" class="preview-tab-btn${p === previewPage ? " active" : ""}" data-page="${p}">${labels[p]}</button>`
@@ -893,11 +899,11 @@ function renderMigratedHierarchy(tree, addBlockRow, template, d) {
     const isServices = !!def.hasItems;
     const removable = type !== "hero";
     const actions = `
-      <button type="button" class="hier-btn" data-hier-up="${type}" ${i === 0 ? "disabled" : ""} title="הזזה למעלה">▲</button>
-      <button type="button" class="hier-btn" data-hier-down="${type}" ${i === active.length - 1 ? "disabled" : ""} title="הזזה למטה">▼</button>
-      ${removable ? `<button type="button" class="hier-btn" data-hier-remove="${type}" title="הסרה">✕</button>` : ""}
+      <button type="button" class="hier-btn" data-hier-up="${type}" ${i === 0 ? "disabled" : ""} title="${dkL("הזזה למעלה", "Move up")}">▲</button>
+      <button type="button" class="hier-btn" data-hier-down="${type}" ${i === active.length - 1 ? "disabled" : ""} title="${dkL("הזזה למטה", "Move down")}">▼</button>
+      ${removable ? `<button type="button" class="hier-btn" data-hier-remove="${type}" title="${dkL("הסרה", "Remove")}">✕</button>` : ""}
     `;
-    let html = hierRowHtml({ label: def.label, key: type, hasToggle: isServices, expanded: hierExpanded.services, actions });
+    let html = hierRowHtml({ label: dkSitesLabel(def.label), key: type, hasToggle: isServices, expanded: hierExpanded.services, actions });
     // Variant picker (Phase 2, Generic Section System) — only shown for a
     // block type that actually has real alternates defined; switching it
     // never touches d.services/d.businessName/etc., only how this one
@@ -908,9 +914,9 @@ function renderMigratedHierarchy(tree, addBlockRow, template, d) {
     if (variantOpts) {
       const current = (d.blockVariants && d.blockVariants[type]) || "default";
       html += `<div class="hier-variant-row">
-        <span class="hier-variant-label">סגנון תצוגה</span>
+        <span class="hier-variant-label">${dkL("סגנון תצוגה", "Display style")}</span>
         <select class="hier-variant-select" data-hier-variant="${type}">
-          ${Object.keys(variantOpts).map((k) => `<option value="${k}"${k === current ? " selected" : ""}>${escapeHtmlS(variantOpts[k].label)}</option>`).join("")}
+          ${Object.keys(variantOpts).map((k) => `<option value="${k}"${k === current ? " selected" : ""}>${escapeHtmlS(dkSitesLabel(variantOpts[k].label))}</option>`).join("")}
         </select>
       </div>`;
     }
@@ -919,8 +925,8 @@ function renderMigratedHierarchy(tree, addBlockRow, template, d) {
       const childRows = services.map((s, idx) => `
         <div class="hier-row hier-child" data-hier-svc="${idx}">
           <span class="hier-icon">–</span>
-          <span class="hier-label">${escapeHtmlS(s.name && s.name.trim() ? s.name : `שירות ${idx + 1}`)}</span>
-          <span class="hier-actions">${services.length > 1 ? `<button type="button" class="hier-btn" data-hier-svc-remove="${idx}" title="הסרה">✕</button>` : ""}</span>
+          <span class="hier-label">${escapeHtmlS(s.name && s.name.trim() ? s.name : `${dkL("שירות", "Service")} ${idx + 1}`)}</span>
+          <span class="hier-actions">${services.length > 1 ? `<button type="button" class="hier-btn" data-hier-svc-remove="${idx}" title="${dkL("הסרה", "Remove")}">✕</button>` : ""}</span>
         </div>`).join("");
       // No "+ הוספת שירות" here on purpose — confirmed live as a
       // confusing second entry point for the exact same action the
@@ -996,7 +1002,7 @@ function renderMigratedHierarchy(tree, addBlockRow, template, d) {
     if (missing.length) {
       addBlockRow.style.display = "";
       const btn = addBlockRow.querySelector("#hier-add-block-btn");
-      btn.textContent = `+ הוספת "${defs[missing[0]].label}"`;
+      btn.textContent = dkL(`+ הוספת "${defs[missing[0]].label}"`, `+ Add "${dkSitesLabel(defs[missing[0]].label)}"`);
       btn.onclick = () => {
         ensureBlockOrder(d, template, "index").push(missing[0]);
         renderSitePreview();
@@ -1027,7 +1033,7 @@ const READONLY_HIER_OVERRIDES = {
 
 function renderReadOnlyHierarchy(tree, template, d) {
   const role = TEMPLATE_SECTION_ROLE[template] || "services";
-  const roleLabel = { services: "שירותים / מוצרים", products: "מוצרים", work: "עבודות" }[role] || "שירותים / מוצרים";
+  const roleLabel = { services: dkL("שירותים / מוצרים", "Services / products"), products: dkL("מוצרים", "Products"), work: dkL("עבודות", "Work") }[role] || dkL("שירותים / מוצרים", "Services / products");
   const overrides = READONLY_HIER_OVERRIDES[template] || {};
   const defaultSelectors = {
     services: '[data-textkey="heading-services"]',
@@ -1045,11 +1051,11 @@ function renderReadOnlyHierarchy(tree, template, d) {
   ];
   if (!d.pages || !d.pages.about) {
     const sel = selectorFor("about");
-    if (sel) nodes.push({ key: "about", label: "אודות", selector: sel });
+    if (sel) nodes.push({ key: "about", label: dkL("אודות", "About"), selector: sel });
   }
   if (!d.pages || !d.pages.contact) {
     const sel = selectorFor("contact");
-    if (sel) nodes.push({ key: "contact", label: "צור קשר", selector: sel });
+    if (sel) nodes.push({ key: "contact", label: dkL("צור קשר", "Contact"), selector: sel });
   }
   tree.innerHTML = nodes.map((n) => hierRowHtml({ label: n.label, key: n.key })).join("");
   tree.querySelectorAll(".hier-row[data-hier-key]").forEach((row) => {
@@ -1199,6 +1205,19 @@ function wireForm() {
     else renderSitePreview();
   });
 
+  // Site language (d.siteLang, read by site-templates.js): "en" for an
+  // English site; Hebrew is the default and is stored as no key at all,
+  // so existing Hebrew sites' data stays byte-for-byte the same.
+  const siteLangSelect = document.getElementById("s-site-lang");
+  if (siteLangSelect) {
+    siteLangSelect.addEventListener("change", (e) => {
+      if (e.target.value === "en") siteState.data.siteLang = "en";
+      else delete siteState.data.siteLang;
+      saveSiteState();
+      renderSitePreview(); // direction + default labels change everywhere — full reload
+    });
+  }
+
   document.getElementById("h-heroTitle").addEventListener("input", (e) => {
     siteState.data.headings.heroTitle = e.target.value;
     if (applyTextContentLive("heading-heroTitle", e.target.value, false)) saveSiteState();
@@ -1239,13 +1258,13 @@ function wireForm() {
     const file = e.target.files[0];
     if (!file) return;
     if (file.size > 6 * 1024 * 1024) {
-      alert("התמונה גדולה מדי — בחרו קובץ עד 6MB.");
+      alert(dkL("התמונה גדולה מדי — בחרו קובץ עד 6MB.", "The image is too large — choose a file up to 6MB."));
       e.target.value = "";
       return;
     }
     const url = await uploadSiteImage(file, "hero");
     if (!url) {
-      alert("העלאת התמונה נכשלה, נסו שוב.");
+      alert(dkL("העלאת התמונה נכשלה, נסו שוב.", "The image upload failed, please try again."));
       e.target.value = "";
       return;
     }
@@ -1266,18 +1285,18 @@ function wireForm() {
     if (!siteState.data.heroImages) siteState.data.heroImages = [];
     const roomLeft = SITE_GALLERY_MAX - siteState.data.heroImages.length;
     if (roomLeft <= 0) {
-      alert(`אפשר עד ${SITE_GALLERY_MAX} תמונות בגלריה — הסירו אחת כדי להוסיף חדשה.`);
+      alert(dkL(`אפשר עד ${SITE_GALLERY_MAX} תמונות בגלריה — הסירו אחת כדי להוסיף חדשה.`, `The gallery holds up to ${SITE_GALLERY_MAX} images — remove one to add a new one.`));
       e.target.value = "";
       return;
     }
     const toAdd = files.slice(0, roomLeft);
     if (files.length > toAdd.length) {
-      alert(`אפשר עד ${SITE_GALLERY_MAX} תמונות בגלריה — נוספו רק ${toAdd.length} מתוך ${files.length} שבחרתם.`);
+      alert(dkL(`אפשר עד ${SITE_GALLERY_MAX} תמונות בגלריה — נוספו רק ${toAdd.length} מתוך ${files.length} שבחרתם.`, `The gallery holds up to ${SITE_GALLERY_MAX} images — only ${toAdd.length} of the ${files.length} you chose were added.`));
     }
     let remaining = toAdd.length;
     toAdd.forEach(async (file) => {
       if (file.size > 6 * 1024 * 1024) {
-        alert(`"${file.name}" גדולה מדי — בחרו קובץ עד 6MB.`);
+        alert(dkL(`"${file.name}" גדולה מדי — בחרו קובץ עד 6MB.`, `"${file.name}" is too large — choose a file up to 6MB.`));
         remaining -= 1;
         if (remaining === 0) { renderGalleryPreview(); commitSectionPatch("heading-heroTitle"); }
         return;
@@ -1288,7 +1307,7 @@ function wireForm() {
       const name = "gallery-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
       const url = await uploadSiteImage(file, name);
       if (!url) {
-        alert(`העלאת "${file.name}" נכשלה, נסו שוב.`);
+        alert(dkL(`העלאת "${file.name}" נכשלה, נסו שוב.`, `Uploading "${file.name}" failed, please try again.`));
       } else {
         siteState.data.heroImages.push(url);
       }
@@ -1398,7 +1417,7 @@ function updatePublishButtonLabel() {
   const btn = document.getElementById("publish-site-btn");
   if (!btn || btn.disabled) return;
   const published = typeof sitePublishedUrl !== "undefined" && !!sitePublishedUrl;
-  btn.textContent = published ? "פרסום" : "פרסום — קבלת קישור חי";
+  btn.textContent = published ? dkL("פרסום", "Publish") : dkL("פרסום — קבלת קישור חי", "Publish — get a live link");
 }
 
 async function publishSite() {
@@ -1412,7 +1431,7 @@ async function publishSite() {
   // is literally all a real visitor would see — worth a real business
   // going live on a public URL, not something to let happen by accident.
   if (!siteState.data.businessName || !siteState.data.businessName.trim()) {
-    note.textContent = "לפני הפרסום, צריך למלא לפחות את שם העסק.";
+    note.textContent = dkL("לפני הפרסום, צריך למלא לפחות את שם העסק.", "Before publishing, please fill in at least your business name.");
     document.getElementById("s-name").focus();
     return;
   }
@@ -1423,21 +1442,21 @@ async function publishSite() {
   // instructions as if they were real content.
   const d = siteState.data;
   const missing = [];
-  if (!d.tagline || !d.tagline.trim()) missing.push("תיאור קצר");
-  if (!d.about || !d.about.trim()) missing.push("קטע \"עלינו\"");
-  if (!(d.services || []).some((s) => s.name && s.name.trim())) missing.push("שירותים/מוצרים");
-  if (!d.phone && !d.whatsapp && !d.email && !d.address) missing.push("פרטי יצירת קשר");
+  if (!d.tagline || !d.tagline.trim()) missing.push(dkL("תיאור קצר", "short description"));
+  if (!d.about || !d.about.trim()) missing.push(dkL("קטע \"עלינו\"", "\"About us\" section"));
+  if (!(d.services || []).some((s) => s.name && s.name.trim())) missing.push(dkL("שירותים/מוצרים", "services/products"));
+  if (!d.phone && !d.whatsapp && !d.email && !d.address) missing.push(dkL("פרטי יצירת קשר", "contact details"));
   if (missing.length) {
     const proceed = confirm(
-      "עדיין חסר תוכן אמיתי ב: " + missing.join(", ") + ".\n" +
-      "בלי זה, מבקרים באתר יראו את הטקסטים ההנחיה שנועדו רק לכם, לא תוכן אמיתי.\n\n" +
-      "לפרסם בכל זאת?"
+      dkL("עדיין חסר תוכן אמיתי ב: ", "Real content is still missing in: ") + missing.join(", ") + ".\n" +
+      dkL("בלי זה, מבקרים באתר יראו את הטקסטים ההנחיה שנועדו רק לכם, לא תוכן אמיתי.", "Without it, visitors will see the guidance text meant only for you, not real content.") + "\n\n" +
+      dkL("לפרסם בכל זאת?", "Publish anyway?")
     );
     if (!proceed) return;
   }
   const originalLabel = btn.textContent;
   btn.disabled = true;
-  btn.textContent = "מפרסמים...";
+  btn.textContent = dkL("מפרסמים...", "Publishing...");
   note.textContent = "";
   try {
     // Publish needs a real project id to attach the deploy to. Used to
@@ -1447,7 +1466,7 @@ async function publishSite() {
     // retry hit this same message forever.
     if (!siteProjectId) await saveSiteNow();
     if (!siteProjectId) {
-      note.textContent = "לא הצלחנו לשמור את האתר. נסו שוב בעוד רגע.";
+      note.textContent = dkL("לא הצלחנו לשמור את האתר. נסו שוב בעוד רגע.", "We couldn't save your site. Please try again in a moment.");
       return;
     }
     const pages = {};
@@ -1456,7 +1475,7 @@ async function publishSite() {
       body: { siteProjectId, userId: siteCurrentUserId, pages },
     });
     if (error || !data) {
-      note.textContent = "הפרסום נכשל. נסו שוב בעוד רגע.";
+      note.textContent = dkL("הפרסום נכשל. נסו שוב בעוד רגע.", "Publishing failed. Please try again in a moment.");
       return;
     }
     if (data.reason === "host_unavailable") {
@@ -1467,7 +1486,8 @@ async function publishSite() {
       // self-hosted publishing doesn't depend on Netlify at all — kept
       // as a non-broken message in case that path is ever reactivated,
       // rather than assuming it can truly never fire.
-      note.innerHTML = `פרסום לאוויר זמנית לא זמין אצלנו בגלל עומס אצל ספק האחסון — זה לא קשור לרכישה שלכם, והיא בתוקף. האתר שלכם שמור ומוכן; אפשר לנסות לפרסם שוב בעוד כמה דקות מאותו מסך. תקועים? <a href="mailto:${["digital.dz.studio", "gmail.com"].join("@")}?subject=${encodeURIComponent("פרסום נכשל — בניית אתר")}" style="color:inherit; text-decoration:underline;">כתבו לנו</a>.`;
+      note.innerHTML = dkL(`פרסום לאוויר זמנית לא זמין אצלנו בגלל עומס אצל ספק האחסון — זה לא קשור לרכישה שלכם, והיא בתוקף. האתר שלכם שמור ומוכן; אפשר לנסות לפרסם שוב בעוד כמה דקות מאותו מסך. תקועים? <a href="mailto:${["digital.dz.studio", "gmail.com"].join("@")}?subject=${encodeURIComponent("פרסום נכשל — בניית אתר")}" style="color:inherit; text-decoration:underline;">כתבו לנו</a>.`,
+        `Publishing is temporarily unavailable due to load at our hosting provider — this has nothing to do with your purchase, which is still valid. Your site is saved and ready; you can try publishing again in a few minutes from this same screen. Stuck? <a href="mailto:${["digital.dz.studio", "gmail.com"].join("@")}?subject=${encodeURIComponent("Publishing failed — website builder")}" style="color:inherit; text-decoration:underline;">Write to us</a>.`);
       return;
     }
     if (data.reason === "not_purchased") {
@@ -1475,7 +1495,7 @@ async function publishSite() {
       // financeGateOpened/unlock-done are already showing, which only
       // happens after a real redeem-license success. Kept as a plain,
       // non-broken message rather than assuming it can never happen.
-      note.textContent = "לא נמצאה רכישה מאומתת לתבנית הזו. אם כבר רכשתם, נסו לאמת את קוד הרישוי מחדש.";
+      note.textContent = dkL("לא נמצאה רכישה מאומתת לתבנית הזו. אם כבר רכשתם, נסו לאמת את קוד הרישוי מחדש.", "No verified purchase was found for this design. If you already purchased, try verifying your license code again.");
       return;
     }
     if (data.reason === "limit_reached") {
@@ -1485,11 +1505,12 @@ async function publishSite() {
       // comment). Kept as a non-broken message, not assumed dead.
       sitePublishCount = data.publishCount;
       renderPublishRemaining();
-      note.innerHTML = `הגעתם למספר המרבי של עדכוני פרסום חינמיים לאתר הזה. רוצים להמשיך לפרסם דרכנו? <a href="mailto:${["digital.dz.studio", "gmail.com"].join("@")}?subject=${encodeURIComponent("בקשה להמשך פרסום — בניית אתר")}" style="color:inherit; text-decoration:underline;">כתבו לנו</a>.`;
+      note.innerHTML = dkL(`הגעתם למספר המרבי של עדכוני פרסום חינמיים לאתר הזה. רוצים להמשיך לפרסם דרכנו? <a href="mailto:${["digital.dz.studio", "gmail.com"].join("@")}?subject=${encodeURIComponent("בקשה להמשך פרסום — בניית אתר")}" style="color:inherit; text-decoration:underline;">כתבו לנו</a>.`,
+        `You've reached the maximum number of free publish updates for this site. Want to keep publishing with us? <a href="mailto:${["digital.dz.studio", "gmail.com"].join("@")}?subject=${encodeURIComponent("Request to keep publishing — website builder")}" style="color:inherit; text-decoration:underline;">Write to us</a>.`);
       return;
     }
     if (!data.success) {
-      note.textContent = "הפרסום נכשל. נסו שוב בעוד רגע.";
+      note.textContent = dkL("הפרסום נכשל. נסו שוב בעוד רגע.", "Publishing failed. Please try again in a moment.");
       return;
     }
     if (typeof data.publishCount === "number") { sitePublishCount = data.publishCount; renderPublishRemaining(); }
@@ -1503,8 +1524,8 @@ async function publishSite() {
     // the moment the button is clicked, not verified.
     if (data.claimUrl) {
       note.innerHTML = `
-        <a href="${data.claimUrl}" target="_blank" rel="noopener" id="publish-claim-btn" class="btn btn-gold" style="width:100%; box-sizing:border-box; text-align:center; display:block;">שלב אחרון: לחצו כאן להפעלת האתר וקבלת בעלות מלאה (חינם לתמיד) 🚀</a>
-        <div class="claim-steps">
+        <a href="${data.claimUrl}" target="_blank" rel="noopener" id="publish-claim-btn" class="btn btn-gold" style="width:100%; box-sizing:border-box; text-align:center; display:block;">${dkL("שלב אחרון: לחצו כאן להפעלת האתר וקבלת בעלות מלאה (חינם לתמיד) 🚀", "Last step: click here to activate your site and get full ownership (free forever) 🚀")}</a>
+        <div class="claim-steps">${dkL(`
           <b>💡 שלב חובה להפעלת האתר:</b>
           <ol>
             <li>לחצו על הכפתור למעלה — ייפתח לכם חלון חדש של Netlify.</li>
@@ -1512,7 +1533,15 @@ async function publishSite() {
             <li>מיד לאחר שלחצתם, חזרו לכאן לאתר כדי לקבל את הקישור הרשמי והסופי שלכם.</li>
           </ol>
           אם תלחצו על הכפתור <bdi>"Claim apps"</bdi> בתוך Netlify, האתר יישמר בחשבון האישי שלכם ותוכלו לעדכן אותו בעתיד.
-        </div>
+        `, `
+          <b>💡 A required step to activate your site:</b>
+          <ol>
+            <li>Click the button above — a new Netlify window will open.</li>
+            <li>In that window, click the big teal/green button that says <bdi>"Claim apps"</bdi> (if you don't have an account, sign up for free first — it takes a moment).</li>
+            <li>Right after you've clicked it, come back here to get your official, final link.</li>
+          </ol>
+          Once you click <bdi>"Claim apps"</bdi> in Netlify, the site is saved to your own account and you can update it in the future.
+        `)}</div>
       `;
       document.getElementById("publish-claim-btn").addEventListener("click", () => renderPublishClaimedScreen(data.url), { once: true });
     } else {
@@ -1520,7 +1549,7 @@ async function publishSite() {
       renderPublishClaimedScreen(data.url, data.selfHosted, data.slug);
     }
   } catch (err) {
-    note.textContent = "הפרסום נכשל. נסו שוב בעוד רגע.";
+    note.textContent = dkL("הפרסום נכשל. נסו שוב בעוד רגע.", "Publishing failed. Please try again in a moment.");
   } finally {
     btn.disabled = false;
     btn.textContent = originalLabel;
@@ -1555,30 +1584,30 @@ function renderPublishClaimedScreen(url, selfHosted, slug) {
   const offerRename = selfHosted && slug;
   const isAuto = slug && AUTO_SLUG_PATTERN.test(slug);
   note.innerHTML = `
-    <div style="margin-bottom:4px; font-weight:700; color:var(--ink-dark);">האתר שלכם באוויר ✓</div>
+    <div style="margin-bottom:4px; font-weight:700; color:var(--ink-dark);">${dkL("האתר שלכם באוויר ✓", "Your site is live ✓")}</div>
     <div class="publish-url-box">
       <span id="publish-url-text" dir="ltr">${url}</span>
-      <button type="button" id="publish-copy-btn" class="btn-mini publish-copy-btn">העתקת קישור</button>
+      <button type="button" id="publish-copy-btn" class="btn-mini publish-copy-btn">${dkL("העתקת קישור", "Copy link")}</button>
     </div>
-    <a href="${url}" target="_blank" rel="noopener" class="btn btn-teal" style="display:block; text-align:center; margin-top:10px;">פתיחת האתר ↗</a>
+    <a href="${url}" target="_blank" rel="noopener" class="btn btn-teal" style="display:block; text-align:center; margin-top:10px;">${dkL("פתיחת האתר ↗", "Open site ↗")}</a>
     <!-- Custom-domain connect button removed for now (per explicit
          request — feature not ready to expose yet). js/domain-guide.js
          still has the real implementation; re-enable by restoring this
          button and the addEventListener call below it. -->
     ${offerRename ? `
     <div style="margin-top:12px; text-align:center;">
-      <button type="button" id="slug-rename-toggle" class="cx-link-btn" style="background:none; border:none; color:var(--grey); text-decoration:underline; cursor:pointer; font-family:inherit; font-size:13px;">${isAuto ? "✏️ להחליף לכתובת עם שם משלכם" : "✏️ שינוי כתובת האתר"}</button>
+      <button type="button" id="slug-rename-toggle" class="cx-link-btn" style="background:none; border:none; color:var(--grey); text-decoration:underline; cursor:pointer; font-family:inherit; font-size:13px;">${isAuto ? dkL("✏️ להחליף לכתובת עם שם משלכם", "✏️ Switch to an address with your own name") : dkL("✏️ שינוי כתובת האתר", "✏️ Change site address")}</button>
     </div>
     <div class="host-info-box" id="slug-rename-box" style="margin-top:10px;" hidden>
-      <b>כתובת חדשה לאתר</b>
-      <div style="font-size:12.5px; color:var(--grey); margin-top:4px;">שימו לב: אחרי השינוי, הכתובת הנוכחית תפסיק לעבוד — כדאי לעדכן אותה בכל מקום ששיתפתם.</div>
+      <b>${dkL("כתובת חדשה לאתר", "New site address")}</b>
+      <div style="font-size:12.5px; color:var(--grey); margin-top:4px;">${dkL("שימו לב: אחרי השינוי, הכתובת הנוכחית תפסיק לעבוד — כדאי לעדכן אותה בכל מקום ששיתפתם.", "Note: after the change, the current address will stop working — update it anywhere you've shared it.")}</div>
       <div style="display:flex; align-items:center; gap:8px; background:var(--white); border:2px solid #DDE4E1; border-radius:10px; padding:8px 12px; margin-top:8px;">
         <input type="text" id="slug-rename-input" placeholder="my-business-name" dir="ltr" autocomplete="off" style="flex:1; border:none; outline:none; font-family:inherit; font-size:14px; direction:ltr; text-align:left; background:transparent;">
         <span style="color:var(--grey); font-size:13px; white-space:nowrap;">.deskkit.co.il</span>
       </div>
       <div id="slug-rename-status" style="margin-top:6px; font-size:13px; font-weight:600; min-height:18px;"></div>
       <div id="slug-rename-suggestions" style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;"></div>
-      <button type="button" id="slug-rename-confirm-btn" class="btn btn-teal" style="width:100%; margin-top:8px;" disabled>שינוי הכתובת</button>
+      <button type="button" id="slug-rename-confirm-btn" class="btn btn-teal" style="width:100%; margin-top:8px;" disabled>${dkL("שינוי הכתובת", "Change address")}</button>
     </div>` : ""}
   `;
   if (offerRename) {
@@ -1593,9 +1622,9 @@ function renderPublishClaimedScreen(url, selfHosted, slug) {
     const original = copyBtn.textContent;
     try {
       await navigator.clipboard.writeText(url);
-      copyBtn.textContent = "הועתק ✓";
+      copyBtn.textContent = dkL("הועתק ✓", "Copied ✓");
     } catch (err) {
-      copyBtn.textContent = "לא הצלחנו להעתיק — סמנו ידנית";
+      copyBtn.textContent = dkL("לא הצלחנו להעתיק — סמנו ידנית", "Couldn't copy — select it manually");
     }
     setTimeout(() => { copyBtn.textContent = original; }, 2000);
   });
@@ -1621,7 +1650,7 @@ function wireSlugRenameUI() {
   async function checkSlug(value) {
     const mySeq = ++requestSeq;
     status.style.color = "var(--grey)";
-    status.textContent = "בודקים...";
+    status.textContent = dkL("בודקים...", "Checking...");
     suggestionsEl.innerHTML = "";
     confirmBtn.disabled = true;
     checkedAvailableSlug = null;
@@ -1629,21 +1658,21 @@ function wireSlugRenameUI() {
     if (mySeq !== requestSeq) return;
     if (error || !data) {
       status.style.color = "#B3401E";
-      status.textContent = "שגיאה בבדיקה. נסו שוב.";
+      status.textContent = dkL("שגיאה בבדיקה. נסו שוב.", "The check failed. Please try again.");
       return;
     }
     if (data.available) {
       status.style.color = "#1E7A4C";
-      status.textContent = "✓ פנוי: " + data.slug + ".deskkit.co.il";
+      status.textContent = dkL("✓ פנוי: ", "✓ Available: ") + data.slug + ".deskkit.co.il";
       checkedAvailableSlug = data.slug;
       confirmBtn.disabled = false;
       return;
     }
     const reasonText = {
-      invalid: "שם לא תקין — רק אותיות אנגליות, ספרות ומקפים.",
-      reserved: "השם הזה שמור למערכת.",
-      taken: "השם הזה כבר תפוס.",
-    }[data.reason] || "השם הזה לא זמין.";
+      invalid: dkL("שם לא תקין — רק אותיות אנגליות, ספרות ומקפים.", "Invalid name — English letters, digits and hyphens only."),
+      reserved: dkL("השם הזה שמור למערכת.", "This name is reserved by the system."),
+      taken: dkL("השם הזה כבר תפוס.", "This name is already taken."),
+    }[data.reason] || dkL("השם הזה לא זמין.", "This name isn't available.");
     status.style.color = "#B3401E";
     status.textContent = "✗ " + reasonText;
     (data.suggestions || []).forEach((s) => {
@@ -1669,13 +1698,13 @@ function wireSlugRenameUI() {
     if (!checkedAvailableSlug || !siteProjectId) return;
     confirmBtn.disabled = true;
     const original = confirmBtn.textContent;
-    confirmBtn.textContent = "משנה כתובת...";
+    confirmBtn.textContent = dkL("משנה כתובת...", "Changing address...");
     const { data, error } = await supabaseClient.functions.invoke("claim-site-slug", {
       body: { siteProjectId, desired: checkedAvailableSlug },
     });
     if (error || !data || !data.success) {
       status.style.color = "#B3401E";
-      status.textContent = "השינוי נכשל, נסו שוב.";
+      status.textContent = dkL("השינוי נכשל, נסו שוב.", "The change failed, please try again.");
       confirmBtn.disabled = false;
       confirmBtn.textContent = original;
       return;
@@ -1748,12 +1777,12 @@ async function verifySiteLicense() {
   const input = document.getElementById("license-input");
   const note = document.getElementById("license-note");
   const key = input.value.trim();
-  if (!key) { note.textContent = "יש להזין קוד רישוי."; note.className = "unlock-note err"; return; }
-  if (!siteCurrentUserId) { note.textContent = "יש להתחבר לחשבון כדי לפתוח את ההורדה."; note.className = "unlock-note err"; return; }
+  if (!key) { note.textContent = dkL("יש להזין קוד רישוי.", "Please enter a license code."); note.className = "unlock-note err"; return; }
+  if (!siteCurrentUserId) { note.textContent = dkL("יש להתחבר לחשבון כדי לפתוח את ההורדה.", "Please sign in to your account to continue."); note.className = "unlock-note err"; return; }
   siteVerifying = true;
   const verifyBtn = document.getElementById("verify-btn");
   if (verifyBtn) verifyBtn.disabled = true;
-  note.textContent = "בודקים...";
+  note.textContent = dkL("בודקים...", "Checking...");
   note.className = "unlock-note";
   try {
     // The license is bound to this site, so the site must exist first.
@@ -1768,7 +1797,7 @@ async function verifySiteLicense() {
       },
     });
     if (error || !data) {
-      note.textContent = "שגיאת חיבור לשירות האימות. נסו שוב בעוד רגע.";
+      note.textContent = dkL("שגיאת חיבור לשירות האימות. נסו שוב בעוד רגע.", "Couldn't reach the verification service. Please try again in a moment.");
       note.className = "unlock-note err";
       return;
     }
@@ -1778,14 +1807,14 @@ async function verifySiteLicense() {
       // with exactly the key they tried, so following up doesn't start
       // from scratch.
       const supportMailto = `mailto:${["digital.dz.studio", "gmail.com"].join("@")}?subject=${encodeURIComponent("בעיה בקוד רישוי — בניית אתר")}&body=${encodeURIComponent("הקוד שהזנתי: " + key)}`;
-      const supportLine = `<br>עדיין תקועים? <a href="${supportMailto}" style="color:inherit; text-decoration:underline;">כתבו לנו ונפתור את זה ידנית</a>.`;
-      const invalidMsg = "קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב." + (data.gumroadMessage ? ` (Gumroad: ${escapeHtmlS(data.gumroadMessage)})` : "") + supportLine;
+      const supportLine = dkL(`<br>עדיין תקועים? <a href="${supportMailto}" style="color:inherit; text-decoration:underline;">כתבו לנו ונפתור את זה ידנית</a>.`, `<br>Still stuck? <a href="${supportMailto}" style="color:inherit; text-decoration:underline;">Write to us and we'll sort it out manually</a>.`);
+      const invalidMsg = dkL("קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב.", "Invalid code. Check the email you got from Gumroad and try again.") + (data.gumroadMessage ? ` (Gumroad: ${escapeHtmlS(data.gumroadMessage)})` : "") + supportLine;
       note.innerHTML = data.reason === "redeemed-elsewhere" || data.reason === "different-template" || data.reason === "different-site"
-        ? "קוד הרישוי הזה כבר הסיר את התגית מאתר אחר. כל רכישה מסירה את התגית מאתר אחד — לאתר נוסף נדרשת רכישה נפרדת." + supportLine
+        ? dkL("קוד הרישוי הזה כבר הסיר את התגית מאתר אחר. כל רכישה מסירה את התגית מאתר אחד — לאתר נוסף נדרשת רכישה נפרדת.", "This license code already removed the tag from another site. Each purchase removes the tag from one site — another site needs a separate purchase.") + supportLine
         : data.reason === "save-first"
-          ? "האתר עוד לא נשמר. שמרו את האתר ונסו שוב." + supportLine
+          ? dkL("האתר עוד לא נשמר. שמרו את האתר ונסו שוב.", "The site hasn't been saved yet. Save it and try again.") + supportLine
         : data.reason === "refunded"
-          ? "הרכישה הזו בוטלה או הוחזרה, ולכן הקוד כבר לא פעיל." + supportLine
+          ? dkL("הרכישה הזו בוטלה או הוחזרה, ולכן הקוד כבר לא פעיל.", "This purchase was canceled or refunded, so the code is no longer active.") + supportLine
           : invalidMsg;
       note.className = "unlock-note err";
       return;
@@ -1819,10 +1848,10 @@ async function verifySiteLicense() {
     // the very next time someone opens this page.
     const heading = document.getElementById("unlock-done-heading");
     if (heading) {
-      heading.textContent = "תודה שרכשתם ב-DeskKit! קבלה על הרכישה נשלחת אליכם למייל מ-Gumroad.";
+      heading.textContent = dkL("תודה שרכשתם ב-DeskKit! קבלה על הרכישה נשלחת אליכם למייל מ-Gumroad.", "Thanks for your DeskKit purchase! A receipt is on its way to your email from Gumroad.");
     }
   } catch (err) {
-    note.textContent = "שגיאת חיבור לשירות האימות. נסו שוב בעוד רגע.";
+    note.textContent = dkL("שגיאת חיבור לשירות האימות. נסו שוב בעוד רגע.", "Couldn't reach the verification service. Please try again in a moment.");
     note.className = "unlock-note err";
   } finally {
     siteVerifying = false;
@@ -1993,7 +2022,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const closeBtn = document.createElement("button");
     closeBtn.type = "button";
     closeBtn.id = "close-preview-btn";
-    closeBtn.textContent = "✕ סגירת תצוגה";
+    closeBtn.textContent = dkL("✕ סגירת תצוגה", "✕ Close preview");
     // Opened via window.open() from the wizard tab, so this tab is safe to
     // self-close; if a visitor opened the URL directly (no opener), closing
     // would be silently refused by the browser — falling back to the

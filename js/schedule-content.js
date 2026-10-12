@@ -6,6 +6,14 @@
    with what the solver itself counts as a hard violation. */
 
 const SCHEDULE_DAY_NAMES = ["א", "ב", "ג", "ד", "ה", "ו"];
+const SCHEDULE_DAY_NAMES_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri"];
+
+/* UI-language pick (js/i18n.js's dkL) — guarded, because this file also
+   runs inside schedule-worker.js (importScripts) and under Node, where
+   i18n.js isn't loaded; those only ever need the Hebrew fallback. */
+function schedL(he, en) {
+  return typeof dkL === "function" ? dkL(he, en) : he;
+}
 const SCHEDULE_MAX_DAYS = 6;
 const SCHEDULE_MAX_PERIODS = 12;
 
@@ -23,7 +31,7 @@ function scheduleUid(prefix) {
 
 function defaultScheduleState() {
   return {
-    name: "מערכת שעות חדשה",
+    name: schedL("מערכת שעות חדשה", "New timetable"),
     settings: { days: 5, periodsPerDay: 8 },
     subjects: [],    // { id, name, color, roomId, maxConsecutive: number|null }
     classes: [],     // { id, name, maxDailyPeriod: number|null }
@@ -35,7 +43,7 @@ function defaultScheduleState() {
 }
 
 function scheduleDayName(index) {
-  return SCHEDULE_DAY_NAMES[index] || "יום " + (index + 1);
+  return schedL(SCHEDULE_DAY_NAMES[index], SCHEDULE_DAY_NAMES_EN[index]) || schedL("יום ", "Day ") + (index + 1);
 }
 
 function slotKey(day, period) {
@@ -49,7 +57,7 @@ function slotKey(day, period) {
    empty name from rendering as a blank, unlabeled option elsewhere. */
 function scheduleDisplayName(name) {
   const trimmed = (name || "").trim();
-  return trimmed || "(ללא שם)";
+  return trimmed || schedL("(ללא שם)", "(untitled)");
 }
 
 /* How many consecutive same-value entries `sortedPeriods` has beyond
@@ -293,7 +301,7 @@ function scheduleFindConflicts(problem, placement) {
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
-    SCHEDULE_DAY_NAMES, SCHEDULE_MAX_DAYS, SCHEDULE_MAX_PERIODS, SCHEDULE_TEACHER_DAY_WEIGHT,
+    SCHEDULE_DAY_NAMES, SCHEDULE_DAY_NAMES_EN, SCHEDULE_MAX_DAYS, SCHEDULE_MAX_PERIODS, SCHEDULE_TEACHER_DAY_WEIGHT,
     scheduleUid, defaultScheduleState, scheduleDayName, slotKey, scheduleDisplayName, scheduleConsecutiveExcess,
     scheduleAddSubject, scheduleRemoveSubject, scheduleAddClass, scheduleRemoveClass,
     scheduleAddTeacher, scheduleRemoveTeacher, scheduleAddRoom, scheduleRemoveRoom,

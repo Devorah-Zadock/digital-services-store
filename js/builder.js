@@ -4,12 +4,12 @@
 const SWATCHES = ["1F5C4E", "24476B", "C24B1F", "B5175A", "1F2A44", "2563EB", "334E68"];
 
 const FONT_OPTIONS = [
-  { id: "assistant", label: "Assistant — נקי ומודרני", css: "'Assistant', Arial, sans-serif" },
-  { id: "rubik", label: "Rubik — עגול וידידותי", css: "'Rubik', Arial, sans-serif" },
-  { id: "heebo", label: "Heebo — סטנדרטי ומאוזן", css: "'Heebo', Arial, sans-serif" },
-  { id: "frank", label: "Frank Ruhl Libre — קלאסי ומכובד", css: "'Frank Ruhl Libre', Georgia, serif" },
-  { id: "notoserif", label: "Noto Serif Hebrew — רשמי", css: "'Noto Serif Hebrew', Georgia, serif" },
-  { id: "davidlibre", label: "David Libre — מסורתי", css: "'David Libre', Georgia, serif" },
+  { id: "assistant", label: (typeof dkL === "function" ? dkL("Assistant — נקי ומודרני", "Assistant — clean and modern") : "Assistant — נקי ומודרני"), css: "'Assistant', Arial, sans-serif" },
+  { id: "rubik", label: (typeof dkL === "function" ? dkL("Rubik — עגול וידידותי", "Rubik — rounded and friendly") : "Rubik — עגול וידידותי"), css: "'Rubik', Arial, sans-serif" },
+  { id: "heebo", label: (typeof dkL === "function" ? dkL("Heebo — סטנדרטי ומאוזן", "Heebo — standard and balanced") : "Heebo — סטנדרטי ומאוזן"), css: "'Heebo', Arial, sans-serif" },
+  { id: "frank", label: (typeof dkL === "function" ? dkL("Frank Ruhl Libre — קלאסי ומכובד", "Frank Ruhl Libre — classic and dignified") : "Frank Ruhl Libre — קלאסי ומכובד"), css: "'Frank Ruhl Libre', Georgia, serif" },
+  { id: "notoserif", label: (typeof dkL === "function" ? dkL("Noto Serif Hebrew — רשמי", "Noto Serif Hebrew — formal") : "Noto Serif Hebrew — רשמי"), css: "'Noto Serif Hebrew', Georgia, serif" },
+  { id: "davidlibre", label: (typeof dkL === "function" ? dkL("David Libre — מסורתי", "David Libre — traditional") : "David Libre — מסורתי"), css: "'David Libre', Georgia, serif" },
 ];
 
 const FORM_LABELS = {
@@ -137,7 +137,7 @@ window.addEventListener("resize", () => {
 function renderPhotoPreview() {
   const el = document.getElementById("photo-preview");
   el.innerHTML = state.content.photo
-    ? `<img src="${state.content.photo}" alt="תמונת הפרופיל שהעליתם">`
+    ? `<img src="${state.content.photo}" alt="${state.lang === "en" ? "Your profile photo" : "תמונת הפרופיל שהעליתם"}">`
     : `<span class="photo-placeholder">👤</span>`;
 }
 
@@ -306,7 +306,7 @@ function wireStaticInputs() {
 
 document.addEventListener("DOMContentLoaded", () => {
   const select = document.getElementById("tpl-select");
-  select.innerHTML = Object.entries(CV_TEMPLATES).map(([slug, t]) => `<option value="${slug}">${t.label}</option>`).join("");
+  select.innerHTML = Object.entries(CV_TEMPLATES).map(([slug, t]) => `<option value="${slug}">${typeof dkL === "function" ? dkL(t.label, t.labelEn) : t.label}</option>`).join("");
   document.getElementById("font-select").innerHTML = FONT_OPTIONS.map((f) => `<option value="${f.id}">${f.label}</option>`).join("");
 
   wireStaticInputs();
@@ -336,7 +336,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (_e) { /* download anyway */ }
     await downloadCvPdf();
     if (window.showUpsellBanner) {
-      showUpsellBanner("מעבר לקורות החיים המרשימים שבניתם, הגיע הזמן שגם לעסק שלכם יהיה אתר תדמית יפהפה.", "רוצה להיראות עוד יותר מקצועי?");
+      showUpsellBanner(dkL("מעבר לקורות החיים המרשימים שבניתם, הגיע הזמן שגם לעסק שלכם יהיה אתר תדמית יפהפה.", "Beyond your impressive CV, it may be time for your business to have a beautiful website too."), dkL("רוצה להיראות עוד יותר מקצועי?", "Want to look even more professional?"));
     }
   });
 
@@ -359,7 +359,8 @@ document.addEventListener("DOMContentLoaded", () => {
   if (localDraft && (!startSlug || localDraft.slug === startSlug)) {
     applyCvSnapshot(localDraft); // also sets font-select/tpl-select internally
   } else {
-    state.lang = startLang === "en" ? "en" : "he";
+    // No ?lang= in the link: a new CV starts in the interface language.
+    state.lang = startLang ? (startLang === "en" ? "en" : "he") : (typeof currentLang === "function" && currentLang() === "en" ? "en" : "he");
     document.querySelectorAll(".lang-big").forEach((b) => b.classList.toggle("active", b.dataset.lang === state.lang));
     // A brand-new visitor (no draft, no explicit ?template= link) still
     // gets a default template here, same as always, so nothing

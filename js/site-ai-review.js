@@ -27,7 +27,7 @@
    site-builder.js — both are loaded as plain scripts on sites.html and
    share one global scope. */
 
-const SITE_AI_UPGRADE_MESSAGE = "הגעת למכסת הניסיונות החינמיים של עזרה עם AI. רוצה להמשיך להשתמש בה ללא הגבלה? שדרג לגרסת Pro בתשלום חד-פעמי!";
+const SITE_AI_UPGRADE_MESSAGE = dkL("הגעת למכסת הניסיונות החינמיים של עזרה עם AI. רוצה להמשיך להשתמש בה ללא הגבלה? שדרג לגרסת Pro בתשלום חד-פעמי!", "You've used your free AI-help tries. Want unlimited use? Upgrade to Pro with a one-time payment!");
 
 let siteAiIsProCache = null;
 
@@ -86,12 +86,12 @@ function siteAiShowUpgradeCard(isDailyProLimit) {
   if (!modal) return;
   const body = modal.querySelector(".ats-modal-body");
   if (isDailyProLimit) {
-    body.innerHTML = `<div class="ats-error">הגעת למכסת השימוש ההוגן היומית (50 בדיקות). אפשר להמשיך מחר.</div>`;
+    body.innerHTML = `<div class="ats-error">${dkL("הגעת למכסת השימוש ההוגן היומית (50 בדיקות). אפשר להמשיך מחר.", "You've reached today's fair-use limit (50 checks). You can continue tomorrow.")}</div>`;
   } else {
     body.innerHTML = `
       <div class="ats-upgrade-card">
         <p>${SITE_AI_UPGRADE_MESSAGE}</p>
-        <a href="#" class="btn btn-gold ats-upgrade-btn">שדרוג ל-Pro</a>
+        <a href="#" class="btn btn-gold ats-upgrade-btn">${dkL("שדרוג ל-Pro", "Upgrade to Pro")}</a>
       </div>
     `;
   }
@@ -102,14 +102,14 @@ function siteAiResultHtml() {
     <div class="ats-result" id="site-ai-result">
       <div class="ats-score-row">
         <div class="ats-score-badge" id="site-ai-score-badge">--</div>
-        <div class="ats-score-label">ציון האתר שלך</div>
+        <div class="ats-score-label">${dkL("ציון האתר שלך", "Your site's score")}</div>
       </div>
-      <h3>מה עובד טוב</h3>
+      <h3>${dkL("מה עובד טוב", "What works well")}</h3>
       <div class="ats-keywords" id="site-ai-strengths"></div>
-      <h3>מה כדאי לשפר</h3>
+      <h3>${dkL("מה כדאי לשפר", "What to improve")}</h3>
       <ul class="ats-tips" id="site-ai-tips"></ul>
       <div id="site-ai-actions-block" style="display:none;">
-        <h3>פעולות מוצעות</h3>
+        <h3>${dkL("פעולות מוצעות", "Suggested actions")}</h3>
         <div id="site-ai-actions"></div>
       </div>
     </div>
@@ -125,8 +125,8 @@ function siteAiResultHtml() {
 function siteAiActionCardHtml(action, idx) {
   return `
     <div class="site-ai-action-card" data-ai-action-idx="${idx}">
-      <span>${escapeHtmlSiteAi(action.explanation || "פעולה מוצעת")}</span>
-      <button type="button" class="btn-mini" data-ai-action-apply="${idx}">אישור ובצע</button>
+      <span>${escapeHtmlSiteAi(action.explanation || dkL("פעולה מוצעת", "Suggested action"))}</span>
+      <button type="button" class="btn-mini" data-ai-action-apply="${idx}">${dkL("אישור ובצע", "Apply")}</button>
     </div>`;
 }
 
@@ -150,7 +150,7 @@ function siteAiRenderActions(actions) {
 async function siteAiRunReview() {
   const body = document.querySelector("#site-ai-review-overlay .ats-modal-body");
   if (!body) return;
-  body.innerHTML = `<div class="ats-error" id="site-ai-loading" style="background:var(--ice); color:var(--ink-dark);">ה-AI עובר על האתר שלכם…</div>`;
+  body.innerHTML = `<div class="ats-error" id="site-ai-loading" style="background:var(--ice); color:var(--ink-dark);">${dkL("ה-AI עובר על האתר שלכם…", "The AI is reviewing your site…")}</div>`;
 
   // Best-effort: if the user is signed in, save first so the review
   // reflects whatever's actually on screen right now, not the last
@@ -174,7 +174,7 @@ async function siteAiRunReview() {
     const res = await fetch(SUPABASE_URL + "/functions/v1/site-ai-director", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + token, apikey: SUPABASE_ANON_KEY },
-      body: JSON.stringify({
+      body: JSON.stringify({ lang: (typeof currentLang === "function" ? currentLang() : "he"),
         summary: siteAiReviewSummary(),
         availableTypes: structuralCtx ? structuralCtx.availableTypes : [],
         activeTypes: structuralCtx ? structuralCtx.activeTypes : [],
@@ -182,7 +182,7 @@ async function siteAiRunReview() {
       }),
     });
     const data = await res.json();
-    if (!res.ok || data.error) throw new Error(data.error || "שגיאה לא צפויה");
+    if (!res.ok || data.error) throw new Error(data.error || dkL("שגיאה לא צפויה", "Unexpected error"));
 
     if (data.limitReached) {
       siteAiShowUpgradeCard(data.isPro);
@@ -198,7 +198,7 @@ async function siteAiRunReview() {
     const strengthsEl = document.getElementById("site-ai-strengths");
     strengthsEl.innerHTML = (data.strengths || []).length
       ? data.strengths.map((s) => `<span class="ats-keyword-chip" style="color:#1F5C4E; background:#E7F3EE;">${escapeHtmlSiteAi(s)}</span>`).join("")
-      : `<span class="ats-keywords-empty">עדיין אין הרבה לעבוד איתו — התחילו למלא פרטים.</span>`;
+      : `<span class="ats-keywords-empty">${dkL("עדיין אין הרבה לעבוד איתו — התחילו למלא פרטים.", "There isn't much to work with yet — start filling in details.")}</span>`;
 
     const tipsEl = document.getElementById("site-ai-tips");
     tipsEl.innerHTML = (data.tips || []).map((t) => `<li>${escapeHtmlSiteAi(t)}</li>`).join("");
@@ -207,11 +207,11 @@ async function siteAiRunReview() {
 
     const attemptsNote = document.getElementById("site-ai-attempts-note");
     attemptsNote.textContent = data.isPro
-      ? `Pro — נותרו לך ${Math.max(0, data.limit - data.count)} מתוך ${data.limit} בדיקות להיום.`
-      : `נותרו לך ${Math.max(0, data.limit - data.count)} מתוך ${data.limit} בדיקות חינם.`;
+      ? dkL(`Pro — נותרו לך ${Math.max(0, data.limit - data.count)} מתוך ${data.limit} בדיקות להיום.`, `Pro — ${Math.max(0, data.limit - data.count)} of ${data.limit} checks left today.`)
+      : dkL(`נותרו לך ${Math.max(0, data.limit - data.count)} מתוך ${data.limit} בדיקות חינם.`, `${Math.max(0, data.limit - data.count)} of ${data.limit} free checks left.`);
   } catch (err) {
     console.error("site AI review failed:", err);
-    body.innerHTML = `<div class="ats-error">משהו השתבש בבדיקה. אפשר לנסות שוב בעוד רגע.</div>`;
+    body.innerHTML = `<div class="ats-error">${dkL("משהו השתבש בבדיקה. אפשר לנסות שוב בעוד רגע.", "Something went wrong with the check. Please try again in a moment.")}</div>`;
   }
 }
 
@@ -227,10 +227,10 @@ async function openSiteAiReview() {
   overlay.className = "domain-guide-overlay";
   overlay.innerHTML = `
     <div class="domain-guide-modal ats-modal" role="dialog" aria-modal="true" aria-labelledby="site-ai-review-title">
-      <button type="button" class="domain-guide-close" id="site-ai-review-close" aria-label="סגירה">✕</button>
-      <h2 id="site-ai-review-title">עזרה עם AI</h2>
-      <p class="lead">ה-AI עובר על מה שבניתם עד כה באתר ונותן ציון, מה כבר עובד טוב, ומה כדאי לשפר — לפני שמורידים.</p>
-      <div class="ats-modal-body">בודקים את היתרה שלך...</div>
+      <button type="button" class="domain-guide-close" id="site-ai-review-close" aria-label="${dkL("סגירה", "Close")}">✕</button>
+      <h2 id="site-ai-review-title">${dkL("עזרה עם AI", "AI help")}</h2>
+      <p class="lead">${dkL("ה-AI עובר על מה שבניתם עד כה באתר ונותן ציון, מה כבר עובד טוב, ומה כדאי לשפר — לפני שמורידים.", "The AI reviews what you've built so far and gives a score, what already works well, and what to improve — before you download.")}</p>
+      <div class="ats-modal-body">${dkL("בודקים את היתרה שלך...", "Checking your balance...")}</div>
     </div>
   `;
   document.body.appendChild(overlay);

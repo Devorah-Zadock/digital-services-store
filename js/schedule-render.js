@@ -80,17 +80,17 @@ async function verifyScheduleLicense() {
   const input = document.getElementById("sched-license-input");
   const note = document.getElementById("sched-license-note");
   const key = input.value.trim();
-  if (!key) { note.textContent = "יש להזין קוד רישוי."; note.className = "unlock-note err"; return; }
-  if (!scheduleCurrentUserId) { note.textContent = "יש להתחבר לחשבון כדי לפתוח את הכלי."; note.className = "unlock-note err"; return; }
+  if (!key) { note.textContent = schedL("יש להזין קוד רישוי.", "Please enter a license key."); note.className = "unlock-note err"; return; }
+  if (!scheduleCurrentUserId) { note.textContent = schedL("יש להתחבר לחשבון כדי לפתוח את הכלי.", "Please sign in to your account to unlock the tool."); note.className = "unlock-note err"; return; }
   scheduleVerifying = true;
-  note.textContent = "בודקים...";
+  note.textContent = schedL("בודקים...", "Checking...");
   note.className = "unlock-note";
   try {
     const { data, error } = await supabaseClient.functions.invoke("redeem-license", {
       body: { licenseKey: key, productId: SCHEDULE_GUMROAD_CONFIG.productId, userId: scheduleCurrentUserId, template: SCHEDULE_LICENSE_TEMPLATE },
     });
     if (error || !data) {
-      note.textContent = "שגיאת חיבור לשירות האימות. נסו שוב בעוד רגע.";
+      note.textContent = schedL("שגיאת חיבור לשירות האימות. נסו שוב בעוד רגע.", "Couldn't reach the verification service. Please try again in a moment.");
       note.className = "unlock-note err";
       return;
     }
@@ -100,22 +100,22 @@ async function verifyScheduleLicense() {
       // with exactly the key they tried, so following up doesn't start
       // from scratch.
       const supportMailto = `mailto:${["digital.dz.studio", "gmail.com"].join("@")}?subject=${encodeURIComponent("בעיה בקוד רישוי — מערכת שעות")}&body=${encodeURIComponent("הקוד שהזנתי: " + key)}`;
-      const supportLine = `<br>עדיין תקועים? <a href="${supportMailto}" style="color:inherit; text-decoration:underline;">כתבו לנו ונפתור את זה ידנית</a>.`;
-      const invalidMsg = "קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב." + (data.gumroadMessage ? ` (Gumroad: ${String(data.gumroadMessage).replace(/[&<>"']/g, (c) => "&#" + c.charCodeAt(0) + ";")})` : "") + supportLine;
-      note.innerHTML = data.reason === "redeemed-elsewhere" ? "קוד הרישוי הזה כבר שימש לפתיחת חשבון אחר." + supportLine
-        : data.reason === "refunded" ? "הרכישה הזו בוטלה או הוחזרה, ולכן הקוד כבר לא פעיל." + supportLine
+      const supportLine = `<br>${schedL("עדיין תקועים?", "Still stuck?")} <a href="${supportMailto}" style="color:inherit; text-decoration:underline;">${schedL("כתבו לנו ונפתור את זה ידנית", "Write to us and we'll sort it out manually")}</a>.`;
+      const invalidMsg = schedL("קוד לא תקין. בדקו את המייל שקיבלתם ב-Gumroad ונסו שוב.", "Invalid key. Check the email you got from Gumroad and try again.") + (data.gumroadMessage ? ` (Gumroad: ${String(data.gumroadMessage).replace(/[&<>"']/g, (c) => "&#" + c.charCodeAt(0) + ";")})` : "") + supportLine;
+      note.innerHTML = data.reason === "redeemed-elsewhere" ? schedL("קוד הרישוי הזה כבר שימש לפתיחת חשבון אחר.", "This license key has already been used to unlock a different account.") + supportLine
+        : data.reason === "refunded" ? schedL("הרכישה הזו בוטלה או הוחזרה, ולכן הקוד כבר לא פעיל.", "This purchase was canceled or refunded, so the key is no longer active.") + supportLine
         : invalidMsg;
       note.className = "unlock-note err";
       return;
     }
     scheduleLastVerifiedPurchase = data.purchase || null;
     localStorage.setItem(SCHEDULE_UNLOCK_KEY, "1");
-    note.textContent = "נפתח בהצלחה!";
+    note.textContent = schedL("נפתח בהצלחה!", "Unlocked successfully!");
     note.className = "unlock-note ok";
     refreshScheduleUnlockUi();
     sendSchedulePurchaseReceipt(key);
   } catch (err) {
-    note.textContent = "שגיאת חיבור לשירות האימות. נסו שוב בעוד רגע.";
+    note.textContent = schedL("שגיאת חיבור לשירות האימות. נסו שוב בעוד רגע.", "Couldn't reach the verification service. Please try again in a moment.");
     note.className = "unlock-note err";
   } finally {
     scheduleVerifying = false;
@@ -167,22 +167,22 @@ function onScheduleStructureChanged() {
 function renderSubjectsTab() {
   const wrap = document.getElementById("sched-subjects-list");
   if (!scheduleState.subjects.length) {
-    wrap.innerHTML = '<p class="sched-hint">עוד לא הוספתם מקצועות.</p>';
+    wrap.innerHTML = `<p class="sched-hint">${schedL("עוד לא הוספתם מקצועות.", "You haven't added any subjects yet.")}</p>`;
     return;
   }
-  wrap.innerHTML = scheduleState.subjects.map(subjectRowHtml).join("") + schedAddMoreHtml("add-subject-bottom", "הוספת מקצוע");
+  wrap.innerHTML = scheduleState.subjects.map(subjectRowHtml).join("") + schedAddMoreHtml("add-subject-bottom", schedL("הוספת מקצוע", "Add subject"));
 }
 
 function subjectRowHtml(s) {
-  const roomOptions = ['<option value="">ללא חדר מיוחד</option>']
+  const roomOptions = [`<option value="">${schedL("ללא חדר מיוחד", "No special room")}</option>`]
     .concat(scheduleState.rooms.map((r) => `<option value="${r.id}"${r.id === s.roomId ? " selected" : ""}>${schedEsc(scheduleDisplayName(r.name))}</option>`))
     .join("");
   return `<div class="sched-row sched-subject-cols" data-subject-id="${s.id}">
     <input type="color" class="sched-color-input" data-field="color" value="${s.color}">
-    <input type="text" class="sched-text-input" data-field="name" value="${schedEsc(s.name)}" placeholder="שם המקצוע">
+    <input type="text" class="sched-text-input" data-field="name" value="${schedEsc(s.name)}" placeholder="${schedL("שם המקצוע", "Subject name")}">
     <select class="sched-select" data-field="roomId">${roomOptions}</select>
-    <input type="number" class="sched-num-input" data-field="maxConsecutive" min="1" max="${SCHEDULE_MAX_PERIODS}" placeholder="ללא הגבלה" value="${s.maxConsecutive || ""}">
-    <button type="button" class="sched-row-del" data-action="delete-subject" title="מחיקה" aria-label="מחיקה">🗑</button>
+    <input type="number" class="sched-num-input" data-field="maxConsecutive" min="1" max="${SCHEDULE_MAX_PERIODS}" placeholder="${schedL("ללא הגבלה", "No limit")}" value="${s.maxConsecutive || ""}">
+    <button type="button" class="sched-row-del" data-action="delete-subject" title="${schedL("מחיקה", "Delete")}" aria-label="${schedL("מחיקה", "Delete")}">🗑</button>
   </div>`;
 }
 
@@ -213,7 +213,8 @@ function wireSubjectsTab() {
     if (e.target.dataset.field === "name") {
       const trimmed = s.name.trim();
       const dup = trimmed && scheduleState.subjects.some((x) => x.id !== s.id && x.name.trim().toLowerCase() === trimmed.toLowerCase());
-      if (dup) alert(`כבר יש מקצוע בשם "${trimmed}". כדאי לתת לו שם אחר, כדי לא להתבלבל בין השניים ברשימות ובשיבוצי ההוראה.`);
+      if (dup) alert(schedL(`כבר יש מקצוע בשם "${trimmed}". כדאי לתת לו שם אחר, כדי לא להתבלבל בין השניים ברשימות ובשיבוצי ההוראה.`,
+        `There's already a subject named "${trimmed}". Give it a different name so the two don't get mixed up in lists and teaching assignments.`));
     }
   });
   wrap.addEventListener("click", (e) => {
@@ -221,7 +222,7 @@ function wireSubjectsTab() {
     const btn = e.target.closest('[data-action="delete-subject"]');
     if (!btn) return;
     const row = btn.closest("[data-subject-id]");
-    if (!confirm("למחוק את המקצוע? שיבוצי הוראה שמשתמשים בו יימחקו גם הם.")) return;
+    if (!confirm(schedL("למחוק את המקצוע? שיבוצי הוראה שמשתמשים בו יימחקו גם הם.", "Delete this subject? Teaching assignments that use it will be deleted too."))) return;
     scheduleRemoveSubject(scheduleState, row.dataset.subjectId);
     scheduleState.timetable = null;
     renderSubjectsTab();
@@ -236,15 +237,15 @@ function wireSubjectsTab() {
 function renderClassesTab() {
   const wrap = document.getElementById("sched-classes-list");
   if (!scheduleState.classes.length) {
-    wrap.innerHTML = '<p class="sched-hint">עוד לא הוספתם כיתות.</p>';
+    wrap.innerHTML = `<p class="sched-hint">${schedL("עוד לא הוספתם כיתות.", "You haven't added any classes yet.")}</p>`;
     return;
   }
   wrap.innerHTML = scheduleState.classes.map((c) => `
     <div class="sched-row sched-class-cols" data-class-id="${c.id}">
-      <input type="text" class="sched-text-input" data-field="name" value="${schedEsc(c.name)}" placeholder="שם הכיתה">
-      <input type="number" class="sched-num-input" data-field="maxDailyPeriod" min="1" max="${SCHEDULE_MAX_PERIODS}" placeholder="כל היום" value="${c.maxDailyPeriod || ""}">
-      <button type="button" class="sched-row-del" data-action="delete-class" title="מחיקה" aria-label="מחיקה">🗑</button>
-    </div>`).join("") + schedAddMoreHtml("add-class-bottom", "הוספת כיתה");
+      <input type="text" class="sched-text-input" data-field="name" value="${schedEsc(c.name)}" placeholder="${schedL("שם הכיתה", "Class name")}">
+      <input type="number" class="sched-num-input" data-field="maxDailyPeriod" min="1" max="${SCHEDULE_MAX_PERIODS}" placeholder="${schedL("כל היום", "All day")}" value="${c.maxDailyPeriod || ""}">
+      <button type="button" class="sched-row-del" data-action="delete-class" title="${schedL("מחיקה", "Delete")}" aria-label="${schedL("מחיקה", "Delete")}">🗑</button>
+    </div>`).join("") + schedAddMoreHtml("add-class-bottom", schedL("הוספת כיתה", "Add class"));
 }
 
 function wireClassesTab() {
@@ -269,7 +270,7 @@ function wireClassesTab() {
     const btn = e.target.closest('[data-action="delete-class"]');
     if (!btn) return;
     const row = btn.closest("[data-class-id]");
-    if (!confirm("למחוק את הכיתה? שיבוצי הוראה שמשתמשים בה יימחקו גם הם.")) return;
+    if (!confirm(schedL("למחוק את הכיתה? שיבוצי הוראה שמשתמשים בה יימחקו גם הם.", "Delete this class? Teaching assignments that use it will be deleted too."))) return;
     scheduleRemoveClass(scheduleState, row.dataset.classId);
     scheduleState.timetable = null;
     renderClassesTab();
@@ -283,15 +284,15 @@ function wireClassesTab() {
 function renderRoomsTab() {
   const wrap = document.getElementById("sched-rooms-list");
   if (!scheduleState.rooms.length) {
-    wrap.innerHTML = '<p class="sched-hint">עוד לא הוספתם חדרים מיוחדים.</p>';
+    wrap.innerHTML = `<p class="sched-hint">${schedL("עוד לא הוספתם חדרים מיוחדים.", "You haven't added any special rooms yet.")}</p>`;
     return;
   }
   wrap.innerHTML = scheduleState.rooms.map((r) => `
     <div class="sched-row sched-room-cols" data-room-id="${r.id}">
-      <input type="text" class="sched-text-input" data-field="name" value="${schedEsc(r.name)}" placeholder="שם החדר">
+      <input type="text" class="sched-text-input" data-field="name" value="${schedEsc(r.name)}" placeholder="${schedL("שם החדר", "Room name")}">
       <input type="number" class="sched-num-input" data-field="count" min="1" max="30" value="${r.count}">
-      <button type="button" class="sched-row-del" data-action="delete-room" title="מחיקה" aria-label="מחיקה">🗑</button>
-    </div>`).join("") + schedAddMoreHtml("add-room-bottom", "הוספת חדר");
+      <button type="button" class="sched-row-del" data-action="delete-room" title="${schedL("מחיקה", "Delete")}" aria-label="${schedL("מחיקה", "Delete")}">🗑</button>
+    </div>`).join("") + schedAddMoreHtml("add-room-bottom", schedL("הוספת חדר", "Add room"));
 }
 
 function wireRoomsTab() {
@@ -316,7 +317,7 @@ function wireRoomsTab() {
     const btn = e.target.closest('[data-action="delete-room"]');
     if (!btn) return;
     const row = btn.closest("[data-room-id]");
-    if (!confirm("למחוק את החדר? מקצועות שמשויכים אליו יישארו בלי חדר נדרש.")) return;
+    if (!confirm(schedL("למחוק את החדר? מקצועות שמשויכים אליו יישארו בלי חדר נדרש.", "Delete this room? Subjects linked to it will be left without a required room."))) return;
     scheduleRemoveRoom(scheduleState, row.dataset.roomId);
     scheduleState.timetable = null;
     renderRoomsTab();
@@ -337,7 +338,7 @@ function availabilityGridHtml(teacher) {
     for (let d = 0; d < days; d++) {
       const key = slotKey(d, p);
       const off = teacher.unavailable.includes(key);
-      cells += `<button type="button" class="sched-avail-cell${off ? " off" : ""}" data-day="${d}" data-period="${p}" title="${schedEsc(scheduleDayName(d))}, שיעור ${p + 1}"></button>`;
+      cells += `<button type="button" class="sched-avail-cell${off ? " off" : ""}" data-day="${d}" data-period="${p}" title="${schedEsc(scheduleDayName(d))}, ${schedL("שיעור", "period")} ${p + 1}"></button>`;
     }
     rows += `<div class="sched-avail-row">${cells}</div>`;
   }
@@ -353,22 +354,22 @@ let scheduleAvailCollapsed = new Set();
 function teacherCardHtml(t) {
   const subjectChecks = scheduleState.subjects.length
     ? scheduleState.subjects.map((s) => `<label class="sched-check"><input type="checkbox" data-field="subject" value="${s.id}"${t.subjectIds.includes(s.id) ? " checked" : ""}> ${schedEsc(scheduleDisplayName(s.name))}</label>`).join("")
-    : '<p class="sched-hint">הוסיפו קודם מקצועות בלשונית "מקצועות".</p>';
+    : `<p class="sched-hint">${schedL('הוסיפו קודם מקצועות בלשונית "מקצועות".', 'First add subjects in the "Subjects" tab.')}</p>`;
   const collapsed = scheduleAvailCollapsed.has(t.id);
   return `<div class="sched-teacher-card" data-teacher-id="${t.id}">
     <div class="sched-teacher-head">
-      <input type="text" class="sched-text-input" data-field="name" value="${schedEsc(t.name)}" placeholder="שם המורה">
-      <button type="button" class="sched-row-del" data-action="delete-teacher" title="מחיקה" aria-label="מחיקה">🗑</button>
+      <input type="text" class="sched-text-input" data-field="name" value="${schedEsc(t.name)}" placeholder="${schedL("שם המורה", "Teacher name")}">
+      <button type="button" class="sched-row-del" data-action="delete-teacher" title="${schedL("מחיקה", "Delete")}" aria-label="${schedL("מחיקה", "Delete")}">🗑</button>
     </div>
     <div class="sched-teacher-subjects">
-      <label class="sched-subfield-label">מקצועות שהמורה מלמד/ת</label>
-      <p class="sched-hint" style="margin:0 0 8px;">סמנו כל מקצוע שהמורה הזו יכולה ללמד — בלשונית "שיבוצי הוראה" אפשר לשבץ אותה רק למקצוע שסימנתם כאן.</p>
+      <label class="sched-subfield-label">${schedL("מקצועות שהמורה מלמד/ת", "Subjects this teacher teaches")}</label>
+      <p class="sched-hint" style="margin:0 0 8px;">${schedL('סמנו כל מקצוע שהמורה הזו יכולה ללמד — בלשונית "שיבוצי הוראה" אפשר לשבץ אותה רק למקצוע שסימנתם כאן.', 'Check every subject this teacher can teach — in the "Teaching assignments" tab they can only be assigned to subjects checked here.')}</p>
       <div class="sched-check-list">${subjectChecks}</div>
     </div>
     <div class="sched-teacher-avail">
       <button type="button" class="sched-avail-toggle" data-action="toggle-avail" aria-expanded="${collapsed ? "false" : "true"}">
         <span class="sched-avail-arrow">${collapsed ? "◂" : "▾"}</span>
-        שעות לא זמינות (לחיצה על משבצת מסמנת/מבטלת חסימה)
+        ${schedL("שעות לא זמינות (לחיצה על משבצת מסמנת/מבטלת חסימה)", "Unavailable periods (click a slot to block/unblock it)")}
       </button>
       ${collapsed ? "" : availabilityGridHtml(t)}
     </div>
@@ -378,10 +379,10 @@ function teacherCardHtml(t) {
 function renderTeachersTab() {
   const wrap = document.getElementById("sched-teachers-list");
   if (!scheduleState.teachers.length) {
-    wrap.innerHTML = '<p class="sched-hint">עוד לא הוספתם מורים.</p>';
+    wrap.innerHTML = `<p class="sched-hint">${schedL("עוד לא הוספתם מורים.", "You haven't added any teachers yet.")}</p>`;
     return;
   }
-  wrap.innerHTML = scheduleState.teachers.map(teacherCardHtml).join("") + schedAddMoreHtml("add-teacher-bottom", "הוספת מורה");
+  wrap.innerHTML = scheduleState.teachers.map(teacherCardHtml).join("") + schedAddMoreHtml("add-teacher-bottom", schedL("הוספת מורה", "Add teacher"));
 }
 
 function wireTeachersTab() {
@@ -424,7 +425,7 @@ function wireTeachersTab() {
     const delBtn = e.target.closest('[data-action="delete-teacher"]');
     if (delBtn) {
       const card = delBtn.closest("[data-teacher-id]");
-      if (!confirm("למחוק את המורה? שיבוצי הוראה שמשתמשים בו/בה יימחקו גם הם.")) return;
+      if (!confirm(schedL("למחוק את המורה? שיבוצי הוראה שמשתמשים בו/בה יימחקו גם הם.", "Delete this teacher? Teaching assignments that use them will be deleted too."))) return;
       scheduleAvailCollapsed.delete(card.dataset.teacherId);
       scheduleRemoveTeacher(scheduleState, card.dataset.teacherId);
       scheduleState.timetable = null;
@@ -467,7 +468,7 @@ function assignmentRowHtml(a) {
     <select class="sched-select" data-field="subjectId">${subjOpts}</select>
     <select class="sched-select" data-field="teacherId">${teacherOpts}</select>
     <input type="number" class="sched-num-input" data-field="weeklyHours" min="1" max="20" value="${a.weeklyHours}">
-    <button type="button" class="sched-row-del" data-action="delete-assignment" title="מחיקה" aria-label="מחיקה">🗑</button>
+    <button type="button" class="sched-row-del" data-action="delete-assignment" title="${schedL("מחיקה", "Delete")}" aria-label="${schedL("מחיקה", "Delete")}">🗑</button>
   </div>`;
 }
 
@@ -478,8 +479,8 @@ function renderAssignmentsTab() {
   addBtn.disabled = !canAdd;
   if (!scheduleState.assignments.length) {
     wrap.innerHTML = canAdd
-      ? '<p class="sched-hint">עוד לא הוספתם שיבוצי הוראה.</p>'
-      : '<p class="sched-hint">הוסיפו קודם מקצועות, כיתות ומורים.</p>';
+      ? `<p class="sched-hint">${schedL("עוד לא הוספתם שיבוצי הוראה.", "You haven't added any teaching assignments yet.")}</p>`
+      : `<p class="sched-hint">${schedL("הוסיפו קודם מקצועות, כיתות ומורים.", "First add subjects, classes and teachers.")}</p>`;
     return;
   }
   wrap.innerHTML = scheduleState.assignments.map(assignmentRowHtml).join("");
@@ -555,25 +556,27 @@ function runSolver(continueFromCurrent) {
   if (scheduleSolving || !scheduleIsUnlocked()) return;
   const problem = buildScheduleProblem(scheduleState);
   if (!problem.lessons.length) {
-    alert("אין שיעורים לשיבוץ — הוסיפו שיבוצי הוראה בלשונית המתאימה קודם.");
+    alert(schedL("אין שיעורים לשיבוץ — הוסיפו שיבוצי הוראה בלשונית המתאימה קודם.", "There are no lessons to schedule — add teaching assignments in their tab first."));
     return;
   }
   const worker = getScheduleWorker();
   const budget = Math.min(9000, Math.max(2500, problem.lessons.length * 15));
-  setSolvingUi(true, "מריצים שיבוץ אוטומטי… (" + problem.lessons.length + " שיעורים)");
+  setSolvingUi(true, schedL("מריצים שיבוץ אוטומטי… (", "Running automatic scheduling… (") + problem.lessons.length + schedL(" שיעורים)", " lessons)"));
 
   worker.onmessage = (e) => {
     const msg = e.data;
     if (msg.type === "progress") {
       document.getElementById("sched-solver-status").textContent =
-        `מחפשים פתרון… הפרות קשות: ${msg.bestHard} · איכות: ${Math.round(msg.bestSoft)} · איטרציה ${msg.iter.toLocaleString("he")}`;
+        schedL(`מחפשים פתרון… הפרות קשות: ${msg.bestHard} · איכות: ${Math.round(msg.bestSoft)} · איטרציה ${msg.iter.toLocaleString("he")}`,
+          `Searching for a solution… hard violations: ${msg.bestHard} · quality: ${Math.round(msg.bestSoft)} · iteration ${msg.iter.toLocaleString("en")}`);
     } else if (msg.type === "done") {
       scheduleState.timetable = { placement: msg.placement, hard: msg.hard, soft: msg.soft, generatedAt: Date.now() };
       setSolvingUi(false);
       const ok = msg.hard === 0;
       document.getElementById("sched-solver-status").textContent = ok
-        ? "מערכת שעות נוצרה בהצלחה, ללא התנגשויות."
-        : `מערכת שעות נוצרה עם ${msg.hard} התנגשויות שלא נפתרו — נסו "המשך לשפר", או בדקו שהאילוצים לא סותרים זה את זה.`;
+        ? schedL("מערכת שעות נוצרה בהצלחה, ללא התנגשויות.", "Timetable generated successfully, with no conflicts.")
+        : schedL(`מערכת שעות נוצרה עם ${msg.hard} התנגשויות שלא נפתרו — נסו "המשך לשפר", או בדקו שהאילוצים לא סותרים זה את זה.`,
+          `Timetable generated with ${msg.hard} unresolved conflicts — try "Keep improving", or check that your constraints don't contradict each other.`);
       document.getElementById("sched-improve-btn").hidden = false;
       renderResultTab();
     }
@@ -674,7 +677,7 @@ function renderResultTab() {
   const badge = document.getElementById("sched-conflict-badge");
   if (conflicts.size) {
     badge.hidden = false;
-    badge.textContent = `${conflicts.size} שיעורים בהתנגשות`;
+    badge.textContent = schedL(`${conflicts.size} שיעורים בהתנגשות`, `${conflicts.size} lessons in conflict`);
   } else {
     badge.hidden = true;
   }
@@ -735,7 +738,7 @@ function buildAllClassesPrintHtml() {
   if (!scheduleState.timetable) return "";
   return scheduleState.classes.map((c) => `
     <div class="sched-print-page">
-      <h2>מערכת שעות — ${schedEsc(scheduleDisplayName(c.name))}</h2>
+      <h2>${schedL("מערכת שעות", "Timetable")} — ${schedEsc(scheduleDisplayName(c.name))}</h2>
       ${resultGridHtml("class", c.id)}
     </div>`).join("");
 }
@@ -765,7 +768,7 @@ function exportResultCsv() {
   problem.lessons.forEach((l) => { lessonById[l.id] = l; });
   const cellLessons = buildCellLessonMap(problem, scheduleState.timetable.placement, kind, entityId);
 
-  const rows = [["שעה"].concat(Array.from({ length: days }, (_, d) => scheduleDayName(d)))];
+  const rows = [[schedL("שעה", "Period")].concat(Array.from({ length: days }, (_, d) => scheduleDayName(d)))];
   for (let p = 0; p < periods; p++) {
     const row = [String(p + 1)];
     for (let d = 0; d < days; d++) {
@@ -781,7 +784,7 @@ function exportResultCsv() {
     rows.push(row);
   }
   const csv = rows.map((r) => r.map(csvEscape).join(",")).join("\r\n");
-  downloadTextFile(csv, `מערכת-שעות-${scheduleDisplayName(entity.name)}.csv`, "text/csv;charset=utf-8;");
+  downloadTextFile(csv, `${schedL("מערכת-שעות", "timetable")}-${scheduleDisplayName(entity.name)}.csv`, "text/csv;charset=utf-8;");
 }
 
 function wirePrintExport() {

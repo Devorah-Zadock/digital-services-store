@@ -74,6 +74,8 @@ Deno.serve(async (req: Request) => {
   try {
     const cappedBody = await readJsonCapped(req);
     if (!cappedBody) return jsonResponse({ error: "request too large" }, 413);
+    // Language of the text the AI writes back ("en" from the English UI; Hebrew otherwise).
+    const outLang = (cappedBody as any)?.lang === "en" ? "English" : "Hebrew";
     const { summary } = cappedBody as any;
     if (!summary || typeof summary !== "object") {
       return jsonResponse({ error: "missing summary" }, 400);
@@ -114,7 +116,7 @@ Deno.serve(async (req: Request) => {
             content:
               "You are a website-content reviewer for small-business owners building their own site from a template (they cannot change layout or code, only text/photos/contact details). You'll receive a JSON summary of what they've filled in so far — not the rendered page. Respond with ONLY a JSON object shaped exactly like: " +
               '{"score": <integer 1-100>, "strengths": [<up to 3 short strings>], "tips": [<2-4 short, concrete, actionable strings>]}. ' +
-              'Write every string value in Hebrew. "score" reflects how complete, clear and trustworthy the site content is for a real visitor deciding whether to contact this business — be honest and specific, not generous by default (an empty about section, no contact details, or vague one-word services should cost real points). "strengths" are specific things this particular business actually did well (not generic praise). "tips" are concrete next actions tied to what is actually missing or weak in THIS summary (e.g. name a specific service with no price/description, or say the about text is missing), never generic advice like "add more content".',
+              'Write every string value in ' + outLang + '. "score" reflects how complete, clear and trustworthy the site content is for a real visitor deciding whether to contact this business — be honest and specific, not generous by default (an empty about section, no contact details, or vague one-word services should cost real points). "strengths" are specific things this particular business actually did well (not generic praise). "tips" are concrete next actions tied to what is actually missing or weak in THIS summary (e.g. name a specific service with no price/description, or say the about text is missing), never generic advice like "add more content".',
           },
           {
             role: "user",

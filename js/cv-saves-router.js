@@ -66,11 +66,11 @@ function dkCvRouterHandles(urlCvId, urlTemplate) {
 function dkCvTimeAgo(iso) {
   if (!iso) return "";
   const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
-  if (mins < 1) return "עודכן הרגע";
-  if (mins < 60) return `עודכן לפני ${mins} דקות`;
+  if (mins < 1) return dkL("עודכן הרגע", "Updated just now");
+  if (mins < 60) return dkL(`עודכן לפני ${mins} דקות`, `Updated ${mins} min ago`);
   const hours = Math.round(mins / 60);
-  if (hours < 24) return `עודכן לפני ${hours} שעות`;
-  return `עודכן לפני ${Math.round(hours / 24)} ימים`;
+  if (hours < 24) return dkL(`עודכן לפני ${hours} שעות`, `Updated ${hours} h ago`);
+  return dkL(`עודכן לפני ${Math.round(hours / 24)} ימים`, `Updated ${Math.round(hours / 24)} days ago`);
 }
 
 function dkMyCvsEscape(s) {
@@ -79,19 +79,19 @@ function dkMyCvsEscape(s) {
 
 function dkMyCvsCardHtml(row) {
   const d = row.data || {};
-  const name = (d.content && d.content.name && d.content.name.trim()) || "קורות חיים (ללא שם)";
-  const tplLabel = (typeof CV_TEMPLATES !== "undefined" && CV_TEMPLATES[d.slug] && CV_TEMPLATES[d.slug].label) || d.slug || "";
+  const name = (d.content && d.content.name && d.content.name.trim()) || dkL("קורות חיים (ללא שם)", "CV (untitled)");
+  const tplLabel = (typeof CV_TEMPLATES !== "undefined" && CV_TEMPLATES[d.slug] && (typeof dkL === "function" ? dkL(CV_TEMPLATES[d.slug].label, CV_TEMPLATES[d.slug].labelEn) : CV_TEMPLATES[d.slug].label)) || d.slug || "";
   return `
     <div class="dk-pcard" data-dk-product="cv" data-dk-cv-id="${row.id}">
       <div class="dk-pcard-thumb">
         <span class="dk-pcard-thumb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v16H7z"/><path d="M9 9h6M9 13h6M9 17h3"/></svg></span>
-        <button type="button" class="dk-pcard-more" data-dk-cv-more aria-label="עוד">⋮</button>
+        <button type="button" class="dk-pcard-more" data-dk-cv-more aria-label="${dkL("עוד", "More")}">⋮</button>
       </div>
       <div class="dk-pcard-body">
         <p class="dk-pcard-name">${dkMyCvsEscape(name)}</p>
         <p class="dk-pcard-meta"><span>${dkMyCvsEscape(tplLabel)}</span></p>
         <p class="dk-pcard-date">${dkCvTimeAgo(row.updated_at || row.created_at)}</p>
-        <a href="builder.html?cv=${encodeURIComponent(row.id)}" class="dk-pcard-cta">פתחו ב-Builder</a>
+        <a href="builder.html?cv=${encodeURIComponent(row.id)}" class="dk-pcard-cta">${dkL("פתחו ב-Builder", "Open in Builder")}</a>
       </div>
     </div>`;
 }
@@ -106,12 +106,12 @@ async function dkMyCvsDuplicate(row) {
   const user = session.session && session.session.user;
   if (!user) return;
   const { error } = await supabaseClient.from("cv_saves").insert({ user_id: user.id, data: row.data });
-  if (error) { console.error("duplicate CV failed:", error); alert("שכפול נכשל. אפשר לנסות שוב."); return; }
+  if (error) { console.error("duplicate CV failed:", error); alert(dkL("שכפול נכשל. אפשר לנסות שוב.", "Duplicating failed. Please try again.")); return; }
   location.reload();
 }
 
 async function dkMyCvsDelete(row) {
-  if (!confirm("למחוק לצמיתות את קורות החיים האלה? הפעולה בלתי הפיכה.")) return;
+  if (!confirm(dkL("למחוק לצמיתות את קורות החיים האלה? הפעולה בלתי הפיכה.", "Permanently delete this CV? This can't be undone."))) return;
   const { data: session } = await supabaseClient.auth.getSession();
   const user = session.session && session.session.user;
   if (!user) return;
@@ -124,9 +124,9 @@ function dkMyCvsOpenMenu(card, row) {
   const menu = document.createElement("div");
   menu.className = "dk-pcard-menu";
   menu.innerHTML = `
-    <button type="button" data-act="open">עריכה</button>
-    <button type="button" data-act="dup">שכפול</button>
-    <button type="button" class="danger" data-act="del">מחיקה</button>
+    <button type="button" data-act="open">${dkL("עריכה", "Edit")}</button>
+    <button type="button" data-act="dup">${dkL("שכפול", "Duplicate")}</button>
+    <button type="button" class="danger" data-act="del">${dkL("מחיקה", "Delete")}</button>
   `;
   card.appendChild(menu);
   menu.querySelector('[data-act="open"]').addEventListener("click", () => { location.href = "builder.html?cv=" + encodeURIComponent(row.id); });

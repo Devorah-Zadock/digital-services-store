@@ -37,7 +37,7 @@ async function scheduleAutosaveTick() {
   if (!err) {
     scheduleDirty = false;
     const status = document.getElementById("schedule-save-status");
-    if (status) { status.textContent = "נשמר אוטומטית ✓"; status.classList.add("ok"); }
+    if (status) { status.textContent = schedL("נשמר אוטומטית ✓", "Autosaved ✓"); status.classList.add("ok"); }
   }
 }
 
@@ -130,7 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btn.disabled = false;
     scheduleDirty = false;
     status.classList.remove("ok");
-    status.textContent = err ? "השמירה נכשלה, נסו שוב" : "נשמר ✓";
+    status.textContent = err ? schedL("השמירה נכשלה, נסו שוב", "Saving failed, please try again") : schedL("נשמר ✓", "Saved ✓");
     if (!err) status.classList.add("ok");
     setTimeout(() => { status.textContent = ""; status.classList.remove("ok"); }, 2500);
   });

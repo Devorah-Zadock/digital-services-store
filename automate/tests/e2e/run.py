@@ -18,6 +18,7 @@ Output is public (GitHub logs): pass/fail lines and counts only.
 import concurrent.futures
 import json
 import os
+import re
 import secrets
 import sys
 import time
@@ -359,7 +360,15 @@ def run_tests(a, b):
     lead9 = rows(f"contacts?user_id=eq.{a['id']}&email=eq.lead-9@example.com&select=id")[0]
     check("T10 paused → new enquiries are saved but start no run", not [x for x in runs_of(a["id"], "lead_autopilot") if x["subject_id"] == lead9["id"]])
     api(a, "resume", template="lead_autopilot")
-    fast_forward_runs(a["id"]); drain(2)
+    fast_forward_runs(a["id"])
+    # The scheduled staging worker may be handling this run at the same moment
+    # (it may have read "paused" just before the resume), so keep ticking.
+    def reminded():
+        if "lead_reminder" in [m["purpose"] for m in messages_of(a["id"]) if m["run_id"] == run8["id"]]:
+            return True
+        fast_forward_runs(a["id"])   # undo a "check again later" the scheduled worker may have written meanwhile
+        return False
+    wait_until(reminded, timeout=40)
     msgs8 = [m["purpose"] for m in messages_of(a["id"]) if m["run_id"] == run8["id"]]
     check("T10 resumed → continues (reminder sent)", "lead_reminder" in msgs8, str(msgs8))
 
@@ -492,14 +501,32 @@ def run_tests(a, b):
         st, r = admin_fn("set-admin-password", newPassword=adm_pw)
         tok = r.get("token") if isinstance(r, dict) else None
         check("T18 admin password set → unlock token", st == 200 and tok, f"HTTP {st} {r}")
+        first_device = r.get("deviceToken") if isinstance(r, dict) else None
+        check("T18 first-time setup: this device becomes recognized", bool(first_device))
         st, r = admin_fn("unlock", password="wrong-password-123")
-        check("T18 wrong admin password refused", st == 401, f"HTTP {st}")
+        check("T18 wrong admin password refused", st == 401 and r.get("error") == "bad-password", f"HTTP {st} {r}")
         st, r = admin_fn("unlock", password=adm_pw)
-        check("T18 right admin password unlocks", st == 200 and r.get("token"), f"HTTP {st}")
+        challenge = r.get("challenge")
+        check("T18 right password on an unknown device → asks for the emailed code (no entry yet)",
+              st == 401 and r.get("error") == "device-code" and challenge and r.get("testCode") and not r.get("token"), f"HTTP {st} {str(r)[:120]}")
+        wrong = "000000" if r.get("testCode") != "000000" else "111111"
+        st, r2 = admin_fn("unlock", password=adm_pw, challenge=challenge, code=wrong)
+        check("T18 wrong code refused", st == 401 and r2.get("error") == "bad-code", f"HTTP {st} {r2}")
+        st, r2 = admin_fn("unlock", password=adm_pw, challenge=challenge, code=r["testCode"])
+        dev_tok = r2.get("deviceToken") if isinstance(r2, dict) else None
+        check("T18 right code → entry + device remembered", st == 200 and r2.get("token") and dev_tok, f"HTTP {st}")
+        st, r3 = admin_fn("unlock", password=adm_pw, challenge=challenge, code=r["testCode"])
+        check("T18 a code works only once", st == 401, f"HTTP {st} {r3}")
+        st, r3 = admin_fn("unlock", password=adm_pw, deviceToken=dev_tok)
+        check("T18 recognized device → password alone is enough", st == 200 and r3.get("token"), f"HTTP {st} {r3}")
+        st, r3 = admin_fn("unlock", password="wrong-password-123", deviceToken=dev_tok)
+        check("T18 recognized device still needs the right password", st == 401 and r3.get("error") == "bad-password", f"HTTP {st} {r3}")
+        st, r3 = admin_fn("set-admin-password", newPassword="another-password-123", currentPassword=adm_pw)
+        check("T18 admin password can't be changed from outside the admin area", st == 401 and r3.get("error") == "admin-locked", f"HTTP {st} {r3}")
         ev = rows(f"admin_audit_log?admin_user_id=eq.{adm['id']}&action=in.(admin_unlock,admin_unlock_failed)&select=action,details")
         check("T18 every admin entry records the device and a network code (not the address)",
-              len(ev) == 2 and all(e["details"].get("device") and len(e["details"].get("net", "")) == 6 for e in ev)
-              and not any("." in e["details"].get("net", "") for e in ev), str(ev))
+              len(ev) >= 3 and all(e["details"].get("device") and len(e["details"].get("net", "")) == 6 for e in ev)
+              and not any("." in e["details"].get("net", "") for e in ev), str(ev)[:300])
         st, r = fn("admin-stats", {"action": "automate-status"}, token=adm["token"])
         check("T18 card refused without the admin unlock", st == 401 and r.get("error") == "admin-locked", f"HTTP {st} {r}")
         st, r = admin_fn("automate-status", adminToken=tok)
@@ -610,7 +637,7 @@ def run_growth_tests():
               "paid_thanks" in purposes(pr2["id"]) and "review_request" not in purposes(pr2["id"]), str(purposes(pr2["id"])))
 
         # ---- T22 declined quote: owner told → feedback question → reach out later (unless a new quote went out)
-        api(c, "activate", template="quote_lost", config={"client_messages": "auto", "reengage_days": 30})
+        api(c, "activate", template="quote_lost", config={"client_messages": "auto", "reengage": True, "reengage_days": 30})
         st, q = rest("POST", "quote_saves", {"user_id": c["id"], "data": {"businessName": "עסק ג", "recipient": "לקוח", "eventName": "עבודה", "price": "5,000", "template": "classic"}}, token=c["token"])
         qid = q[0]["id"]
         st, s1 = api(c, "send-quote", quote_id=qid, client_name="דוחה-אחת", client_email="decline-1@example.com")
@@ -651,6 +678,52 @@ def run_growth_tests():
         check("T24 unanswered quote near expiry → reminder to the client + owner told",
               {"quote_expiring", "quote_expiring_owner"} <= set(purposes(x1["id"])), str(purposes(x1["id"])))
         check("T24 a quote already answered gets no expiry reminder", "quote_expiring" not in purposes(x2["id"]), str(purposes(x2["id"])))
+
+        # ---- T25 a client unsubscribes (link in the email) → no more automated emails from this business
+        rest("POST", "contacts", {"name": "מוסר-עצמו", "email": "optout-1@example.com"}, token=c["token"])
+        oc = cid("מוסר-עצמו")
+        drain(1); fast_forward_runs(c["id"]); drain(2)
+        sent = [m for m in messages_of(c["id"], ",html,to_email") if m["recipient_role"] == "client" and m["to_email"] == "optout-1@example.com"]
+        link = re.search(r"optout\.html\?t=([A-Za-z0-9_.-]+)", sent[0]["html"]) if sent else None
+        check("T25 every client email carries an unsubscribe link", bool(link), str(len(sent)))
+        if link:
+            tok = link.group(1)
+            st, g = fn("client-optout", {"t": tok, "action": "get"})
+            check("T25 link shows the business and a masked address, not yet removed",
+                  st == 200 and g.get("business") == "עסק ג" and g.get("optedOut") is False and "optout-1" not in g.get("email", ""), f"{st} {g}")
+            st, bad = fn("client-optout", {"t": tok[:-3] + "AAA", "action": "optout"})
+            check("T25 a forged link is refused", st == 400, f"{st} {bad}")
+            st, o = fn("client-optout", {"t": tok, "action": "optout"})
+            check("T25 unsubscribe recorded", st == 200 and o.get("optedOut") is True, f"{st} {o}")
+            rest("POST", "contacts", {"name": "מוסר-שוב", "email": "OptOut-1@example.com"}, token=c["token"])
+            again = cid("מוסר-שוב")
+            drain(1); fast_forward_runs(c["id"]); drain(2)
+            run = [r for r in runs_of(c["id"], "lead_nurture") if r["subject_id"] == again["id"]]
+            later = [m for m in messages_of(c["id"], ",to_email") if m["recipient_role"] == "client" and m["to_email"].lower() == "optout-1@example.com"]
+            check("T25 after unsubscribing: no new email to that address (any capitalisation)",
+                  len(later) == len(sent) and run and not purposes(run[0]["id"]), f"{len(later)} vs {len(sent)}")
+
+        # ---- T27 DeskKit Pro accounts get the Pro limits (no payment involved here)
+        before = get_setting("plan_limits")
+        set_setting("plan_limits", {**(before or {}), "pro": {"active_automations": 30, "runs_per_month": 2000, "emails_per_month": 5000}})
+        st, free_l = rpc("automate_limits", {"p_user": c["id"]})
+        rest("POST", "customer_profiles", {"id": c["id"], "email": c["email"], "is_pro": True}, prefer="resolution=merge-duplicates,return=minimal")
+        st, pro_l = rpc("automate_limits", {"p_user": c["id"]})
+        rest("PATCH", f"customer_profiles?id=eq.{c['id']}", {"is_pro": False}, prefer="return=minimal")
+        set_setting("plan_limits", before)
+        check("T27 a Pro account gets higher limits than a free one",
+              isinstance(free_l, dict) and isinstance(pro_l, dict) and pro_l.get("emails_per_month", 0) > free_l.get("emails_per_month", 0)
+              and pro_l.get("active_automations", 0) > free_l.get("active_automations", 0), f"{free_l} {pro_l}")
+
+        # ---- T26 a business that chose English gets its emails in English (left to right)
+        api(c, "save-profile", business_name="Studio C", lang="en")
+        api(c, "activate", template="lead_nurture", config={"client_messages": "auto"})   # default texts now come in English
+        rest("POST", "contacts", {"name": "Jane Doe", "email": "english-1@example.com"}, token=c["token"])
+        drain(1); fast_forward_runs(c["id"]); drain(2)
+        en = [m for m in messages_of(c["id"], ",html,subject,to_email") if m["to_email"] == "english-1@example.com"]
+        check("T26 English business → English email, left to right, unsubscribe link in English",
+              bool(en) and "still interested" in en[0]["subject"] and 'dir="ltr"' in en[0]["html"] and "Unsubscribe" in en[0]["html"]
+              and not re.search(r"[\u0590-\u05FF]", en[0]["subject"] + en[0]["html"]), str([m.get("subject") for m in en]))
     finally:
         delete_user(c["id"])
 

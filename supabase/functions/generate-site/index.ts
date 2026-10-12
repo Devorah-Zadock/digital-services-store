@@ -151,6 +151,8 @@ Deno.serve(async (req: Request) => {
   try {
     const body = await readJsonCapped(req) as any;
     if (!body) return jsonResponse({ error: "request too large" }, 413);
+    // Language of the text the AI writes back ("en" from the English UI; Hebrew otherwise).
+    const outLang = (body as any)?.lang === "en" ? "English" : "Hebrew";
     const businessName = clampStr(body.businessName, 40);
     const businessType = clampStr(body.businessType, 60);
     const description = clampStr(body.description, 600);
@@ -205,7 +207,7 @@ Deno.serve(async (req: Request) => {
                 "You help a small-business owner start a business website. You will receive basic info about their business and must respond with ONLY a JSON object shaped exactly like: " +
                 '{"template": "<one key from the provided list>", "tagline": "<short string>", "about": "<2-4 sentences>", "services": [{"name": "<string>", "desc": "<short string>"} , ...3 to 6 items], "headings": {"services": "<optional short string>", "about": "<optional short string>", "contact": "<optional short string>"}}. ' +
                 "Pick the single template key that best fits the business's type and vibe from this exact list (never invent a key not listed):\n" + templateListForPrompt + "\n\n" +
-                "Write every string value in Hebrew, even if the input is in another language. Write a warm, specific, realistic tagline and about text based on what the business actually does — never generic filler, never invented facts (no fake awards, years in business, team size, or locations the input didn't mention). Services must be concrete and specific to this business, not generic placeholders. " +
+                "Write every string value in " + outLang + ", even if the input is in another language. Write a warm, specific, realistic tagline and about text based on what the business actually does — never generic filler, never invented facts (no fake awards, years in business, team size, or locations the input didn't mention). Services must be concrete and specific to this business, not generic placeholders. " +
                 "Do NOT include any contact details (no phone, email, address, or WhatsApp) anywhere in your response — those are filled in separately by the business owner. Do NOT include HTML, CSS, or any markup — plain text only.",
             },
             {

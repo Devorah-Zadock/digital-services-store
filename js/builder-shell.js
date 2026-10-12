@@ -34,6 +34,12 @@
 
 const BSHELL_SUPPORTED_TEMPLATES = SITE_MIGRATED_TEMPLATES;
 
+// UI language helpers — js/i18n.js's dkL() and js/i18n-sites.js's
+// dkSitesLabel() when loaded, plain Hebrew otherwise (this file must keep
+// working on any page that loads it without the i18n scripts).
+function bsL(he, en) { return typeof dkL === "function" ? dkL(he, en) : he; }
+function bsLabel(he) { return typeof dkSitesLabel === "function" ? dkSitesLabel(he) : he; }
+
 /* Raw CSS-selector anchor overrides for the handful of (template,type)
    pairs whose block has no heading(d, type, ...) element to anchor on
    at all — mirrors site-builder.js's own SECTION_PATCH_ANCHOR_OVERRIDES
@@ -95,13 +101,13 @@ function bshellFindAnchorEl(doc, template, type) {
 // d.businessName/d.headings/d.tagline/d.about fields the old sidebar
 // builder already uses, so nothing about the data model changes.
 const BSHELL_TEXT_CONTENT_MAP = {
-  businessName: { label: "שם העסק", get: (d) => d.businessName || "", set: (d, v) => { d.businessName = v; } },
-  "heading-heroTitle": { label: "כותרת ראשית", placeholder: "ברירת מחדל: שם העסק", get: (d) => (d.headings && d.headings.heroTitle) || "", set: (d, v) => { d.headings = d.headings || {}; d.headings.heroTitle = v; } },
-  tagline: { label: "שורת תיאור", get: (d) => d.tagline || "", set: (d, v) => { d.tagline = v; } },
-  aboutText: { label: "טקסט אודות", multiline: true, get: (d) => d.about || "", set: (d, v) => { d.about = v; } },
-  "heading-services": { label: "כותרת השירותים", placeholder: "ברירת מחדל: השירותים שלנו", get: (d) => (d.headings && d.headings.services) || "", set: (d, v) => { d.headings = d.headings || {}; d.headings.services = v; } },
-  "heading-about": { label: "כותרת האודות", placeholder: "ברירת מחדל: קצת עלינו", get: (d) => (d.headings && d.headings.about) || "", set: (d, v) => { d.headings = d.headings || {}; d.headings.about = v; } },
-  "heading-contact": { label: "כותרת יצירת הקשר", placeholder: "ברירת מחדל: יצירת קשר", get: (d) => (d.headings && d.headings.contact) || "", set: (d, v) => { d.headings = d.headings || {}; d.headings.contact = v; } },
+  businessName: { label: bsL("שם העסק", "Business name"), get: (d) => d.businessName || "", set: (d, v) => { d.businessName = v; } },
+  "heading-heroTitle": { label: bsL("כותרת ראשית", "Main heading"), placeholder: bsL("ברירת מחדל: שם העסק", "Default: your business name"), get: (d) => (d.headings && d.headings.heroTitle) || "", set: (d, v) => { d.headings = d.headings || {}; d.headings.heroTitle = v; } },
+  tagline: { label: bsL("שורת תיאור", "Tagline"), get: (d) => d.tagline || "", set: (d, v) => { d.tagline = v; } },
+  aboutText: { label: bsL("טקסט אודות", "About text"), multiline: true, get: (d) => d.about || "", set: (d, v) => { d.about = v; } },
+  "heading-services": { label: bsL("כותרת השירותים", "Services heading"), placeholder: bsL("ברירת מחדל: השירותים שלנו", "Leave empty for the default heading"), get: (d) => (d.headings && d.headings.services) || "", set: (d, v) => { d.headings = d.headings || {}; d.headings.services = v; } },
+  "heading-about": { label: bsL("כותרת האודות", "About heading"), placeholder: bsL("ברירת מחדל: קצת עלינו", "Leave empty for the default heading"), get: (d) => (d.headings && d.headings.about) || "", set: (d, v) => { d.headings = d.headings || {}; d.headings.about = v; } },
+  "heading-contact": { label: bsL("כותרת יצירת הקשר", "Contact heading"), placeholder: bsL("ברירת מחדל: יצירת קשר", "Leave empty for the default heading"), get: (d) => (d.headings && d.headings.contact) || "", set: (d, v) => { d.headings = d.headings || {}; d.headings.contact = v; } },
 };
 
 let bshellActiveFlag = false;
@@ -136,7 +142,7 @@ function bshellActivate() {
   document.getElementById("bshell-root").classList.add("active");
 
   const t = SITE_TEMPLATES[siteState.template];
-  document.getElementById("bshell-top-name").textContent = (siteState.data.businessName || "").trim() || (t ? t.label : "הפרויקט שלי");
+  document.getElementById("bshell-top-name").textContent = (siteState.data.businessName || "").trim() || (t ? bsLabel(t.label) : bsL("הפרויקט שלי", "My project"));
 
   bshellWireTopBar();
   bshellRenderHierarchy();
@@ -297,7 +303,7 @@ function bshellApplyAiOp(result) {
   bshellRenderCanvas();
   bshellRenderHierarchy();
   bshellScheduleSave();
-  bshellAiNote(`בוצע: ${escapeHtmlS(result.explanation || "")}`);
+  bshellAiNote(`${bsL("בוצע:", "Done:")} ${escapeHtmlS(result.explanation || "")}`);
 }
 
 function bshellAiNote(html) {
@@ -314,8 +320,8 @@ function bshellAiNote(html) {
    The chips are now built from THIS site's real context, so every
    suggestion is one the server can carry out, and the hint line says
    plainly what kind of request works. */
-const BSHELL_AI_TYPE_NAMES = { services: "השירותים", about: "האודות", contact: "חלק צור קשר", aboutTags: "התגיות", grid: "הרשת" };
-const BSHELL_AI_HINT = "אפשר לבקש: לשנות את סדר החלקים, להוסיף או להסיר חלק, או סגנון תצוגה אחר ל-Hero ולשירותים. שינויי צבע וגופן נעשים ב\"פרטי העסק ועיצוב\".";
+const BSHELL_AI_TYPE_NAMES = { services: bsL("השירותים", "the services"), about: bsL("האודות", "the about section"), contact: bsL("חלק צור קשר", "the contact section"), aboutTags: bsL("התגיות", "the tags"), grid: bsL("הרשת", "the grid") };
+const BSHELL_AI_HINT = bsL("אפשר לבקש: לשנות את סדר החלקים, להוסיף או להסיר חלק, או סגנון תצוגה אחר ל-Hero ולשירותים. שינויי צבע וגופן נעשים ב\"פרטי העסק ועיצוב\".", "You can ask to: reorder sections, add or remove a section, or switch the Hero or services to another display style. Color and font changes are made in \"Business details & design\".");
 
 function bshellAiExamples() {
   const ctx = siteAiCommandContext();
@@ -323,17 +329,17 @@ function bshellAiExamples() {
   const variants = (siteState.data && siteState.data.blockVariants) || {};
   const out = [];
   const movable = ctx.activeTypes.filter((t) => t !== "hero" && BSHELL_AI_TYPE_NAMES[t]);
-  if (movable.length >= 2) out.push(`הזז את ${name(movable[1])} לפני ${name(movable[0])}`);
+  if (movable.length >= 2) out.push(bsL(`הזז את ${name(movable[1])} לפני ${name(movable[0])}`, `Move ${name(movable[1])} before ${name(movable[0])}`));
   if (ctx.variantOptions.hero) {
-    out.push(variants.hero === "centered" ? "החזר את ה-Hero לעיצוב הקלאסי" : "הפוך את ה-Hero לממורכז");
+    out.push(variants.hero === "centered" ? bsL("החזר את ה-Hero לעיצוב הקלאסי", "Switch the Hero back to the classic layout") : bsL("הפוך את ה-Hero לממורכז", "Make the Hero centered"));
   }
   if (ctx.variantOptions.services && ctx.activeTypes.indexOf("services") !== -1) {
-    out.push(variants.services === "grid" ? "החזר את השירותים לעיצוב ברירת המחדל" : "הצג את השירותים כרשת כרטיסים");
+    out.push(variants.services === "grid" ? bsL("החזר את השירותים לעיצוב ברירת המחדל", "Switch the services back to the default layout") : bsL("הצג את השירותים כרשת כרטיסים", "Show the services as a card grid"));
   }
   const addable = ctx.availableTypes.filter((t) => ctx.activeTypes.indexOf(t) === -1 && BSHELL_AI_TYPE_NAMES[t]);
-  if (out.length < 3 && addable.length) out.push(`הוסף את ${name(addable[0])}`);
+  if (out.length < 3 && addable.length) out.push(bsL(`הוסף את ${name(addable[0])}`, `Add ${name(addable[0])}`));
   const removable = movable.filter((t) => t !== "grid");
-  if (out.length < 3 && removable.length) out.push(`הסר את ${name(removable[removable.length - 1])}`);
+  if (out.length < 3 && removable.length) out.push(bsL(`הסר את ${name(removable[removable.length - 1])}`, `Remove ${name(removable[removable.length - 1])}`));
   return out.slice(0, 3);
 }
 
@@ -389,10 +395,10 @@ async function bshellAiSubmit() {
   if (!command) return;
 
   bshellAiPending = null;
-  bshellAiNote("ה-AI מעבד את הפקודה…");
+  bshellAiNote(bsL("ה-AI מעבד את הפקודה…", "The AI is working on your request…"));
   const originalLabel = btn.textContent;
   btn.disabled = true;
-  btn.textContent = "מעבד...";
+  btn.textContent = bsL("מעבד...", "Working...");
 
   try {
     const { data: sessionData } = await supabaseClient.auth.getSession();
@@ -403,30 +409,30 @@ async function bshellAiSubmit() {
     const res = await fetch(SUPABASE_URL + "/functions/v1/site-ai-command", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + token, apikey: SUPABASE_ANON_KEY },
-      body: JSON.stringify({ command, availableTypes: ctx.availableTypes, activeTypes: ctx.activeTypes, variantOptions: ctx.variantOptions }),
+      body: JSON.stringify({ lang: (typeof currentLang === "function" ? currentLang() : "he"), command, availableTypes: ctx.availableTypes, activeTypes: ctx.activeTypes, variantOptions: ctx.variantOptions }),
     });
     const data = await res.json();
-    if (!res.ok || data.error) throw new Error(data.error || "שגיאה לא צפויה");
+    if (!res.ok || data.error) throw new Error(data.error || "unexpected error");
 
     if (data.limitReached) {
       bshellAiNote(data.isPro
-        ? "הגעת למכסת השימוש ההוגן היומית לפקודות AI. אפשר להמשיך מחר."
-        : "הגעת למכסת הניסיונות החינמיים לפקודות AI. רוצה להמשיך? שדרג לגרסת Pro בתשלום חד-פעמי!");
+        ? bsL("הגעת למכסת השימוש ההוגן היומית לפקודות AI. אפשר להמשיך מחר.", "You've reached today's fair-use limit for AI commands. You can continue tomorrow.")
+        : bsL("הגעת למכסת הניסיונות החינמיים לפקודות AI. רוצה להמשיך? שדרג לגרסת Pro בתשלום חד-פעמי!", "You've used up your free AI command tries. Want to keep going? Upgrade to Pro with a one-time payment!"));
       return;
     }
 
     const result = data.result;
     if (!result || result.op === "unsupported") {
-      bshellAiNote(`${escapeHtmlS((result && result.explanation) || "לא הצלחתי לבצע את הפעולה הזו.")}<br>${escapeHtmlS(BSHELL_AI_HINT)}`);
+      bshellAiNote(`${escapeHtmlS((result && result.explanation) || bsL("לא הצלחתי לבצע את הפעולה הזו.", "I couldn't do that."))}<br>${escapeHtmlS(BSHELL_AI_HINT)}`);
       return;
     }
 
     bshellAiPending = result;
     bshellAiNote(`
-      <div>${escapeHtmlS(result.explanation || "לבצע את השינוי?")}</div>
+      <div>${escapeHtmlS(result.explanation || bsL("לבצע את השינוי?", "Make this change?"))}</div>
       <div class="bshell-ai-confirm-row">
-        <button type="button" class="bshell-ai-confirm-yes" id="bshell-ai-confirm">אישור</button>
-        <button type="button" id="bshell-ai-cancel">ביטול</button>
+        <button type="button" class="bshell-ai-confirm-yes" id="bshell-ai-confirm">${bsL("אישור", "Confirm")}</button>
+        <button type="button" id="bshell-ai-cancel">${bsL("ביטול", "Cancel")}</button>
       </div>
     `);
     document.getElementById("bshell-ai-confirm").addEventListener("click", () => {
@@ -436,11 +442,11 @@ async function bshellAiSubmit() {
     });
     document.getElementById("bshell-ai-cancel").addEventListener("click", () => {
       bshellAiPending = null;
-      bshellAiNote("בוטל.");
+      bshellAiNote(bsL("בוטל.", "Canceled."));
     });
   } catch (err) {
     console.error("bshell AI command failed:", err);
-    bshellAiNote("משהו השתבש. אפשר לנסות שוב בעוד רגע.");
+    bshellAiNote(bsL("משהו השתבש. אפשר לנסות שוב בעוד רגע.", "Something went wrong. Please try again in a moment."));
   } finally {
     btn.disabled = false;
     btn.textContent = originalLabel;
@@ -450,7 +456,7 @@ async function bshellAiSubmit() {
 async function bshellSaveNow() {
   clearTimeout(bshellSaveTimer);
   const status = document.getElementById("bshell-top-status");
-  status.textContent = "שומרים...";
+  status.textContent = bsL("שומרים...", "Saving...");
   status.className = "bshell-top-status saving";
   // saveSiteNow() now returns the Supabase error (or null) instead of
   // being fire-and-forget — confirmed-live bug this fixes: this always
@@ -459,11 +465,12 @@ async function bshellSaveNow() {
   // safe to walk away from.
   const error = typeof saveSiteNow === "function" ? await saveSiteNow() : null;
   if (!error) {
-    status.textContent = "נשמר ✓";
+    const savedLabel = bsL("נשמר ✓", "Saved ✓");
+    status.textContent = savedLabel;
     status.className = "bshell-top-status saved";
-    setTimeout(() => { if (status.textContent === "נשמר ✓") status.textContent = ""; }, 2500);
+    setTimeout(() => { if (status.textContent === savedLabel) status.textContent = ""; }, 2500);
   } else {
-    status.textContent = "לא נשמר — ננסה שוב";
+    status.textContent = bsL("לא נשמר — ננסה שוב", "Not saved — retrying");
     status.className = "bshell-top-status failed";
     // Retry shortly rather than leaving a failed save sitting there
     // until the next real edit happens to trigger bshellScheduleSave().
@@ -500,15 +507,15 @@ function bshellRenderHierarchy() {
       const services = dd._services || d.services || [];
       itemsHtml = services.map((s, i) => {
         const isSelectedItem = bshellSelection && bshellSelection.kind === "service" && bshellSelection.idx === i;
-        return `<button type="button" class="bshell-item${isSelectedItem ? " is-selected" : ""}" data-bshell-select-service="${i}">${escapeHtmlS(s.name && s.name.trim() ? s.name : `שירות ${i + 1}`)}</button>`;
-      }).join("") + `<button type="button" class="bshell-add-item" data-bshell-add-service>+ הוספת שירות</button>`;
+        return `<button type="button" class="bshell-item${isSelectedItem ? " is-selected" : ""}" data-bshell-select-service="${i}">${escapeHtmlS(s.name && s.name.trim() ? s.name : `${bsL("שירות", "Service")} ${i + 1}`)}</button>`;
+      }).join("") + `<button type="button" class="bshell-add-item" data-bshell-add-service>${bsL("+ הוספת שירות", "+ Add service")}</button>`;
     }
     return `
       <details class="bshell-sec"${bshellCollapsedSections.has(type) ? "" : " open"}>
         <summary class="bshell-sec-head${isSelectedSection ? " is-selected" : ""}${hidden ? " is-hidden" : ""}" data-bshell-select-section="${type}">
           <span class="bshell-sec-chevron"></span>
-          <span>${escapeHtmlS(def.label || type)}</span>
-          ${hidden ? '<span class="bshell-sec-hidden-dot" title="מוסתר"></span>' : ""}
+          <span>${escapeHtmlS(bsLabel(def.label) || type)}</span>
+          ${hidden ? `<span class="bshell-sec-hidden-dot" title="${bsL("מוסתר", "Hidden")}"></span>` : ""}
         </summary>
         ${itemsHtml ? `<div class="bshell-sec-body">${itemsHtml}</div>` : ""}
       </details>`;
@@ -690,15 +697,15 @@ function bshellApplySelectionVisual() {
   // disabled — confirmed live as reading broken rather than just
   // "nothing else to do here" for a plain text selection (every kind
   // except service/section had 3 of 4 icons permanently greyed out).
-  const toolbarButtons = [`<button type="button" data-tool="edit" title="עריכה">✎</button>`];
+  const toolbarButtons = [`<button type="button" data-tool="edit" title="${bsL("עריכה", "Edit")}">✎</button>`];
   if (bshellSelection.kind === "service") {
-    toolbarButtons.push(`<button type="button" data-tool="duplicate" title="שכפול">⧉</button>`);
+    toolbarButtons.push(`<button type="button" data-tool="duplicate" title="${bsL("שכפול", "Duplicate")}">⧉</button>`);
   }
   if (bshellSelection.kind === "section") {
-    toolbarButtons.push(`<button type="button" data-tool="hide" title="הסתרה/הצגה">◐</button>`);
+    toolbarButtons.push(`<button type="button" data-tool="hide" title="${bsL("הסתרה/הצגה", "Hide/show")}">◐</button>`);
   }
   if (bshellSelection.kind === "service") {
-    toolbarButtons.push(`<button type="button" data-tool="delete" title="מחיקה">🗑</button>`);
+    toolbarButtons.push(`<button type="button" data-tool="delete" title="${bsL("מחיקה", "Delete")}">🗑</button>`);
   }
   toolbar.innerHTML = toolbarButtons.join("");
   toolbar.addEventListener("mousedown", (e) => e.stopPropagation());
@@ -824,46 +831,46 @@ function bshellPropsHtmlForText(key) {
     ? `<textarea id="bshell-prop-content" maxlength="500">${escapeHtmlS(content)}</textarea>`
     : `<input type="text" id="bshell-prop-content" maxlength="90" value="${escapeHtmlS(content)}" placeholder="${field && field.placeholder ? escapeHtmlS(field.placeholder) : ""}">`;
   return `
-    <span class="bshell-props-kind">טקסט</span>
+    <span class="bshell-props-kind">${bsL("טקסט", "Text")}</span>
     <div class="bshell-props-field">
-      <label class="bshell-props-label">${field ? escapeHtmlS(field.label) : "טקסט"}</label>
+      <label class="bshell-props-label">${field ? escapeHtmlS(field.label) : bsL("טקסט", "Text")}</label>
       ${inputTag}
     </div>
     <div class="bshell-props-row">
       <div class="bshell-props-field">
-        <label class="bshell-props-label">גודל (px)</label>
-        <input type="number" id="bshell-prop-size" min="8" max="140" value="${style.size || ""}" placeholder="ברירת מחדל">
+        <label class="bshell-props-label">${bsL("גודל (px)", "Size (px)")}</label>
+        <input type="number" id="bshell-prop-size" min="8" max="140" value="${style.size || ""}" placeholder="${bsL("ברירת מחדל", "Default")}">
       </div>
       <div class="bshell-props-field">
-        <label class="bshell-props-label">צבע</label>
+        <label class="bshell-props-label">${bsL("צבע", "Color")}</label>
         <input type="color" id="bshell-prop-color" value="${style.color ? "#" + String(style.color).replace("#", "") : "#000000"}">
       </div>
     </div>
     <div class="bshell-props-field">
-      <label class="bshell-props-label">יישור</label>
+      <label class="bshell-props-label">${bsL("יישור", "Alignment")}</label>
       <div class="bshell-align-row">
-        <button type="button" class="bshell-align-btn${style.align === "right" ? " active" : ""}" data-align="right">ימין</button>
-        <button type="button" class="bshell-align-btn${style.align === "center" ? " active" : ""}" data-align="center">מרכז</button>
-        <button type="button" class="bshell-align-btn${style.align === "left" ? " active" : ""}" data-align="left">שמאל</button>
+        <button type="button" class="bshell-align-btn${style.align === "right" ? " active" : ""}" data-align="right">${bsL("ימין", "Right")}</button>
+        <button type="button" class="bshell-align-btn${style.align === "center" ? " active" : ""}" data-align="center">${bsL("מרכז", "Center")}</button>
+        <button type="button" class="bshell-align-btn${style.align === "left" ? " active" : ""}" data-align="left">${bsL("שמאל", "Left")}</button>
       </div>
     </div>
-    <button type="button" class="bshell-props-reset" id="bshell-prop-reset">איפוס עיצוב מותאם</button>`;
+    <button type="button" class="bshell-props-reset" id="bshell-prop-reset">${bsL("איפוס עיצוב מותאם", "Reset custom style")}</button>`;
 }
 
 function bshellPropsHtmlForService(idx) {
   const s = siteState.data.services[idx] || { name: "", desc: "", price: "" };
   return `
-    <span class="bshell-props-kind">כרטיס שירות</span>
+    <span class="bshell-props-kind">${bsL("כרטיס שירות", "Service card")}</span>
     <div class="bshell-props-field">
-      <label class="bshell-props-label">שם השירות</label>
+      <label class="bshell-props-label">${bsL("שם השירות", "Service name")}</label>
       <input type="text" id="bshell-prop-svc-name" maxlength="40" value="${escapeHtmlS(s.name)}">
     </div>
     <div class="bshell-props-field">
-      <label class="bshell-props-label">תיאור קצר</label>
+      <label class="bshell-props-label">${bsL("תיאור קצר", "Short description")}</label>
       <textarea id="bshell-prop-svc-desc" maxlength="90">${escapeHtmlS(s.desc)}</textarea>
     </div>
     <div class="bshell-props-field">
-      <label class="bshell-props-label">מחיר (לא חובה)</label>
+      <label class="bshell-props-label">${bsL("מחיר (לא חובה)", "Price (optional)")}</label>
       <input type="text" id="bshell-prop-svc-price" maxlength="20" value="${escapeHtmlS(s.price)}">
     </div>`;
 }
@@ -882,14 +889,14 @@ function bshellPropsHtmlForSection(type) {
     <span class="bshell-props-kind">Section</span>
     ${options ? `
     <div class="bshell-props-field">
-      <label class="bshell-props-label">עיצוב (Layout)</label>
+      <label class="bshell-props-label">${bsL("עיצוב (Layout)", "Layout")}</label>
       <select id="bshell-prop-variant">
-        ${Object.entries(options).map(([key, o]) => `<option value="${key}"${key === current ? " selected" : ""}>${escapeHtmlS(o.label)}</option>`).join("")}
+        ${Object.entries(options).map(([key, o]) => `<option value="${key}"${key === current ? " selected" : ""}>${escapeHtmlS(bsLabel(o.label))}</option>`).join("")}
       </select>
-    </div>` : `<p style="font-size:12.5px; color:var(--text-muted); margin:0 0 16px;">לחלק הזה אין כרגע עיצובים חלופיים.</p>`}
+    </div>` : `<p style="font-size:12.5px; color:var(--text-muted); margin:0 0 16px;">${bsL("לחלק הזה אין כרגע עיצובים חלופיים.", "This section has no alternative layouts yet.")}</p>`}
     <div class="bshell-props-field">
       <div class="bshell-toggle-row">
-        <label class="bshell-props-label" style="margin:0;">הצגת החלק הזה</label>
+        <label class="bshell-props-label" style="margin:0;">${bsL("הצגת החלק הזה", "Show this section")}</label>
         <label class="bshell-switch">
           <input type="checkbox" id="bshell-prop-visible"${reallyVisible ? " checked" : ""}>
           <span class="bshell-switch-track"></span>
@@ -906,7 +913,7 @@ function bshellBsdHeroRow(d) {
   return `
     <div class="bshell-props-field">
         <div class="bshell-toggle-row">
-          <label class="bshell-props-label" style="margin:0;">הצגת בס"ד בראש האתר</label>
+          <label class="bshell-props-label" style="margin:0;">${bsL("הצגת בס\"ד בראש האתר", "Show \"B'H\" (בס\"ד) at the top of the site")}</label>
           <label class="bshell-switch">
             <input type="checkbox" id="bshell-prop-bsd"${d.showBsd ? " checked" : ""}>
             <span class="bshell-switch-track"></span>
@@ -928,12 +935,12 @@ function bshellPropsHtmlForSettings() {
   const fontKeys = (typeof SITE_FONTS === "object") ? Object.keys(SITE_FONTS) : [];
   const hasWhatsapp = !d.noWhatsapp;
   return `
-    <span class="bshell-props-kind">הגדרות האתר</span>
+    <span class="bshell-props-kind">${bsL("הגדרות האתר", "Site settings")}</span>
 
     <div class="bshell-settings-group">
       <div class="bshell-props-field">
         <div class="bshell-toggle-row">
-          <label class="bshell-props-label" style="margin:0;">הצגת בס"ד בראש האתר</label>
+          <label class="bshell-props-label" style="margin:0;">${bsL("הצגת בס\"ד בראש האתר", "Show \"B'H\" (בס\"ד) at the top of the site")}</label>
           <label class="bshell-switch">
             <input type="checkbox" id="bshell-set-bsd"${d.showBsd ? " checked" : ""}>
             <span class="bshell-switch-track"></span>
@@ -941,13 +948,13 @@ function bshellPropsHtmlForSettings() {
           </label>
         </div>
       </div>
-      <p class="bshell-settings-field-hint">כבוי כברירת מחדל. מופיע קטן בפינה הימנית העליונה של כל עמודי האתר.</p>
+      <p class="bshell-settings-field-hint">${bsL("כבוי כברירת מחדל. מופיע קטן בפינה הימנית העליונה של כל עמודי האתר.", "Off by default. Appears small in the top corner of every page of the site.")}</p>
     </div>
 ${(typeof DK_AUTOMATE_ENABLED !== "undefined" && DK_AUTOMATE_ENABLED === true) ? `
     <div class="bshell-settings-group">
       <div class="bshell-props-field">
         <div class="bshell-toggle-row">
-          <label class="bshell-props-label" style="margin:0;" for="bshell-set-leadform">טופס "השאירו פרטים"</label>
+          <label class="bshell-props-label" style="margin:0;" for="bshell-set-leadform">${bsL("טופס \"השאירו פרטים\"", "\"Leave your details\" form")}</label>
           <label class="bshell-switch">
             <input type="checkbox" id="bshell-set-leadform"${d.leadForm === true ? " checked" : ""}>
             <span class="bshell-switch-track"></span>
@@ -955,18 +962,18 @@ ${(typeof DK_AUTOMATE_ENABLED !== "undefined" && DK_AUTOMATE_ENABLED === true) ?
           </label>
         </div>
       </div>
-      <p class="bshell-settings-field-hint">כבוי כברירת מחדל. מוסיף לאתר כפתור "השאירו פרטים". כל פנייה נכנסת ל-DeskKit Automate כליד חדש, ואם הפעלת את "טיפול בליד חדש" — הלקוח מקבל מענה אוטומטי ואת/ה התראה. אחרי ההפעלה צריך לפרסם את האתר מחדש.</p>
+      <p class="bshell-settings-field-hint">${bsL("כבוי כברירת מחדל. מוסיף לאתר כפתור \"השאירו פרטים\". כל פנייה נכנסת ל-DeskKit Automate כליד חדש, ואם הפעלת את \"טיפול בליד חדש\" — הלקוח מקבל מענה אוטומטי ואת/ה התראה. אחרי ההפעלה צריך לפרסם את האתר מחדש.", "Off by default. Adds a \"Leave your details\" button to the site. Every inquiry goes into DeskKit Automate as a new lead, and if you turned on \"New lead handling\", the customer gets an automatic reply and you get a notification. After turning it on, republish the site.")}</p>
     </div>` : ""}
 
     <div class="bshell-settings-group">
-      <div class="bshell-settings-group-title">פרטי קשר</div>
+      <div class="bshell-settings-group-title">${bsL("פרטי קשר", "Contact details")}</div>
       <div class="bshell-props-field">
-        <label class="bshell-props-label">טלפון</label>
+        <label class="bshell-props-label">${bsL("טלפון", "Phone")}</label>
         <input type="text" id="bshell-set-phone" dir="ltr" value="${escapeHtmlS(d.phone || "")}">
       </div>
       <div class="bshell-props-field">
         <div class="bshell-toggle-row">
-          <label class="bshell-props-label" style="margin:0;">המספר הזה הוא גם הוואטסאפ שלי</label>
+          <label class="bshell-props-label" style="margin:0;">${bsL("המספר הזה הוא גם הוואטסאפ שלי", "This number is also my WhatsApp")}</label>
           <label class="bshell-switch">
             <input type="checkbox" id="bshell-set-has-whatsapp"${hasWhatsapp ? " checked" : ""}>
             <span class="bshell-switch-track"></span>
@@ -975,34 +982,42 @@ ${(typeof DK_AUTOMATE_ENABLED !== "undefined" && DK_AUTOMATE_ENABLED === true) ?
         </div>
       </div>
       <div class="bshell-props-field">
-        <label class="bshell-props-label">מספר וואטסאפ אחר (אם שונה מהטלפון)</label>
+        <label class="bshell-props-label">${bsL("מספר וואטסאפ אחר (אם שונה מהטלפון)", "Other WhatsApp number (if different from phone)")}</label>
         <input type="text" id="bshell-set-whatsapp" dir="ltr" value="${escapeHtmlS(d.whatsapp || "")}">
       </div>
       <div class="bshell-props-field">
-        <label class="bshell-props-label">מייל</label>
+        <label class="bshell-props-label">${bsL("מייל", "Email")}</label>
         <input type="text" id="bshell-set-email" dir="ltr" value="${escapeHtmlS(d.email || "")}">
       </div>
       <div class="bshell-props-field">
-        <label class="bshell-props-label">כתובת</label>
+        <label class="bshell-props-label">${bsL("כתובת", "Address")}</label>
         <input type="text" id="bshell-set-address" value="${escapeHtmlS(d.address || "")}">
       </div>
     </div>
 
     <div class="bshell-settings-group">
-      <div class="bshell-settings-group-title">עיצוב ומותג</div>
+      <div class="bshell-settings-group-title">${bsL("עיצוב ומותג", "Design & brand")}</div>
       <div class="bshell-props-field">
-        <label class="bshell-props-label">צבע ראשי</label>
+        <label class="bshell-props-label">${bsL("צבע ראשי", "Primary color")}</label>
         <input type="color" id="bshell-set-color" value="${escapeHtmlS(d.primaryColor || "#1F5C4E")}">
       </div>
       <div class="bshell-props-field">
-        <label class="bshell-props-label">גופן</label>
+        <label class="bshell-props-label">${bsL("גופן", "Font")}</label>
         <select id="bshell-set-font">
-          ${fontKeys.map((k) => `<option value="${k}"${(d.fontFamily || "heebo") === k ? " selected" : ""}>${escapeHtmlS(SITE_FONTS[k].name)}</option>`).join("")}
+          ${fontKeys.map((k) => `<option value="${k}"${(d.fontFamily || "heebo") === k ? " selected" : ""}>${escapeHtmlS(bsLabel(SITE_FONTS[k].name))}</option>`).join("")}
         </select>
       </div>
       <div class="bshell-props-field">
+        <label class="bshell-props-label" for="bshell-set-site-lang">${bsL("שפת האתר", "Site language")}</label>
+        <select id="bshell-set-site-lang">
+          <option value="he"${d.siteLang === "en" ? "" : " selected"}>${bsL("עברית", "Hebrew")}</option>
+          <option value="en"${d.siteLang === "en" ? " selected" : ""}>English</option>
+        </select>
+        <p class="bshell-settings-field-hint">${bsL("השפה של האתר עצמו: כיוון הטקסט והכותרות והתוויות שמופיעות כברירת מחדל. הטקסטים שכתבתם לא משתנים.", "The language of the site itself: text direction and the default headings and labels. Text you wrote stays as it is.")}</p>
+      </div>
+      <div class="bshell-props-field">
         <div class="bshell-toggle-row">
-          <label class="bshell-props-label" style="margin:0;">הסתרת שורת זכויות יוצרים בתחתית</label>
+          <label class="bshell-props-label" style="margin:0;">${bsL("הסתרת שורת זכויות יוצרים בתחתית", "Hide the copyright line at the bottom")}</label>
           <label class="bshell-switch">
             <input type="checkbox" id="bshell-set-hide-copyright"${d.hideCopyright ? " checked" : ""}>
             <span class="bshell-switch-track"></span>
@@ -1013,32 +1028,32 @@ ${(typeof DK_AUTOMATE_ENABLED !== "undefined" && DK_AUTOMATE_ENABLED === true) ?
     </div>
 
     <div class="bshell-settings-group">
-      <div class="bshell-settings-group-title">תמונות ומדיה</div>
+      <div class="bshell-settings-group-title">${bsL("תמונות ומדיה", "Images & media")}</div>
       <div class="bshell-props-field">
-        <label class="bshell-props-label">תמונה ראשית</label>
+        <label class="bshell-props-label">${bsL("תמונה ראשית", "Main image")}</label>
         <div class="photo-row">
-          <div class="photo-preview" id="bshell-set-photo-preview">${d.heroImage ? `<img src="${escapeHtmlS(d.heroImage)}" alt="תמונת הכותרת">` : `<span class="site-photo-placeholder">🖼️</span>`}</div>
+          <div class="photo-preview" id="bshell-set-photo-preview">${d.heroImage ? `<img src="${escapeHtmlS(d.heroImage)}" alt="${bsL("תמונת הכותרת", "Header image")}">` : `<span class="site-photo-placeholder">🖼️</span>`}</div>
           <div class="photo-actions">
-            <label class="btn-mini photo-upload-btn" for="bshell-set-photo">העלאת תמונה</label>
+            <label class="btn-mini photo-upload-btn" for="bshell-set-photo">${bsL("העלאת תמונה", "Upload image")}</label>
             <input type="file" id="bshell-set-photo" accept="image/*" style="display:none;">
-            <button type="button" class="photo-remove" id="bshell-set-photo-remove">הסרת תמונה</button>
+            <button type="button" class="photo-remove" id="bshell-set-photo-remove">${bsL("הסרת תמונה", "Remove image")}</button>
           </div>
         </div>
       </div>
       <div class="bshell-props-field">
-        <label class="bshell-props-label">גלריית תמונות (עד ${SITE_GALLERY_MAX})</label>
-        <p class="bshell-settings-field-hint">אם יש תמונות בגלריה, הן מתחלפות אוטומטית במקום התמונה הראשית.</p>
+        <label class="bshell-props-label">${bsL(`גלריית תמונות (עד ${SITE_GALLERY_MAX})`, `Image gallery (up to ${SITE_GALLERY_MAX})`)}</label>
+        <p class="bshell-settings-field-hint">${bsL("אם יש תמונות בגלריה, הן מתחלפות אוטומטית במקום התמונה הראשית.", "If the gallery has images, they rotate automatically in place of the main image.")}</p>
         <div id="bshell-set-gallery-preview" class="site-gallery-preview">${bshellGalleryPreviewHtml(d)}</div>
-        <label class="btn-mini photo-upload-btn" for="bshell-set-gallery">הוספת תמונה לגלריה</label>
+        <label class="btn-mini photo-upload-btn" for="bshell-set-gallery">${bsL("הוספת תמונה לגלריה", "Add image to gallery")}</label>
         <input type="file" id="bshell-set-gallery" accept="image/*" multiple style="display:none;">
       </div>
       <div class="bshell-props-field">
-        <label class="bshell-props-label">קישור לסרטון (יוטיוב)</label>
+        <label class="bshell-props-label">${bsL("קישור לסרטון (יוטיוב)", "Video link (YouTube)")}</label>
         <input type="text" id="bshell-set-video" dir="ltr" placeholder="https://youtube.com/watch?v=..." value="${escapeHtmlS(d.videoUrl || "")}">
       </div>
       <div class="bshell-props-field">
         <div class="bshell-toggle-row">
-          <label class="bshell-props-label" style="margin:0;">הצגת הסרטון כרקע לכותרת הראשית</label>
+          <label class="bshell-props-label" style="margin:0;">${bsL("הצגת הסרטון כרקע לכותרת הראשית", "Play the video behind the main heading")}</label>
           <label class="bshell-switch">
             <input type="checkbox" id="bshell-set-video-bg"${d.heroVideoBg ? " checked" : ""}>
             <span class="bshell-switch-track"></span>
@@ -1051,7 +1066,7 @@ ${(typeof DK_AUTOMATE_ENABLED !== "undefined" && DK_AUTOMATE_ENABLED === true) ?
 function bshellGalleryPreviewHtml(d) {
   const images = d.heroImages || [];
   return images.map((src, i) =>
-    `<div class="site-gallery-thumb" data-idx="${i}"><img src="${escapeHtmlS(src)}" alt="תמונה ${i + 1} בגלריה"><button type="button" data-action="bshell-remove-gallery-photo" aria-label="הסרה">✕</button></div>`
+    `<div class="site-gallery-thumb" data-idx="${i}"><img src="${escapeHtmlS(src)}" alt="${bsL(`תמונה ${i + 1} בגלריה`, `Gallery image ${i + 1}`)}"><button type="button" data-action="bshell-remove-gallery-photo" aria-label="${bsL("הסרה", "Remove")}">✕</button></div>`
   ).join("");
 }
 
@@ -1284,6 +1299,19 @@ function bshellWireSettingsProps() {
     });
   }
 
+  // Site language (d.siteLang — see site-templates.js): "en" for an
+  // English site, no key at all for Hebrew (the default), so an existing
+  // Hebrew site's saved data never changes just by opening settings.
+  const siteLangEl = document.getElementById("bshell-set-site-lang");
+  if (siteLangEl) {
+    siteLangEl.addEventListener("change", () => {
+      bshellSnapshot();
+      if (siteLangEl.value === "en") d.siteLang = "en"; else delete d.siteLang;
+      bshellRenderCanvas();
+      bshellScheduleSave();
+    });
+  }
+
   const bsdEl = document.getElementById("bshell-set-bsd");
   if (bsdEl) {
     bsdEl.addEventListener("change", () => {
@@ -1330,14 +1358,14 @@ function bshellWireSettingsProps() {
       const file = e.target.files[0];
       if (!file) return;
       if (file.size > 6 * 1024 * 1024) {
-        alert("התמונה גדולה מדי — בחרו קובץ עד 6MB.");
+        alert(bsL("התמונה גדולה מדי — בחרו קובץ עד 6MB.", "The image is too large — choose a file up to 6MB."));
         e.target.value = "";
         return;
       }
       bshellSnapshot();
       const url = await uploadSiteImage(file, "hero");
       if (!url) {
-        alert("העלאת התמונה נכשלה, נסו שוב.");
+        alert(bsL("העלאת התמונה נכשלה, נסו שוב.", "The image upload failed, please try again."));
         bshellUndoStack.pop();
         bshellSyncUndoButtons();
         e.target.value = "";
@@ -1372,7 +1400,7 @@ function bshellWireSettingsProps() {
       d.heroImages = d.heroImages || [];
       const roomLeft = SITE_GALLERY_MAX - d.heroImages.length;
       if (roomLeft <= 0) {
-        alert(`אפשר עד ${SITE_GALLERY_MAX} תמונות בגלריה — הסירו אחת כדי להוסיף חדשה.`);
+        alert(bsL(`אפשר עד ${SITE_GALLERY_MAX} תמונות בגלריה — הסירו אחת כדי להוסיף חדשה.`, `The gallery holds up to ${SITE_GALLERY_MAX} images — remove one to add a new one.`));
         bshellUndoStack.pop();
         bshellSyncUndoButtons();
         e.target.value = "";
@@ -1380,12 +1408,12 @@ function bshellWireSettingsProps() {
       }
       const toAdd = files.slice(0, roomLeft);
       if (files.length > toAdd.length) {
-        alert(`אפשר עד ${SITE_GALLERY_MAX} תמונות בגלריה — נוספו רק ${toAdd.length} מתוך ${files.length} שבחרתם.`);
+        alert(bsL(`אפשר עד ${SITE_GALLERY_MAX} תמונות בגלריה — נוספו רק ${toAdd.length} מתוך ${files.length} שבחרתם.`, `The gallery holds up to ${SITE_GALLERY_MAX} images — only ${toAdd.length} of the ${files.length} you chose were added.`));
       }
       let remaining = toAdd.length;
       toAdd.forEach(async (file) => {
         if (file.size > 6 * 1024 * 1024) {
-          alert(`"${file.name}" גדולה מדי — בחרו קובץ עד 6MB.`);
+          alert(bsL(`"${file.name}" גדולה מדי — בחרו קובץ עד 6MB.`, `"${file.name}" is too large — choose a file up to 6MB.`));
           remaining -= 1;
           if (remaining === 0) { bshellRenderProperties(); bshellRenderCanvas(); bshellScheduleSave(); }
           return;
@@ -1395,7 +1423,7 @@ function bshellWireSettingsProps() {
         // gallery upload already uses.
         const name = "gallery-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
         const url = await uploadSiteImage(file, name);
-        if (!url) alert(`העלאת "${file.name}" נכשלה, נסו שוב.`);
+        if (!url) alert(bsL(`העלאת "${file.name}" נכשלה, נסו שוב.`, `Uploading "${file.name}" failed, please try again.`));
         else d.heroImages.push(url);
         remaining -= 1;
         if (remaining === 0) { bshellRenderProperties(); bshellRenderCanvas(); bshellScheduleSave(); }

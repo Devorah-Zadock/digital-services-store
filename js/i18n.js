@@ -235,7 +235,36 @@ const I18N = {
     terms_t12_p: "אנחנו רשאים לעדכן תנאים אלה מעת לעת. שימוש באתר לאחר עדכון מהווה הסכמה לתנאים המעודכנים. מומלץ לבדוק מדי פעם את העמוד הזה.",
     terms_t13_h: "13. קניין רוחני",
     terms_t13_p: "כל התבניות, הבילדרים, העיצובים והתוכן באתר הם קניינה הרוחני של DeskKit. השימוש בהם מותר רק כפי שמפורט בסעיף הרישיון לעיל.",
-    terms_t14_h: "14. יצירת קשר",
+    terms_updated: "עודכן לאחרונה: 12 באוקטובר 2026",
+    terms_t15_h: "14. DeskKit Automate — אוטומציות לעסק",
+    terms_t15_p1: "Automate מאפשר לכם להפעיל תהליכים אוטומטיים לניהול פניות, הצעות מחיר, חשבוניות ולקוחות, כולל שליחת מיילים ללקוחות שלכם בשם העסק שלכם. אתם אחראים לתוכן ההודעות ולכך שמותר לכם לפנות לאנשים שאליהם הן נשלחות: הודעות שירות על פנייה, הצעה או חשבונית שהלקוח עצמו ביקש — מותרות בדרך כלל; פניות שיווקיות (למשל בקשת המלצה, פנייה חוזרת אחרי זמן, מבצעים) עשויות להיחשב \"דבר פרסומת\" לפי חוק התקשורת (סעיף 30א) ולפי חוקים דומים במדינות אחרות, ומחייבות הסכמה מראש של הנמען. לכן אוטומציות כאלה כבויות כברירת מחדל, ובכל מייל ללקוח יש קישור להסרה — ומי שהסיר את עצמו לא יקבל עוד מיילים אוטומטיים מהעסק שלכם.",
+    terms_t15_p2: "DeskKit לא מתחייבת שכל מייל יגיע ליעדו (סינון ספאם, כתובת שגויה או מגבלות של ספק הדואר). סימון \"שולם\" בחשבונית הוא סימון שלכם — DeskKit לא מחוברת לבנק ולא מאמתת תשלומים. אישור הצעת מחיר בקישור משקף לחיצה של הלקוח ואינו חתימה דיגיטלית. השימוש כפוף למכסות חודשיות לפי סוג החשבון, ו-DeskKit רשאית לעצור שליחה באופן זמני כדי לשמור על תקינות השירות ועל המוניטין של כתובות השליחה.",
+    terms_t16_h: "15. אתרים שנבנו ב-DeskKit וטופס הפניות",
+    terms_t16_p: "התוכן באתר שבניתם, כולל טקסטים, תמונות ופרטי קשר, הוא באחריותכם, וכך גם מדיניות הפרטיות של האתר שלכם כלפי המבקרים בו. אם הפעלתם באתר את טופס \"השאירו פרטים\", הפרטים שמבקר משאיר נשמרים בחשבון שלכם ב-DeskKit ומשמשים רק אתכם, כדי לחזור אליו. השתמשו בהם רק לטיפול בפנייה, אלא אם המבקר הסכים לקבל מכם יותר מזה.",
+    terms_priv10_h: "מידע על הלקוחות שלכם (Automate וניהול לקוחות)",
+    terms_priv10_p: "כשאתם משתמשים בניהול הלקוחות או באוטומציות, אתם שומרים ב-DeskKit פרטים של הלקוחות שלכם — שם, טלפון, מייל, ההודעה שהשאירו, סכומי עסקה, משימות והערות. לגבי המידע הזה אתם בעלי המאגר והאחראים עליו, ו-DeskKit רק מעבדת אותו עבורכם ולפי ההוראות שלכם: הוא נשמר בחשבון שלכם בלבד, לא משמש לשום מטרה אחרת, לא נמכר ולא מקבל פרסומות מ-DeskKit. רישומי הפעילות של האוטומציות (מה נשלח ומתי) נשמרים עד 90 יום ונמחקים אוטומטית; מחיקת לקוח או מחיקת החשבון מוחקות את המידע מיד, ועותקים בגיבוי המוצפן נמחקים תוך 6 חודשים.",
+    terms_priv11_h: "מיילים שנשלחים בשמכם, והסרה",
+    terms_priv11_p: "מיילים שהאוטומציות שולחות ללקוחות שלכם יוצאים דרך Resend, בשם העסק שלכם, ותשובות מגיעות ישירות אליכם. בכל מייל כזה יש קישור להסרה: מי שלוחץ עליו לא יקבל עוד מיילים אוטומטיים מהעסק שלכם, וההסרה נשמרת בחשבון שלכם. לנמענים: אם קיבלתם מייל כזה ואתם רוצים שהמידע עליכם יימחק או יתוקן — פנו לעסק ששלח אותו; הוא האחראי על המידע.",
+    terms_priv12_h: "טופס הפניות באתרים שנבנו ב-DeskKit",
+    terms_priv12_p: "באתר שבעליו הפעילו את טופס \"השאירו פרטים\", הפרטים שממלאים בטופס (שם, טלפון, מייל והודעה) נשלחים לבעל האתר ונשמרים בחשבון שלו ב-DeskKit, כדי שיוכל לחזור אליכם. כדי למנוע ספאם, הטופס משתמש בבדיקה הבלתי נראית של Cloudflare Turnstile.",
+    terms_priv13_h: "משתמשים מחוץ לישראל (כולל האיחוד האירופי)",
+    terms_priv13_p: "אנחנו מעבדים את המידע שלכם כדי לתת את השירות שביקשתם (ביצוע חוזה), לשמירה על אבטחת השירות ומניעת שימוש לרעה (אינטרס לגיטימי), ולמיילים שיווקיים — רק לפי הסכמה, שאפשר לבטל בכל עת. יש לכם זכות לעיין במידע, לתקן אותו, למחוק אותו, לקבל אותו בפורמט נפוץ, להתנגד לעיבוד מסוים, ולהגיש תלונה לרשות הגנת המידע במדינה שלכם. הספקים שלנו (Supabase, Cloudflare, Resend, Google, OpenAI, Gumroad) עשויים לשמור מידע בשרתים מחוץ למדינה שלכם, כולל בארה\"ב ובאיחוד האירופי, תחת אמצעי הגנה שהם מספקים (כמו סעיפי חוזה סטנדרטיים). לכל בקשה בנושא פרטיות — דרך עמוד יצירת הקשר.",
+    auto_pub_title: "DeskKit Automate — בקרוב", auto_pub_pill: "✨ בקרוב",
+    auto_pub_lead: "מה הייתם רוצים שיקרה אוטומטית בעסק שלכם? DeskKit Automate יחבר בין הכלים שלכם לבין מה שקורה בעסק — בלי קוד.",
+    auto_pub_ex_lbl: "לדוגמה:", auto_pub_ex: "\"כשמגיע מייל עם חשבונית, תשמור אותה ותכניס את הפרטים לגליון.\"",
+    auto_pub_f1: "הבנה", auto_pub_f2: "חיבור", auto_pub_f3: "הגדרה", auto_pub_f4: "בדיקה", auto_pub_f5: "הפעלה",
+    auto_pub_note: "אנחנו עדיין בונים את זה. בינתיים, כל הכלים הקיימים — אתרים, קורות חיים, הצעות מחיר וחשבוניות — ממשיכים לעבוד כרגיל ב",
+    cvb_checking: "בודקים חיבור…", cvb_crumb: "בילדר קורות חיים", cvb_h1: "התאימו אישית ותצפו בזמן אמת",
+    cvb_pick_tpl: "בחרו תבנית", cvb_main_color: "צבע ראשי", cvb_ai_improve: "✨ שפר עם AI",
+    cvb_download_free: "הורדת PDF — חינם", cvb_ats_full: "🎯 בדיקת התאמה למשרה (ATS)", cvb_canvas_title: "עריכת קורות החיים",
+    product_banner_price: "199 ₪ חד-פעמי",
+    crmp_demo_n1: "דנה כהן",
+    crmp_demo_n2: "עידו לוי",
+    crmp_demo_n3: "מיכל אזולאי",
+    crmp_demo_n4: "יוסי מזרחי",
+    wpp_demo_biz: "העסק שלי",
+    wpp_demo_services: "שירותים",
+    terms_t14_h: "16. יצירת קשר",
     terms_t14_p1: "שאלה, בעיה עם מוצר, או כל דבר אחר — ",
     terms_contact_link: "צרו קשר",
     terms_t14_p2: " ונחזור אליכם בהקדם.",
@@ -751,7 +780,36 @@ const I18N = {
     terms_t12_p: "We may update these terms from time to time. Continued use of the site after an update constitutes acceptance of the updated terms. We recommend checking this page occasionally.",
     terms_t13_h: "13. Intellectual property",
     terms_t13_p: "All templates, builders, designs and content on the site are the intellectual property of DeskKit. Their use is permitted only as set out in the license section above.",
-    terms_t14_h: "14. Contact",
+    terms_updated: "Last updated: October 12, 2026",
+    terms_t15_h: "14. DeskKit Automate — business automations",
+    terms_t15_p1: "Automate lets you run automatic workflows for leads, quotes, invoices and clients, including emails to your clients sent in your business's name. You are responsible for the content of those messages and for having the right to contact the people who receive them: service messages about an enquiry, quote or invoice the client asked for are generally allowed; marketing messages (for example a referral request, reaching out again after a while, promotions) may count as advertising under Israel's Communications Law (section 30A) and similar laws elsewhere (such as CAN-SPAM, the GDPR and the ePrivacy rules), and require the recipient's prior consent. That is why such automations are off by default, and every email to a client includes an unsubscribe link — anyone who unsubscribes gets no more automatic emails from your business.",
+    terms_t15_p2: "DeskKit does not guarantee that every email is delivered (spam filters, wrong addresses or email-provider limits). Marking an invoice \"paid\" is your own mark — DeskKit is not connected to any bank and does not verify payments. A quote approved through its link reflects the client's click and is not a digital signature. Use is subject to monthly limits according to your account type, and DeskKit may pause sending temporarily to keep the service healthy and protect the reputation of its sending addresses.",
+    terms_t16_h: "15. Websites built with DeskKit and the lead form",
+    terms_t16_p: "The content of a website you build — texts, images and contact details — is your responsibility, as is your site's privacy notice to its visitors. If you turn on the \"Get in touch\" form on your site, the details a visitor leaves are stored in your DeskKit account and are used only by you, to get back to them. Use them only to handle the enquiry, unless the visitor agreed to hear more from you.",
+    terms_priv10_h: "Data about your clients (Automate and client management)",
+    terms_priv10_p: "When you use client management or automations, you store details about your clients in DeskKit — name, phone, email, the message they left, deal amounts, tasks and notes. For that data you are the controller (the database owner) and DeskKit only processes it on your behalf and on your instructions: it is kept in your account only, used for nothing else, never sold, and never used by DeskKit for advertising. Automation activity logs (what was sent and when) are kept for up to 90 days and then deleted automatically; deleting a client or your account deletes the data at once, and copies in the encrypted backup are deleted within 6 months.",
+    terms_priv11_h: "Emails sent on your behalf, and unsubscribing",
+    terms_priv11_p: "Emails your automations send to your clients go out through Resend, in your business's name, and replies come straight to you. Every such email includes an unsubscribe link: whoever clicks it gets no more automatic emails from your business, and the opt-out is kept in your account. For recipients: if you received such an email and want your data deleted or corrected, contact the business that sent it — it is responsible for that data.",
+    terms_priv12_h: "The lead form on websites built with DeskKit",
+    terms_priv12_p: "On a site whose owner turned on the \"Get in touch\" form, what you enter in the form (name, phone, email and message) is sent to the site owner and stored in their DeskKit account so they can get back to you. To prevent spam, the form uses Cloudflare Turnstile's invisible check.",
+    terms_priv13_h: "Users outside Israel (including the EU)",
+    terms_priv13_p: "We process your data to provide the service you asked for (performance of a contract), to keep the service secure and prevent abuse (legitimate interests), and for marketing emails only with your consent, which you can withdraw at any time. You have the right to access your data, correct it, delete it, receive it in a common format, object to certain processing, and complain to the data-protection authority in your country. Our providers (Supabase, Cloudflare, Resend, Google, OpenAI, Gumroad) may store data on servers outside your country, including in the US and the EU, under the safeguards they provide (such as Standard Contractual Clauses). For any privacy request — use the contact page.",
+    auto_pub_title: "DeskKit Automate — coming soon", auto_pub_pill: "✨ Coming soon",
+    auto_pub_lead: "What would you like to happen automatically in your business? DeskKit Automate will connect your tools with what happens in your business — no code.",
+    auto_pub_ex_lbl: "For example:", auto_pub_ex: "\"When an email with an invoice arrives, save it and put the details into a spreadsheet.\"",
+    auto_pub_f1: "Understand", auto_pub_f2: "Connect", auto_pub_f3: "Set up", auto_pub_f4: "Test", auto_pub_f5: "Run",
+    auto_pub_note: "We're still building it. Meanwhile, all the existing tools — websites, CVs, quotes and invoices — keep working as usual in ",
+    cvb_checking: "Checking your connection…", cvb_crumb: "CV builder", cvb_h1: "Customize and preview in real time",
+    cvb_pick_tpl: "Choose a template", cvb_main_color: "Main color", cvb_ai_improve: "✨ Improve with AI",
+    cvb_download_free: "Download PDF — free", cvb_ats_full: "🎯 Job-match check (ATS)", cvb_canvas_title: "Editing the CV",
+    product_banner_price: "₪199 one-time",
+    crmp_demo_n1: "Dana Cohen",
+    crmp_demo_n2: "Ido Levi",
+    crmp_demo_n3: "Michal Azoulay",
+    crmp_demo_n4: "Yossi Mizrahi",
+    wpp_demo_biz: "My Business",
+    wpp_demo_services: "Services",
+    terms_t14_h: "16. Contact",
     terms_t14_p1: "A question, a problem with a product, or anything else — ",
     terms_contact_link: "get in touch",
     terms_t14_p2: " and we'll get back to you soon.",
@@ -1018,6 +1076,14 @@ const I18N = {
   },
 };
 
+// Per-area dictionaries (js/i18n-<area>.js), loaded BEFORE this file, each
+// pushing { he: {...}, en: {...} } onto window.I18N_EXTRA — so every app area
+// keeps its own strings without everyone editing this one big file.
+(window.I18N_EXTRA || []).forEach((extra) => {
+  if (extra && extra.he) Object.assign(I18N.he, extra.he);
+  if (extra && extra.en) Object.assign(I18N.en, extra.en);
+});
+
 const I18N_LANG_KEY = "deskkit_lang";
 
 function applyLang(lang) {
@@ -1053,6 +1119,16 @@ function applyLang(lang) {
   // data-i18n sweep above — they listen for this and re-render themselves
   // in the new language instead.
   document.dispatchEvent(new CustomEvent("deskkit:langchange", { detail: { lang } }));
+}
+
+// For text built in JavaScript: dkL("שמירה", "Save") → the current language.
+// dkT("key", "fallback") → a dictionary entry. Both safe to call anywhere.
+function dkL(he, en) {
+  return currentLang() === "en" && en !== undefined && en !== null && en !== "" ? en : he;
+}
+function dkT(key, fallback) {
+  const d = I18N[currentLang()] || I18N.he;
+  return d[key] !== undefined ? d[key] : (I18N.he[key] !== undefined ? I18N.he[key] : (fallback || key));
 }
 
 function currentLang() {

@@ -29,7 +29,7 @@ async function siteAiFieldImprove(btn) {
     if (noteHost) {
       const note = document.createElement("div");
       note.className = "ai-limit-note";
-      note.textContent = "צריך לכתוב קודם טיוטה — אז AI יעזור לשפר אותה.";
+      note.textContent = dkL("צריך לכתוב קודם טיוטה — אז AI יעזור לשפר אותה.", "Write a draft first — then the AI can help improve it.");
       noteHost.appendChild(note);
     }
     return;
@@ -37,7 +37,7 @@ async function siteAiFieldImprove(btn) {
 
   const originalLabel = btn.textContent;
   btn.disabled = true;
-  btn.textContent = "משפר...";
+  btn.textContent = dkL("משפר...", "Improving...");
 
   try {
     const { data: sessionData } = await supabaseClient.auth.getSession();
@@ -47,18 +47,18 @@ async function siteAiFieldImprove(btn) {
     const res = await fetch(SUPABASE_URL + "/functions/v1/ai-rewrite", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + token, apikey: SUPABASE_ANON_KEY },
-      body: JSON.stringify({ field: fieldKind, text, title: siteState.data.businessName, lang: "he" }),
+      body: JSON.stringify({ field: fieldKind, text, title: siteState.data.businessName, lang: siteState.data.siteLang === "en" ? "en" : "he" }),
     });
     const data = await res.json();
-    if (!res.ok || data.error) throw new Error(data.error || "שגיאה לא צפויה");
+    if (!res.ok || data.error) throw new Error(data.error || dkL("שגיאה לא צפויה", "Unexpected error"));
 
     if (data.limitReached) {
       if (noteHost) {
         const note = document.createElement("div");
         note.className = "ai-limit-note";
         note.innerHTML = data.isPro
-          ? "הגעת למכסת השימוש ההוגן היומית. אפשר להמשיך מחר."
-          : "הגעת למכסת הניסיונות החינמיים לשיפור טקסט עם AI. רוצה להמשיך? שדרג לגרסת Pro בתשלום חד-פעמי!";
+          ? dkL("הגעת למכסת השימוש ההוגן היומית. אפשר להמשיך מחר.", "You've reached today's fair-use limit. You can continue tomorrow.")
+          : dkL("הגעת למכסת הניסיונות החינמיים לשיפור טקסט עם AI. רוצה להמשיך? שדרג לגרסת Pro בתשלום חד-פעמי!", "You've used your free AI text-improvement tries. Want to continue? Upgrade to Pro with a one-time payment!");
         noteHost.appendChild(note);
       }
       return;
@@ -75,7 +75,7 @@ async function siteAiFieldImprove(btn) {
     if (noteHost) {
       const note = document.createElement("div");
       note.className = "ai-limit-note";
-      note.textContent = "משהו השתבש בשיפור הטקסט. אפשר לנסות שוב בעוד רגע.";
+      note.textContent = dkL("משהו השתבש בשיפור הטקסט. אפשר לנסות שוב בעוד רגע.", "Something went wrong improving the text. Please try again in a moment.");
       noteHost.appendChild(note);
     }
   } finally {

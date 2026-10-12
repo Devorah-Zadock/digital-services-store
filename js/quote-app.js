@@ -4,6 +4,9 @@
    fields for each new quote. Rendering is shared with the private
    single-business tool via quote-render.js's renderQuoteHtml(). */
 
+/* Template names/descriptions: English when the UI is in English. */
+function qL(he, en) { return typeof dkL === "function" && en ? dkL(he, en) : he; }
+
 let currentUser = null;
 let currentProfile = null;
 let pendingLogoUrl = null; // set once a newly-picked logo finishes uploading
@@ -63,15 +66,15 @@ function showSection(id) {
 function quoteTplCardHtml(key, t) {
   return `
     <div class="card" data-cat="${t.categorySlug}">
-      <div class="thumb"><img src="images/previews/quote-${key}.webp" alt="${escapeHtmlQ(t.label)}" loading="lazy"></div>
+      <div class="thumb"><img src="images/previews/quote-${key}.webp" alt="${escapeHtmlQ(qL(t.label, t.labelEn))}" loading="lazy"></div>
       <div class="body">
         <div class="card-meta">
-          <span class="tag">${escapeHtmlQ(t.category)}</span>
-          <span class="tag tag-free">חינם</span>
+          <span class="tag">${escapeHtmlQ(qL(t.category, t.categoryEn))}</span>
+          <span class="tag tag-free">${dkL("חינם", "Free")}</span>
         </div>
-        <h3>${escapeHtmlQ(t.label)}</h3>
-        <p style="font-size:13px; color:var(--grey); margin:0; flex:1;">${escapeHtmlQ(t.desc)}</p>
-        <a href="quote-app.html?template=${key}" class="btn btn-teal card-cta">בחירה ועריכה</a>
+        <h3>${escapeHtmlQ(qL(t.label, t.labelEn))}</h3>
+        <p style="font-size:13px; color:var(--grey); margin:0; flex:1;">${escapeHtmlQ(qL(t.desc, t.descEn))}</p>
+        <a href="quote-app.html?template=${key}" class="btn btn-teal card-cta">${dkL("בחירה ועריכה", "Choose & edit")}</a>
       </div>
     </div>`;
 }
@@ -81,18 +84,18 @@ function renderQuoteTplCatalog() {
   const gridEl = document.getElementById("qa-tpl-grid");
   const searchEl = document.getElementById("qa-tpl-search");
   if (!tabsEl || !gridEl) return;
-  tabsEl.innerHTML = `<button class="tab active" data-cat="all">הכל</button>` +
-    QUOTE_CATEGORIES.map((c) => `<button class="tab" data-cat="${c.slug}">${escapeHtmlQ(c.label)}</button>`).join("");
+  tabsEl.innerHTML = `<button class="tab active" data-cat="all">${dkL("הכל", "All")}</button>` +
+    QUOTE_CATEGORIES.map((c) => `<button class="tab" data-cat="${c.slug}">${escapeHtmlQ(qL(c.label, c.labelEn))}</button>`).join("");
   let active = "all";
   let term = "";
   function apply() {
     tabsEl.querySelectorAll(".tab").forEach((btn) => btn.classList.toggle("active", btn.dataset.cat === active));
     const q = term.trim().toLowerCase();
     const entries = Object.entries(QUOTE_TEMPLATES).filter(([, t]) =>
-      (active === "all" || t.categorySlug === active) && (!q || t.label.toLowerCase().includes(q)));
+      (active === "all" || t.categorySlug === active) && (!q || t.label.toLowerCase().includes(q) || String(t.labelEn || "").toLowerCase().includes(q)));
     gridEl.innerHTML = entries.length
       ? entries.map(([key, t]) => quoteTplCardHtml(key, t)).join("")
-      : `<p class="tpl-search-empty">אין עיצובים שמתאימים לחיפוש "${escapeHtmlQ(term.trim())}".</p>`;
+      : `<p class="tpl-search-empty">${dkL("אין עיצובים שמתאימים לחיפוש", "No designs match")} "${escapeHtmlQ(term.trim())}".</p>`;
   }
   tabsEl.querySelectorAll(".tab").forEach((btn) => {
     btn.addEventListener("click", () => { active = btn.dataset.cat; apply(); });
@@ -107,7 +110,7 @@ function renderLogoPreview(url) {
   const el = document.getElementById("pf-logo-preview");
   const removeBtn = document.getElementById("pf-logo-remove");
   if (url) {
-    el.innerHTML = `<img src="${url}" alt="הלוגו שהעליתם">`;
+    el.innerHTML = `<img src="${url}" alt="${dkL("הלוגו שהעליתם", "Your uploaded logo")}">`;
     removeBtn.style.display = "";
   } else {
     el.innerHTML = `<span>🖼</span>`;
@@ -134,14 +137,14 @@ function wireProfileForm() {
     const file = e.target.files[0];
     if (!file) return;
     if (file.size > 4 * 1024 * 1024) {
-      alert("הקובץ גדול מדי — בחרו לוגו עד 4MB.");
+      alert(dkL("הקובץ גדול מדי — בחרו לוגו עד 4MB.", "That file is too large — choose a logo up to 4MB."));
       e.target.value = "";
       return;
     }
     const ext = (file.name.split(".").pop() || "png").toLowerCase();
     const path = `${currentUser.id}/logo.${ext}`;
     const { error: upErr } = await supabaseClient.storage.from("logos").upload(path, file, { upsert: true });
-    if (upErr) { alert("העלאת הלוגו נכשלה, נסו שוב."); e.target.value = ""; return; }
+    if (upErr) { alert(dkL("העלאת הלוגו נכשלה, נסו שוב.", "Logo upload failed, please try again.")); e.target.value = ""; return; }
     const { data } = supabaseClient.storage.from("logos").getPublicUrl(path);
     pendingLogoUrl = data.publicUrl + "?t=" + Date.now();
     renderLogoPreview(pendingLogoUrl);
@@ -171,7 +174,7 @@ function wireProfileForm() {
       logo_url: pendingLogoUrl,
     };
     const { data, error } = await supabaseClient.from("profiles").upsert(row).select().single();
-    if (error) { err.textContent = "השמירה נכשלה, נסו שוב."; return; }
+    if (error) { err.textContent = dkL("השמירה נכשלה, נסו שוב.", "Saving failed, please try again."); return; }
     currentProfile = data;
     // This same form is now also reachable from INSIDE an already-open
     // Shell (quoteBshellPropsHtmlForSettings moves it into Settings) —
@@ -220,10 +223,10 @@ function dateBlockHtmlQA(date, i, total) {
   return `
   <div class="job-block" data-didx="${i}">
     <div class="job-block-head">
-      <strong style="font-size:12.5px;">תאריך ${i + 1}</strong>
-      ${canRemove ? `<button type="button" class="job-remove" data-dremove="${i}">הסרה</button>` : ""}
+      <strong style="font-size:12.5px;">${dkL("תאריך", "Date")} ${i + 1}</strong>
+      ${canRemove ? `<button type="button" class="job-remove" data-dremove="${i}">${dkL("הסרה", "Remove")}</button>` : ""}
     </div>
-    <input type="text" placeholder="לדוגמה: 18.12.2024" data-date="${i}" value="${escapeHtmlQ(date)}">
+    <input type="text" placeholder="${dkL("לדוגמה: 18.12.2024", "e.g. 18.12.2024")}" data-date="${i}" value="${escapeHtmlQ(date)}">
   </div>`;
 }
 
@@ -281,7 +284,7 @@ function wireQuoteFormQA() {
     } catch (_e) { /* download anyway */ }
     await downloadQuotePdf();
     if (window.showUpsellBanner) {
-      showUpsellBanner("במקום רק לשלוח הצעות מחיר ב-PDF, הגיע הזמן שיהיה לעסק שלך אתר תדמית יפהפה.", "רוצה להיראות עוד יותר מקצועי?");
+      showUpsellBanner(dkL("במקום רק לשלוח הצעות מחיר ב-PDF, הגיע הזמן שיהיה לעסק שלך אתר תדמית יפהפה.", "Instead of just sending PDF quotes, it's time your business had a beautiful website."), dkL("רוצה להיראות עוד יותר מקצועי?", "Want to look even more professional?"));
     }
   });
   document.getElementById("qa-edit-profile").addEventListener("click", showProfileEditor);
@@ -396,7 +399,7 @@ function routeAsGuest() {
   if (!hadUnsavedWork) { window.location.href = redirectUrl; return; }
   const status = document.getElementById("qbshell-top-status");
   if (status) {
-    status.textContent = "ההתחברות הסתיימה — שינויים שלא נשמרו עלולים ללכת לאיבוד";
+    status.textContent = dkL("ההתחברות הסתיימה — שינויים שלא נשמרו עלולים ללכת לאיבוד", "You've been signed out — unsaved changes may be lost");
     status.className = "bshell-top-status failed";
   }
   setTimeout(() => { window.location.href = redirectUrl; }, 2200);

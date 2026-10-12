@@ -234,8 +234,10 @@ def cmd_preflight():
                         where name in ('pgcrypto','pg_cron','pg_net') order by 1""")
     print("extensions: " + ", ".join(f"{e['name']}={'installed' if e['on'] else 'available'}" for e in ext))
     have = {s.get("name") for s in (api("GET", f"/projects/{LIVE_REF}/secrets") or [])}
-    for k in ("RESEND_API_KEY", "TURNSTILE_SECRET_KEY", "ADMIN_EMAILS", "AUTOMATE_MAIL_MODE", "AUTOMATE_CRON_SECRET"):
+    for k in ("RESEND_API_KEY", "TURNSTILE_SECRET_KEY", "ADMIN_EMAILS", "AUTOMATE_MAIL_MODE", "AUTOMATE_CRON_SECRET", "ADMIN_TEST_CODES"):
         print(f"secret {k}: {'set' if k in have else 'not set'}")
+    if "ADMIN_TEST_CODES" in have:
+        die("ADMIN_TEST_CODES must never be set on the live project")
     admins = q("live", "select count(*) as n from public.admin_secrets")[0]["n"]
     print(f"accounts with an admin password: {admins}")
     size = q("live", "select pg_database_size(current_database()) as b")[0]["b"]
@@ -368,6 +370,8 @@ def cmd_pilot_check():
         bad.append("an email was really sent")
     if "AUTOMATE_MAIL_ALLOWLIST" not in have:
         bad.append("no mail allowlist")
+    if "ADMIN_TEST_CODES" in have:
+        bad.append("ADMIN_TEST_CODES is set on live (test-only switch)")
     bad += r["problems"]
     for b in bad:
         print("  PROBLEM: " + b)

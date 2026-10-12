@@ -10,6 +10,17 @@
 // account's local draft the moment a different one signs in on the same
 // browser, rather than only at account-deletion time.
 
+// Hebrew/English pick for text built here — dkL from js/i18n.js when it's
+// loaded, otherwise the same stored-preference rule it uses.
+function dkAppL(he, en) {
+  if (typeof dkL === "function") return dkL(he, en);
+  try {
+    const stored = localStorage.getItem("deskkit_lang");
+    const isEn = stored ? stored === "en" : !(navigator.languages || [navigator.language || ""]).some((l) => (l || "").toLowerCase().startsWith("he"));
+    return isEn ? en : he;
+  } catch (e) { return he; }
+}
+
 /* Every RLS-protected table is queried with an explicit .eq("user_id"/
    "id", userId) on top of RLS — belt and suspenders, and it means this
    function reads exactly like every other per-user query in this
@@ -48,7 +59,7 @@ async function exportMyData(userId, email) {
    have signed in within the last 15 minutes. Signing in with the password
    here also counts as that fresh sign-in for delete-account's own check. */
 const DK_FRESH_LOGIN_MS = 15 * 60 * 1000;
-const DK_REAUTH_GOOGLE_MSG = "מטעמי אבטחה צריך להתחבר מחדש: התנתקו, התחברו שוב עם Google, וחזרו לכאן תוך 15 דקות.";
+const DK_REAUTH_GOOGLE_MSG = () => dkAppL("מטעמי אבטחה צריך להתחבר מחדש: התנתקו, התחברו שוב עם Google, וחזרו לכאן תוך 15 דקות.", "For security, please sign in again: log out, sign back in with Google, and return here within 15 minutes.");
 
 function dkHasPassword(user) {
   const providers = (user && user.app_metadata && user.app_metadata.providers) || [];
@@ -58,15 +69,15 @@ function dkHasPassword(user) {
 // Returns an error message, or "" when it's OK to go ahead.
 async function dkReauthenticate(user, password) {
   if (dkHasPassword(user)) {
-    if (!password) return "יש להזין את הסיסמה הנוכחית.";
+    if (!password) return dkAppL("יש להזין את הסיסמה הנוכחית.", "Please enter your current password.");
     const captchaToken = typeof dkCaptchaToken === "function" ? await dkCaptchaToken("as-captcha") : undefined;
     const { error } = await supabaseClient.auth.signInWithPassword({ email: user.email, password, options: { captchaToken } });
     if (typeof dkCaptchaReset === "function") dkCaptchaReset("as-captcha");
-    if (error && /captcha/i.test(error.message || "")) return "אימות האבטחה נכשל — רעננו את הדף ונסו שוב.";
-    return error ? "הסיסמה הנוכחית שגויה." : "";
+    if (error && /captcha/i.test(error.message || "")) return dkAppL("אימות האבטחה נכשל — רעננו את הדף ונסו שוב.", "Security check failed — refresh the page and try again.");
+    return error ? dkAppL("הסיסמה הנוכחית שגויה.", "Your current password is incorrect.") : "";
   }
   const last = Date.parse(user.last_sign_in_at || "");
-  return last && Date.now() - last < DK_FRESH_LOGIN_MS ? "" : DK_REAUTH_GOOGLE_MSG;
+  return last && Date.now() - last < DK_FRESH_LOGIN_MS ? "" : DK_REAUTH_GOOGLE_MSG();
 }
 
 // "עדכונים במייל": on/off for the owner's update emails
@@ -88,7 +99,7 @@ function dkLoadMailPref(session) {
   dkMailPref(session, { action: "status" }).then((d) => {
     toggle.checked = !!d.subscribed;
     toggle.disabled = false;
-  }).catch(() => { msg.textContent = "לא הצלחנו לטעון את ההגדרה כרגע."; });
+  }).catch(() => { msg.textContent = dkAppL("לא הצלחנו לטעון את ההגדרה כרגע.", "We couldn't load this setting right now."); });
   toggle.addEventListener("change", async () => {
     toggle.disabled = true;
     msg.textContent = "";
@@ -96,10 +107,10 @@ function dkLoadMailPref(session) {
       const { data } = await supabaseClient.auth.getSession();
       const d = await dkMailPref(data.session, { action: "set", subscribed: toggle.checked });
       toggle.checked = !!d.subscribed;
-      msg.textContent = d.subscribed ? "נרשמת לעדכונים ✓" : "הוסרת מרשימת העדכונים ✓";
+      msg.textContent = d.subscribed ? dkAppL("נרשמת לעדכונים ✓", "You're subscribed to updates ✓") : dkAppL("הוסרת מרשימת העדכונים ✓", "You've been unsubscribed ✓");
     } catch (e) {
       toggle.checked = !toggle.checked;
-      msg.textContent = "השינוי לא נשמר, נסו שוב.";
+      msg.textContent = dkAppL("השינוי לא נשמר, נסו שוב.", "The change wasn't saved — please try again.");
     } finally {
       toggle.disabled = false;
     }
@@ -140,7 +151,7 @@ document.addEventListener("DOMContentLoaded", () => {
     exportBtn.addEventListener("click", async () => {
       if (!currentUserId) return;
       exportBtn.disabled = true;
-      exportMsg.textContent = "אוספים את המידע...";
+      exportMsg.textContent = dkAppL("אוספים את המידע...", "Gathering your data...");
       try {
         const payload = await exportMyData(currentUserId, currentUserEmail);
         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
@@ -152,9 +163,9 @@ document.addEventListener("DOMContentLoaded", () => {
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
-        exportMsg.textContent = "הקובץ הורד בהצלחה.";
+        exportMsg.textContent = dkAppL("הקובץ הורד בהצלחה.", "The file was downloaded.");
       } catch (err) {
-        exportMsg.textContent = "משהו השתבש — נסו שוב בעוד רגע.";
+        exportMsg.textContent = dkAppL("משהו השתבש — נסו שוב בעוד רגע.", "Something went wrong — try again in a moment.");
       } finally {
         exportBtn.disabled = false;
       }
@@ -185,13 +196,13 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   confirmBtn.addEventListener("click", async () => {
     confirmBtn.disabled = true;
-    confirmBtn.textContent = "מוחקים…";
+    confirmBtn.textContent = dkAppL("מוחקים…", "Deleting…");
     deleteErr.textContent = "";
     try {
       const reauthErr = currentUser ? await dkReauthenticate(currentUser, document.getElementById("as-delete-password").value) : "";
       if (reauthErr) {
         deleteErr.textContent = reauthErr;
-        confirmBtn.textContent = "מחיקה סופית";
+        confirmBtn.textContent = dkAppL("מחיקה סופית", "Delete permanently");
         confirmBtn.disabled = false;
         return;
       }
@@ -199,15 +210,15 @@ document.addEventListener("DOMContentLoaded", () => {
       if (error && error.context && typeof error.context.json === "function") {
         const body = await error.context.json().catch(() => null);
         if (body && body.reason === "reauth") {
-          deleteErr.textContent = dkHasPassword(currentUser) ? "מטעמי אבטחה, נסו שוב עם הסיסמה שלכם." : DK_REAUTH_GOOGLE_MSG;
-          confirmBtn.textContent = "מחיקה סופית";
+          deleteErr.textContent = dkHasPassword(currentUser) ? dkAppL("מטעמי אבטחה, נסו שוב עם הסיסמה שלכם.", "For security, please try again with your password.") : DK_REAUTH_GOOGLE_MSG();
+          confirmBtn.textContent = dkAppL("מחיקה סופית", "Delete permanently");
           confirmBtn.disabled = false;
           return;
         }
       }
       if (error || !data || !data.success) {
-        deleteErr.textContent = "המחיקה נכשלה. נסו שוב, או כתבו לנו ונטפל בזה ידנית.";
-        confirmBtn.textContent = "מחיקה סופית";
+        deleteErr.textContent = dkAppL("המחיקה נכשלה. נסו שוב, או כתבו לנו ונטפל בזה ידנית.", "Deleting failed. Try again, or write to us and we'll handle it manually.");
+        confirmBtn.textContent = dkAppL("מחיקה סופית", "Delete permanently");
         confirmBtn.disabled = false;
         return;
       }
@@ -215,8 +226,8 @@ document.addEventListener("DOMContentLoaded", () => {
       await supabaseClient.auth.signOut();
       window.location.href = "index.html?accountDeleted=1";
     } catch (err) {
-      deleteErr.textContent = "שגיאת חיבור. נסו שוב בעוד רגע.";
-      confirmBtn.textContent = "מחיקה סופית";
+      deleteErr.textContent = dkAppL("שגיאת חיבור. נסו שוב בעוד רגע.", "Connection error. Try again in a moment.");
+      confirmBtn.textContent = dkAppL("מחיקה סופית", "Delete permanently");
       confirmBtn.disabled = false;
     }
   });
@@ -231,8 +242,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const reauthErr = currentUser ? await dkReauthenticate(currentUser, document.getElementById("as-email-current-password").value) : "";
     if (reauthErr) { err.textContent = reauthErr; return; }
     const { error } = await supabaseClient.auth.updateUser({ email: newEmail });
-    if (error) { err.textContent = "העדכון נכשל, נסו שוב."; return; }
-    msg.textContent = "נשלח מייל אישור לכתובת החדשה — לחצו על הקישור שם כדי לסיים.";
+    if (error) { err.textContent = dkAppL("העדכון נכשל, נסו שוב.", "The update failed — please try again."); return; }
+    msg.textContent = dkAppL("נשלח מייל אישור לכתובת החדשה — לחצו על הקישור שם כדי לסיים.", "We sent a confirmation email to the new address — click the link in it to finish.");
     e.target.reset();
   });
 
@@ -244,23 +255,23 @@ document.addEventListener("DOMContentLoaded", () => {
     const msg = document.getElementById("as-password-msg");
     err.textContent = "";
     msg.textContent = "";
-    if (pw !== pw2) { err.textContent = "הסיסמאות לא תואמות."; return; }
+    if (pw !== pw2) { err.textContent = dkAppL("הסיסמאות לא תואמות.", "The passwords don't match."); return; }
     const reauthErr = currentUser ? await dkReauthenticate(currentUser, document.getElementById("as-current-password").value) : "";
     if (reauthErr) { err.textContent = reauthErr; return; }
     const { error } = await supabaseClient.auth.updateUser({ password: pw });
     if (error) {
       const m = error.message || "";
       err.textContent = error.code === "same_password" || /different from the old/i.test(m)
-        ? "הסיסמה החדשה חייבת להיות שונה מהסיסמה הקודמת."
+        ? dkAppL("הסיסמה החדשה חייבת להיות שונה מהסיסמה הקודמת.", "Your new password must be different from your old one.")
         : /weak|leaked|pwned|characters|at least/i.test(m)
-          ? "הסיסמה קצרה או חלשה מדי — נדרשים לפחות 8 תווים."
-          : "העדכון נכשל, נסו שוב." + (error.status || error.code ? ` (${[error.status, error.code].filter(Boolean).join(" ")})` : "");
+          ? dkAppL("הסיסמה קצרה או חלשה מדי — נדרשים לפחות 8 תווים.", "That password is too short or too weak — use at least 8 characters.")
+          : dkAppL("העדכון נכשל, נסו שוב.", "The update failed — please try again.") + (error.status || error.code ? ` (${[error.status, error.code].filter(Boolean).join(" ")})` : "");
       return;
     }
     // Anyone who was signed in elsewhere with the old password is signed
     // out — the whole point of changing it after a suspected leak.
     await supabaseClient.auth.signOut({ scope: "others" }).catch(() => {});
-    msg.textContent = "הסיסמה עודכנה בהצלחה. חיבורים במכשירים אחרים נותקו.";
+    msg.textContent = dkAppL("הסיסמה עודכנה בהצלחה. חיבורים במכשירים אחרים נותקו.", "Your password was updated. Other devices have been signed out.");
     e.target.reset();
   });
 });
