@@ -729,6 +729,28 @@ def run_growth_tests():
               isinstance(free_l, dict) and isinstance(pro_l, dict) and pro_l.get("emails_per_month", 0) > free_l.get("emails_per_month", 0)
               and pro_l.get("active_automations", 0) > free_l.get("active_automations", 0), f"{free_l} {pro_l}")
 
+        # ---- T28 provider bounce/complaint reports → the address gets nothing more; monthly cap guards the bill
+        bounced = f"bounce-{RUN}@example.com"
+        ev = {"type": "email.bounced", "data": {"email_id": f"re_test_{RUN}", "to": [bounced], "bounce": {"type": "Permanent", "message": "no such user"}}}
+        st, r = http("POST", f"{URL}/functions/v1/mail-events?p=resend", ev, {"apikey": ANON, "Authorization": "Bearer " + ANON})
+        check("T28 a bounce report without the key is refused", st == 401, f"HTTP {st} {r}")
+        st, r = http("POST", f"{URL}/functions/v1/mail-events?p=resend&k=" + os.environ.get("STG_MAIL_EVENTS_KEY", ""), ev, {"apikey": ANON, "Authorization": "Bearer " + ANON})
+        sup = rows(f"automate_suppressions?email=eq.{urllib.parse.quote(bounced)}&select=reason")
+        check("T28 provider bounce report → address suppressed", st == 200 and sup and sup[0]["reason"] == "bounce", f"HTTP {st} {r} {sup}")
+        rest("POST", "contacts", {"name": "Bounced Address", "email": bounced}, token=c["token"])
+        drain(1); fast_forward_runs(c["id"]); drain(2)
+        to_b = [m for m in messages_of(c["id"], ",to_email") if (m.get("to_email") or "").lower() == bounced]
+        check("T28 no automated email to a bounced address", not [m for m in to_b if m["status"] in ("sent", "simulated", "queued")], str(to_b))
+        caps_before = get_setting("email_caps")
+        set_setting("email_caps", {**(caps_before or {}), "automation_monthly": 0})
+        capped = f"capped-{RUN}@example.com"
+        rest("POST", "contacts", {"name": "Monthly Cap", "email": capped}, token=c["token"])
+        drain(1); fast_forward_runs(c["id"]); drain(2)
+        to_c = [m for m in messages_of(c["id"], ",to_email") if (m.get("to_email") or "").lower() == capped]
+        set_setting("email_caps", caps_before)
+        check("T28 monthly cap reached → emails wait (nothing goes out)", to_c and all(m["status"] == "deferred" for m in to_c), str(to_c))
+        rest("DELETE", f"automate_suppressions?email=eq.{urllib.parse.quote(bounced)}", prefer="return=minimal")
+
         # ---- T26 a business that chose English gets its emails in English (left to right)
         api(c, "save-profile", business_name="Studio C", lang="en")
         api(c, "activate", template="lead_nurture", config={"client_messages": "auto"})   # default texts now come in English

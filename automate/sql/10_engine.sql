@@ -61,6 +61,13 @@ update public.automate_settings
    set value = jsonb_set(value, '{free,active_automations}', '10'), updated_at = now()
  where key = 'plan_limits' and coalesce((value -> 'free' ->> 'active_automations')::int, 0) < 10;
 
+-- Whole-system monthly cap on emails really sent by automations (protects
+-- against an unexpected provider bill). Added once; raise it on purpose
+-- together with a paid email plan.
+update public.automate_settings
+   set value = value || '{"automation_monthly": 2000}'::jsonb, updated_at = now()
+ where key = 'email_caps' and not (value ? 'automation_monthly');
+
 -- v4: a Pro tier for accounts that already have DeskKit Pro (no new
 -- payment is involved; see automate/docs/PRICING.md). Added once, never
 -- overwrites values set by hand.
@@ -397,6 +404,21 @@ create table if not exists public.automate_alerts (
 create unique index if not exists automate_alerts_once_a_day on public.automate_alerts
   (coalesce(user_id, '00000000-0000-0000-0000-000000000000'::uuid), kind, day);
 
+-- Addresses the email provider reported as undeliverable (hard bounce) or
+-- that marked an email as spam (complaint). Nothing more is sent to them by
+-- any automation — protects every business's deliverability, since all
+-- automated email shares DeskKit's sending reputation. Written only by the
+-- mail-events function (service role); no user access.
+create table if not exists public.automate_suppressions (
+  email text primary key check (email = lower(email) and char_length(email) between 3 and 254),
+  reason text not null check (reason in ('bounce', 'complaint')),
+  provider text,
+  detail text check (char_length(detail) <= 300),
+  created_at timestamptz not null default now()
+);
+alter table public.automate_suppressions enable row level security;
+revoke all on table public.automate_suppressions from anon, authenticated;
+
 -- A business's client asked (via the link in an email) to get no more
 -- automated emails from that business. Checked before preparing AND before
 -- sending every client email.
@@ -702,6 +724,15 @@ returns int language sql stable security definer set search_path = '' as $$
     and sent_at >= ((now() at time zone 'Asia/Jerusalem')::date)::timestamp at time zone 'Asia/Jerusalem';
 $$;
 
+-- Emails really handed to the provider this month (Israel time) — the
+-- whole-system monthly cap (email_caps.automation_monthly) guards the bill.
+create or replace function public.automate_emails_month_sent()
+returns int language sql stable security definer set search_path = '' as $$
+  select count(*)::int from public.automation_messages
+  where status = 'sent'
+    and sent_at >= (date_trunc('month', now() at time zone 'Asia/Jerusalem'))::timestamp at time zone 'Asia/Jerusalem';
+$$;
+
 -- Count one email against the business's monthly allowance; false = over.
 create or replace function public.automate_take_email(p_user uuid)
 returns boolean language plpgsql security definer set search_path = '' as $$
@@ -815,7 +846,7 @@ begin
   foreach f in array array[
     'automate_alert(uuid,text,text,text)', 'automate_limits(uuid)', 'automate_month()', 'automate_emit(uuid,text,text,uuid,text,jsonb)',
     'automate_cancel_runs(uuid,text,uuid,text[],text)', 'automate_emit_daily()', 'automate_claim_runs(integer)',
-    'automate_claim_messages(integer)', 'automate_emails_today()', 'automate_admin_overview()', 'automate_set_kill_switch(boolean,text)', 'automate_weekly_stats(uuid)', 'automate_take_email(uuid)', 'automate_attention(uuid)',
+    'automate_claim_messages(integer)', 'automate_emails_today()', 'automate_emails_month_sent()', 'automate_admin_overview()', 'automate_set_kill_switch(boolean,text)', 'automate_weekly_stats(uuid)', 'automate_take_email(uuid)', 'automate_attention(uuid)',
     'contacts_events()', 'quote_shares_events()', 'invoice_tracking_events()'] loop
     execute format('revoke all on function public.%s from public, anon, authenticated', f);
     execute format('grant execute on function public.%s to service_role', f);

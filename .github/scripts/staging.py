@@ -115,7 +115,9 @@ def cmd_sql(files):
 def cmd_secrets():
     ref = staging_ref()
     cron = secrets.token_urlsafe(32)
+    events_key = secrets.token_urlsafe(24)
     print(f"::add-mask::{cron}")
+    print(f"::add-mask::{events_key}")
     call("POST", f"/projects/{ref}/secrets", [
         {"name": "AUTOMATE_ENV", "value": "staging"},
         {"name": "AUTOMATE_CRON_SECRET", "value": cron},
@@ -129,9 +131,12 @@ def cmd_secrets():
         # Staging has no email key: the admin's new-device code comes back in
         # the reply instead (the live project must never have this secret).
         {"name": "ADMIN_TEST_CODES", "value": "staging-only"},
+        # The key the email provider's bounce reports must carry (mail-events).
+        {"name": "AUTOMATE_MAIL_EVENTS_SECRET", "value": events_key},
     ])
     with open(os.environ["GITHUB_ENV"], "a") as f:
         f.write(f"STG_CRON_SECRET={cron}\n")
+        f.write(f"STG_MAIL_EVENTS_KEY={events_key}\n")
     # the same secret, for pg_cron's calls to the worker
     sql(ref, f"""
       do $$ begin

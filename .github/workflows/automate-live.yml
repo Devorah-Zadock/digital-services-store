@@ -135,7 +135,7 @@ jobs:
           python3 .github/scripts/automate_live.py pilot-secrets
           mkdir -p "$RUNNER_TEMP/fx/supabase/functions"
           cp -r automate/functions/. "$RUNNER_TEMP/fx/supabase/functions/"
-          supabase functions deploy automate-api automate-worker lead-intake quote-public client-optout \
+          supabase functions deploy automate-api automate-worker lead-intake quote-public client-optout mail-events \
             --project-ref "$PROJECT_REF" --workdir "$RUNNER_TEMP/fx" --no-verify-jwt --use-api
           python3 .github/scripts/automate_live.py pilot-cron
           python3 .github/scripts/automate_live.py pilot-check
@@ -145,7 +145,7 @@ jobs:
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/fx/supabase/functions"
           cp -r automate/functions/. "$RUNNER_TEMP/fx/supabase/functions/"
-          supabase functions deploy automate-api automate-worker lead-intake quote-public client-optout \
+          supabase functions deploy automate-api automate-worker lead-intake quote-public client-optout mail-events \
             --project-ref "$PROJECT_REF" --workdir "$RUNNER_TEMP/fx" --no-verify-jwt --use-api
           python3 .github/scripts/automate_live.py pilot-check
       - name: Pilot check (read-only)
