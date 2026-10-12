@@ -43,7 +43,9 @@ async function monthUsage(db: SupabaseClient, uid: string) {
 async function activate(db: SupabaseClient, uid: string, key: string, input: Record<string, unknown>, pack: string | null) {
   const t = TEMPLATES[key];
   if (!t) throw new Bad("unknown-template");
-  const { config, errors } = validateConfig(t, { ...defaultsFor(t, pack || undefined), ...(input || {}) });
+  const { data: prof } = await db.from("business_profiles").select("lang").eq("user_id", uid).maybeSingle();
+  const lang = prof?.lang === "en" ? "en" : "he";
+  const { config, errors } = validateConfig(t, { ...defaultsFor(t, pack || undefined, lang), ...(input || {}) });
   if (errors.length) throw new Bad("missing:" + errors.join(","));
   const { data: existing } = await db.from("automations").select("id, status").eq("user_id", uid).eq("template_key", key).maybeSingle();
   if (!existing) {
@@ -96,7 +98,8 @@ Deno.serve(async (req: Request) => {
       if (notify && !EMAIL_RE.test(notify)) throw new Bad("notify_email");
       const type = PACKS.some((p) => p.key === body.business_type) ? body.business_type : null;
       await must(db.from("business_profiles").upsert({ user_id: uid, business_name: name, business_type: type,
-        reply_email: reply || null, notify_email: notify || null, phone: str(body.phone, 40) || null, updated_at: new Date().toISOString() }));
+        reply_email: reply || null, notify_email: notify || null, phone: str(body.phone, 40) || null,
+        ...(body.lang === "en" || body.lang === "he" ? { lang: body.lang } : {}), updated_at: new Date().toISOString() }));
       return json({ ok: true });
     }
 

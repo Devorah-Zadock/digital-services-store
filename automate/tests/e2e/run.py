@@ -360,7 +360,10 @@ def run_tests(a, b):
     lead9 = rows(f"contacts?user_id=eq.{a['id']}&email=eq.lead-9@example.com&select=id")[0]
     check("T10 paused → new enquiries are saved but start no run", not [x for x in runs_of(a["id"], "lead_autopilot") if x["subject_id"] == lead9["id"]])
     api(a, "resume", template="lead_autopilot")
-    fast_forward_runs(a["id"]); drain(2)
+    fast_forward_runs(a["id"])
+    # The scheduled staging worker may hold this run at the same moment
+    # (SKIP LOCKED), so keep ticking until it's done instead of exactly twice.
+    wait_until(lambda: "lead_reminder" in [m["purpose"] for m in messages_of(a["id"]) if m["run_id"] == run8["id"]], timeout=30)
     msgs8 = [m["purpose"] for m in messages_of(a["id"]) if m["run_id"] == run8["id"]]
     check("T10 resumed → continues (reminder sent)", "lead_reminder" in msgs8, str(msgs8))
 
@@ -694,6 +697,16 @@ def run_growth_tests():
             later = [m for m in messages_of(c["id"], ",to_email") if m["recipient_role"] == "client" and m["to_email"].lower() == "optout-1@example.com"]
             check("T25 after unsubscribing: no new email to that address (any capitalisation)",
                   len(later) == len(sent) and run and not purposes(run[0]["id"]), f"{len(later)} vs {len(sent)}")
+
+        # ---- T26 a business that chose English gets its emails in English (left to right)
+        api(c, "save-profile", business_name="Studio C", lang="en")
+        api(c, "activate", template="lead_nurture", config={"client_messages": "auto"})   # default texts now come in English
+        rest("POST", "contacts", {"name": "Jane Doe", "email": "english-1@example.com"}, token=c["token"])
+        drain(1); fast_forward_runs(c["id"]); drain(2)
+        en = [m for m in messages_of(c["id"], ",html,subject,to_email") if m["to_email"] == "english-1@example.com"]
+        check("T26 English business → English email, left to right, unsubscribe link in English",
+              bool(en) and "still interested" in en[0]["subject"] and 'dir="ltr"' in en[0]["html"] and "Unsubscribe" in en[0]["html"]
+              and not re.search(r"[\u0590-\u05FF]", en[0]["subject"] + en[0]["html"]), str([m.get("subject") for m in en]))
     finally:
         delete_user(c["id"])
 

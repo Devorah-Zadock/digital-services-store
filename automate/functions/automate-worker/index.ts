@@ -95,10 +95,11 @@ class RunCtx {
     if (!this.business) {
       const { data } = await this.db.from("business_profiles").select("*").eq("user_id", this.run.user_id).maybeSingle();
       this.business = {
-        name: data?.business_name || "העסק",
+        name: data?.business_name || (data?.lang === "en" ? "Your business" : "העסק"),
         replyEmail: data?.reply_email || (await this.owner()),
         phone: data?.phone || null,
         type: data?.business_type || null,
+        lang: data?.lang === "en" ? "en" : null,
         // @ts-ignore extra field kept for owner alerts
         notifyEmail: data?.notify_email || null,
       };

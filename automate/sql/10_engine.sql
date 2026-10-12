@@ -93,6 +93,13 @@ create table if not exists public.business_profiles (
   phone text check (char_length(phone) <= 40),
   updated_at timestamptz not null default now()
 );
+-- Language of the emails Automate sends for this business (null = Hebrew).
+alter table public.business_profiles add column if not exists lang text;
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'business_profiles_lang_check') then
+    alter table public.business_profiles add constraint business_profiles_lang_check check (lang in ('he', 'en'));
+  end if;
+end $$;
 alter table public.business_profiles enable row level security;
 revoke all on table public.business_profiles from anon, authenticated;
 grant select, insert, update on table public.business_profiles to authenticated;
