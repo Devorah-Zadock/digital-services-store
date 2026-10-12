@@ -734,7 +734,7 @@ def run_growth_tests():
         ev = {"type": "email.bounced", "data": {"email_id": f"re_test_{RUN}", "to": [bounced], "bounce": {"type": "Permanent", "message": "no such user"}}}
         st, r = http("POST", f"{URL}/functions/v1/mail-events?p=resend", ev, {"apikey": ANON, "Authorization": "Bearer " + ANON})
         check("T28 a bounce report without the key is refused", st == 401, f"HTTP {st} {r}")
-        st, r = http("POST", f"{URL}/functions/v1/mail-events?p=resend", ev, {"apikey": ANON, "Authorization": "Bearer " + SERVICE})
+        st, r = http("POST", f"{URL}/functions/v1/mail-events?p=resend&k=" + os.environ.get("STG_MAIL_EVENTS_KEY", ""), ev, {"apikey": ANON, "Authorization": "Bearer " + ANON})
         sup = rows(f"automate_suppressions?email=eq.{urllib.parse.quote(bounced)}&select=reason")
         check("T28 provider bounce report → address suppressed", st == 200 and sup and sup[0]["reason"] == "bounce", f"HTTP {st} {r} {sup}")
         rest("POST", "contacts", {"name": "Bounced Address", "email": bounced}, token=c["token"])
