@@ -154,7 +154,7 @@ function quoteBshellWireLogoLiveUpdate() {
   }).observe(preview, { childList: true });
 }
 
-const QUOTEBSHELL_AI_UPGRADE_MESSAGE = "הגעת למכסת הניסיונות החינמיים ביצירת טיוטה אוטומטית. רוצה להמשיך ללא הגבלה? שדרג לגרסת Pro בתשלום חד-פעמי!";
+const QUOTEBSHELL_AI_UPGRADE_MESSAGE = typeof dkL === "function" ? dkL("הגעת למכסת הניסיונות החינמיים ביצירת טיוטה אוטומטית. רוצה להמשיך ללא הגבלה? שדרג לגרסת Pro בתשלום חד-פעמי!", "You've used your free automatic-draft tries. Want to continue without limits? Upgrade to Pro with a one-time payment!") : "הגעת למכסת הניסיונות החינמיים ביצירת טיוטה אוטומטית. רוצה להמשיך ללא הגבלה? שדרג לגרסת Pro בתשלום חד-פעמי!";
 
 /* "✨ יצירת טיוטה אוטומטית" — a brand-new control (no old-UI
    equivalent to move/reuse), mirroring js/site-ai-generate.js's

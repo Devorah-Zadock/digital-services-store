@@ -18,7 +18,7 @@
    built on demand like domain-guide.js, so pages that never open it pay
    nothing for it. */
 
-const AI_UPGRADE_MESSAGE = "הגעת למכסת הניסיונות החינמיים ב-AI ובסורק המשרות. רוצה להמשיך להשתמש בהם ללא הגבלה, וגם להסיר אוטומטית את שורת הקרדיט מה-PDF שלך? שדרג לגרסת Pro בתשלום חד-פעמי!";
+const AI_UPGRADE_MESSAGE = typeof dkL === "function" ? dkL("הגעת למכסת הניסיונות החינמיים ב-AI ובסורק המשרות. רוצה להמשיך להשתמש בהם ללא הגבלה, וגם להסיר אוטומטית את שורת הקרדיט מה-PDF שלך? שדרג לגרסת Pro בתשלום חד-פעמי!", "You've used your free tries of the AI and the job-match scanner. Want unlimited use, and to remove the credit line from your PDF automatically? Upgrade to Pro with a one-time payment!") : "הגעת למכסת הניסיונות החינמיים ב-AI ובסורק המשרות. רוצה להמשיך להשתמש בהם ללא הגבלה, וגם להסיר אוטומטית את שורת הקרדיט מה-PDF שלך? שדרג לגרסת Pro בתשלום חד-פעמי!";
 
 let atsIsProCache = null;
 

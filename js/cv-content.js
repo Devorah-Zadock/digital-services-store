@@ -7,6 +7,7 @@ const CV_TEMPLATES = {
   /* ---------------- תכנות / Development ---------------- */
   "cv-dev-dark": {
     label: "תכנות — סיידבר כהה",
+    labelEn: "Development — dark sidebar",
     layout: "sidebar",
     defaultColor: "2563EB",
     font: "Arial, sans-serif",
@@ -45,6 +46,7 @@ const CV_TEMPLATES = {
   },
   "cv-dev-minimal": {
     label: "תכנות — נועז",
+    labelEn: "Development — bold",
     layout: "bold",
     defaultColor: "334E68",
     font: "Arial, sans-serif",
@@ -81,6 +83,7 @@ const CV_TEMPLATES = {
   },
   "cv-dev-fullstack": {
     label: "תכנות — Full-Stack (סיידבר טורקיז)",
+    labelEn: "Development — Full-Stack (turquoise sidebar)",
     layout: "sidebar",
     defaultColor: "0E7C86",
     font: "Arial, sans-serif",
@@ -119,6 +122,7 @@ const CV_TEMPLATES = {
   },
   "cv-dev-junior": {
     label: "תכנות — ג׳וניור/בוגר בוטקאמפ (נועז)",
+    labelEn: "Development — junior / bootcamp grad (bold)",
     layout: "bold",
     defaultColor: "6D28D9",
     font: "Arial, sans-serif",
@@ -157,6 +161,7 @@ const CV_TEMPLATES = {
   /* ---------------- עיצוב / Design ---------------- */
   "cv-design-creative": {
     label: "עיצוב — יצירתי (נועז)",
+    labelEn: "Design — creative (bold)",
     layout: "bold",
     defaultColor: "C24B1F",
     font: "Arial, sans-serif",
@@ -187,6 +192,7 @@ const CV_TEMPLATES = {
   },
   "cv-design-portfolio": {
     label: "עיצוב — פורטפוליו (סיידבר בורדו)",
+    labelEn: "Design — portfolio (burgundy sidebar)",
     layout: "sidebar",
     defaultColor: "B5175A",
     font: "Arial, sans-serif",
@@ -217,6 +223,7 @@ const CV_TEMPLATES = {
   },
   "cv-design-uiux": {
     label: "עיצוב — UI/UX (סיידבר טורקיז)",
+    labelEn: "Design — UI/UX (turquoise sidebar)",
     layout: "sidebar",
     defaultColor: "0E9488",
     font: "Arial, sans-serif",
@@ -247,6 +254,7 @@ const CV_TEMPLATES = {
   },
   "cv-design-motion": {
     label: "עיצוב — מושן/וידאו (נועז)",
+    labelEn: "Design — motion / video (bold)",
     layout: "bold",
     defaultColor: "7C3AED",
     font: "Arial, sans-serif",
@@ -279,6 +287,7 @@ const CV_TEMPLATES = {
   /* ---------------- הנהלת חשבונות / Accounting ---------------- */
   "cv-accounting-classic": {
     label: "הנהלת חשבונות — קלאסי",
+    labelEn: "Bookkeeping — classic",
     layout: "classic-mono",
     defaultColor: "1F2A44",
     font: "Georgia, 'Times New Roman', serif",
@@ -309,6 +318,7 @@ const CV_TEMPLATES = {
   },
   "cv-accounting-modern": {
     label: "הנהלת חשבונות — מודרני (סיידבר)",
+    labelEn: "Bookkeeping — modern (sidebar)",
     layout: "sidebar",
     defaultColor: "14665A",
     font: "Arial, sans-serif",
@@ -339,6 +349,7 @@ const CV_TEMPLATES = {
   },
   "cv-finance-analyst": {
     label: "כספים — אנליסט (שקט)",
+    labelEn: "Finance — analyst (quiet)",
     layout: "classic-mono",
     defaultColor: "1F5C4E",
     font: "Arial, sans-serif",
@@ -371,6 +382,7 @@ const CV_TEMPLATES = {
   /* ---------------- כללי / General & Business ---------------- */
   "cv-general-modern": {
     label: "כללי / שיווק — סיידבר",
+    labelEn: "General / marketing — sidebar",
     layout: "sidebar",
     defaultColor: "1F5C4E",
     font: "Arial, sans-serif",
@@ -401,6 +413,7 @@ const CV_TEMPLATES = {
   },
   "cv-business-clean": {
     label: "כללי / עסקי — שקט",
+    labelEn: "General / business — quiet",
     layout: "classic-mono",
     defaultColor: "24476B",
     font: "Arial, sans-serif",
@@ -431,6 +444,7 @@ const CV_TEMPLATES = {
   },
   "cv-sales": {
     label: "מכירות / פיתוח עסקי (נועז)",
+    labelEn: "Sales / business development (bold)",
     layout: "bold",
     defaultColor: "C2410C",
     font: "Arial, sans-serif",
@@ -461,6 +475,7 @@ const CV_TEMPLATES = {
   },
   "cv-customer-service": {
     label: "שירות לקוחות / הצלחת לקוח (סיידבר)",
+    labelEn: "Customer service / success (sidebar)",
     layout: "sidebar",
     defaultColor: "2D6A6E",
     font: "Arial, sans-serif",

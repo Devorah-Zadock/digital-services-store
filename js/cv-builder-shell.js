@@ -338,7 +338,7 @@ function cvbshellWireTopBar() {
    free on every edit via renderPreview(), untouched by this file. */
 async function cvbshellSaveNow() {
   const status = document.getElementById("cvbshell-top-status");
-  status.textContent = "שומרים...";
+  status.textContent = dkL("שומרים...", "Saving...");
   status.className = "bshell-top-status saving";
   // saveCvNow() now returns the Supabase error (or null) — confirmed-
   // live bug this fixes: this showed "נשמר ✓" even when the save
@@ -346,12 +346,12 @@ async function cvbshellSaveNow() {
   // weren't actually safe.
   const error = typeof saveCvNow === "function" ? await saveCvNow() : null;
   if (!error) {
-    status.textContent = "נשמר ✓";
+    status.textContent = dkL("נשמר ✓", "Saved ✓");
     status.className = "bshell-top-status saved";
     if (window.refreshMyPanel) window.refreshMyPanel();
-    setTimeout(() => { if (status.textContent === "נשמר ✓") status.textContent = ""; }, 2500);
+    setTimeout(() => { if (status.textContent === dkL("נשמר ✓", "Saved ✓")) status.textContent = ""; }, 2500);
   } else {
-    status.textContent = "לא נשמר — נסו שוב";
+    status.textContent = dkL("לא נשמר — נסו שוב", "Not saved — try again");
     status.className = "bshell-top-status failed";
   }
 }
@@ -387,7 +387,7 @@ function cvbshellRenderHierarchy() {
         <summary class="bshell-sec-head${isSelSection ? " is-selected" : ""}${hidden ? " is-hidden" : ""}" data-cvbshell-select-section="${type}">
           <span class="bshell-sec-chevron"></span>
           <span>${escapeHtml(label)}</span>
-          ${hidden ? '<span class="bshell-sec-hidden-dot" title="מוסתר"></span>' : ""}
+          ${hidden ? `<span class="bshell-sec-hidden-dot" title="${dkL("מוסתר", "Hidden")}"></span>` : ""}
         </summary>
         <div class="bshell-sec-body">${rows}</div>
       </details>`;
@@ -647,10 +647,10 @@ function cvbshellApplySelectionVisual() {
   // Same reasoning as js/builder-shell.js's bshellApplySelectionVisual —
   // only show buttons that actually apply to this selection's kind.
   const canDuplicateOrDelete = cvbshellSelection.kind === "job" || cvbshellSelection.kind === "project";
-  const toolbarButtons = [`<button type="button" data-tool="edit" title="עריכה">✎</button>`];
+  const toolbarButtons = [`<button type="button" data-tool="edit" title="${dkL("עריכה", "Edit")}">✎</button>`];
   if (canDuplicateOrDelete) {
-    toolbarButtons.push(`<button type="button" data-tool="duplicate" title="שכפול">⧉</button>`);
-    toolbarButtons.push(`<button type="button" data-tool="delete" title="מחיקה">🗑</button>`);
+    toolbarButtons.push(`<button type="button" data-tool="duplicate" title="${dkL("שכפול", "Duplicate")}">⧉</button>`);
+    toolbarButtons.push(`<button type="button" data-tool="delete" title="${dkL("מחיקה", "Delete")}">🗑</button>`);
   }
   toolbar.innerHTML = toolbarButtons.join("");
   toolbar.addEventListener("mousedown", (e) => e.stopPropagation());
@@ -759,10 +759,10 @@ function cvbshellPropsHtmlForText(key) {
   // "✨ שפר עם AI" only makes sense next to the summary — same single
   // field the old sidebar's own button sat beside (js/ai-writer.js).
   const aiTools = key === "summary"
-    ? `<button type="button" class="btn-mini ai-improve-btn" id="cvbshell-ai-improve-btn" style="margin-top:8px;">✨ שפר עם AI</button><div id="cvbshell-ai-note" class="ai-limit-note"></div>`
+    ? `<button type="button" class="btn-mini ai-improve-btn" id="cvbshell-ai-improve-btn" style="margin-top:8px;">✨ ${dkL("שפר עם AI", "Improve with AI")}</button><div id="cvbshell-ai-note" class="ai-limit-note"></div>`
     : "";
   return `
-    <span class="bshell-props-kind">טקסט</span>
+    <span class="bshell-props-kind">${dkL("טקסט", "Text")}</span>
     <div class="bshell-props-field">
       <label class="bshell-props-label">${escapeHtml(label)}</label>
       ${inputTag}
@@ -774,7 +774,7 @@ function cvbshellPropsHtmlForJob(idx) {
   const j = state.content.jobs[idx] || { title: "", place: "", dates: "", bullets: "" };
   const t = FORM_LABELS[state.lang];
   return `
-    <span class="bshell-props-kind">תפקיד</span>
+    <span class="bshell-props-kind">${dkL("תפקיד", "Role")}</span>
     <div class="bshell-props-field"><label class="bshell-props-label">${t.role}</label><input type="text" id="cvbshell-prop-job-title" value="${escapeHtml(j.title).replace(/"/g, "&quot;")}"></div>
     <div class="bshell-props-field"><label class="bshell-props-label">${t.place}</label><input type="text" id="cvbshell-prop-job-place" value="${escapeHtml(j.place).replace(/"/g, "&quot;")}"></div>
     <div class="bshell-props-field"><label class="bshell-props-label">${t.dates}</label><input type="text" id="cvbshell-prop-job-dates" value="${escapeHtml(j.dates).replace(/"/g, "&quot;")}"></div>
@@ -785,7 +785,7 @@ function cvbshellPropsHtmlForProject(idx) {
   const p = state.content.projects[idx] || { title: "", link: "", bullets: "" };
   const t = FORM_LABELS[state.lang];
   return `
-    <span class="bshell-props-kind">פרויקט</span>
+    <span class="bshell-props-kind">${dkL("פרויקט", "Project")}</span>
     <div class="bshell-props-field"><label class="bshell-props-label">${t.projTitle}</label><input type="text" id="cvbshell-prop-proj-title" value="${escapeHtml(p.title || "").replace(/"/g, "&quot;")}"></div>
     <div class="bshell-props-field"><label class="bshell-props-label">${t.projLink}</label><input type="text" dir="ltr" id="cvbshell-prop-proj-link" value="${escapeHtml(p.link || "").replace(/"/g, "&quot;")}"></div>
     <div class="bshell-props-field"><label class="bshell-props-label">${t.bullets}</label><textarea id="cvbshell-prop-proj-bullets" rows="4">${escapeHtml(p.bullets || "")}</textarea></div>`;
@@ -793,21 +793,21 @@ function cvbshellPropsHtmlForProject(idx) {
 
 function cvbshellPropsHtmlForSection(type) {
   if (type === "experience") {
-    return `<span class="bshell-props-kind">Section</span><p style="font-size:12.5px; color:var(--text-muted); margin:0;">ניסיון תעסוקתי מופיע בקורות החיים. ניהול התפקידים מתבצע מההיררכיה או מהקנבס.</p>`;
+    return `<span class="bshell-props-kind">Section</span><p style="font-size:12.5px; color:var(--text-muted); margin:0;">${dkL("ניסיון תעסוקתי מופיע בקורות החיים. ניהול התפקידים מתבצע מההיררכיה או מהקנבס.", "Experience appears in the CV. Manage the roles from the structure list or the canvas.")}</p>`;
   }
   const visible = !!(state.content.projects && state.content.projects.length);
   return `
     <span class="bshell-props-kind">Section</span>
     <div class="bshell-props-field">
       <div class="bshell-toggle-row">
-        <label class="bshell-props-label" style="margin:0;">הצגת חלק הפרויקטים</label>
+        <label class="bshell-props-label" style="margin:0;">${dkL("הצגת חלק הפרויקטים", "Show the projects section")}</label>
         <label class="bshell-switch">
           <input type="checkbox" id="cvbshell-prop-projects-visible"${visible ? " checked" : ""}>
           <span class="bshell-switch-track"></span>
           <span class="bshell-switch-thumb"></span>
         </label>
       </div>
-      <p class="bshell-settings-field-hint">הפרויקטים הם חלק אופציונלי — אפשר להסתיר אותו בלי למחוק את התוכן.</p>
+      <p class="bshell-settings-field-hint">${dkL("הפרויקטים הם חלק אופציונלי — אפשר להסתיר אותו בלי למחוק את התוכן.", "Projects are optional — you can hide the section without deleting its content.")}</p>
     </div>`;
 }
 
@@ -854,19 +854,19 @@ async function cvbshellImproveSummary() {
   if (!btn || !input) return;
   const text = input.value.trim();
   if (!text) {
-    cvbshellAiNote("צריך לכתוב קודם טיוטה של תקציר — אז AI יעזור לשפר אותה.");
+    cvbshellAiNote(dkL("צריך לכתוב קודם טיוטה של תקציר — אז AI יעזור לשפר אותה.", "Write a draft summary first — then the AI can help improve it."));
     return;
   }
   cvbshellAiNote("");
   const originalLabel = btn.textContent;
   btn.disabled = true;
-  btn.textContent = "משפר...";
+  btn.textContent = dkL("משפר...", "Improving...");
   try {
     const data = await aiRewriteSummaryCore(text, state.content.title, state.lang);
     if (data.limitReached) {
       cvbshellAiNote(data.isPro
-        ? "הגעת למכסת השימוש ההוגן היומית (50 שיפורים). אפשר להמשיך מחר."
-        : `${AI_UPGRADE_MESSAGE} <a href="#">שדרוג ל-Pro</a>`);
+        ? dkL("הגעת למכסת השימוש ההוגן היומית (50 שיפורים). אפשר להמשיך מחר.", "You've reached today's fair-use limit (50 improvements). You can continue tomorrow.")
+        : `${AI_UPGRADE_MESSAGE} <a href="#">${dkL("שדרוג ל-Pro", "Upgrade to Pro")}</a>`);
       return;
     }
     cvbshellSnapshot();
@@ -877,7 +877,7 @@ async function cvbshellImproveSummary() {
     cvbshellPatchTextContent("summary", data.improved);
   } catch (err) {
     console.error("cv AI summary improve failed:", err);
-    cvbshellAiNote("משהו השתבש בשיפור התקציר. אפשר לנסות שוב בעוד רגע.");
+    cvbshellAiNote(dkL("משהו השתבש בשיפור התקציר. אפשר לנסות שוב בעוד רגע.", "Something went wrong improving the summary. Please try again in a moment."));
   } finally {
     btn.disabled = false;
     btn.textContent = originalLabel;
