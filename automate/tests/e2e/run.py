@@ -18,6 +18,7 @@ Output is public (GitHub logs): pass/fail lines and counts only.
 import concurrent.futures
 import json
 import os
+import re
 import secrets
 import sys
 import time
@@ -628,7 +629,7 @@ def run_growth_tests():
               "paid_thanks" in purposes(pr2["id"]) and "review_request" not in purposes(pr2["id"]), str(purposes(pr2["id"])))
 
         # ---- T22 declined quote: owner told → feedback question → reach out later (unless a new quote went out)
-        api(c, "activate", template="quote_lost", config={"client_messages": "auto", "reengage_days": 30})
+        api(c, "activate", template="quote_lost", config={"client_messages": "auto", "reengage": True, "reengage_days": 30})
         st, q = rest("POST", "quote_saves", {"user_id": c["id"], "data": {"businessName": "עסק ג", "recipient": "לקוח", "eventName": "עבודה", "price": "5,000", "template": "classic"}}, token=c["token"])
         qid = q[0]["id"]
         st, s1 = api(c, "send-quote", quote_id=qid, client_name="דוחה-אחת", client_email="decline-1@example.com")
@@ -669,6 +670,30 @@ def run_growth_tests():
         check("T24 unanswered quote near expiry → reminder to the client + owner told",
               {"quote_expiring", "quote_expiring_owner"} <= set(purposes(x1["id"])), str(purposes(x1["id"])))
         check("T24 a quote already answered gets no expiry reminder", "quote_expiring" not in purposes(x2["id"]), str(purposes(x2["id"])))
+
+        # ---- T25 a client unsubscribes (link in the email) → no more automated emails from this business
+        rest("POST", "contacts", {"name": "מוסר-עצמו", "email": "optout-1@example.com"}, token=c["token"])
+        oc = cid("מוסר-עצמו")
+        drain(1); fast_forward_runs(c["id"]); drain(2)
+        sent = [m for m in messages_of(c["id"], ",html,to_email") if m["recipient_role"] == "client" and m["to_email"] == "optout-1@example.com"]
+        link = re.search(r"optout\.html\?t=([A-Za-z0-9_.-]+)", sent[0]["html"]) if sent else None
+        check("T25 every client email carries an unsubscribe link", bool(link), str(len(sent)))
+        if link:
+            tok = link.group(1)
+            st, g = fn("client-optout", {"t": tok, "action": "get"})
+            check("T25 link shows the business and a masked address, not yet removed",
+                  st == 200 and g.get("business") == "עסק ג" and g.get("optedOut") is False and "optout-1" not in g.get("email", ""), f"{st} {g}")
+            st, bad = fn("client-optout", {"t": tok[:-3] + "AAA", "action": "optout"})
+            check("T25 a forged link is refused", st == 400, f"{st} {bad}")
+            st, o = fn("client-optout", {"t": tok, "action": "optout"})
+            check("T25 unsubscribe recorded", st == 200 and o.get("optedOut") is True, f"{st} {o}")
+            rest("POST", "contacts", {"name": "מוסר-שוב", "email": "OptOut-1@example.com"}, token=c["token"])
+            again = cid("מוסר-שוב")
+            drain(1); fast_forward_runs(c["id"]); drain(2)
+            run = [r for r in runs_of(c["id"], "lead_nurture") if r["subject_id"] == again["id"]]
+            later = [m for m in messages_of(c["id"], ",to_email") if m["recipient_role"] == "client" and m["to_email"].lower() == "optout-1@example.com"]
+            check("T25 after unsubscribing: no new email to that address (any capitalisation)",
+                  len(later) == len(sent) and run and not purposes(run[0]["id"]), f"{len(later)} vs {len(sent)}")
     finally:
         delete_user(c["id"])
 

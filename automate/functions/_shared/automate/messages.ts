@@ -15,6 +15,7 @@ export type Ctx = {
   quote?: { id: string; token: string; client_name: string; client_email: string; title: string | null; total: number | null; sent_at: string; expires_at?: string | null } | null;
   invoice?: { invoice_id: string; invoice_number: number | null; client_name: string | null; client_email: string | null; amount: number | null; due_date: string } | null;
   publicBaseUrl: string;                 // where q.html lives
+  optoutUrl?: string | null;             // client emails: "stop emailing me" (signed link)
   attention?: { kind: string; title: string; reason: string; amount: number | null }[];
   weekly?: Record<string, number>;
 };
@@ -60,7 +61,8 @@ function ownerEmail(ctx: Ctx, body: string): string {
 function clientEmail(ctx: Ctx, body: string): string {
   return frame(escapeHtml(ctx.business.name), body,
     `נשלח בשם ${escapeHtml(ctx.business.name)} באמצעות DeskKit.` +
-    (ctx.business.replyEmail ? ` אפשר להשיב למייל הזה ישירות ל${escapeHtml(ctx.business.name)}.` : ""));
+    (ctx.business.replyEmail ? ` אפשר להשיב למייל הזה ישירות ל${escapeHtml(ctx.business.name)}.` : "") +
+    (ctx.optoutUrl ? `<br><a href="${escapeHtml(ctx.optoutUrl)}" style="color:#667085;">לא רוצים לקבל מיילים אוטומטיים מ${escapeHtml(ctx.business.name)}? להסרה</a>` : ""));
 }
 
 function contactCard(c: NonNullable<Ctx["contact"]>): string {

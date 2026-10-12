@@ -383,11 +383,21 @@ create table if not exists public.automate_alerts (
 create unique index if not exists automate_alerts_once_a_day on public.automate_alerts
   (coalesce(user_id, '00000000-0000-0000-0000-000000000000'::uuid), kind, day);
 
+-- A business's client asked (via the link in an email) to get no more
+-- automated emails from that business. Checked before preparing AND before
+-- sending every client email.
+create table if not exists public.automate_optouts (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  email text not null check (email = lower(email) and char_length(email) between 3 and 254),
+  created_at timestamptz not null default now(),
+  primary key (user_id, email)
+);
+
 do $$
 declare t text;
 begin
   foreach t in array array['automations', 'automation_events', 'automation_runs', 'automation_run_steps',
-                           'automation_messages', 'automate_usage', 'automate_alerts'] loop
+                           'automation_messages', 'automate_usage', 'automate_alerts', 'automate_optouts'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('revoke all on table public.%I from anon, authenticated', t);
     execute format('grant select on table public.%I to authenticated', t);

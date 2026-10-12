@@ -8,7 +8,7 @@
 
 import { classifyHttp } from "./engine.ts";
 
-export type Outgoing = { id: string; to: string; toName?: string | null; fromName: string; replyTo?: string | null; subject: string; html: string };
+export type Outgoing = { id: string; to: string; toName?: string | null; fromName: string; replyTo?: string | null; subject: string; html: string; unsubscribe?: string | null };
 export type SendResult =
   | { kind: "sent"; providerId: string | null }
   | { kind: "simulated" }
@@ -48,6 +48,8 @@ export async function deliver(m: Outgoing, fault: string | null): Promise<SendRe
         from: `${cleanName(m.fromName)} <${FROM_ADDRESS}>`,
         to: [m.to], subject: m.subject, html: m.html,
         ...(m.replyTo ? { reply_to: m.replyTo } : {}),
+        // Mail apps show their own "unsubscribe" button (one click, RFC 8058).
+        ...(m.unsubscribe ? { headers: { "List-Unsubscribe": `<${m.unsubscribe}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } } : {}),
       }),
     });
     const body = await res.json().catch(() => null) as { id?: string; name?: string; message?: string } | null;
