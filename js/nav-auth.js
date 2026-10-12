@@ -82,7 +82,6 @@ function openNavDropdown(wrap, email, trigger, dropup) {
   dd.innerHTML = `
     <div class="nav-account-email">${escapeHtmlNav(email)}</div>
     <a href="account-settings.html" class="nav-account-settings">${navLabel("terms_account_link", "החשבון שלי")}</a>
-    <a href="index.html?view=intro" class="nav-account-settings">${navLabel("nav_intro_screen", "מסך הפתיחה של DeskKit")}</a>
     <button type="button" class="nav-account-logout">${navLabel("nav_logout", "התנתקות")}</button>
     <div class="nav-account-confirm" hidden>
       ${unsavedWarning}

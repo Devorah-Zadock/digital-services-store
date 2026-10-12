@@ -72,7 +72,11 @@ function dkAppSidebarItemHtml(it, here) {
   const label = it.labelKey ? dkSidebarLabel(it.labelKey, it.label) : "";
   if (it.divider) return '<div class="dk-app-sidebar-divider"></div>';
   // On the opening screen (index.html?view=intro) "Home" isn't the current page.
-  const active = it.href.split("?")[0] === here && !/[?&]view=intro\b/.test(location.search);
+  // Same page, and for catalog links (products.html?type=deck / xlsx) the same type too.
+  const [path, query] = it.href.split("?");
+  const wantType = query && new URLSearchParams(query).get("type");
+  const active = path === here && !/[?&]view=intro\b/.test(location.search)
+    && (!wantType || new URLSearchParams(location.search).get("type") === wantType);
   const iconBox = `<span class="dk-app-sidebar-icon">${DK_SIDEBAR_ICONS[it.key] || ""}</span>`;
   return `<a href="${it.href}" class="dk-app-sidebar-item${active ? " active" : ""}"${it.product ? ` data-dk-product="${it.product}"` : ""} title="${label}">${iconBox}<span class="dk-app-sidebar-item-label">${label}</span></a>`;
 }
