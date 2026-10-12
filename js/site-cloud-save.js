@@ -65,7 +65,8 @@ async function siteAutosaveTick() {
 // here has no way to know the save silently failed.
 async function saveSiteNow() {
   if (!siteCurrentUserId) return null;
-  const row = { user_id: siteCurrentUserId, template: siteState.template, data: siteState.data };
+  // updated_at: so an edited site moves to the top of "My projects" (newest first).
+  const row = { user_id: siteCurrentUserId, template: siteState.template, data: siteState.data, updated_at: new Date().toISOString() };
   if (siteProjectId) row.id = siteProjectId;
   const { data, error } = await supabaseClient.from("site_projects").upsert(row).select().single();
   if (!error && data) siteProjectId = data.id;
