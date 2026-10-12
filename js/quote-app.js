@@ -52,6 +52,8 @@ function emptyQuoteEventState() {
     price: "",
     vatNote: "",
     policeNote: "",
+    // A quote started from the English interface is an English document.
+    ...(typeof currentLang === "function" && currentLang() === "en" ? { lang: "en" } : {}),
   };
 }
 

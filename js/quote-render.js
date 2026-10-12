@@ -58,6 +58,7 @@ const QUOTE_CSS = `
   .quote-doc { font-family: 'Heebo', Arial, sans-serif; background:#fff; color:#1E1E1E; width:794px; flex-shrink:0; margin:0 auto; box-shadow:0 10px 30px rgba(0,0,0,.12); overflow-wrap:break-word; overflow:hidden; }
   .quote-doc .qd-inner { padding:0 56px 50px; }
   .quote-doc .bsd { font-size:12px; color:#6B6B6B; padding:14px 56px 0; }
+  .quote-doc[dir="ltr"] .bsd { text-align:right; }
   .quote-doc .letterhead { text-align:center; margin-bottom:18px; }
   .quote-doc .letterhead-logo { max-height:64px; max-width:220px; margin:0 auto 10px; display:block; }
   .quote-doc .biz-name { font-size:20px; font-weight:700; color:#163F35; margin-bottom:4px; }
@@ -76,6 +77,7 @@ const QUOTE_CSS = `
   .quote-doc .dates-list { margin:0 0 16px; padding-inline-start:22px; list-style:none; }
   .quote-doc .dates-list li { position:relative; font-size:14px; line-height:1.5; margin-bottom:4px; }
   .quote-doc .dates-list li::before { content:""; position:absolute; right:-15px; top:8px; width:5px; height:5px; border-radius:50%; background:currentColor; }
+  .quote-doc[dir="ltr"] .dates-list li::before { right:auto; left:-15px; }
   .quote-doc .description { font-size:14px; line-height:1.7; margin-bottom:18px; }
   .quote-doc .price-line { font-size:15px; font-weight:700; margin-bottom:4px; }
   .quote-doc .vat-note { font-size:12.5px; color:#6B6B6B; margin-bottom:18px; }
@@ -142,7 +144,20 @@ function quoteShowsBsd(q) {
   return !q.hideBsd;
 }
 
+/* Document language: q.lang === "en" renders the quote in English (left to
+   right); anything else is the Hebrew quote, unchanged. q.currency is the
+   symbol shown with prices (default ₪). */
+function quoteDocEn(q) {
+  return !!q && q.lang === "en";
+}
+const QUOTE_CURRENCIES = ["₪", "$", "€", "£"];
+
 function renderQuoteHtml(q) {
+  const en = quoteDocEn(q);
+  const T = (he, enText) => (en ? enText : he);
+  const cur = QUOTE_CURRENCIES.includes(q.currency) ? q.currency : "₪";
+  // Hebrew: "1,000 ₪" (unchanged); English: "₪1,000".
+  const money = (v) => (en ? `${cur}${v}` : `${v} ${cur}`);
   const skin = QUOTE_TEMPLATES[q.template] ? q.template : QUOTE_TEMPLATE_DEFAULT;
   // Keeps each date paired with its REAL index in q.eventDates (not its
   // position after filtering) — data-q-date-idx has to match the array
@@ -153,11 +168,11 @@ function renderQuoteHtml(q) {
   const isMulti = validDates.length > 1;
 
   const subjectHtml = isMulti
-    ? `<div class="subject">הצעת מחיר ל<span data-qkey="eventName">${escapeHtmlQ(q.eventName)}</span> בתאריכים:</div>
+    ? `<div class="subject">${T("הצעת מחיר ל", "Price quote for ")}<span data-qkey="eventName">${escapeHtmlQ(q.eventName)}</span>${T(" בתאריכים:", " on the following dates:")}</div>
        <ul class="dates-list">${validDateEntries.map(([i, d]) => `<li data-q-date-idx="${i}">${escapeHtmlQ(d)}</li>`).join("")}</ul>`
-    : `<div class="subject">הצעת מחיר ל<span data-qkey="eventName">${escapeHtmlQ(q.eventName)}</span>${validDateEntries.length === 1 ? ` בתאריך <span data-q-date-idx="${validDateEntries[0][0]}">${escapeHtmlQ(validDateEntries[0][1])}</span>` : ""}</div>`;
+    : `<div class="subject">${T("הצעת מחיר ל", "Price quote for ")}<span data-qkey="eventName">${escapeHtmlQ(q.eventName)}</span>${validDateEntries.length === 1 ? `${T(" בתאריך ", " on ")}<span data-q-date-idx="${validDateEntries[0][0]}">${escapeHtmlQ(validDateEntries[0][1])}</span>` : ""}</div>`;
 
-  const priceLabel = isMulti ? "מחיר לכל אירוע" : "מחיר";
+  const priceLabel = isMulti ? T("מחיר לכל אירוע", "Price per event") : T("מחיר", "Price");
   const priceNum = parseILS(q.price);
   const hasVatNote = String(q.vatNote || "").trim().length > 0;
   const vatRateNum = parseFloat(String(q.vatRate ?? "").replace(/,/g, "").trim());
@@ -169,16 +184,16 @@ function renderQuoteHtml(q) {
   const vatLineHtml = hasVatNote
     ? `<div class="vat-note" data-qkey="vatNote">${escapeHtmlQ(q.vatNote)}</div>`
     : (priceNum !== null
-        ? `<div class="vat-note">מע"מ: ${vatRatePct}%</div>
-           <div class="price-line vat-inclusive">מחיר כולל מע"מ: ${formatILS(priceNum * (1 + vatRatePct / 100))} ₪.</div>`
+        ? `<div class="vat-note">${T('מע"מ', "VAT")}: ${vatRatePct}%</div>
+           <div class="price-line vat-inclusive">${T('מחיר כולל מע"מ', "Price including VAT")}: ${money(formatILS(priceNum * (1 + vatRatePct / 100)))}.</div>`
         : "");
 
   return `
   <style>${QUOTE_CSS}${QUOTE_SKIN_CSS[skin] || ""}</style>
-  <div class="quote-doc skin-${skin}" dir="rtl">
-    <div class="bsd">${quoteShowsBsd(q) ? 'בס"ד' : "&nbsp;"}</div>
+  <div class="quote-doc skin-${skin}" dir="${en ? "ltr" : "rtl"}"${en ? ' lang="en"' : ""}>
+    <div class="bsd">${quoteShowsBsd(q) ? T('בס"ד', 'BS"D') : "&nbsp;"}</div>
     <div class="letterhead">
-      ${q.logoUrl ? `<img class="letterhead-logo" src="${escapeHtmlQ(q.logoUrl)}" alt="${escapeHtmlQ("לוגو " + (q.businessName || ""))}">` : ""}
+      ${q.logoUrl ? `<img class="letterhead-logo" src="${escapeHtmlQ(q.logoUrl)}" alt="${escapeHtmlQ(T("לוגו ", "Logo ") + (q.businessName || ""))}">` : ""}
       <div class="biz-name">${escapeHtmlQ(q.businessName)}</div>
       <div class="tagline">${escapeHtmlQ(q.tagline1)}</div>
       <div class="tagline">${escapeHtmlQ(q.tagline2)}</div>
@@ -187,19 +202,21 @@ function renderQuoteHtml(q) {
     <hr>
     <div class="qd-inner">
       <div class="date-row" data-qkey="today">${escapeHtmlQ(q.today)}</div>
-      <div class="recipient">לכבוד <span data-qkey="recipient">${escapeHtmlQ(q.recipient)}</span></div>
-      <div class="greeting">שלום רב,</div>
+      <div class="recipient">${T("לכבוד", "To:")} <span data-qkey="recipient">${escapeHtmlQ(q.recipient)}</span></div>
+      <div class="greeting">${T("שלום רב,", "Hello,")}</div>
       ${subjectHtml}
       <div class="description" data-qkey="description">${escapeHtmlQ(q.description)}</div>
-      <div class="price-line">${priceLabel}: <span data-qkey="price">${escapeHtmlQ(q.price)}</span> ₪.</div>
+      <div class="price-line">${priceLabel}: ${en ? cur : ""}<span data-qkey="price">${escapeHtmlQ(q.price)}</span>${en ? "" : ` ${cur}`}.</div>
       ${vatLineHtml}
       <div class="police-note" data-qkey="policeNote">${escapeHtmlQ(q.policeNote)}</div>
       <div class="signature">
-        בברכה,<br>
+        ${T("בברכה,", "Best regards,")}<br>
         <span class="signer">${escapeHtmlQ(q.signerName)}</span><br>
         ${escapeHtmlQ(q.phone)}
       </div>
-      <div class="footer-note">נא לאשר בפקס: ${escapeHtmlQ(q.fax)} &nbsp;&nbsp;או במייל חוזר</div>
+      <div class="footer-note">${en
+        ? (q.fax ? `Please confirm by fax: ${escapeHtmlQ(q.fax)} &nbsp;&nbsp;or by replying to this email` : "Please confirm by replying to this email")
+        : `נא לאשר בפקס: ${escapeHtmlQ(q.fax)} &nbsp;&nbsp;או במייל חוזר`}</div>
     </div>
   </div>
   ${quotePdfCreditHtml()}`;

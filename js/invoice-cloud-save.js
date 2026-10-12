@@ -86,6 +86,9 @@ function creditNoteDraftFrom(original) {
     items: (original.data.items || []).map((it) => ({ ...it })),
     paymentMethod: "",
     notes: "",
+    // Same language and currency as the document it corrects.
+    ...(original.data.lang === "en" ? { lang: "en" } : {}),
+    ...(original.data.currency ? { currency: original.data.currency } : {}),
   };
 }
 
