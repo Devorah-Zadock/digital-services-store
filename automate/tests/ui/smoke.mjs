@@ -55,7 +55,8 @@ try {
   await page.goto(`${WEB}/automate.html#history`);
   await page.waitForSelector("#au-history .au-card", { timeout: 15000 });
   const hist = await page.locator("#au-history").innerText();
-  check("history shows the automation acting on it", /אף פנייה לא נופלת/.test(hist) && /נשלח/.test(hist), hist.slice(0, 120));
+  // The app follows the browser language (this runner is English), so accept either.
+  check("history shows the automation acting on it", /אף פנייה לא נופלת|No lead slips away/.test(hist) && /נשלח|sent/i.test(hist), hist.slice(0, 120));
 
   // a saved quote → send it from the app
   await admin("/rest/v1/quote_saves", { method: "POST", body: JSON.stringify({ user_id: uid, data: { eventName: "שיפוץ מטבח", recipient: "דנה", price: "9,500", businessName: "שיפוצי בדיקה", template: "classic" } }) });
