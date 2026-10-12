@@ -23,8 +23,9 @@ function dkHomeFreeTextRoute() {
   else location.href = href;
 }
 
-// index.html?view=intro — the marketing home, also for signed-in users,
-// with a bar back to their workspace. Default (no parameter) stays the
+// index.html?view=intro — the marketing home, also for signed-in users
+// (the DeskKit logo and the account menu lead here; "Home" in the side
+// rail leads back to the workspace). Default (no parameter) stays the
 // workspace, so every existing link keeps working as before.
 const DK_HOME_INTRO = new URLSearchParams(location.search).get("view") === "intro";
 
@@ -39,10 +40,6 @@ async function dkHomeShowLoggedIn(user) {
   if (DK_HOME_INTRO) {
     out.hidden = false;
     inEl.hidden = true;
-    const bar = document.getElementById("dk-home-switch-bar");
-    const hello = document.getElementById("dk-home-switch-hello");
-    if (hello) hello.textContent = "👋 " + dkHomeDisplayName(user);
-    if (bar) bar.hidden = false;
     return;
   }
   out.hidden = true;
