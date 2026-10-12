@@ -295,6 +295,8 @@ const ACTION_MIN_ROLE: Record<string, Role> = {
   "whoami": "support",
   "unlock": "support",
   "set-admin-password": "support",
+  "security-overview": "support",
+  "forget-devices": "support",
   "summary": "support",
   "list-users": "support",
   "user-detail": "support",
@@ -492,7 +494,7 @@ const UNLOCK_TTL_MS = 2 * 60 * 60 * 1000;
 const STEP_UP_ACTIONS = new Set([
   "set-pro", "delete-account", "export-users", "set-admin-role", "remove-admin",
   "suspend-user", "unsuspend-user", "bulk", "delete-site", "delete-cv",
-  "mail-create", "automate-kill-switch",
+  "mail-create", "automate-kill-switch", "forget-devices",
 ]);
 const UNLOCK_FREE_ACTIONS = new Set(["whoami", "unlock", "set-admin-password"]);
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
@@ -545,6 +547,13 @@ async function sha256hex(s: string): Promise<string> {
 // is then remembered for 30 days (until the admin password changes).
 const DEVICE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const CODE_TTL_MS = 10 * 60 * 1000;
+// "Sign out all other devices" records admin_devices_revoked; a device
+// token issued before the latest one is no longer recognized.
+async function lastDeviceRevoke(admin: ReturnType<typeof createClient>, email: string): Promise<number> {
+  const { data } = await admin.from("admin_audit_log").select("created_at").eq("admin_email", email)
+    .eq("action", "admin_devices_revoked").order("created_at", { ascending: false }).limit(1);
+  return data && data[0] ? Date.parse(data[0].created_at) : 0;
+}
 // Staging only (the test project has no email): return the code in the reply.
 const TEST_CODES = Deno.env.get("ADMIN_TEST_CODES") === "staging-only";
 
@@ -660,10 +669,6 @@ function whereText(w: Where): string {
   return ` — מכשיר: <b>${w.device}</b>, קוד רשת: <b dir="ltr">${w.net}</b>`;
 }
 
-function notifyAdminUnlock(email: string, w: Where) {
-  return securityEmail(email, "כניסה לאזור הניהול של DeskKit", "נכנסו לאזור הניהול עם החשבון שלך" + whereText(w));
-}
-
 // One email per lock-out (not one for every request made while locked).
 async function notifyAdminLockedOnce(admin: ReturnType<typeof createClient>, email: string, w?: Where) {
   const since = new Date(Date.now() - 16 * 60 * 1000).toISOString();
@@ -735,6 +740,36 @@ Deno.serve(async (req: Request) => {
 
     if (action === "whoami") return json({ email: callerEmail, role, adminPassword, unlocked });
 
+    // The caller's own recent admin entries and how many devices are recognized.
+    if (action === "security-overview") {
+      const revokedAt = await lastDeviceRevoke(admin, callerEmail);
+      const since = new Date(Math.max(revokedAt, Date.now() - DEVICE_TTL_MS)).toISOString();
+      const [{ data: events }, { count: devices }] = await Promise.all([
+        admin.from("admin_audit_log").select("action, created_at, details").eq("admin_email", callerEmail)
+          .in("action", ["admin_unlock", "admin_device_trusted", "admin_code_failed", "admin_unlock_failed", "admin_unlock_locked", "admin_devices_revoked", "set_admin_password"])
+          .order("created_at", { ascending: false }).limit(30),
+        admin.from("admin_audit_log").select("id", { count: "exact", head: true }).eq("admin_email", callerEmail)
+          .eq("action", "admin_device_trusted").gt("created_at", since),
+      ]);
+      return json({
+        devices: devices || 0, revokedAt: revokedAt ? new Date(revokedAt).toISOString() : null,
+        events: (events || []).map((e: { action: string; created_at: string; details: Record<string, unknown> | null }) => ({
+          action: e.action, at: e.created_at, device: String(e.details?.device || ""), net: String(e.details?.net || ""), newDevice: !!e.details?.newDevice,
+        })),
+      });
+    }
+
+    // Forget every recognized device except this one (needs the admin password again).
+    if (action === "forget-devices") {
+      const where = await whereOf(req);
+      await audit(admin, actor, "admin_devices_revoked", null, where);
+      const revokedAt = await lastDeviceRevoke(admin, callerEmail);
+      const deviceToken = await signObj({ k: "dev", u: actor.id, v: String(secretVersion), iat: Math.max(Date.now(), revokedAt + 1), exp: Date.now() + DEVICE_TTL_MS });
+      await securityEmail(callerEmail, "כל המכשירים האחרים נותקו מאזור הניהול — DeskKit",
+        "ביקשת לנתק את כל המכשירים האחרים מאזור הניהול. מעכשיו כל מכשיר אחר יצטרך שוב סיסמה וקוד מהמייל" + whereText(where));
+      return json({ ok: true, deviceToken });
+    }
+
     // Exchange the admin password for an unlock token (2 hours).
     if (action === "unlock") {
       const result = await admin.rpc("admin_secret_check", { p_email: callerEmail, p_password: String(body.password || "") });
@@ -753,7 +788,8 @@ Deno.serve(async (req: Request) => {
       // Second factor for devices that aren't recognized yet.
       const ver = String(secretVersion);
       const dev = await readObj(body.deviceToken);
-      const trusted = !!dev && dev.k === "dev" && dev.u === actor.id && dev.v === ver && Number(dev.exp) > Date.now();
+      const trusted = !!dev && dev.k === "dev" && dev.u === actor.id && dev.v === ver && Number(dev.exp) > Date.now()
+        && Number(dev.iat || 0) > await lastDeviceRevoke(admin, callerEmail);
       let newDeviceToken: string | null = null;
       if (!trusted) {
         const since15 = new Date(Date.now() - 15 * 60 * 1000).toISOString();
@@ -775,7 +811,7 @@ Deno.serve(async (req: Request) => {
             return json({ error: "bad-code" }, 401);
           }
           await audit(admin, actor, "admin_device_trusted", null, { ...where, n: String(ch.n) });
-          newDeviceToken = await signObj({ k: "dev", u: actor.id, v: ver, exp: Date.now() + DEVICE_TTL_MS });
+          newDeviceToken = await signObj({ k: "dev", u: actor.id, v: ver, iat: Date.now(), exp: Date.now() + DEVICE_TTL_MS });
           await securityEmail(callerEmail, "מכשיר חדש אושר לאזור הניהול — DeskKit", "מכשיר חדש אושר לכניסה לאזור הניהול עם החשבון שלך" + whereText(where));
         } else {
           const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
@@ -792,8 +828,9 @@ Deno.serve(async (req: Request) => {
           return json({ error: "device-code", challenge, ...(TEST_CODES ? { testCode: newCode } : {}) }, 401);
         }
       }
-      await audit(admin, actor, "admin_unlock", null, where);
-      await notifyAdminUnlock(callerEmail, where);
+      // Email only for a device that isn't recognized yet (the code email and
+      // the "new device approved" email above) — not on every entry.
+      await audit(admin, actor, "admin_unlock", null, { ...where, newDevice: !!newDeviceToken });
       return json({ ...(await makeUnlockToken(actor.id, ver)), ...(newDeviceToken ? { deviceToken: newDeviceToken } : {}) });
     }
 
@@ -836,7 +873,7 @@ Deno.serve(async (req: Request) => {
       // First-time setup: this device becomes the first recognized one. (A
       // change doesn't: every device, this one too, confirms by email again.)
       const firstDevice = adminPassword === "unset"
-        ? { deviceToken: await signObj({ k: "dev", u: actor.id, v: String(newVersion), exp: Date.now() + DEVICE_TTL_MS }) } : {};
+        ? { deviceToken: await signObj({ k: "dev", u: actor.id, v: String(newVersion), iat: Date.now(), exp: Date.now() + DEVICE_TTL_MS }) } : {};
       return json({ ...(await makeUnlockToken(actor.id, String(newVersion))), ...firstDevice });
     }
 
