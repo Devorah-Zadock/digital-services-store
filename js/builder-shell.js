@@ -282,8 +282,8 @@ function bshellWireTopBar() {
 
 /* ---------- AI help popover — reuses the exact same validated-op
    pipeline as the old sidebar's AI command bar (site-ai-command.js):
-   free text + real structural context -> site-ai-command Edge
-   Function -> ONE validated op -> confirm -> apply. applySiteAiOp()
+   free text + real site context -> site-ai-command Edge Function ->
+   a short list of validated ops -> confirm -> apply. applySiteAiOp()
    is the shared pure-mutation function; this file only adds the
    Shell-specific bookkeeping (its own unified Undo/Redo + canvas +
    hierarchy + autosave) around it, so an AI-driven change in the
@@ -298,12 +298,28 @@ function bshellApplyAiOp(result) {
   if (!applySiteAiOp(d, template, result)) {
     bshellUndoStack.pop(); // nothing was actually applied
     bshellSyncUndoButtons();
+    bshellAiNote(bsL("השינוי כבר לא מתאים למצב הנוכחי של האתר, ולכן לא בוצע.", "That change no longer fits the site's current state, so it wasn't made."));
     return;
   }
+  // A selected service/section may no longer exist (or sit at another
+  // index) after the change; the Settings panel just needs repainting so
+  // it shows the new colour/font/contact values.
+  if (bshellSelection && bshellSelection.kind !== "settings") bshellDeselect();
+  else bshellRenderProperties();
+  const t = SITE_TEMPLATES[siteState.template];
+  document.getElementById("bshell-top-name").textContent = (d.businessName || "").trim() || (t ? bsLabel(t.label) : bsL("הפרויקט שלי", "My project"));
   bshellRenderCanvas();
   bshellRenderHierarchy();
   bshellScheduleSave();
-  bshellAiNote(`${bsL("בוצע:", "Done:")} ${escapeHtmlS(result.explanation || "")}`);
+  // Same Undo as every manual edit in the Shell (bshellSnapshot above) —
+  // offered right here too, so the way back is one click away.
+  bshellAiNote(`${bsL("בוצע ✓", "Done ✓")} ${escapeHtmlS(result.explanation || "")}
+    <div class="bshell-ai-confirm-row"><button type="button" id="bshell-ai-undo">${bsL("↶ ביטול השינוי", "↶ Undo this change")}</button></div>`);
+  const undoBtn = document.getElementById("bshell-ai-undo");
+  if (undoBtn) undoBtn.addEventListener("click", () => {
+    bshellUndo();
+    bshellAiNote(bsL("השינוי בוטל.", "Change undone."));
+  });
 }
 
 function bshellAiNote(html) {
@@ -311,23 +327,26 @@ function bshellAiNote(html) {
   if (note) note.innerHTML = html;
 }
 
-/* What the AI can actually do is exactly site-ai-command's op menu:
-   reorder / add / remove a section, or switch a section's display
-   variant — nothing about colors, fonts or overall "style". The panel
-   used to offer fixed example chips like "make the design more luxurious"
-   / "minimalist", which the server can only ever answer with
-   "unsupported" (each refusal still spending one of the free attempts).
-   The chips are now built from THIS site's real context, so every
-   suggestion is one the server can carry out, and the hint line says
-   plainly what kind of request works. */
+/* What the AI can actually do is exactly site-ai-command's op menu
+   (supabase/functions/_shared/site-ai-ops.ts): reorder / add / remove a
+   section, switch a section's display variant, change the main colour or
+   the font, rewrite a text (title, tagline, about, headings, contact
+   details), add / edit / remove a service, or remove an image. The chips
+   are built from THIS site's real context, so every suggestion is one
+   the server can carry out, and the hint line says plainly what kind of
+   request works. */
 const BSHELL_AI_TYPE_NAMES = { services: bsL("השירותים", "the services"), about: bsL("האודות", "the about section"), contact: bsL("חלק צור קשר", "the contact section"), aboutTags: bsL("התגיות", "the tags"), grid: bsL("הרשת", "the grid") };
-const BSHELL_AI_HINT = bsL("אפשר לבקש: לשנות את סדר החלקים, להוסיף או להסיר חלק, או סגנון תצוגה אחר ל-Hero ולשירותים. שינויי צבע וגופן נעשים ב\"פרטי העסק ועיצוב\".", "You can ask to: reorder sections, add or remove a section, or switch the Hero or services to another display style. Color and font changes are made in \"Business details & design\".");
+const BSHELL_AI_HINT = bsL("אפשר לבקש: לשנות צבע או גופן, לכתוב מחדש טקסט (כותרת, אודות, פרטי קשר), להוסיף/לערוך/להסיר שירות, לשנות סדר חלקים או סגנון תצוגה. אפשר כמה דברים בבקשה אחת.", "You can ask to: change the color or font, rewrite a text (heading, about, contact details), add/edit/remove a service, reorder sections or switch a display style. Several things in one request is fine.");
 
 function bshellAiExamples() {
   const ctx = siteAiCommandContext();
   const name = (t) => BSHELL_AI_TYPE_NAMES[t] || t;
   const variants = (siteState.data && siteState.data.blockVariants) || {};
   const out = [];
+  // Content/design first — that's what people ask for most.
+  out.push(bsL("שנה את הצבע לכחול והפוך את הגופן לאלגנטי", "Make the color blue and the font more elegant"));
+  if (ctx.textFields.about) out.push(bsL("קצר את טקסט האודות", "Make the about text shorter"));
+  else out.push(bsL("כתוב שורת תיאור מקצועית יותר", "Write a more professional tagline"));
   const movable = ctx.activeTypes.filter((t) => t !== "hero" && BSHELL_AI_TYPE_NAMES[t]);
   if (movable.length >= 2) out.push(bsL(`הזז את ${name(movable[1])} לפני ${name(movable[0])}`, `Move ${name(movable[1])} before ${name(movable[0])}`));
   if (ctx.variantOptions.hero) {
@@ -369,7 +388,10 @@ function bshellWireAiPanel() {
   });
   document.addEventListener("click", (e) => {
     if (panel.hasAttribute("hidden")) return;
-    if (e.target === btn || panel.contains(e.target)) return;
+    // !isConnected: a click on the note's own Confirm/Undo buttons, which
+    // their handler has already replaced by the time this runs — still a
+    // click inside the panel, so the "Done" note stays visible.
+    if (e.target === btn || panel.contains(e.target) || !e.target.isConnected) return;
     panel.setAttribute("hidden", "");
     btn.setAttribute("aria-expanded", "false");
   });
@@ -405,11 +427,10 @@ async function bshellAiSubmit() {
     const token = sessionData.session && sessionData.session.access_token;
     if (!token) throw new Error("not signed in");
 
-    const ctx = siteAiCommandContext();
     const res = await fetch(SUPABASE_URL + "/functions/v1/site-ai-command", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + token, apikey: SUPABASE_ANON_KEY },
-      body: JSON.stringify({ lang: (typeof currentLang === "function" ? currentLang() : "he"), command, availableTypes: ctx.availableTypes, activeTypes: ctx.activeTypes, variantOptions: ctx.variantOptions }),
+      body: JSON.stringify(siteAiCommandRequestBody(command)),
     });
     const data = await res.json();
     if (!res.ok || data.error) throw new Error(data.error || "unexpected error");
@@ -421,20 +442,18 @@ async function bshellAiSubmit() {
       return;
     }
 
+    // Re-checked against the live data (siteAiCleanOps, site-ai-
+    // command.js) before anything is even offered for confirmation.
     const result = data.result;
-    if (!result || result.op === "unsupported") {
-      bshellAiNote(`${escapeHtmlS((result && result.explanation) || bsL("לא הצלחתי לבצע את הפעולה הזו.", "I couldn't do that."))}<br>${escapeHtmlS(BSHELL_AI_HINT)}`);
+    const ops = (result && result.op !== "unsupported") ? siteAiCleanOps(result, ensurePagesShape(siteState.data), siteState.template) : [];
+    if (!ops.length) {
+      // The server's explanation already says what CAN be done.
+      bshellAiNote(escapeHtmlS((result && result.op === "unsupported" && result.explanation) || `${bsL("לא הצלחתי לבצע את הפעולה הזו.", "I couldn't do that.")} ${BSHELL_AI_HINT}`));
       return;
     }
 
     bshellAiPending = result;
-    bshellAiNote(`
-      <div>${escapeHtmlS(result.explanation || bsL("לבצע את השינוי?", "Make this change?"))}</div>
-      <div class="bshell-ai-confirm-row">
-        <button type="button" class="bshell-ai-confirm-yes" id="bshell-ai-confirm">${bsL("אישור", "Confirm")}</button>
-        <button type="button" id="bshell-ai-cancel">${bsL("ביטול", "Cancel")}</button>
-      </div>
-    `);
+    bshellAiNote(siteAiConfirmHtml(result, ops, "bshell-ai", "bshell-ai-confirm-yes"));
     document.getElementById("bshell-ai-confirm").addEventListener("click", () => {
       if (bshellAiPending) bshellApplyAiOp(bshellAiPending);
       bshellAiPending = null;
@@ -445,7 +464,7 @@ async function bshellAiSubmit() {
       bshellAiNote(bsL("בוטל.", "Canceled."));
     });
   } catch (err) {
-    console.error("bshell AI command failed:", err);
+    console.error("bshell AI command failed:", err && err.message ? err.message : "error"); // never the command or site text
     bshellAiNote(bsL("משהו השתבש. אפשר לנסות שוב בעוד רגע.", "Something went wrong. Please try again in a moment."));
   } finally {
     btn.disabled = false;
