@@ -50,6 +50,9 @@ async function signedInPage(user, ctxOpts = {}) {
   await page.waitForURL(/schedule-builder\.html/, { timeout: 25000 }).catch(() => {});
   if (!/schedule-builder\.html/.test(page.url())) await page.goto(`${WEB}/schedule-builder.html`);
   await page.waitForFunction(() => !document.getElementById("auth-gate-overlay"), null, { timeout: 25000 });
+  // The builder's scripts must have run before the test drives the page
+  // (an early run once checked a page that was still loading).
+  await page.waitForFunction(() => typeof window.scheduleOnStateLoaded === "function" && typeof window.scheduleMarkDirty === "function", null, { timeout: 25000 });
   await page.waitForTimeout(800);
   return { ctx, page };
 }
