@@ -1016,6 +1016,7 @@ ${(typeof DK_AUTOMATE_ENABLED !== "undefined" && DK_AUTOMATE_ENABLED === true) ?
 
     <div class="bshell-settings-group">
       <div class="bshell-settings-group-title">${bsL("עיצוב ומותג", "Design & brand")}</div>
+      ${bshellMoodPickerHtml(d)}
       <div class="bshell-props-field">
         <label class="bshell-props-label">${bsL("צבע ראשי", "Primary color")}</label>
         <input type="color" id="bshell-set-color" value="${escapeHtmlS(d.primaryColor || "#1F5C4E")}">
@@ -1060,6 +1061,11 @@ ${(typeof DK_AUTOMATE_ENABLED !== "undefined" && DK_AUTOMATE_ENABLED === true) ?
         </div>
       </div>
       <div class="bshell-props-field">
+        <label class="bshell-props-label" for="bshell-set-hero-alt">${bsL("תיאור התמונה הראשית (לא חובה)", "Main image description (optional)")}</label>
+        <input type="text" id="bshell-set-hero-alt" maxlength="125" value="${escapeHtmlS(d.heroAlt || "")}" placeholder="${bsL("לדוגמה: הצוות שלנו בסטודיו", "e.g. Our team at the studio")}">
+        <p class="bshell-settings-field-hint">${bsL("נקרא בקול לגולשים עיוורים ועוזר לגוגל להבין את התמונה. ריק — ישמש שם העסק.", "Read aloud to blind visitors and helps Google understand the photo. Empty — your business name is used.")}</p>
+      </div>
+      <div class="bshell-props-field">
         <label class="bshell-props-label">${bsL(`גלריית תמונות (עד ${SITE_GALLERY_MAX})`, `Image gallery (up to ${SITE_GALLERY_MAX})`)}</label>
         <p class="bshell-settings-field-hint">${bsL("אם יש תמונות בגלריה, הן מתחלפות אוטומטית במקום התמונה הראשית.", "If the gallery has images, they rotate automatically in place of the main image.")}</p>
         <div id="bshell-set-gallery-preview" class="site-gallery-preview">${bshellGalleryPreviewHtml(d)}</div>
@@ -1080,7 +1086,230 @@ ${(typeof DK_AUTOMATE_ENABLED !== "undefined" && DK_AUTOMATE_ENABLED === true) ?
           </label>
         </div>
       </div>
+    </div>
+
+    ${bshellSeoGroupHtml(d)}`;
+}
+
+/* ---------- Mood ("סגנון") — one of SITE_MOODS (site-templates.js) or
+   none. A mood is a starting look, not a lock: it fills in the ordinary
+   primary colour + font fields below (which the owner can still change),
+   and siteMoodCss() adds its heading font / corners / spacing on top. */
+function bshellMoodPickerHtml(d) {
+  if (typeof SITE_MOODS !== "object") return "";
+  const current = (d.mood && SITE_MOODS[d.mood]) ? d.mood : "";
+  const btn = (key, label, mood) => {
+    const swatch = mood
+      ? `<span class="bshell-mood-swatch" style="background:${mood.primaryColor};"></span><span class="bshell-mood-swatch" style="background:${mood.accent};"></span>`
+      : `<span class="bshell-mood-swatch bshell-mood-swatch-none"></span>`;
+    const sample = mood ? ` style="border-radius:${mood.radius};"` : "";
+    return `<button type="button" class="bshell-mood-btn${key === current ? " active" : ""}" role="radio" aria-checked="${key === current}" data-mood="${key}"${sample}>
+        <span class="bshell-mood-swatches">${swatch}</span>
+        <span class="bshell-mood-name">${escapeHtmlS(label)}</span>
+      </button>`;
+  };
+  return `
+      <div class="bshell-props-field">
+        <label class="bshell-props-label" id="bshell-mood-label">${bsL("סגנון", "Mood")}</label>
+        <div class="bshell-mood-grid" role="radiogroup" aria-labelledby="bshell-mood-label">
+          ${btn("", bsL("ללא", "None"), null)}
+          ${Object.keys(SITE_MOODS).map((k) => btn(k, bsL(SITE_MOODS[k].label, SITE_MOODS[k].labelEn), SITE_MOODS[k])).join("")}
+        </div>
+        <p class="bshell-settings-field-hint bshell-mood-hint">${bsL("בוחר צבע, גופנים, פינות ומרווחים שמתאימים זה לזה. אפשר לשנות צבע וגופן גם אחרי הבחירה.", "Picks a colour, fonts, corners and spacing that go together. You can still change the colour and font afterwards.")}</p>
+      </div>`;
+}
+
+/* Choosing a mood writes its colour + body font into d.primaryColor /
+   d.fontFamily. The look the site had before its FIRST mood is kept in
+   d.moodBefore, so "ללא" can put it back — but only a value still showing
+   the mood's own choice: a colour/font the owner picked by hand after the
+   mood stays. "ללא" deletes d.mood (and d.moodBefore), which is exactly
+   the "no mood" shape every older project already has. */
+function bshellApplyMood(d, key) {
+  const next = (key && SITE_MOODS[key]) ? SITE_MOODS[key] : null;
+  const cur = (d.mood && SITE_MOODS[d.mood]) ? SITE_MOODS[d.mood] : null;
+  if (next) {
+    if (!cur) d.moodBefore = { primaryColor: d.primaryColor, fontFamily: d.fontFamily };
+    d.mood = key;
+    d.primaryColor = next.primaryColor;
+    d.fontFamily = next.bodyFont;
+    return;
+  }
+  const before = d.moodBefore;
+  if (cur && before && typeof before === "object") {
+    if (String(d.primaryColor || "").toLowerCase() === cur.primaryColor.toLowerCase()) {
+      if (before.primaryColor === undefined) delete d.primaryColor; else d.primaryColor = before.primaryColor;
+    }
+    if (d.fontFamily === cur.bodyFont) {
+      if (before.fontFamily === undefined) delete d.fontFamily; else d.fontFamily = before.fontFamily;
+    }
+  }
+  delete d.mood;
+  delete d.moodBefore;
+}
+
+/* ---------- SEO / "איך האתר נראה בגוגל" ----------
+   d.seo = { title, description, ogImage } — every field optional. Empty
+   fields keep today's automatic <title>/<meta description> (business name
+   + tagline); see siteSeoFields() in site-templates.js for exactly what
+   the published page gets. The lengths below are guidance only — nothing
+   here ever blocks typing or saving. */
+const BSHELL_SEO_RANGES = { title: [50, 60], description: [150, 160] };
+// Roughly where Google cuts a result off (characters, not pixels).
+const BSHELL_SERP_CUT = { desktop: { title: 60, description: 160 }, mobile: { title: 78, description: 120 } };
+let bshellSerpDevice = "desktop";
+
+function bshellSeoGroupHtml(d) {
+  const seo = (d.seo && typeof d.seo === "object") ? d.seo : {};
+  return `
+    <div class="bshell-settings-group" id="bshell-seo-group">
+      <div class="bshell-settings-group-title">${bsL("SEO / איך האתר נראה בגוגל", "SEO / How your site looks on Google")}</div>
+      <p class="bshell-settings-field-hint bshell-seo-intro">${bsL("לא חובה. מה שתשאירו ריק ימולא אוטומטית משם העסק ומשורת התיאור. השינויים יופיעו באתר החי אחרי הפרסום הבא.", "Optional. Anything left empty is filled in automatically from your business name and tagline. Changes reach the live site the next time you publish.")}</p>
+      <div class="bshell-props-field">
+        <label class="bshell-props-label" for="bshell-seo-title">${bsL("כותרת בגוגל", "Title on Google")}</label>
+        <input type="text" id="bshell-seo-title" maxlength="200" value="${escapeHtmlS(seo.title || "")}" placeholder="${bsL("לדוגמה: סטודיו לעיצוב פנים בתל אביב | שם העסק", "e.g. Interior design studio in Tel Aviv | Business name")}">
+        <div class="bshell-seo-count" id="bshell-seo-title-count" aria-live="polite"></div>
+      </div>
+      <div class="bshell-props-field">
+        <label class="bshell-props-label" for="bshell-seo-desc">${bsL("תיאור בגוגל", "Description on Google")}</label>
+        <textarea id="bshell-seo-desc" class="bshell-seo-desc" maxlength="500" rows="4" placeholder="${bsL("משפט או שניים: מה אתם עושים, לאיזה אזור, ולמה לבחור בכם.", "A sentence or two: what you do, where, and why choose you.")}">${escapeHtmlS(seo.description || "")}</textarea>
+        <div class="bshell-seo-count" id="bshell-seo-desc-count" aria-live="polite"></div>
+      </div>
+      <div class="bshell-props-field">
+        <div class="bshell-serp-head">
+          <span class="bshell-props-label" style="margin:0;">${bsL("תצוגה מקדימה בגוגל", "Google preview")}</span>
+          <div class="bshell-serp-toggle" role="group" aria-label="${bsL("גודל מסך", "Screen size")}">
+            <button type="button" data-serp-device="desktop" class="${bshellSerpDevice === "desktop" ? "active" : ""}" aria-pressed="${bshellSerpDevice === "desktop"}">${bsL("מחשב", "Desktop")}</button>
+            <button type="button" data-serp-device="mobile" class="${bshellSerpDevice === "mobile" ? "active" : ""}" aria-pressed="${bshellSerpDevice === "mobile"}">${bsL("נייד", "Mobile")}</button>
+          </div>
+        </div>
+        <div class="bshell-serp-scroll"><div class="bshell-serp" id="bshell-serp"></div></div>
+      </div>
+      <div class="bshell-props-field">
+        <span class="bshell-props-label">${bsL("תמונה לשיתוף (וואטסאפ, פייסבוק)", "Share image (WhatsApp, Facebook)")}</span>
+        <div class="bshell-og-grid" id="bshell-og-grid" role="radiogroup">${bshellOgOptionsHtml(d)}</div>
+      </div>
     </div>`;
+}
+
+function bshellOgOptionsHtml(d) {
+  const gallery = (d.heroImages || []).filter(Boolean);
+  // Picking the hero photo itself is the same as the default ("").
+  const chosen = (d.seo && d.seo.ogImage && d.seo.ogImage !== d.heroImage && gallery.includes(d.seo.ogImage)) ? d.seo.ogImage : "";
+  const heroSrc = d.heroImage || gallery[0] || "";
+  const opt = (value, src, label) => `<button type="button" class="bshell-og-opt${value === chosen ? " active" : ""}" role="radio" aria-checked="${value === chosen}" data-og="${escapeHtmlS(value)}" title="${escapeHtmlS(label)}">
+      ${src ? `<img src="${escapeHtmlS(src)}" alt="">` : `<span class="site-photo-placeholder">🖼️</span>`}<span>${escapeHtmlS(label)}</span></button>`;
+  if (!heroSrc) return `<p class="bshell-settings-field-hint" style="margin:0;">${bsL("עדיין אין תמונות באתר. אחרי שתעלו תמונה ראשית (למעלה, ב\"תמונות ומדיה\") היא תשמש גם לשיתוף.", "No images on the site yet. Once you upload a main image (above, under \"Images & media\") it's used for sharing too.")}</p>`;
+  return opt("", heroSrc, bsL("התמונה הראשית", "Main image"))
+    + gallery.filter((src) => src !== d.heroImage).map((src, i) => opt(src, src, bsL(`גלריה ${i + 1}`, `Gallery ${i + 1}`))).join("");
+}
+
+/* Live counter under each SEO field: green inside the recommended range,
+   orange outside it, grey while empty (the automatic text is used). */
+function bshellSeoCount(el, value, kind) {
+  if (!el) return;
+  const [lo, hi] = BSHELL_SEO_RANGES[kind];
+  const len = Array.from(value.trim()).length;
+  let state, msg;
+  if (!len) { state = "empty"; msg = kind === "title" ? bsL("ריק — תוצג הכותרת האוטומטית (שם העסק)", "Empty — the automatic title (business name) is used") : bsL("ריק — יוצג התיאור האוטומטי (שורת התיאור)", "Empty — the automatic description (tagline) is used"); }
+  else if (len < lo) { state = "warn"; msg = bsL(`קצר מהמומלץ (${lo}–${hi} תווים)`, `Shorter than recommended (${lo}–${hi} characters)`); }
+  else if (len > hi) { state = "warn"; msg = bsL(`ארוך מהמומלץ (${lo}–${hi}) — גוגל עלול לקצר`, `Longer than recommended (${lo}–${hi}) — Google may cut it`); }
+  else { state = "good"; msg = bsL("אורך מצוין", "Great length"); }
+  el.className = "bshell-seo-count is-" + state;
+  el.dataset.state = state;
+  el.innerHTML = `<b>${len}</b>/${hi} · ${escapeHtmlS(msg)}`;
+}
+
+function bshellSerpCut(text, max) {
+  const chars = Array.from(text);
+  if (chars.length <= max) return text;
+  let cut = chars.slice(0, max).join("");
+  const space = cut.lastIndexOf(" ");
+  if (space > max * 0.6) cut = cut.slice(0, space);
+  return cut.replace(/[\s,.;:–—-]+$/, "") + "…";
+}
+
+/* Reads the title/description straight out of the home page this builder
+   would publish right now (currentSiteHtml), so the preview can never
+   disagree with the real tags. */
+function bshellSerpSource() {
+  const html = currentSiteHtml("index");
+  const headEnd = html.indexOf("</head>");
+  const doc = new DOMParser().parseFromString(html.slice(0, headEnd > 0 ? headEnd : html.length) + "</head><body></body>", "text/html");
+  const meta = doc.querySelector('meta[name="description"]');
+  return { title: (doc.title || "").trim(), description: meta ? (meta.getAttribute("content") || "").trim() : "" };
+}
+
+function bshellRenderSerp() {
+  const box = document.getElementById("bshell-serp");
+  if (!box) return;
+  const d = siteState.data;
+  const src = bshellSerpSource();
+  const cut = BSHELL_SERP_CUT[bshellSerpDevice];
+  const liveUrl = typeof currentSiteUrl === "function" ? currentSiteUrl() : "";
+  const host = (liveUrl.match(/^https?:\/\/([^/]+)/i) || [])[1] || "your-site.deskkit.co.il";
+  const name = (d.businessName || "").trim() || host;
+  box.className = "bshell-serp is-" + bshellSerpDevice;
+  box.setAttribute("dir", d.siteLang === "en" ? "ltr" : "rtl");
+  box.innerHTML = `
+    <div class="bshell-serp-site">
+      <span class="bshell-serp-fav" aria-hidden="true">${escapeHtmlS(Array.from(name)[0] || "D")}</span>
+      <span class="bshell-serp-site-text"><span class="bshell-serp-name">${escapeHtmlS(name)}</span><bdi dir="ltr" class="bshell-serp-url">https://${escapeHtmlS(host)}</bdi></span>
+    </div>
+    <div class="bshell-serp-title">${escapeHtmlS(bshellSerpCut(src.title, cut.title))}</div>
+    <div class="bshell-serp-desc">${src.description ? escapeHtmlS(bshellSerpCut(src.description, cut.description)) : `<span class="bshell-serp-missing">${bsL("(אין תיאור — גוגל יבחר טקסט מהעמוד בעצמו)", "(No description — Google will pick text from the page itself)")}</span>`}</div>
+    ${liveUrl ? "" : `<div class="bshell-serp-note">${bsL("הכתובת הסופית תיקבע בפרסום הראשון.", "The final address is set when you first publish.")}</div>`}`;
+}
+
+function bshellSetSeoField(d, key, value) {
+  d.seo = (d.seo && typeof d.seo === "object") ? d.seo : {};
+  if (value.trim()) d.seo[key] = value; else delete d.seo[key];
+  if (!Object.keys(d.seo).length) delete d.seo; // nothing set -> today's automatic tags, no leftover shape
+}
+
+function bshellWireSeoPanel(d) {
+  const titleEl = document.getElementById("bshell-seo-title");
+  const descEl = document.getElementById("bshell-seo-desc");
+  const titleCount = document.getElementById("bshell-seo-title-count");
+  const descCount = document.getElementById("bshell-seo-desc-count");
+  const bind = (el, key, countEl, kind) => {
+    if (!el) return;
+    bshellSeoCount(countEl, el.value, kind);
+    el.addEventListener("focus", () => bshellBeginEdit(el));
+    el.addEventListener("blur", () => bshellEndEdit(el));
+    el.addEventListener("input", () => {
+      bshellSetSeoField(d, key, el.value);
+      bshellSeoCount(countEl, el.value, kind);
+      bshellRenderSerp();
+      bshellScheduleSave(); // head-only tags: nothing on the canvas changes
+    });
+  };
+  bind(titleEl, "title", titleCount, "title");
+  bind(descEl, "description", descCount, "description");
+
+  document.querySelectorAll("[data-serp-device]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      bshellSerpDevice = btn.dataset.serpDevice;
+      document.querySelectorAll("[data-serp-device]").forEach((b) => {
+        b.classList.toggle("active", b === btn);
+        b.setAttribute("aria-pressed", String(b === btn));
+      });
+      bshellRenderSerp();
+    });
+  });
+
+  const ogGrid = document.getElementById("bshell-og-grid");
+  if (ogGrid) {
+    ogGrid.addEventListener("click", (e) => {
+      const opt = e.target.closest(".bshell-og-opt");
+      if (!opt) return;
+      bshellSnapshot();
+      bshellSetSeoField(d, "ogImage", opt.dataset.og || "");
+      ogGrid.innerHTML = bshellOgOptionsHtml(d);
+      bshellScheduleSave();
+    });
+  }
+  bshellRenderSerp();
 }
 function bshellGalleryPreviewHtml(d) {
   const images = d.heroImages || [];
@@ -1286,6 +1515,31 @@ function bshellWireSettingsProps() {
   bindPlainText("bshell-set-email", "email");
   bindPlainText("bshell-set-address", "address");
   bindPlainText("bshell-set-video", "videoUrl");
+
+  document.querySelectorAll(".bshell-mood-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const key = btn.dataset.mood || "";
+      if ((d.mood || "") === key) return;
+      bshellSnapshot();
+      bshellApplyMood(d, key);
+      bshellRenderProperties(); // the colour/font fields show the mood's values
+      bshellApplyGlobalStylesLive();
+      bshellScheduleSave();
+    });
+  });
+
+  // Alt text only — nothing visible on the canvas changes.
+  const heroAltEl = document.getElementById("bshell-set-hero-alt");
+  if (heroAltEl) {
+    heroAltEl.addEventListener("focus", () => bshellBeginEdit(heroAltEl));
+    heroAltEl.addEventListener("blur", () => bshellEndEdit(heroAltEl));
+    heroAltEl.addEventListener("input", () => {
+      if (heroAltEl.value.trim()) d.heroAlt = heroAltEl.value; else delete d.heroAlt;
+      bshellScheduleSave();
+    });
+  }
+
+  bshellWireSeoPanel(d);
 
   const hasWhatsappEl = document.getElementById("bshell-set-has-whatsapp");
   if (hasWhatsappEl) {
