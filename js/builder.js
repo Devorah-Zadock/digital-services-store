@@ -374,7 +374,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // async load swaps in the real one moments later, same as an
     // explicit ?template= link already skips the picker for.
     window.dkCvNeedsStylePick = isNewCv || (!localDraft && !startSlug && !urlCvId);
-    loadTemplate(startSlug && CV_TEMPLATES[startSlug] ? startSlug : Object.keys(CV_TEMPLATES)[0]);
+    // No template chosen → the general one (the first in the list is a
+    // developers' design, which most people opening the builder aren't).
+    loadTemplate(startSlug && CV_TEMPLATES[startSlug] ? startSlug : (CV_TEMPLATES["cv-general-modern"] ? "cv-general-modern" : Object.keys(CV_TEMPLATES)[0]));
     select.value = state.slug;
   }
 });
