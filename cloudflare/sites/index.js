@@ -12,6 +12,15 @@
 // public anon key only (supabase/sql/public_site_page.sql) — there is no
 // secret in this Worker. Each page is kept in Cloudflare's edge cache for
 // 60 seconds, so a busy site doesn't hit Supabase on every visit.
+//
+// Images: the builder stores photos in Supabase Storage (bucket
+// "site-images"). Served straight from there, every visitor's photo
+// download counted against Supabase's monthly transfer allowance. Pages
+// are now rewritten to load them from the site's own address
+// (<slug>.deskkit.co.il/_img/<path>); this Worker fetches each file from
+// Storage once per Cloudflare location and keeps it cached for 30 days.
+// Uploaded file names are unique and never overwritten, so a cached copy
+// can't go stale.
 
 const APEX = "deskkit.co.il";
 // First-level names DeskKit itself uses (mail, DNS-verified senders…) —
@@ -23,6 +32,47 @@ const OWN_SUBDOMAINS = new Set([
 const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 const PAGES = new Set(["index", "about", "contact"]);
 const EDGE_TTL_SECONDS = 60;
+const IMG_PREFIX = "/_img/";
+const IMG_TTL_SECONDS = 30 * 24 * 3600;
+// "<user uuid>/<folder>/<file>.<ext>" — the only shape the builder writes.
+const IMG_PATH_PATTERN = /^[0-9a-f-]{36}\/[A-Za-z0-9._-]{1,120}(?:\/[A-Za-z0-9._-]{1,200}){1,2}$/;
+const IMG_TYPES = /^image\/(jpeg|png|webp|gif|avif)$/;
+
+function storagePrefix(env) {
+  return `${env.SUPABASE_URL}/storage/v1/object/public/site-images/`;
+}
+
+async function serveImage(request, env, ctx, path) {
+  if (!IMG_PATH_PATTERN.test(path) || path.includes("..")) return notFound();
+  const cacheKey = new Request(`https://img.${APEX}/${path}`);
+  const cache = caches.default;
+  const hit = await cache.match(cacheKey);
+  if (hit) return hit;
+  let res;
+  try {
+    res = await fetch(storagePrefix(env) + path);
+  } catch (_e) {
+    return new Response("temporarily unavailable", { status: 502, headers: { "Cache-Control": "no-store" } });
+  }
+  const type = (res.headers.get("Content-Type") || "").split(";")[0].trim().toLowerCase();
+  if (!res.ok || !IMG_TYPES.test(type)) return notFound();
+  const out = new Response(res.body, {
+    status: 200,
+    headers: {
+      "Content-Type": type,
+      "Cache-Control": `public, max-age=${IMG_TTL_SECONDS}, immutable`,
+      "X-Content-Type-Options": "nosniff",
+      "Access-Control-Allow-Origin": "*",
+    },
+  });
+  if (request.method === "GET") ctx.waitUntil(cache.put(cacheKey, out.clone()));
+  return out;
+}
+
+// Points the page's Storage image links at the site's own /_img/ path.
+function rewriteImages(env, html) {
+  return html.split(storagePrefix(env)).join(IMG_PREFIX);
+}
 
 function pageFromPath(pathname) {
   const clean = pathname.replace(/^\/+|\/+$/g, "").replace(/\.html$/, "");
@@ -85,6 +135,7 @@ async function serveSite(request, env, ctx, slug, page) {
     });
   }
   if (!html) return notFound();
+  html = rewriteImages(env, html);
 
   const stored = new Response(html, { headers: siteHeaders({ "Cache-Control": `public, max-age=${EDGE_TTL_SECONDS}` }) });
   ctx.waitUntil(cache.put(cacheKey, stored));
@@ -109,6 +160,7 @@ export default {
 
     // Testing before the DNS switch: <worker>.workers.dev/?site=<slug>&page=about
     if (host.endsWith(".workers.dev") && env.ALLOW_PREVIEW === "1") {
+      if (url.pathname.startsWith(IMG_PREFIX)) return serveImage(request, env, ctx, url.pathname.slice(IMG_PREFIX.length));
       const slug = (url.searchParams.get("site") || "").toLowerCase();
       const page = url.searchParams.get("page") || "index";
       if (!SLUG_PATTERN.test(slug) || !PAGES.has(page)) return notFound();
@@ -120,6 +172,7 @@ export default {
     const slug = host.slice(0, -suffix.length);
     if (!SLUG_PATTERN.test(slug) || OWN_SUBDOMAINS.has(slug)) return notFound();
 
+    if (url.pathname.startsWith(IMG_PREFIX)) return serveImage(request, env, ctx, url.pathname.slice(IMG_PREFIX.length));
     const page = pageFromPath(url.pathname);
     if (!page) return notFound();
     return serveSite(request, env, ctx, slug, page);

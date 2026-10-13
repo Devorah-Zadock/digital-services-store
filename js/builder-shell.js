@@ -1376,15 +1376,15 @@ function bshellWireSettingsProps() {
     photoEl.addEventListener("change", async (e) => {
       const file = e.target.files[0];
       if (!file) return;
-      if (file.size > 6 * 1024 * 1024) {
-        alert(bsL("התמונה גדולה מדי — בחרו קובץ עד 6MB.", "The image is too large — choose a file up to 6MB."));
+      if (file.size > SITE_IMAGE_MAX_INPUT) {
+        alert(bsL("התמונה גדולה מדי — בחרו קובץ עד 25MB.", "The image is too large — choose a file up to 25MB."));
         e.target.value = "";
         return;
       }
       bshellSnapshot();
       const url = await uploadSiteImage(file, "hero");
       if (!url) {
-        alert(bsL("העלאת התמונה נכשלה, נסו שוב.", "The image upload failed, please try again."));
+        alert(siteUploadErrorText());
         bshellUndoStack.pop();
         bshellSyncUndoButtons();
         e.target.value = "";
@@ -1431,8 +1431,8 @@ function bshellWireSettingsProps() {
       }
       let remaining = toAdd.length;
       toAdd.forEach(async (file) => {
-        if (file.size > 6 * 1024 * 1024) {
-          alert(bsL(`"${file.name}" גדולה מדי — בחרו קובץ עד 6MB.`, `"${file.name}" is too large — choose a file up to 6MB.`));
+        if (file.size > SITE_IMAGE_MAX_INPUT) {
+          alert(bsL(`"${file.name}" גדולה מדי — בחרו קובץ עד 25MB.`, `"${file.name}" is too large — choose a file up to 25MB.`));
           remaining -= 1;
           if (remaining === 0) { bshellRenderProperties(); bshellRenderCanvas(); bshellScheduleSave(); }
           return;
@@ -1442,7 +1442,7 @@ function bshellWireSettingsProps() {
         // gallery upload already uses.
         const name = "gallery-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
         const url = await uploadSiteImage(file, name);
-        if (!url) alert(bsL(`העלאת "${file.name}" נכשלה, נסו שוב.`, `Uploading "${file.name}" failed, please try again.`));
+        if (!url) alert(siteUploadErrorText(file.name));
         else d.heroImages.push(url);
         remaining -= 1;
         if (remaining === 0) { bshellRenderProperties(); bshellRenderCanvas(); bshellScheduleSave(); }
