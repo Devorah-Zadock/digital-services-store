@@ -7,13 +7,31 @@
    immediately, if js/cv-saves-router.js loaded an existing one), then
    every later save updates that same row via upsert's own id.
 
-   Explicit-save only: nothing here runs on every edit, only when
-   #cv-save-btn is clicked — editing a CV (or just looking at one) was
-   silently creating/overwriting a save before a person ever chose to
-   keep anything. */
+   Autosave (signed-in only): a few seconds after the last real edit,
+   and when the tab is hidden/closed, the CV is saved to that same row —
+   most people who opened the builder never pressed "שמירה" and lost
+   their work. "A real edit" is measured against cvAutosaveBaseline (the
+   snapshot last saved, or last loaded): just opening/looking at a CV,
+   loading a template or switching language never creates or
+   overwrites a save by itself. Signed-out visitors keep the local
+   draft only (saveCvLocalState below). */
 
 let cvCurrentUserId = null;
 let cvSavedId = null;
+// Cached from the session so the page-close save can run synchronously
+// (getSession() is async, and an unloading page won't wait for it).
+let cvAccessToken = null;
+
+function cvCurrentSnapshot() {
+  return {
+    slug: state.slug,
+    lang: state.lang,
+    fontId: state.fontId,
+    content: state.content,
+    color: document.getElementById("color-picker").value,
+    textColor: document.getElementById("text-color-picker").value,
+  };
+}
 
 // Returns the Supabase error (or null on success) — confirmed-live bug
 // this fixes: both callers (the legacy #cv-save-btn handler and
@@ -22,21 +40,26 @@ let cvSavedId = null;
 // upsert actually succeeded. supabase-js never throws on a query
 // error, so without checking the return value a failed save looked
 // identical to a successful one.
-async function saveCvNow() {
+// Saves run one at a time: an autosave still creating the row while the
+// person clicks "שמירה"/"הורדת PDF" would otherwise send two inserts (no
+// id yet on either) and leave two copies of the same CV in "My CVs".
+let cvSaveQueue = Promise.resolve();
+function saveCvNow() {
+  const run = cvSaveQueue.then(cvSaveNowInner, cvSaveNowInner);
+  cvSaveQueue = run.catch(() => {});
+  return run;
+}
+
+async function cvSaveNowInner() {
   if (!cvCurrentUserId || !state.content) return null;
-  const snapshot = {
-    slug: state.slug,
-    lang: state.lang,
-    fontId: state.fontId,
-    content: state.content,
-    color: document.getElementById("color-picker").value,
-    textColor: document.getElementById("text-color-picker").value,
-  };
+  const snapshot = cvCurrentSnapshot();
+  const json = JSON.stringify(snapshot);
   const row = { user_id: cvCurrentUserId, data: snapshot, updated_at: new Date().toISOString() };
   if (cvSavedId) row.id = cvSavedId;
   const { data, error } = await supabaseClient.from("cv_saves").upsert(row).select().single();
   if (error) return error;
   cvSavedId = data.id;
+  cvAutosaveBaseline = json;
   const url = new URL(location.href);
   url.searchParams.set("cv", data.id);
   url.searchParams.delete("new");
@@ -86,7 +109,92 @@ function saveCvLocalState() {
     localStorage.setItem(cvLocalKey(key), JSON.stringify(snapshot));
     if (!cvSavedId) localStorage.setItem(CV_LAST_SLUG_KEY, state.slug);
   } catch (err) { /* storage unavailable — not fatal, just won't persist */ }
+  // Same "every edit passes through here" hook point, for the account.
+  cvAutosaveSchedule();
 }
+
+/* ---------- Autosave to the account ---------- */
+
+const CV_AUTOSAVE_DELAY_MS = 3000;
+let cvAutosaveBaseline = null; // JSON of the snapshot last saved/loaded
+let cvAutosaveTimer = null;
+
+// One status line in the Shell's top bar, the mobile download bar and
+// the old (?shell=0) top row — all show the same thing.
+function cvSetSaveStatus(kind) {
+  const text = {
+    saving: dkL("שומר…", "Saving…"),
+    saved: dkL("נשמר ✓", "Saved ✓"),
+    failed: dkL("לא נשמר — נסו שוב", "Not saved — try again"),
+  }[kind] || "";
+  ["cvbshell-top-status", "cvbshell-mobile-status"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = text;
+    el.className = "bshell-top-status" + (text ? " " + kind : "");
+  });
+  const old = document.getElementById("cv-save-status");
+  if (old) { old.textContent = text; old.classList.toggle("ok", kind === "saved"); }
+}
+
+// Whatever is on screen now counts as "already saved" — called after
+// loading a CV (or a fresh template), so loading alone never saves.
+function cvAutosaveResetBaseline() {
+  clearTimeout(cvAutosaveTimer);
+  cvAutosaveTimer = null;
+  if (state && state.content) cvAutosaveBaseline = JSON.stringify(cvCurrentSnapshot());
+}
+
+function cvAutosaveSchedule() {
+  if (!cvCurrentUserId) return;
+  clearTimeout(cvAutosaveTimer);
+  cvAutosaveTimer = setTimeout(cvAutosaveFlush, CV_AUTOSAVE_DELAY_MS);
+}
+
+function cvAutosaveIsDirty() {
+  if (!cvCurrentUserId || !state.content || cvAutosaveBaseline === null) return false;
+  return JSON.stringify(cvCurrentSnapshot()) !== cvAutosaveBaseline;
+}
+
+async function cvAutosaveFlush() {
+  clearTimeout(cvAutosaveTimer);
+  cvAutosaveTimer = null;
+  if (!cvAutosaveIsDirty()) return;
+  cvSetSaveStatus("saving");
+  const error = await saveCvNow();
+  cvSetSaveStatus(error ? "failed" : "saved");
+  if (!error && window.refreshMyPanel) window.refreshMyPanel();
+}
+
+/* Tab hidden / closed: a normal save may be cut off by the page going
+   away, so an already-created row is updated with a keepalive request
+   instead (browsers cap keepalive bodies at 64KB — a CV with a large
+   photo falls back to the normal save, which usually still completes
+   on a tab switch). A CV with no row yet goes through the normal,
+   queued save so it can never be inserted twice. */
+function cvAutosaveOnHide() {
+  if (!cvAutosaveIsDirty()) return;
+  clearTimeout(cvAutosaveTimer);
+  cvAutosaveTimer = null;
+  const snapshot = cvCurrentSnapshot();
+  const json = JSON.stringify(snapshot);
+  const body = JSON.stringify({ data: snapshot, updated_at: new Date().toISOString() });
+  if (cvSavedId && cvAccessToken && body.length < 60000) {
+    try {
+      fetch(`${SUPABASE_URL}/rest/v1/cv_saves?id=eq.${encodeURIComponent(cvSavedId)}&user_id=eq.${encodeURIComponent(cvCurrentUserId)}`, {
+        method: "PATCH",
+        keepalive: true,
+        headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + cvAccessToken, Prefer: "return=minimal" },
+        body,
+      }).then((r) => { if (!r.ok) cvAutosaveBaseline = ""; }, () => { cvAutosaveBaseline = ""; }); // "" = dirty again, retried on the next edit/flush
+      cvAutosaveBaseline = json;
+      return;
+    } catch (_e) { /* fall through to the normal save */ }
+  }
+  cvAutosaveFlush();
+}
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") cvAutosaveOnHide(); });
+window.addEventListener("pagehide", cvAutosaveOnHide);
 
 /* Pass a saved CV's id (prefixed "id:") to resume THAT CV's own local
    draft only, a template slug to resume a not-yet-saved draft of that
@@ -124,6 +232,7 @@ function applyCvSnapshot(snap) {
   // DOMContentLoaded activation runs synchronously, before this
   // function's async auth/cloud-save check below gets a chance to.
   if (typeof cvbshellRefreshIfActive === "function") cvbshellRefreshIfActive();
+  cvAutosaveResetBaseline();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -141,8 +250,11 @@ document.addEventListener("DOMContentLoaded", () => {
   // now-logged-out account's real data.
   supabaseClient.auth.onAuthStateChange((_event, session) => {
     const stillSignedIn = session && session.user;
+    cvAccessToken = stillSignedIn ? session.access_token : null;
     if (!stillSignedIn && cvCurrentUserId) {
       cvCurrentUserId = null;
+      clearTimeout(cvAutosaveTimer);
+      cvSetSaveStatus("");
       if (typeof loadTemplate === "function" && state.slug) loadTemplate(state.slug);
     }
   });
@@ -157,6 +269,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const user = data.session && data.session.user;
     if (user) {
       cvCurrentUserId = user.id;
+      cvAccessToken = data.session.access_token;
       const clearedForeignDraft = typeof guardLocalDraftOwnership === "function" && guardLocalDraftOwnership(user.id);
       if (clearedForeignDraft) {
         // guardLocalDraftOwnership just wiped a PREVIOUS account's local
@@ -169,28 +282,26 @@ document.addEventListener("DOMContentLoaded", () => {
         // to show instead right after.
         if (typeof loadTemplate === "function" && state.slug) loadTemplate(state.slug);
       }
+      // Whatever is on screen at sign-in is the starting point — only
+      // edits from here on are autosaved (applyCvSnapshot resets this
+      // again if js/cv-saves-router.js then loads a specific saved CV).
+      cvAutosaveResetBaseline();
       logUsageEvent("cv", state.slug, "edit");
     }
     if (window.revealGatedPage) window.revealGatedPage();
   });
 
   const btn = document.getElementById("cv-save-btn");
-  const status = document.getElementById("cv-save-status");
   if (btn) {
     btn.addEventListener("click", async () => {
       if (!cvCurrentUserId) { if (typeof openAuthPrompt === "function") openAuthPrompt(); return; }
       btn.disabled = true;
+      clearTimeout(cvAutosaveTimer);
+      cvSetSaveStatus("saving");
       const error = await saveCvNow();
       btn.disabled = false;
-      if (!error) {
-        status.textContent = dkL("נשמר ✓", "Saved ✓");
-        status.classList.add("ok");
-        if (window.refreshMyPanel) window.refreshMyPanel();
-        setTimeout(() => { status.textContent = ""; status.classList.remove("ok"); }, 2500);
-      } else {
-        status.textContent = dkL("השמירה נכשלה, נסו שוב", "Saving failed, please try again");
-        status.classList.remove("ok");
-      }
+      cvSetSaveStatus(error ? "failed" : "saved");
+      if (!error && window.refreshMyPanel) window.refreshMyPanel();
     });
   }
 });
