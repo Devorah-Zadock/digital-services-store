@@ -706,13 +706,74 @@ function closeAllTextStylePopovers(root) {
    the same template shared one hero file — uploading a picture in one
    silently replaced it in the other, live site included. Files already
    uploaded under the old names stay where they are and keep working. */
-async function uploadSiteImage(file, name) {
+/* Photos are shrunk in the browser before upload: max 1920 px wide
+   (3000 px tall), saved as WebP (JPEG where the browser can't write WebP,
+   PNG kept as PNG there so transparency survives). A phone photo of
+   4–8 MB becomes ~150–500 KB — less storage, and much faster sites for
+   visitors. GIFs (may be animated) and anything that fails to decode are
+   uploaded as they are. */
+const SITE_IMAGE_MAX_WIDTH = 1920;
+const SITE_IMAGE_MAX_HEIGHT = 3000;
+const SITE_IMAGE_MAX_UPLOAD = 5 * 1024 * 1024;  // the bucket's own limit
+const SITE_IMAGE_MAX_INPUT = 25 * 1024 * 1024;  // before shrinking
+function siteCanvasBlob(canvas, type, quality) {
+  return new Promise((resolve) => { try { canvas.toBlob(resolve, type, quality); } catch (_e) { resolve(null); } });
+}
+async function siteShrinkImage(file) {
+  if (!/^image\/(jpeg|png|webp|avif)$/.test(file.type) || typeof createImageBitmap !== "function") return file;
+  try {
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, SITE_IMAGE_MAX_WIDTH / bmp.width, SITE_IMAGE_MAX_HEIGHT / bmp.height);
+    const w = Math.max(1, Math.round(bmp.width * scale)), h = Math.max(1, Math.round(bmp.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    canvas.getContext("2d").drawImage(bmp, 0, 0, w, h);
+    if (bmp.close) bmp.close();
+    let blob = await siteCanvasBlob(canvas, "image/webp", 0.82);
+    if (!blob || blob.type !== "image/webp") {
+      blob = file.type === "image/png" ? await siteCanvasBlob(canvas, "image/png") : await siteCanvasBlob(canvas, "image/jpeg", 0.85);
+    }
+    if (!blob || !blob.size) return file;
+    if (scale === 1 && blob.size >= file.size) return file;
+    const ext = blob.type === "image/webp" ? "webp" : blob.type === "image/png" ? "png" : "jpg";
+    return new File([blob], (file.name.replace(/\.[^.]+$/, "") || "image") + "." + ext, { type: blob.type });
+  } catch (_e) {
+    return file;
+  }
+}
+
+// Why the last uploadSiteImage() returned null — "quota" | "too_large" | "failed".
+let siteLastUploadError = "failed";
+function siteUploadErrorText(fileName) {
+  const who = fileName ? `"${fileName}" ` : "";
+  if (siteLastUploadError === "quota") {
+    return dkL("נגמר מקום האחסון לתמונות בחשבון שלכם. הסירו תמונות שכבר לא בשימוש, או פנו אלינו להגדלת המקום.",
+      "Your account's image storage is full. Remove images you no longer use, or contact us for more space.");
+  }
+  if (siteLastUploadError === "too_large") {
+    return dkL(`התמונה ${who}גדולה מדי גם אחרי הקטנה — נסו תמונה אחרת.`, `The image ${who}is still too large after shrinking — try another image.`);
+  }
+  return fileName
+    ? dkL(`העלאת "${fileName}" נכשלה, נסו שוב.`, `Uploading "${fileName}" failed, please try again.`)
+    : dkL("העלאת התמונה נכשלה, נסו שוב.", "The image upload failed, please try again.");
+}
+
+async function uploadSiteImage(original, name) {
+  siteLastUploadError = "failed";
+  const file = await siteShrinkImage(original);
+  if (file.size > SITE_IMAGE_MAX_UPLOAD) { siteLastUploadError = "too_large"; return null; }
   const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
   const folder = (typeof siteProjectId !== "undefined" && siteProjectId) ? siteProjectId : "draft-" + siteState.template;
   const unique = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const path = `${siteCurrentUserId}/${folder}/${name}-${unique}.${ext}`;
-  const { error } = await supabaseClient.storage.from("site-images").upload(path, file, { upsert: false });
-  if (error) return null;
+  const { error } = await supabaseClient.storage.from("site-images").upload(path, file, { upsert: false, contentType: file.type || undefined, cacheControl: "31536000" });
+  if (error) {
+    // The storage allowance is enforced by the upload policy
+    // (storage_quota_and_rates.sql) — a refused upload of one's own folder
+    // means the allowance is used up.
+    if (/row-level security|violates|403/i.test(String(error.message || "") + " " + String(error.statusCode || ""))) siteLastUploadError = "quota";
+    return null;
+  }
   const { data } = supabaseClient.storage.from("site-images").getPublicUrl(path);
   return data.publicUrl;
 }
@@ -1262,14 +1323,14 @@ function wireForm() {
   document.getElementById("s-photo").addEventListener("change", async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (file.size > 6 * 1024 * 1024) {
-      alert(dkL("התמונה גדולה מדי — בחרו קובץ עד 6MB.", "The image is too large — choose a file up to 6MB."));
+    if (file.size > SITE_IMAGE_MAX_INPUT) {
+      alert(dkL("התמונה גדולה מדי — בחרו קובץ עד 25MB.", "The image is too large — choose a file up to 25MB."));
       e.target.value = "";
       return;
     }
     const url = await uploadSiteImage(file, "hero");
     if (!url) {
-      alert(dkL("העלאת התמונה נכשלה, נסו שוב.", "The image upload failed, please try again."));
+      alert(siteUploadErrorText());
       e.target.value = "";
       return;
     }
@@ -1300,8 +1361,8 @@ function wireForm() {
     }
     let remaining = toAdd.length;
     toAdd.forEach(async (file) => {
-      if (file.size > 6 * 1024 * 1024) {
-        alert(dkL(`"${file.name}" גדולה מדי — בחרו קובץ עד 6MB.`, `"${file.name}" is too large — choose a file up to 6MB.`));
+      if (file.size > SITE_IMAGE_MAX_INPUT) {
+        alert(dkL(`"${file.name}" גדולה מדי — בחרו קובץ עד 25MB.`, `"${file.name}" is too large — choose a file up to 25MB.`));
         remaining -= 1;
         if (remaining === 0) { renderGalleryPreview(); commitSectionPatch("heading-heroTitle"); }
         return;
@@ -1312,7 +1373,7 @@ function wireForm() {
       const name = "gallery-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
       const url = await uploadSiteImage(file, name);
       if (!url) {
-        alert(dkL(`העלאת "${file.name}" נכשלה, נסו שוב.`, `Uploading "${file.name}" failed, please try again.`));
+        alert(siteUploadErrorText(file.name));
       } else {
         siteState.data.heroImages.push(url);
       }
@@ -1493,6 +1554,11 @@ async function publishSite() {
       // rather than assuming it can truly never fire.
       note.innerHTML = dkL(`פרסום לאוויר זמנית לא זמין אצלנו בגלל עומס אצל ספק האחסון — זה לא קשור לרכישה שלכם, והיא בתוקף. האתר שלכם שמור ומוכן; אפשר לנסות לפרסם שוב בעוד כמה דקות מאותו מסך. תקועים? <a href="mailto:${["digital.dz.studio", "gmail.com"].join("@")}?subject=${encodeURIComponent("פרסום נכשל — בניית אתר")}" style="color:inherit; text-decoration:underline;">כתבו לנו</a>.`,
         `Publishing is temporarily unavailable due to load at our hosting provider — this has nothing to do with your purchase, which is still valid. Your site is saved and ready; you can try publishing again in a few minutes from this same screen. Stuck? <a href="mailto:${["digital.dz.studio", "gmail.com"].join("@")}?subject=${encodeURIComponent("Publishing failed — website builder")}" style="color:inherit; text-decoration:underline;">Write to us</a>.`);
+      return;
+    }
+    if (data.reason === "rate_limited") {
+      note.textContent = dkL(`פרסמתם היום כבר ${data.limit || 40} פעמים — זו המכסה היומית. אפשר לפרסם שוב מחר; כל השינויים שמורים.`,
+        `You've already published ${data.limit || 40} times today — that's the daily limit. You can publish again tomorrow; all your changes are saved.`);
       return;
     }
     if (data.reason === "not_purchased") {

@@ -164,6 +164,7 @@ function buildClaimLink(siteProjectId: string) {
 }
 
 const MAX_SITE_CHARS = 8_000_000;
+const PUBLISH_DAILY_LIMIT = 40;
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -232,6 +233,17 @@ Deno.serve(async (req: Request) => {
     if (fetchErr) return jsonResponse({ error: fetchErr.message }, 500);
     if (!project || project.user_id !== userId) {
       return jsonResponse({ error: "site not found for this account" }, 404);
+    }
+
+    // Fair-use ceiling on publishing (user_action_reserve in
+    // supabase/sql/storage_quota_and_rates.sql): far above any real use,
+    // but stops a script from republishing in a loop. If the counter
+    // itself fails, publishing goes ahead.
+    const { data: publishSlot, error: publishSlotErr } = await admin.rpc("user_action_reserve", {
+      p_user_id: userId, p_action: "publish", p_limit: PUBLISH_DAILY_LIMIT,
+    });
+    if (!publishSlotErr && publishSlot === false) {
+      return jsonResponse({ success: false, reason: "rate_limited", limit: PUBLISH_DAILY_LIMIT });
     }
 
     // Real purchase check: the wizard UI only ever shows "פרסום" after a
