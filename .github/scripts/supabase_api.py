@@ -244,6 +244,34 @@ if __name__ == "__main__":
             status = m.get("status") or m.get("code") or ""
             if level in ("error", "warning") or (isinstance(status, int) and status >= 400) or m.get("error"):
                 print(" | ".join(scrub(x) for x in [m.get("time", r.get("timestamp")), level, m.get("method", ""), m.get("path", ""), status, m.get("error_code", ""), m.get("error", ""), m.get("msg", "")]))
+    elif cmd == "usage-report":
+        # Read-only. Aggregate numbers only (this repo is public): sign-ups
+        # per day, and which templates are opened/downloaded — never an
+        # email, a name or a user id.
+        q = lambda sql: call("POST", "/database/query", {"query": sql}) or []
+        print("== accounts")
+        for r in q("select count(*)::int as total, count(*) filter (where created_at > now() - interval '7 days')::int as last_7d, count(*) filter (where created_at > now() - interval '30 days')::int as last_30d from auth.users"):
+            print(f"  total {r['total']} | last 7 days {r['last_7d']} | last 30 days {r['last_30d']}")
+        print("== new accounts per day (Israel time, last 14 days)")
+        for r in q("select to_char((created_at at time zone 'Asia/Jerusalem')::date, 'YYYY-MM-DD Dy') as d, count(*)::int as n from auth.users where created_at > now() - interval '14 days' group by 1 order by 1"):
+            print(f"  {r['d']}: {r['n']}")
+        print("== accounts that used something (last 30 days)")
+        for r in q("select kind, count(distinct user_id)::int as users, count(*)::int as events from usage_events where created_at > now() - interval '30 days' group by kind order by users desc"):
+            print(f"  {r['kind']}: {r['users']} users, {r['events']} events")
+        print("== templates by action (all time): kind | slug | action | users | events")
+        for r in q("select kind, coalesce(slug,'-') as slug, action, count(distinct user_id)::int as users, count(*)::int as events from usage_events group by 1,2,3 order by users desc, events desc limit 80"):
+            print(f"  {r['kind']} | {r['slug']} | {r['action']} | {r['users']} | {r['events']}")
+        print("== saved work (rows per table)")
+        for t in ["cv_saves", "quote_saves", "invoice_saves", "schedule_projects", "site_projects", "projects", "hosted_site_pages", "license_redemptions", "crm_local_reports"]:
+            ok = q(f"select to_regclass('public.{t}') is not null as e")
+            if ok and ok[0].get("e"):
+                n = q(f"select count(*)::int as n from public.{t}")
+                print(f"  {t}: {n[0]['n'] if n else '?'}")
+        ok = q("select to_regclass('public.ai_usage') is not null as e")
+        if ok and ok[0].get("e"):
+            print("== AI tools (all time): tool | users | uses")
+            for r in q("select tool, count(distinct user_id)::int as users, sum(count)::int as uses from ai_usage group by tool order by uses desc"):
+                print(f"  {r['tool']} | {r['users']} | {r['uses']}")
     elif cmd == "auth-logins":
         # Read-only: sign-in events of ADMIN accounts in the Auth logs (kept
         # about a day on the free plan). Printed: Israel time, event, sign-in
