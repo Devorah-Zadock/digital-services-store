@@ -348,7 +348,7 @@ function handleGatedDownload(p) {
     }
     if (window.logUsageEvent) logUsageEvent(productType(p), p.slug, "download");
     const a = document.createElement("a");
-    a.href = p.downloadUrl;
+    a.href = (catalogLang() === "en" && p.downloadUrlEn) || p.downloadUrl;
     a.download = "";
     document.body.appendChild(a);
     a.click();
