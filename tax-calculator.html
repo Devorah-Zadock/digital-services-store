@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<script>
+  try {
+    const storedLang = localStorage.getItem("deskkit_lang");
+    const willBeEnglish = storedLang
+      ? storedLang === "en"
+      : !(navigator.languages || [navigator.language || ""]).some((l) => (l || "").toLowerCase().startsWith("he"));
+    if (willBeEnglish) {
+      document.documentElement.classList.add("lang-pending");
+      setTimeout(() => document.documentElement.classList.remove("lang-pending"), 1200);
+    }
+  } catch (e) {}
+</script>
+<style>html.lang-pending body { visibility: hidden; }</style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title data-i18n="tc_meta_title">מחשבון מס לעצמאים 2026 — נטו מברוטו, עוסק פטור או מורשה | DeskKit</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="description" content="מחשבון מס חינמי לעצמאים ופרילנסרים בישראל לשנת 2026: מס הכנסה לפי מדרגות, נקודות זיכוי, ביטוח לאומי ומס בריאות, נטו לשנה ולחודש — ובדיקה אם אתם מעל תקרת עוסק פטור. בלי הרשמה, הכול מחושב בדפדפן.">
+<link rel="canonical" href="https://deskkit.co.il/tax-calculator.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;600;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=103">
+<link rel="stylesheet" href="css/deskkit-ui.css?v=50">
+<link rel="stylesheet" href="css/free-tools.css?v=1">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "מחשבון מס לעצמאים 2026",
+  "url": "https://deskkit.co.il/tax-calculator.html",
+  "applicationCategory": "FinanceApplication",
+  "operatingSystem": "Any",
+  "inLanguage": "he",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "ILS" },
+  "publisher": { "@type": "Organization", "name": "DeskKit" }
+}
+</script>
+</head>
+<body>
+<header class="site no-print">
+  <nav class="nav">
+    <a href="index.html" class="brand"><span class="brand-badge"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path class="bm-doc" d="M7,4 H14 L18,8 V20 H7 Z"/><path class="bm-fold" d="M14,4 L14,8 L18,8 Z"/><path class="bm-spark" d="M15,14.3 C15.3,16 16,16.7 17.7,17 C16,17.3 15.3,18 15,19.7 C14.7,18 14,17.3 12.3,17 C14,16.7 14.7,16 15,14.3 Z"/></svg></span><span class="brand-text"><span class="brand-desk">Desk</span><span class="brand-kit">Kit</span></span></a>
+    <div class="nav-links">
+      <a href="index.html" data-i18n="nav_home">בית</a>
+      <a href="products.html?type=cv" data-i18n="nav_cv">קורות חיים</a>
+      <a href="sites.html" data-i18n="nav_sites">בניית אתר</a>
+      <a href="quote-app.html" data-i18n="nav_quotes">הצעות מחיר</a>
+      <a href="invoice-app.html" data-i18n="nav_invoices">חשבוניות</a>
+      <a href="products.html?type=deck" data-i18n="nav_decks">מצגות</a>
+      <a href="products.html?type=xlsx" data-i18n="nav_xlsx">גליונות</a>
+      <a href="about.html" data-i18n="nav_about">אודות</a>
+      <a href="contact.html" data-i18n="nav_contact">צור קשר</a>
+    </div>
+    <div class="nav-end-group">
+      <a href="account.html?redirect=tax-calculator.html" id="nav-login-link" class="nav-login nav-login-pending" data-i18n="nav_login">כניסה</a>
+      <button type="button" id="lang-toggle" class="lang-toggle" aria-label="Switch language">EN</button>
+    </div>
+    <button class="burger" aria-label="תפריט">☰</button>
+  </nav>
+</header>
+
+<section class="hero ft-hero">
+  <h1 data-i18n="tc_h1">מחשבון מס לעצמאים 2026</h1>
+  <p class="lead" data-i18n="tc_lead">כמה נשאר לכם נטו? מס הכנסה, ביטוח לאומי ומס בריאות — ובדיקה אם אתם עדיין מתחת לתקרת עוסק פטור. חינם, בלי הרשמה.</p>
+</section>
+
+<main class="ft-main">
+  <div class="ft-wrap">
+    <nav class="ft-crumb" aria-label="breadcrumb"><a href="tools.html" data-i18n="ft_crumb_tools">כלים לעסק</a> / <span data-i18n="tc_crumb_self">מחשבון מס</span></nav>
+
+    <div class="ft-note ft-note-warn" role="note">
+      <span class="ft-note-icon" aria-hidden="true">⚠️</span>
+      <p><strong data-i18n="tc_disc_h">הערכה בלבד — לא ייעוץ מס</strong><span data-i18n="tc_disc_p">החישוב מבוסס על הנתונים הרשמיים לשנת 2026 אבל מפושט: הוא לא כולל הפקדות לפנסיה ולקרן השתלמות, נקודות זיכוי נוספות (ילדים, תואר, שחרור מצבא, יישוב מזכה), מקדמות ששילמתם ונסיבות אישיות אחרות. לפני כל החלטה — התייעצו עם רואה חשבון או יועץ מס.</span></p>
+    </div>
+
+    <div class="dk-tabs ft-tabs" role="tablist" aria-label="סוג החישוב">
+      <button type="button" class="dk-tab active" role="tab" id="tc-tab-se" aria-controls="tc-panel-se" aria-selected="true" data-i18n="tc_tab_se">עצמאי: נטו מברוטו</button>
+      <button type="button" class="dk-tab" role="tab" id="tc-tab-vat" aria-controls="tc-panel-vat" aria-selected="false" tabindex="-1" data-i18n="tc_tab_vat">עוסק פטור או מורשה?</button>
+      <button type="button" class="dk-tab" role="tab" id="tc-tab-sal" aria-controls="tc-panel-sal" aria-selected="false" tabindex="-1" data-i18n="tc_tab_sal">שכיר: נטו מברוטו</button>
+    </div>
+
+    <!-- ===== Self-employed ===== -->
+    <section class="ft-panel ft-card" role="tabpanel" id="tc-panel-se" aria-labelledby="tc-tab-se">
+      <h2 data-i18n="tc_se_h">כמה נשאר לעצמאי נטו?</h2>
+      <p class="ft-sub" data-i18n="tc_se_sub">הזינו הכנסות והוצאות לשנה שלמה. לעוסק מורשה — בלי מע"מ.</p>
+      <form class="ft-grid" id="tc-se-form" novalidate>
+        <div class="ft-field">
+          <label for="tc-se-revenue" data-i18n="tc_se_revenue">הכנסות שנתיות (מחזור, ₪)</label>
+          <input type="text" inputmode="decimal" class="ft-num" id="tc-se-revenue" value="180,000" autocomplete="off">
+        </div>
+        <div class="ft-field">
+          <label for="tc-se-expenses" data-i18n="tc_se_expenses">הוצאות מוכרות שנתיות (₪)</label>
+          <input type="text" inputmode="decimal" class="ft-num" id="tc-se-expenses" value="30,000" autocomplete="off">
+        </div>
+        <div class="ft-field">
+          <span class="ft-label" id="tc-se-gender-l" data-i18n="tc_gender">נקודות זיכוי בסיסיות</span>
+          <div class="ft-seg" role="radiogroup" aria-labelledby="tc-se-gender-l">
+            <label><input type="radio" name="tc-se-gender" value="man" checked> <span data-i18n="tc_man">גבר (2.25)</span></label>
+            <label><input type="radio" name="tc-se-gender" value="woman"> <span data-i18n="tc_woman">אישה (2.75)</span></label>
+          </div>
+        </div>
+        <div class="ft-field">
+          <label for="tc-se-points" data-i18n="tc_points">מספר נקודות זיכוי</label>
+          <input type="number" class="ft-num" id="tc-se-points" value="2.25" min="0" max="30" step="0.25" aria-describedby="tc-se-points-hint">
+          <span class="ft-hint" id="tc-se-points-hint" data-i18n="tc_points_hint">יש לכם נקודות נוספות (ילדים, תואר…)? עדכנו כאן.</span>
+        </div>
+        <label class="ft-check ft-span"><input type="checkbox" id="tc-se-minimum" checked> <span data-i18n="tc_se_minimum">לחשב ביטוח לאומי לפחות לפי ההכנסה המזערית לעצמאי (כשההכנסה נמוכה ממנה)</span></label>
+      </form>
+      <div class="ft-results" id="tc-se-results" aria-live="polite"></div>
+    </section>
+
+    <!-- ===== Osek patur vs murshe ===== -->
+    <section class="ft-panel ft-card" role="tabpanel" id="tc-panel-vat" aria-labelledby="tc-tab-vat" hidden>
+      <h2 data-i18n="tc_vat_h">עוסק פטור או עוסק מורשה?</h2>
+      <p class="ft-sub" data-i18n="tc_vat_sub">עוסק פטור לא גובה מע"מ, כל עוד המחזור השנתי שלו לא עובר את התקרה. בדקו איפה אתם עומדים.</p>
+      <form class="ft-grid" id="tc-vat-form" novalidate>
+        <div class="ft-field">
+          <label for="tc-vat-revenue" data-i18n="tc_vat_revenue">הכנסות (מחזור, לפני מע"מ, ₪)</label>
+          <input type="text" inputmode="decimal" class="ft-num" id="tc-vat-revenue" value="9,000" autocomplete="off">
+        </div>
+        <div class="ft-field">
+          <span class="ft-label" id="tc-vat-period-l" data-i18n="tc_vat_period">הסכום הוא</span>
+          <div class="ft-seg" role="radiogroup" aria-labelledby="tc-vat-period-l">
+            <label><input type="radio" name="tc-vat-period" value="month" checked> <span data-i18n="tc_per_month">לחודש</span></label>
+            <label><input type="radio" name="tc-vat-period" value="year"> <span data-i18n="tc_per_year">לשנה</span></label>
+          </div>
+        </div>
+      </form>
+      <div class="ft-results" id="tc-vat-results" aria-live="polite"></div>
+    </section>
+
+    <!-- ===== Salaried ===== -->
+    <section class="ft-panel ft-card" role="tabpanel" id="tc-panel-sal" aria-labelledby="tc-tab-sal" hidden>
+      <h2 data-i18n="tc_sal_h">שכיר: כמה נכנס לחשבון?</h2>
+      <p class="ft-sub" data-i18n="tc_sal_sub">חישוב פשוט: מס הכנסה וחלק העובד בביטוח לאומי ובמס בריאות. בלי ניכוי לפנסיה, לקרן השתלמות או הטבות שכר.</p>
+      <form class="ft-grid" id="tc-sal-form" novalidate>
+        <div class="ft-field ft-span">
+          <label for="tc-sal-gross" data-i18n="tc_sal_gross">שכר ברוטו חודשי (₪)</label>
+          <input type="text" inputmode="decimal" class="ft-num" id="tc-sal-gross" value="15,000" autocomplete="off">
+        </div>
+        <div class="ft-field">
+          <span class="ft-label" id="tc-sal-gender-l" data-i18n="tc_gender">נקודות זיכוי בסיסיות</span>
+          <div class="ft-seg" role="radiogroup" aria-labelledby="tc-sal-gender-l">
+            <label><input type="radio" name="tc-sal-gender" value="man" checked> <span data-i18n="tc_man">גבר (2.25)</span></label>
+            <label><input type="radio" name="tc-sal-gender" value="woman"> <span data-i18n="tc_woman">אישה (2.75)</span></label>
+          </div>
+        </div>
+        <div class="ft-field">
+          <label for="tc-sal-points" data-i18n="tc_points">מספר נקודות זיכוי</label>
+          <input type="number" class="ft-num" id="tc-sal-points" value="2.25" min="0" max="30" step="0.25">
+        </div>
+      </form>
+      <div class="ft-results" id="tc-sal-results" aria-live="polite"></div>
+    </section>
+
+    <!-- ===== Figures + sources ===== -->
+    <section class="ft-card" aria-labelledby="tc-data-h">
+      <h2 id="tc-data-h" data-i18n="tc_data_h">על אילו נתונים החישוב מבוסס</h2>
+      <p class="ft-sub" data-i18n="tc_data_sub">הנתונים הרשמיים לשנת המס 2026, כולל ריווח מדרגות ה-20% וה-31% שנכנס לתוקף רטרואקטיבית מינואר 2026.</p>
+      <div class="ft-table-wrap"><table class="ft-table" id="tc-constants"></table></div>
+      <ul class="ft-sources">
+        <li><a href="https://www.gov.il/BlobFolder/generalpage/income-tax-monthly-deductions-booklet/he/generalInformation_income-tax-monthly-deductions-booklet_monthly-deductions-booklet-2026.pdf" target="_blank" rel="noopener" data-i18n="tc_src_brackets">רשות המסים — לוח עזר לחישוב מס הכנסה ממשכורת, ינואר 2026 ואילך</a></li>
+        <li><a href="https://www.gov.il/BlobFolder/reports/press-income-tax-brackets/he/SalaryDataDetails_tax_bracket_2026.pdf" target="_blank" rel="noopener" data-i18n="tc_src_salary">משרד האוצר, אגף השכר — מדרגות מס ונקודת זיכוי 2026</a></li>
+        <li><a href="https://www.gov.il/he/departments/general/vat-rate-amount-new" target="_blank" rel="noopener" data-i18n="tc_src_vat">רשות המסים — סכומים ושיעורים במע"מ (תקרת עוסק פטור)</a></li>
+        <li><a href="https://www.btl.gov.il/Insurance/National%20Insurance/type_list/Self_Employed/Pages/rates.aspx" target="_blank" rel="noopener" data-i18n="tc_src_btl_se">ביטוח לאומי — שיעורי דמי הביטוח לעובד עצמאי</a></li>
+        <li><a href="https://www.btl.gov.il/Insurance/Rates/Pages/%D7%9C%D7%A2%D7%95%D7%91%D7%93%D7%99%D7%9D%20%D7%A9%D7%9B%D7%99%D7%A8%D7%99%D7%9D.aspx" target="_blank" rel="noopener" data-i18n="tc_src_btl_emp">ביטוח לאומי — שיעורי דמי ביטוח לעובדים שכירים</a></li>
+        <li><a href="https://www.kolzchut.org.il/he/%D7%A0%D7%A7%D7%95%D7%93%D7%95%D7%AA_%D7%96%D7%99%D7%9B%D7%95%D7%99_%D7%9E%D7%9E%D7%A1_%D7%94%D7%9B%D7%A0%D7%A1%D7%94" target="_blank" rel="noopener" data-i18n="tc_src_points">כל זכות — נקודות זיכוי ממס הכנסה</a></li>
+      </ul>
+    </section>
+
+    <div class="ft-note ft-note-info" role="note">
+      <span class="ft-note-icon" aria-hidden="true">🔒</span>
+      <p><span data-i18n="tc_privacy">הכול מחושב בדפדפן שלכם. המספרים שאתם מקלידים לא נשלחים לשום מקום ולא נשמרים.</span></p>
+    </div>
+  </div>
+</main>
+
+<footer class="site">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <h4>DeskKit</h4>
+        <p style="font-size:14px; max-width:320px;" data-i18n="footer_blurb">תבניות עסקיות מוכנות לשימוש מיידי — קורות חיים, מצגות ועוד, בעיצוב מקצועי שחוסך לכם שעות עבודה.</p>
+      </div>
+      <div>
+        <h4 data-i18n="footer_nav_heading">ניווט</h4>
+        <ul>
+          <li><a href="builder.html" data-i18n="nav_cv">קורות חיים</a></li>
+          <li><a href="sites.html" data-i18n="nav_sites">בניית אתר</a></li>
+          <li><a href="quote-app.html" data-i18n="nav_quotes">הצעות מחיר</a></li>
+          <li><a href="invoice-app.html" data-i18n="nav_invoices">חשבוניות</a></li>
+          <li><a href="products.html?type=deck" data-i18n="nav_decks">מצגות</a></li>
+          <li><a href="products.html?type=xlsx" data-i18n="nav_xlsx">גליונות</a></li>
+          <li><a href="about.html" data-i18n="nav_about">אודות</a></li>
+          <li><a href="contact.html" data-i18n="nav_contact">צור קשר</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 data-i18n="footer_info_heading">מידע</h4>
+        <ul>
+          <li><a href="guides.html" data-i18n="footer_guides">מדריכים</a></li>
+          <li><a href="faq.html" data-i18n="footer_faq">שאלות נפוצות</a></li>
+          <li><a href="terms.html" data-i18n="footer_terms">מדיניות</a></li>
+          <li><a href="security.html" data-i18n="footer_security">אבטחת מידע</a></li>
+          <li><a href="accessibility.html" data-i18n="footer_accessibility">נגישות</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 data-i18n="nav_contact">צור קשר</h4>
+        <ul>
+          <li><a class="dk-email" href="contact.html">צרו קשר</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-identity">
+      <p class="footer-identity-tagline" data-i18n="footer_identity_tagline">DeskKit — כלים ומסמכים דיגיטליים לעסקים</p>
+      <p class="footer-identity-owner" data-i18n="footer_identity_owner">נוצר ומופעל באופן עצמאי על ידי דבורה צדוק &middot; עוסק פטור</p>
+      <p class="footer-identity-links"><a href="contact.html" data-i18n="nav_contact">צור קשר</a> &middot; <a href="terms.html#privacy" data-i18n="footer_privacy_link">מדיניות פרטיות</a> &middot; <a href="terms.html" data-i18n="footer_terms_link">תנאי שימוש</a></p>
+    </div>
+    <div class="footer-bottom" data-i18n="footer_copyright">© 2026 DeskKit. כל הזכויות שמורות.</div>
+  </div>
+</footer>
+
+<script src="js/vendor/supabase-js-2.116.0.js"></script>
+<script src="js/supabase-config.js?v=2"></script>
+<script src="js/nav-auth.js?v=6"></script>
+<script src="js/header.js?v=6"></script>
+<script src="js/create-chooser.js?v=4"></script>
+<script src="js/mobile-nav.js?v=2"></script>
+<script src="js/main.js?v=9"></script>
+<script src="js/captcha.js?v=3"></script>
+<script src="js/widgets.js?v=20"></script>
+<script src="js/effects.js"></script>
+<script src="js/i18n-free-tools.js?v=1"></script>
+<script src="js/i18n.js?v=39"></script>
+<script src="js/contact-email.js?v=1"></script>
+<script src="js/tax-calc.js?v=1"></script>
+<script src="js/tax-calc-ui.js?v=1"></script>
+</body>
+</html>

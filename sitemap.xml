@@ -24,6 +24,9 @@
        or silently dropped from the sitemap. -->
   <url><loc>https://deskkit.co.il/schedule-builder.html</loc><priority>0.8</priority></url>
   <url><loc>https://deskkit.co.il/tools.html</loc><priority>0.6</priority></url>
+  <!-- Free, no-login tools — fully public, nothing behind require-auth.js. -->
+  <url><loc>https://deskkit.co.il/tax-calculator.html</loc><priority>0.7</priority></url>
+  <url><loc>https://deskkit.co.il/sign.html</loc><priority>0.7</priority></url>
   <url><loc>https://deskkit.co.il/about.html</loc><priority>0.6</priority></url>
   <url><loc>https://deskkit.co.il/guides.html</loc><priority>0.6</priority></url>
   <url><loc>https://deskkit.co.il/guide-cv-tips.html</loc><priority>0.6</priority></url>
