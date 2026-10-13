@@ -1577,7 +1577,7 @@ const MT_TOOL_LABELS = {
   "site-ai-director": "עוזר אתר", "site-ai-review": "בדיקת אתר",
 };
 // Free-plan limits, for the "how close are we" bars.
-const MT_LIMITS = { dbBytes: 500 * 1024 * 1024, storageBytes: 1024 * 1024 * 1024, mailDay: 50, mailMonth: 3000 };
+const MT_LIMITS = { dbBytes: 500 * 1024 * 1024, storageBytes: 1024 * 1024 * 1024, mailDay: 50, mailMonth: 3000, resendDay: 100, resendMonth: 3000 };
 
 function fmtBytes(n) {
   n = Number(n || 0);
@@ -1624,6 +1624,11 @@ function renderMetrics(m) {
   const licTotal = licenses.reduce((a, l) => a + Number(l.total || 0), 0);
   const lic30 = licenses.reduce((a, l) => a + Number(l.last_30d || 0), 0);
   const storageBytes = (m.storage || []).reduce((a, b) => a + Number(b.bytes || 0), 0);
+  // Estimated: a new account = 1 confirmation email (auth emails aren't logged).
+  const mt = m.mail_all_today || {};
+  const mailAllToday = ["signups", "welcomes", "campaign", "receipts", "automate", "contact"].reduce((a, k) => a + Number(mt[k] || 0), 0);
+  const mailAllMonth = Number(mt.signups_month || 0) * 2 + Number(mt.campaign_month || 0) + Number(mt.automate_month || 0);
+  const aiG = m.ai_global || null;
 
   const kpis = `<div class="cx-kpis">
     ${mtKpi("משתמשים", fmtNum(u.total), `+${fmtNum(m.new_today)} היום · +${fmtNum(u.new_7d)} השבוע`)}
@@ -1683,6 +1688,9 @@ function renderMetrics(m) {
       mtMeter("מסד נתונים (Supabase)", m.db_bytes, MT_LIMITS.dbBytes, fmtBytes(m.db_bytes), "500 MB") +
       mtMeter("קבצים ותמונות (Supabase)", storageBytes, MT_LIMITS.storageBytes, fmtBytes(storageBytes), "1 GB") +
       mtMeter("דיוור היום (תקרה יומית)", mail.sent_today, MT_LIMITS.mailDay, fmtNum(mail.sent_today), "50") +
+      mtMeter("כל המיילים היום — בערך (Resend)", mailAllToday, MT_LIMITS.resendDay, fmtNum(mailAllToday), "100") +
+      mtMeter("כל המיילים החודש — בערך (Resend)", mailAllMonth, MT_LIMITS.resendMonth, fmtNum(mailAllMonth), "3,000") +
+      (aiG ? mtMeter("קריאות AI היום (תקרה לכל האתר)", aiG.today, aiG.limit, fmtNum(aiG.today), fmtNum(aiG.limit)) : "") +
       `<p class="cx-muted mt-note">ב-70% הפס נצבע כתום, וב-90% אדום. זה הסימן לחשוב על שדרוג או ניקוי.</p>`),
   ].join("");
 

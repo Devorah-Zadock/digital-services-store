@@ -29,7 +29,19 @@ declare
   downloads jsonb := '[]'::jsonb;
   storage_info jsonb := '[]'::jsonb;
   v_visits jsonb := null;
+  v_ai_global jsonb := null;
 begin
+  -- Site-wide AI fuse (ai_global_budget.sql): calls today vs the cap.
+  begin
+    select jsonb_build_object(
+      'today', coalesce((select g.count from public.ai_usage_global_daily g where g.day = current_date), 0),
+      'month', coalesce((select sum(g.count) from public.ai_usage_global_daily g where g.day >= date_trunc('month', current_date)), 0),
+      'limit', coalesce((select b.daily_limit from public.ai_budget b where b.id = 1), 2000))
+      into v_ai_global;
+  exception when others then
+    v_ai_global := null;
+  end;
+
   -- New accounts per day, last 30 days (days with none included as 0).
   select coalesce(jsonb_agg(jsonb_build_object('d', d::date, 'n', coalesce(c.n, 0)) order by d), '[]'::jsonb)
     into signups
@@ -122,7 +134,21 @@ begin
     'crm_local', jsonb_build_object(
       'browsers', public.admin__count('public.crm_local_reports'),
       'leads', case when to_regclass('public.crm_local_reports') is null then 0 else (select coalesce(sum(lead_count), 0) from public.crm_local_reports) end),
-    'messages_30d', public.admin__count('public.contact_messages', $w$created_at >= now() - interval '30 days'$w$)
+    'messages_30d', public.admin__count('public.contact_messages', $w$created_at >= now() - interval '30 days'$w$),
+    -- Every email that goes through the one Resend account today (its free
+    -- plan: 100 a day, 3,000 a month). Auth emails aren't logged anywhere
+    -- we can read, so a new account counts as one (the confirmation).
+    'mail_all_today', jsonb_build_object(
+      'signups', public.admin__count('public.customer_profiles', $w$created_at >= date_trunc('day', now())$w$),
+      'welcomes', public.admin__count('public.customer_profiles', $w$welcome_sent_at >= date_trunc('day', now()) and welcome_sent_at > created_at$w$),
+      'campaign', public.admin__count('public.email_sends', $w$sent_at >= date_trunc('day', now())$w$),
+      'receipts', public.admin__count('public.license_redemptions', $w$receipt_sent_at >= date_trunc('day', now())$w$),
+      'automate', public.admin__count('public.automation_messages', $w$status = 'sent' and sent_at >= date_trunc('day', now())$w$),
+      'contact', public.admin__count('public.contact_messages', $w$created_at >= date_trunc('day', now())$w$),
+      'automate_month', public.admin__count('public.automation_messages', $w$status = 'sent' and sent_at >= date_trunc('month', now())$w$),
+      'campaign_month', public.admin__count('public.email_sends', $w$sent_at >= date_trunc('month', now())$w$),
+      'signups_month', public.admin__count('public.customer_profiles', $w$created_at >= date_trunc('month', now())$w$)),
+    'ai_global', v_ai_global
   );
   return result;
 end;
