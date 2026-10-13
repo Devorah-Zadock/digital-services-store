@@ -62,19 +62,39 @@ function stripClientWatermark(html: string): string {
 // JavaScript would still be possible; rendering pages on the server from
 // the saved data is the complete fix.)
 const BADGE_STYLE = [
-  "all:initial", "position:fixed", "bottom:14px", "inset-inline-start:14px", "z-index:2147483647",
-  "display:inline-block", "visibility:visible", "opacity:1", "transform:none", "clip-path:none",
-  "filter:none", "width:auto", "height:auto", "margin:0", "background:rgba(20,20,20,.86)", "color:#fff",
-  "font:600 12px/1.4 Heebo,Arial,sans-serif", "padding:7px 14px", "border-radius:20px",
-  "box-shadow:0 4px 14px rgba(0,0,0,.25)", "text-decoration:none", "direction:rtl", "cursor:pointer",
-  "pointer-events:auto",
+  "all:initial", "position:fixed", "bottom:16px", "inset-inline-start:16px", "z-index:2147483647",
+  "display:inline-flex", "align-items:center", "gap:9px", "visibility:visible", "opacity:1", "transform:none",
+  "clip-path:none", "filter:none", "width:auto", "height:auto", "max-width:calc(100vw - 32px)", "margin:0",
+  "background:#0F172A", "color:#fff", "font:600 14px/1.3 Heebo,Arial,sans-serif", "padding:9px 16px 9px 10px",
+  "border-radius:999px", "border:1px solid rgba(255,255,255,.18)", "box-shadow:0 8px 24px rgba(0,0,0,.28)",
+  "text-decoration:none", "cursor:pointer", "pointer-events:auto", "box-sizing:border-box",
 ].map((rule) => rule + " !important").join(";");
+// The "D" mark and the brand name — same all:initial treatment so page CSS
+// can't restyle or hide the parts either.
+const BADGE_MARK_STYLE = [
+  "all:initial", "display:inline-flex", "align-items:center", "justify-content:center", "width:24px", "height:24px",
+  "border-radius:7px", "background:#14B8A6", "color:#fff", "font:800 14px/1 Heebo,Arial,sans-serif", "flex:none",
+].map((rule) => rule + " !important").join(";");
+const BADGE_TEXT_STYLE = ["all:initial", "color:#fff", "font:600 14px/1.3 Heebo,Arial,sans-serif", "white-space:nowrap"]
+  .map((rule) => rule + " !important").join(";");
+const BADGE_BRAND_STYLE = ["all:initial", "color:#5EEAD4", "font:800 14px/1.3 Heebo,Arial,sans-serif", "white-space:nowrap"]
+  .map((rule) => rule + " !important").join(";");
+
+// Free sites carry a clear (but small and tasteful) "make a site like
+// this, free" pill — it's what brings new people to DeskKit, and what the
+// one-time payment removes. English sites get the English wording.
+function badgeHtml(id: string, en: boolean): string {
+  const dir = en ? "ltr" : "rtl";
+  const text = en ? "Get a site like this, free —" : "רוצים אתר כזה בחינם?";
+  return `<a id="${id}" href="https://deskkit.co.il/?ref=badge" target="_blank" rel="noopener" dir="${dir}" style="${BADGE_STYLE};direction:${dir} !important">` +
+    `<span style="${BADGE_MARK_STYLE}">D</span><span style="${BADGE_TEXT_STYLE}">${text}</span><span style="${BADGE_BRAND_STYLE}">DeskKit</span></a>`;
+}
 
 function applyWatermark(html: string, isPaid: boolean): string {
   const stripped = stripClientWatermark(html);
   if (isPaid) return stripped;
   const id = "dk" + crypto.randomUUID().replace(/-/g, "").slice(0, 12);
-  const badge = `<a id="${id}" href="https://deskkit.co.il/?ref=badge" target="_blank" rel="noopener" style="${BADGE_STYLE}">נבנה ב-DeskKit ✨</a>`;
+  const badge = badgeHtml(id, /<html[^>]*\blang="en"/i.test(stripped));
   const at = stripped.lastIndexOf("</body>");
   return at === -1 ? stripped + badge : stripped.slice(0, at) + badge + stripped.slice(at);
 }

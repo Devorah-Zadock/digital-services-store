@@ -762,7 +762,12 @@ function enabledSitePages() {
 // file's constant.
 const DESKKIT_WATERMARK_ID = "deskkit-badge";
 function siteWatermarkHtml() {
-  return `<a id="${DESKKIT_WATERMARK_ID}" href="https://deskkit.co.il" target="_blank" rel="noopener" style="position:fixed;bottom:14px;inset-inline-start:14px;z-index:999999;background:rgba(20,20,20,.86);color:#fff;font-family:Heebo,Arial,sans-serif;font-size:12px;font-weight:600;padding:7px 14px;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,.25);text-decoration:none;">${siteState.data && siteState.data.siteLang === "en" ? "Built with DeskKit ✨" : "נבנה ב-DeskKit ✨"}</a>`;
+  // Same look as the badge publish-site adds to free sites.
+  const en = siteState.data && siteState.data.siteLang === "en";
+  const font = "font-family:Heebo,Arial,sans-serif;";
+  return `<a id="${DESKKIT_WATERMARK_ID}" href="https://deskkit.co.il/?ref=badge" target="_blank" rel="noopener" dir="${en ? "ltr" : "rtl"}" style="position:fixed;bottom:16px;inset-inline-start:16px;z-index:999999;display:inline-flex;align-items:center;gap:9px;max-width:calc(100vw - 32px);box-sizing:border-box;background:#0F172A;color:#fff;${font}font-size:14px;font-weight:600;line-height:1.3;padding:9px 16px 9px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.18);box-shadow:0 8px 24px rgba(0,0,0,.28);text-decoration:none;">`
+    + `<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;background:#14B8A6;color:#fff;${font}font-weight:800;font-size:14px;line-height:1;flex:none;">D</span>`
+    + `<span style="white-space:nowrap;">${en ? "Get a site like this, free —" : "רוצים אתר כזה בחינם?"}</span><span style="color:#5EEAD4;font-weight:800;white-space:nowrap;">DeskKit</span></a>`;
 }
 function currentSiteHtml(page) {
   const html = SITE_TEMPLATES[siteState.template].render(siteState.data, page || "index");
