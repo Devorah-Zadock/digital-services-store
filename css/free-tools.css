@@ -1,0 +1,134 @@
+/* Free, no-login tools: tax-calculator.html + sign.html.
+   Page-level layout only, built on style.css's :root tokens
+   (--primary/--text/--border/--surface…) and deskkit-ui.css's .dk-btn /
+   .dk-tabs, so both pages look like the rest of the site. Logical
+   properties throughout (inset-inline, margin-inline…) so the English
+   (LTR) mode mirrors for free. */
+
+.ft-hero { padding: 54px 20px 60px !important; }
+.ft-hero h1 { font-size: 34px !important; }
+.ft-hero p.lead { margin-bottom: 0 !important; }
+
+.ft-main { padding: 34px 0 20px; }
+.ft-wrap { max-width: 880px; margin: 0 auto; padding: 0 16px; }
+
+.ft-crumb { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 18px; }
+.ft-crumb a { color: var(--text-secondary); }
+.ft-crumb a:hover { color: var(--primary-dark); }
+
+.ft-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 22px; box-shadow: 0 2px 10px rgba(13,13,20,.04); margin-bottom: 22px;
+}
+.ft-card h2 { font-size: 20px; margin: 0 0 6px; }
+.ft-card h3 { font-size: 17px; margin: 0 0 10px; }
+.ft-card .ft-sub { color: var(--text-secondary); font-size: 14.5px; margin: 0 0 16px; }
+
+/* Prominent notice boxes (disclaimer / privacy / legal note) */
+.ft-note {
+  display: flex; gap: 12px; align-items: flex-start; border-radius: 12px; padding: 14px 16px;
+  font-size: 14.5px; line-height: 1.6; margin-bottom: 18px; border: 1px solid;
+}
+.ft-note-icon { font-size: 20px; line-height: 1.2; flex-shrink: 0; }
+.ft-note p { margin: 0; }
+.ft-note strong { display: block; margin-bottom: 2px; }
+.ft-note-warn { background: #FFF8EB; border-color: #F5C26B; color: #7A4A00; }
+.ft-note-info { background: #EEF9F8; border-color: #9EDDD6; color: #0F4F4A; }
+
+/* Form grid */
+.ft-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 18px; }
+.ft-grid .ft-span { grid-column: 1 / -1; }
+.ft-field { display: grid; gap: 6px; min-width: 0; }
+.ft-field > label, .ft-field > .ft-label { font-size: 14px; font-weight: 600; color: var(--text); }
+.ft-field .ft-hint { font-size: 12.5px; color: var(--text-secondary); }
+.ft-field input[type="text"], .ft-field input[type="number"], .ft-field input[type="date"],
+.ft-field select, .ft-field textarea {
+  width: 100%; box-sizing: border-box; padding: 11px 13px; border-radius: 10px; border: 1px solid #D0D5DD;
+  font-family: inherit; font-size: 15.5px; background: #fff; color: var(--text); min-height: 46px;
+}
+.ft-field textarea { min-height: 170px; resize: vertical; line-height: 1.65; }
+.ft-field input:focus, .ft-field select:focus, .ft-field textarea:focus {
+  outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(20,184,166,.18);
+}
+.ft-field input.ft-num { direction: ltr; text-align: end; }
+.ft-check { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; color: var(--text); }
+.ft-check input { margin-top: 3px; width: 17px; height: 17px; accent-color: var(--primary); flex-shrink: 0; }
+.ft-seg { display: inline-flex; border: 1px solid #D0D5DD; border-radius: 10px; overflow: hidden; flex-wrap: wrap; }
+.ft-seg label { display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; font-size: 14px; cursor: pointer; font-weight: 600; color: var(--text-secondary); }
+.ft-seg label + label { border-inline-start: 1px solid #D0D5DD; }
+.ft-seg input { position: absolute; opacity: 0; pointer-events: none; }
+.ft-seg label:has(input:checked) { background: var(--primary-light); color: var(--primary-dark); }
+.ft-seg label:has(input:focus-visible) { outline: 2px solid var(--primary); outline-offset: -2px; }
+
+/* Tabs: deskkit-ui.css's .dk-tabs, made scrollable on narrow phones */
+.ft-tabs { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
+.ft-tabs .dk-tab { white-space: nowrap; flex-shrink: 0; }
+.ft-panel[hidden] { display: none; }
+
+/* Results */
+.ft-results { margin-top: 20px; }
+.ft-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+.ft-kpi { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 14px; min-width: 0; }
+.ft-kpi-label { font-size: 13px; color: var(--text-secondary); font-weight: 600; }
+.ft-kpi-value { font-size: 24px; font-weight: 800; color: var(--text); margin-top: 4px; overflow-wrap: anywhere; }
+.ft-kpi.is-main { background: var(--primary-light); border-color: #99E6DA; }
+.ft-kpi.is-main .ft-kpi-value { color: var(--primary-dark); }
+
+.ft-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
+.ft-table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+.ft-table caption { text-align: start; font-weight: 700; padding: 12px 14px 4px; }
+.ft-table th, .ft-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); text-align: start; vertical-align: top; }
+.ft-table thead th { background: var(--bg); font-size: 13px; color: var(--text-secondary); font-weight: 700; }
+.ft-table td.ft-amt, .ft-table th.ft-amt { text-align: end; white-space: nowrap; }
+.ft-table tr.ft-sub td { color: var(--text-secondary); font-size: 13.5px; }
+.ft-table tr.ft-sub td:first-child { padding-inline-start: 30px; }
+.ft-table tr.ft-total td { font-weight: 800; background: #F2FBFA; border-bottom: none; }
+.ft-table tr.ft-minus td.ft-amt { color: #B42318; }
+.ft-table tr:last-child td { border-bottom: none; }
+.ft-money { unicode-bidi: isolate; direction: ltr; display: inline-block; }
+
+.ft-status { border-radius: 12px; padding: 14px 16px; font-weight: 700; margin-bottom: 14px; }
+.ft-status.ok { background: #ECFDF3; color: #05603A; border: 1px solid #A6F4C5; }
+.ft-status.over { background: #FEF3F2; color: #912018; border: 1px solid #FECDCA; }
+.ft-meter { height: 12px; background: var(--border); border-radius: 999px; overflow: hidden; margin: 6px 0 4px; }
+.ft-meter > span { display: block; height: 100%; background: var(--primary); border-radius: 999px; }
+.ft-meter.over > span { background: var(--error); }
+.ft-list { margin: 10px 0 0; padding-inline-start: 20px; color: var(--text-secondary); font-size: 14px; line-height: 1.7; }
+.ft-sources { font-size: 13.5px; line-height: 1.7; color: var(--text-secondary); padding-inline-start: 20px; margin: 10px 0 0; }
+.ft-sources a { color: var(--primary-dark); overflow-wrap: anywhere; }
+
+/* Signature page */
+.ft-sigpad-box {
+  position: relative; border: 2px dashed #B9C2CF; border-radius: 12px; background: #fff; overflow: hidden;
+}
+.ft-sigpad-box.has-ink { border-style: solid; border-color: var(--primary); }
+.ft-sigpad-line {
+  position: absolute; inset-inline: 22px; bottom: 34px; border-bottom: 1px solid #D0D5DD; pointer-events: none;
+}
+.ft-sigpad-placeholder {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  color: #98A2B3; font-size: 15px; pointer-events: none; text-align: center; padding: 0 16px;
+}
+.ft-sigpad-box.has-ink .ft-sigpad-placeholder { display: none; }
+.ft-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-top: 12px; }
+.ft-toolbar-group { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.ft-btn-sm { min-height: 40px !important; padding: 8px 14px !important; font-size: 14px !important; border-radius: 10px !important; }
+.ft-swatch {
+  width: 30px; height: 30px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 1.5px #D0D5DD; cursor: pointer; padding: 0;
+}
+.ft-swatch[aria-pressed="true"] { box-shadow: 0 0 0 2.5px var(--primary); }
+.ft-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; }
+.ft-actions .dk-btn { flex: 1 1 220px; }
+.ft-actions .dk-btn[disabled] { opacity: .55; cursor: not-allowed; }
+.ft-msg { min-height: 20px; font-size: 14px; margin-top: 10px; color: var(--text-secondary); }
+.ft-msg.err { color: #B42318; }
+
+@media (max-width: 640px) {
+  .ft-hero h1 { font-size: 26px !important; }
+  .ft-grid { grid-template-columns: minmax(0, 1fr); }
+  .ft-kpis { grid-template-columns: minmax(0, 1fr); }
+  .ft-card { padding: 16px; }
+  .ft-kpi-value { font-size: 22px; }
+  .ft-table th, .ft-table td { padding: 9px 10px; }
+  .ft-table tr.ft-sub td:first-child { padding-inline-start: 18px; }
+}

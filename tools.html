@@ -20,7 +20,7 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="description" content="כלים לניהול העסק במקום אחד: הצעות מחיר וחשבוניות וקבלות, עם חשבון אחד.">
+<meta name="description" content="כלים לניהול העסק במקום אחד: הצעות מחיר וחשבוניות וקבלות עם חשבון אחד, ובחינם בלי הרשמה — מחשבון מס לעצמאים וחתימה דיגיטלית על הסכמים.">
 <link rel="canonical" href="https://deskkit.co.il/tools.html">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -76,6 +76,20 @@
         <h4><span data-i18n="invoice_card_title">חשבוניות וקבלות</span> <span class="badge-new" data-i18n="tools_new_badge">חדש!</span></h4>
         <p data-i18n="tools_invoice_p">נרשמים פעם אחת, ומפיקים חשבונית מס-קבלה או קבלה ממוספרת אוטומטית — כולל התאמה לעוסק פטור.</p>
         <a href="invoice-app.html" class="btn btn-teal btn-mini" data-i18n="nav_login">כניסה</a>
+      </div>
+      <!-- Free, no-login tools: everything runs in the browser, nothing is
+           saved to an account (js/tax-calc.js, js/signature-pad.js). -->
+      <div class="feature tool-card">
+        <div class="icon">🧮</div>
+        <h4><span data-i18n="tools_tax_h">מחשבון מס לעצמאים</span> <span class="badge-new" data-i18n="tools_free_badge">חינם</span></h4>
+        <p data-i18n="tools_tax_p">כמה נשאר נטו אחרי מס הכנסה, ביטוח לאומי ומס בריאות — ובדיקה אם אתם מעל תקרת עוסק פטור. נתוני 2026.</p>
+        <a href="tax-calculator.html" class="btn btn-teal btn-mini" data-i18n="tools_open_free">לשימוש חינם</a>
+      </div>
+      <div class="feature tool-card">
+        <div class="icon">✍️</div>
+        <h4><span data-i18n="tools_sign_h">חתימה דיגיטלית</span> <span class="badge-new" data-i18n="tools_free_badge">חינם</span></h4>
+        <p data-i18n="tools_sign_p">חותמים באצבע או בעכבר על הסכם קצר, ומורידים PDF עם השם, התאריך והחתימה. שום דבר לא עולה לשרת.</p>
+        <a href="sign.html" class="btn btn-teal btn-mini" data-i18n="tools_open_free">לשימוש חינם</a>
       </div>
     </div>
   </div>
@@ -138,6 +152,7 @@
 <script src="js/captcha.js?v=3"></script>
 <script src="js/widgets.js?v=20"></script>
 <script src="js/effects.js"></script>
+<script src="js/i18n-free-tools.js?v=1"></script>
 <script src="js/i18n.js?v=39"></script>
 <script src="js/contact-email.js?v=1"></script>
 </body>

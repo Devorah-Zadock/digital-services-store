@@ -41,6 +41,15 @@ js/schedule-content.js          מודל הנתונים הטהור + חשבון 
 js/schedule-worker.js           מנוע הפתרון (simulated annealing) ב-Web Worker נפרד, כדי שלא לתקוע את הדפדפן בזמן חיפוש פתרון
 js/schedule-render.js           הלשוניות, הטפסים, שער הרישוי Gumroad, וטבלת התוצאה הניתנת לגרירה
 js/schedule-cloud-save.js       שמירת/טעינת פרויקטים (schedule_projects) — כמו quote_saves, כמה פרויקטים לכל משתמש
+tax-calculator.html             מחשבון מס לעצמאים (חינם, בלי חשבון): נטו מברוטו לעצמאי/שכיר + עוסק פטור או מורשה
+js/tax-calc.js                  כל החישוב + כל נתוני המס של השנה (TAX_CONSTANTS, עם מקור לכל מספר) — לעדכן פעם בשנה, ואז להריץ node --test tests/tools/*.test.js
+js/tax-calc-ui.js               הטפסים, הלשוניות וטבלאות הפירוט של המחשבון
+sign.html                       חתימה דיגיטלית פשוטה על הסכם (חינם, בלי חשבון) — הורדת PDF או PNG, שום דבר לא עולה לשרת
+js/signature-pad.js             רכיב חתימה לשימוש חוזר: createSignaturePad(container, options) → {clear, undo, isEmpty, toDataURL, toBlob}
+js/sign-page.js                 לוגיקת עמוד החתימה: בניית ה-PDF (html2canvas + jsPDF, כמו בהצעות המחיר) והורדת PNG
+js/i18n-free-tools.js           מחרוזות עברית/אנגלית של שני הכלים החינמיים
+js/vendor/                      jsPDF 2.5.1 ו-html2canvas 1.4.1 (אותן גרסאות שנטענות מה-CDN בשאר הכלים) + supabase-js
+tests/tools/                    בדיקות: node --test tests/tools/*.test.js (מס) · python3 tests/tools/e2e_tools.py (דפדפן)
 ```
 
 ## בילדר הצעות מחיר
