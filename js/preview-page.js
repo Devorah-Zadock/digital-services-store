@@ -78,7 +78,8 @@ function renderSheetPreview(root, product, data) {
       if (c.color) style.push(`color:${pvHex(c.color)}`);
       if (c.bold) style.push("font-weight:700");
       if (c.size) style.push(`font-size:${Math.round(c.size * 1.1)}px`);
-      return `<td style="${style.join(";")}">${escapeHtmlPV(c.v)}</td>`;
+      if (c.span > 1) style.push("white-space:normal");
+      return `<td${c.span > 1 ? ` colspan="${c.span}"` : ""} style="${style.join(";")}">${escapeHtmlPV(c.v)}</td>`;
     }).join("");
     return `<tr>${cells}</tr>`;
   }).join("");
@@ -93,7 +94,9 @@ function renderSheetPreview(root, product, data) {
 document.addEventListener("DOMContentLoaded", () => {
   const slug = new URLSearchParams(location.search).get("slug");
   const product = PRODUCTS.find((p) => p.slug === slug);
-  const data = product && PRODUCT_PREVIEW_DATA[slug];
+  // Spreadsheets also come in English (downloads/en/) — show that one when
+  // the interface is English.
+  const data = product && ((PV_EN && PRODUCT_PREVIEW_DATA[slug + "@en"]) || PRODUCT_PREVIEW_DATA[slug]);
   const content = document.getElementById("pv-content");
   const backLink = document.getElementById("pv-back");
 

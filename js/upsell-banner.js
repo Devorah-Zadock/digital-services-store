@@ -1,5 +1,6 @@
 /* Shared, reusable upsell popup — a dismissible eye-catching card pointing
-   free-tool users at the paid site builder (sites.html, 199 ₪ one-time).
+   free-tool users at the site builder (sites.html). No price on the popup
+   itself — the price is shown only on the site builder page.
    Self-contained and built on demand like domain-guide.js: nothing on a
    page pays for this until showUpsellBanner() is actually called.
 
@@ -38,7 +39,7 @@ function showUpsellBanner(message, title) {
       <div class="upsell-popup-icon">✨</div>
       <h4>${title || dkL("שווה להכיר", "Worth knowing")}</h4>
       <p>${message}</p>
-      <a href="sites.html?browse=1" class="btn btn-gold upsell-popup-cta">${dkL("בניית אתר תדמית — 199 ₪", "Build a business website — ₪199")}</a>
+      <a href="sites.html?browse=1" class="btn btn-gold upsell-popup-cta">${dkL("לבניית אתר תדמית ←", "Build a business website →")}</a>
     </div>
   `;
   document.body.appendChild(wrap);

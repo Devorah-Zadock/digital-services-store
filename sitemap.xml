@@ -44,6 +44,7 @@
   <url><loc>https://deskkit.co.il/products.html?type=deck&amp;cat=creative</loc><priority>0.6</priority></url>
   <url><loc>https://deskkit.co.il/products.html?type=xlsx&amp;cat=finance</loc><priority>0.6</priority></url>
   <url><loc>https://deskkit.co.il/products.html?type=xlsx&amp;cat=customers</loc><priority>0.6</priority></url>
+  <url><loc>https://deskkit.co.il/products.html?type=xlsx&amp;cat=personal</loc><priority>0.6</priority></url>
   <url><loc>https://deskkit.co.il/products.html?type=xlsx&amp;cat=operations</loc><priority>0.6</priority></url>
   <url><loc>https://deskkit.co.il/products.html?type=xlsx&amp;cat=projects</loc><priority>0.6</priority></url>
   <url><loc>https://deskkit.co.il/products.html?type=xlsx&amp;cat=sales</loc><priority>0.6</priority></url>
@@ -72,7 +73,16 @@
   <url><loc>https://deskkit.co.il/product.html?slug=deck-cinematic-pitch</loc><priority>0.5</priority></url>
   <url><loc>https://deskkit.co.il/product.html?slug=deck-editorial-brand</loc><priority>0.5</priority></url>
   <url><loc>https://deskkit.co.il/product.html?slug=deck-neopop-business</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=deck-business-plan</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=deck-quarterly-report</loc><priority>0.5</priority></url>
   <url><loc>https://deskkit.co.il/product.html?slug=xlsx-budget</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=xlsx-income-expenses</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=xlsx-receivables</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=xlsx-event-budget</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=xlsx-savings</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=xlsx-shifts</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=xlsx-freelance-rate</loc><priority>0.5</priority></url>
+  <url><loc>https://deskkit.co.il/product.html?slug=xlsx-loan</loc><priority>0.5</priority></url>
   <url><loc>https://deskkit.co.il/product.html?slug=xlsx-invoice</loc><priority>0.5</priority></url>
   <url><loc>https://deskkit.co.il/product.html?slug=xlsx-expense</loc><priority>0.5</priority></url>
   <url><loc>https://deskkit.co.il/product.html?slug=xlsx-clients</loc><priority>0.5</priority></url>
