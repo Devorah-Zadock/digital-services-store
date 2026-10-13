@@ -27,6 +27,7 @@
 // Secrets) — already set if ats-check is deployed.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { AI_MAX_OUTPUT_TOKENS, aiBusyMessage, aiGlobalReserve } from "../_shared/ai-budget.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -126,6 +127,11 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ limitReached: true, isPro, count: limit, limit });
     }
     const newCount = Number(reserved);
+    // Site-wide daily fuse (all users together) — hands the user's try back.
+    if (!(await aiGlobalReserve(admin))) {
+      await admin.rpc("ai_usage_release", { p_user_id: userId, p_tool: TOOL, p_daily: isPro });
+      return jsonResponse({ error: aiBusyMessage(lang) }, 503);
+    }
     const reservedResponse = await (async (): Promise<Response> => {
 
     const responseLang = lang === "en" ? "English" : "Hebrew";
@@ -134,6 +140,7 @@ Deno.serve(async (req: Request) => {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${OPENAI_API_KEY}` },
       body: JSON.stringify({
         model: "gpt-4o-mini",
+        max_tokens: AI_MAX_OUTPUT_TOKENS,
         response_format: { type: "json_object" },
         messages: [
           {

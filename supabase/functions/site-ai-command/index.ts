@@ -25,6 +25,7 @@
 // way to deploy it, same as the functions that import _shared/mail.ts.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { AI_MAX_OUTPUT_TOKENS, aiBusyMessage, aiGlobalReserve } from "../_shared/ai-budget.ts";
 import { MAX_OPS, parseSiteContext, TEXT_FIELD_LIMITS, validateCommandResult, type SiteContext } from "../_shared/site-ai-ops.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -123,6 +124,11 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ limitReached: true, isPro, count: limit, limit });
     }
     const newCount = Number(reserved);
+    // Site-wide daily fuse (all users together) — hands the user's try back.
+    if (!(await aiGlobalReserve(admin))) {
+      await admin.rpc("ai_usage_release", { p_user_id: userId, p_tool: TOOL, p_daily: isPro });
+      return jsonResponse({ error: aiBusyMessage((body as any)?.lang) }, 503);
+    }
     let keepSlot = false;
     const reservedResponse = await (async (): Promise<Response> => {
 
@@ -131,6 +137,7 @@ Deno.serve(async (req: Request) => {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${OPENAI_API_KEY}` },
       body: JSON.stringify({
         model: "gpt-4o-mini",
+        max_tokens: AI_MAX_OUTPUT_TOKENS,
         response_format: { type: "json_object" },
         messages: [
           {
