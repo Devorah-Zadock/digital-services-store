@@ -830,8 +830,14 @@ function siteWatermarkHtml() {
     + `<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;background:#14B8A6;color:#fff;${font}font-weight:800;font-size:14px;line-height:1;flex:none;">D</span>`
     + `<span style="white-space:nowrap;">${en ? "Get a site like this, free —" : "רוצים אתר כזה בחינם?"}</span><span style="color:#5EEAD4;font-weight:800;white-space:nowrap;">DeskKit</span></a>`;
 }
+/* The site's live address, once published (sitePublishedUrl lives in
+   site-cloud-save.js) — "" before that. Only the SEO panel's canonical/
+   og:url tags and its Google preview use it. */
+function currentSiteUrl() {
+  return (typeof sitePublishedUrl !== "undefined" && sitePublishedUrl) ? String(sitePublishedUrl) : "";
+}
 function currentSiteHtml(page) {
-  const html = SITE_TEMPLATES[siteState.template].render(siteState.data, page || "index");
+  const html = SITE_TEMPLATES[siteState.template].render(siteState.data, page || "index", { siteUrl: currentSiteUrl() });
   const unlocked = typeof currentUnlockKey === "function" && localStorage.getItem(currentUnlockKey()) === "1";
   if (unlocked) return html;
   return html.includes("</body>") ? html.replace("</body>", siteWatermarkHtml() + "</body>") : html + siteWatermarkHtml();
@@ -1780,6 +1786,9 @@ function wireSlugRenameUI() {
       confirmBtn.textContent = original;
       return;
     }
+    // Keeps the SEO canonical/og:url (see currentSiteUrl) on the new
+    // address for the next publish.
+    if (typeof sitePublishedUrl !== "undefined") sitePublishedUrl = "https://" + data.slug + ".deskkit.co.il/";
     renderPublishClaimedScreen("https://" + data.slug + ".deskkit.co.il/", true, data.slug);
   });
 }

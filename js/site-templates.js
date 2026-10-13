@@ -23,6 +23,16 @@
    string untouched for every non-English site, so Hebrew output stays
    byte-for-byte what it was. */
 let SITE_RENDER_EN = false;
+/* Same per-render idea as SITE_RENDER_EN, for siteDoc()'s optional SEO
+   tags and design mood (see siteSeoFields / siteMoodCss below): every
+   template calls siteDoc() with the same head object and never passes d
+   itself, so the render wrapper at the bottom of this file hands siteDoc
+   the project data, the page being rendered, and the site's live address
+   (when the builder knows it) through these instead of changing all 18
+   templates' siteDoc() calls. */
+let SITE_RENDER_DATA = null;
+let SITE_RENDER_PAGE = "index";
+let SITE_RENDER_URL = "";
 function siteTr(he, en) {
   return SITE_RENDER_EN ? en : he;
 }
@@ -129,7 +139,10 @@ function heroMediaHtml(d, imgClass) {
   const images = (d.heroImages && d.heroImages.length) ? d.heroImages : (d.heroImage ? [d.heroImage] : []);
   if (!images.length) return "";
   const cls = imgClass ? ` ${imgClass}` : "";
-  const alt = escapeHtmlS((d.businessName || "").trim() || siteTr("תמונת נושא", "Cover image"));
+  // d.heroAlt: the owner's own description of the hero photo (the
+  // builder's "תיאור התמונה" field) — when it's empty, the alt text stays
+  // exactly what it always was.
+  const alt = escapeHtmlS(String(d.heroAlt || "").trim() || (d.businessName || "").trim() || siteTr("תמונת נושא", "Cover image"));
   if (images.length === 1) return `<img class="${imgClass || ""}" src="${images[0]}" alt="${alt}">`;
   return `<div class="site-hero-slideshow${cls}">${images.map((src, i) =>
     `<img class="site-hero-slide${i === 0 ? " active" : ""}" src="${src}" alt="${alt}">`).join("")}</div>`;
@@ -166,13 +179,71 @@ const SITE_FONTS = {
   suezOne: { name: "Suez One (סריפי)", stack: "'Suez One',serif", googleParam: "Suez+One" },
   varelaRound: { name: "Varela Round (עגול)", stack: "'Varela Round',Arial,sans-serif", googleParam: "Varela+Round" },
 };
-function siteFontImport(fontKey) {
+/* headingKey: a design mood's heading font (see SITE_MOODS) — loaded in
+   the same single Google Fonts request as the body font. Absent (no
+   mood), the link is exactly what it always was. */
+function siteFontImport(fontKey, headingKey) {
   const font = SITE_FONTS[fontKey] || SITE_FONTS.heebo;
   // Heebo + Frank Ruhl Libre stay loaded unconditionally — plenty of
   // templates reference them directly in their own CSS for headline
   // styling regardless of which body font the customer picked.
-  const extra = (fontKey && fontKey !== "heebo" && fontKey !== "frankRuhl") ? `&family=${font.googleParam}` : "";
+  let extra = (fontKey && fontKey !== "heebo" && fontKey !== "frankRuhl") ? `&family=${font.googleParam}` : "";
+  if (headingKey && SITE_FONTS[headingKey] && headingKey !== fontKey && headingKey !== "heebo" && headingKey !== "frankRuhl") {
+    extra += `&family=${SITE_FONTS[headingKey].googleParam}`;
+  }
   return `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&family=Frank+Ruhl+Libre:wght@500;700;900${extra}&display=swap" rel="stylesheet">`;
+}
+
+/* Design moods ("סגנון" in the builder's site settings) — four guarded
+   presets. Picking one in the builder writes its colour and body font
+   into the project's ordinary d.primaryColor / d.fontFamily (so every
+   template's existing colour/font code just works, and the owner can
+   still change either afterwards), and stores the mood's key in d.mood.
+   d.mood is what siteMoodCss() below reads to add the rest: a heading
+   font, a corner radius for cards/photos, and the vertical spacing of
+   content sections. No d.mood (every existing project, and "ללא") means
+   no extra CSS and no extra font at all — the page is byte-for-byte what
+   it was before moods existed. Fonts are SITE_FONTS keys, all Hebrew-
+   capable Google Fonts. */
+const SITE_MOODS = {
+  tech: { label: "מודרני-טכנולוגי", labelEn: "Modern Tech", primaryColor: "#2563EB", accent: "#06B6D4", headingFont: "rubik", bodyFont: "heebo", radius: "14px", sectionPadding: "clamp(56px, 8vw, 88px)" },
+  warm: { label: "חם וטבעי", labelEn: "Warm & Rustic", primaryColor: "#9A5B2E", accent: "#D9A066", headingFont: "frankRuhl", bodyFont: "assistant", radius: "8px", sectionPadding: "clamp(60px, 9vw, 96px)" },
+  minimal: { label: "מינימליסטי-אומנותי", labelEn: "Minimalist / Artistic", primaryColor: "#1F2937", accent: "#E11D48", headingFont: "davidLibre", bodyFont: "assistant", radius: "0px", sectionPadding: "clamp(72px, 11vw, 120px)" },
+  corporate: { label: "עסקי בולט", labelEn: "Corporate Bold", primaryColor: "#1E3A8A", accent: "#F59E0B", headingFont: "secularOne", bodyFont: "heebo", radius: "6px", sectionPadding: "clamp(52px, 7vw, 80px)" },
+};
+function siteMoodOf(d) {
+  return (d && d.mood && Object.prototype.hasOwnProperty.call(SITE_MOODS, d.mood)) ? SITE_MOODS[d.mood] : null;
+}
+/* Appended after the template's own CSS, only when a mood is set. Kept
+   deliberately narrow so no template's layout can break:
+   - Headings: the heading()/business-name spans every template shares
+     (data-textkey) plus plain h1-h3 — font only, never size or spacing.
+     An owner's per-text font (inline style from d.textStyles) still wins.
+   - Radius: service cards ([data-svc-idx]) except the ones whose shape IS
+     the design (playground's physics bubbles, freelancer's pill tags, and
+     the plain list rows of portfolio/noir/process), plus the shared hero
+     photo, video frame and search box. The round avatar photo stays round.
+   - Spacing: padding-block only (never sideways) on the content sections
+     that already scroll-reveal — heroes and full-height/sticky sections
+     never carry .site-reveal, so they're untouched; an inline padding a
+     template set on purpose (style="padding-top:0") still wins.
+   Radius and vertical padding can't make anything wider, so they can't
+   add horizontal scroll at any width. */
+function siteMoodCss(d) {
+  const mood = siteMoodOf(d);
+  if (!mood) return "";
+  const heading = SITE_FONTS[mood.headingFont] || SITE_FONTS.heebo;
+  const body = SITE_FONTS[d.fontFamily] || SITE_FONTS.heebo;
+  const primary = /^#?[0-9a-f]{6}$/i.test(String(d.primaryColor || "")) ? "#" + String(d.primaryColor).replace("#", "") : mood.primaryColor;
+  return `
+    :root { --primary-color:${primary}; --accent-color:${mood.accent}; --font-family-headings:${heading.stack}; --font-family-body:${body.stack};
+      --border-radius:${mood.radius}; --section-padding:${mood.sectionPadding}; }
+    :root :is(h1, h2, h3), [data-textkey^="heading-"], [data-textkey="businessName"] { font-family:var(--font-family-headings); }
+    [data-svc-idx]:not(.pg-bubble):not(.fr-tag):not(.po-work-row):not(.nr-menu-row):not(.pr-step),
+    .site-hero-photo:not(.round), .site-hero-slideshow:not(.round), .site-video-wrap, .site-search-input { border-radius:var(--border-radius); }
+    section.site-reveal { padding-block:var(--section-padding); }
+    ::selection { background:var(--accent-color); color:#fff; }
+  `;
 }
 function siteBaseCss(fontKey) {
   const font = SITE_FONTS[fontKey] || SITE_FONTS.heebo;
@@ -613,16 +684,78 @@ const SITE_LTR_CSS = `
     .br-ticker-item, .oc-marquee-item, .oc-hcard { direction:ltr; }
     @media (min-width:761px) { .ag-hero-text { padding:60px 24px 60px 56px; } }
 `;
+/* The owner's own search/share settings (d.seo, from the builder's "SEO /
+   איך האתר נראה בגוגל" panel). Returns null unless at least one of title/
+   description/share image is actually filled in — and null means siteDoc()
+   emits exactly the <title>/<meta description> it always did (business
+   name + tagline), with no Open Graph tags at all, so a site whose owner
+   never opened the panel doesn't change by a single byte. */
+function siteSeoFields(d) {
+  const s = d && d.seo && typeof d.seo === "object" ? d.seo : null;
+  if (!s) return null;
+  const title = String(s.title || "").trim();
+  const description = String(s.description || "").trim();
+  const ogImage = String(s.ogImage || "").trim();
+  if (!title && !description && !ogImage) return null;
+  return { title, description, ogImage };
+}
+/* The share image: the owner's pick when it is still one of this site's
+   own photos (a gallery photo removed later just falls back), otherwise
+   the hero photo — the same one the page itself opens with. Absolute
+   http(s) URLs only: a crawler can't resolve a relative og:image. */
+function siteOgImageUrl(d, seo) {
+  const own = [d.heroImage].concat(Array.isArray(d.heroImages) ? d.heroImages : []).filter(Boolean);
+  const url = (seo.ogImage && own.includes(seo.ogImage)) ? seo.ogImage : (d.heroImage || (Array.isArray(d.heroImages) && d.heroImages[0]) || "");
+  return /^https?:\/\/[^\s"'<>]+$/i.test(url) ? url : "";
+}
+/* The live site's address for one page (canonical / og:url), or "" when
+   the builder doesn't know it yet (never published). https only. */
+function siteCanonicalUrl(siteUrl, page) {
+  const m = String(siteUrl || "").match(/^(https:\/\/[a-z0-9.-]+)(?:\/|$)/i);
+  if (!m) return "";
+  const base = m[1].toLowerCase() + "/";
+  return page === "about" || page === "contact" ? base + page + ".html" : base;
+}
+/* The site Worker (cloudflare/sites/index.js) turns every Storage photo
+   link in a published page into the site's own relative /_img/ path —
+   right for <img>, wrong for og:image, which must stay absolute. Writing
+   that one "/" as an HTML entity keeps the exact same URL for anything
+   that parses the HTML (browsers, Facebook/WhatsApp/Google crawlers)
+   while the Worker's plain text match no longer sees it. */
+function siteAbsoluteAttrUrl(url) {
+  return escapeHtmlS(url).replace("/storage/v1/object/public/site-images/", "&#47;storage/v1/object/public/site-images/");
+}
+function siteSocialMetaHtml(title, description, d, seo) {
+  const image = siteOgImageUrl(d, seo);
+  const url = siteCanonicalUrl(SITE_RENDER_URL, SITE_RENDER_PAGE);
+  const tags = [
+    `<meta property="og:type" content="website">`,
+    `<meta property="og:title" content="${escapeHtmlS(title)}">`,
+  ];
+  if (description) tags.push(`<meta property="og:description" content="${escapeHtmlS(description)}">`);
+  if (image) tags.push(`<meta property="og:image" content="${siteAbsoluteAttrUrl(image)}">`);
+  tags.push(`<meta property="og:locale" content="${siteTr("he_IL", "en_US")}">`);
+  if (url) tags.push(`<meta property="og:url" content="${escapeHtmlS(url)}">`, `<link rel="canonical" href="${escapeHtmlS(url)}">`);
+  tags.push(`<meta name="twitter:card" content="${image ? "summary_large_image" : "summary"}">`);
+  return tags.join("\n");
+}
 function siteDoc(head, body) {
+  const d = SITE_RENDER_DATA || {};
+  const seo = siteSeoFields(d);
+  // The owner's SEO title names the site as a whole, so it replaces the
+  // home page's title only; about/contact keep "אודות — <name>" etc.
+  const title = (seo && seo.title && SITE_RENDER_PAGE === "index") ? seo.title : head.title;
+  const description = (seo && seo.description) || head.description;
+  const mood = siteMoodOf(d);
   return `<!doctype html>
 <html lang="${siteTr("he", "en")}" dir="${siteTr("rtl", "ltr")}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${escapeHtmlS(head.title)}</title>
-${head.description ? `<meta name="description" content="${escapeHtmlS(head.description)}">` : ""}
-${siteFontImport(head.fontFamily)}
-<style>${siteBaseCss(head.fontFamily)}${head.css}${SITE_RENDER_EN ? SITE_LTR_CSS : ""}</style>
+<title>${escapeHtmlS(title)}</title>
+${description ? `<meta name="description" content="${escapeHtmlS(description)}">` : ""}${seo ? "\n" + siteSocialMetaHtml(title, description, d, seo) : ""}
+${siteFontImport(head.fontFamily, mood ? mood.headingFont : "")}
+<style>${siteBaseCss(head.fontFamily)}${head.css}${SITE_RENDER_EN ? SITE_LTR_CSS : ""}${siteMoodCss(d)}</style>
 </head>
 <body>
 ${head.showBsd ? `<div class="site-bsd" style="position:absolute; top:6px; right:10px; z-index:2147483000; font-size:11px; line-height:1.4; color:#333; background:rgba(255,255,255,.85); padding:1px 6px; border-radius:6px; pointer-events:none;">${siteTr('בס"ד', 'BS"D')}</div>` : ""}
@@ -4021,10 +4154,16 @@ const SITE_TEMPLATES = {
 Object.keys(SITE_TEMPLATES).forEach((key) => {
   const tpl = SITE_TEMPLATES[key];
   const renderInner = tpl.render;
-  tpl.render = function (d, page) {
-    const prevEn = SITE_RENDER_EN;
+  // opts.siteUrl (optional): the site's live address, when the builder
+  // knows it — only used for the canonical/og:url tags of a site whose
+  // owner filled in the SEO panel (see siteSeoFields).
+  tpl.render = function (d, page, opts) {
+    const prev = [SITE_RENDER_EN, SITE_RENDER_DATA, SITE_RENDER_PAGE, SITE_RENDER_URL];
     SITE_RENDER_EN = !!(d && d.siteLang === "en");
-    try { return renderInner.call(this, d, page); } finally { SITE_RENDER_EN = prevEn; }
+    SITE_RENDER_DATA = d || null;
+    SITE_RENDER_PAGE = page || "index";
+    SITE_RENDER_URL = (opts && opts.siteUrl) || "";
+    try { return renderInner.call(this, d, page); } finally { [SITE_RENDER_EN, SITE_RENDER_DATA, SITE_RENDER_PAGE, SITE_RENDER_URL] = prev; }
   };
 });
 

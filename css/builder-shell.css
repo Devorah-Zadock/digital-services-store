@@ -227,3 +227,49 @@
   .bshell-top-spacer { flex: 1 0 100%; height: 0; }
   .bshell-top-name { max-width: none; }
 }
+
+/* ---------- Site settings: mood ("סגנון") picker ---------- */
+.bshell-mood-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.bshell-mood-btn {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 6px; text-align: start; cursor: pointer;
+  background: var(--surface); border: 1.5px solid var(--border); padding: 8px 9px; font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--text);
+}
+.bshell-mood-btn:first-child { grid-column: 1 / -1; flex-direction: row; align-items: center; border-radius: 8px; }
+.bshell-mood-btn:hover { border-color: var(--brand-color, var(--primary)); }
+.bshell-mood-btn.active { border-color: var(--primary-dark); background: var(--primary-light); color: var(--primary-dark); }
+.bshell-mood-swatches { display: inline-flex; gap: 3px; }
+.bshell-mood-swatch { width: 16px; height: 16px; border-radius: 50%; border: 1px solid rgba(0,0,0,.08); }
+.bshell-mood-swatch-none { background: linear-gradient(135deg, transparent 45%, var(--text-muted) 45%, var(--text-muted) 55%, transparent 55%); }
+.bshell-mood-hint { margin-top: 8px; }
+
+/* ---------- Site settings: SEO / Google preview ---------- */
+.bshell-props-field textarea.bshell-seo-desc { min-height: 92px; }
+.bshell-seo-count { font-size: 11.5px; margin-top: 5px; line-height: 1.4; }
+.bshell-seo-count.is-good { color: #027A48; }
+.bshell-seo-count.is-warn { color: #B54708; }
+.bshell-seo-count.is-empty { color: var(--text-muted); }
+.bshell-serp-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.bshell-serp-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; padding: 2px; }
+.bshell-serp-toggle button { border: none; background: none; border-radius: 999px; padding: 3px 10px; font-family: inherit; font-size: 12px; cursor: pointer; color: var(--text-secondary); }
+.bshell-serp-toggle button.active { background: var(--primary-light); color: var(--primary-dark); font-weight: 700; }
+/* The desktop result is shown at Google's real width (600px) so the line
+   breaks match; the panel scrolls sideways for it. */
+.bshell-serp-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: #fff; }
+.bshell-serp { padding: 12px 14px; font-family: Arial, 'Heebo', sans-serif; box-sizing: border-box; }
+.bshell-serp.is-desktop { width: 600px; }
+.bshell-serp.is-mobile { width: 100%; max-width: 360px; }
+.bshell-serp-site { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.bshell-serp-fav { width: 26px; height: 26px; border-radius: 50%; background: #F1F3F4; color: #5F6368; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex: none; }
+.bshell-serp-site-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+.bshell-serp-name { font-size: 14px; color: #202124; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bshell-serp-url { font-size: 12px; color: #4D5156; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bshell-serp-title { color: #1A0DAB; font-size: 20px; line-height: 1.3; margin: 2px 0 3px; overflow-wrap: anywhere; }
+.bshell-serp.is-desktop .bshell-serp-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bshell-serp.is-mobile .bshell-serp-title { font-size: 18px; }
+.bshell-serp-desc { color: #4D5156; font-size: 14px; line-height: 1.58; overflow-wrap: anywhere; }
+.bshell-serp-missing { color: #80868B; font-style: italic; }
+.bshell-serp-note { font-size: 11px; color: #80868B; margin-top: 6px; }
+.bshell-og-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.bshell-og-opt { display: flex; flex-direction: column; gap: 4px; padding: 4px; border: 1.5px solid var(--border); border-radius: 8px; background: var(--surface); cursor: pointer; font-family: inherit; font-size: 11px; color: var(--text-secondary); }
+.bshell-og-opt img, .bshell-og-opt .site-photo-placeholder { width: 100%; aspect-ratio: 1.91 / 1; object-fit: cover; border-radius: 5px; display: flex; align-items: center; justify-content: center; background: var(--bg); }
+.bshell-og-opt.active { border-color: var(--primary-dark); background: var(--primary-light); color: var(--primary-dark); font-weight: 700; }
