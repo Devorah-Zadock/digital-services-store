@@ -293,9 +293,19 @@ function cvbshellWireTopBar() {
     });
   });
 
-  document.getElementById("cvbshell-download-btn").addEventListener("click", () => {
-    document.getElementById("download-btn").click();
+  // Both download buttons (the top bar's, and the phone-only bottom
+  // bar's) reuse #download-btn's own handler — sign-in check, save
+  // first, then the PDF — rather than a second copy of that logic.
+  ["cvbshell-download-btn", "cvbshell-mobile-download-btn"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("click", () => document.getElementById("download-btn").click());
   });
+
+  const mobileImport = document.getElementById("cvbshell-mobile-import-btn");
+  if (mobileImport) {
+    mobileImport.textContent = dkL("📋 ייבוא קו״ח", "📋 Import CV");
+    mobileImport.addEventListener("click", () => { if (typeof openCvImport === "function") openCvImport(); });
+  }
 
   // openAtsChecker() (js/ats-checker.js) is already a self-contained
   // global modal, appended straight to document.body and reading only
@@ -332,28 +342,32 @@ function cvbshellWireTopBar() {
   });
 }
 
-/* Explicit-save-only to the cloud, exactly like the original
-   #cv-save-btn (js/builder-cloud-save.js) — never auto-triggered on
-   every edit. Local autosave (saveCvLocalState) already happens for
-   free on every edit via renderPreview(), untouched by this file. */
+/* The "שמירה" button (and every download) saves right away. Autosave
+   (js/builder-cloud-save.js) covers everything else, through the same
+   saveCvNow() and the same status line (cvSetSaveStatus). */
 async function cvbshellSaveNow() {
-  const status = document.getElementById("cvbshell-top-status");
-  status.textContent = dkL("שומרים...", "Saving...");
-  status.className = "bshell-top-status saving";
+  if (typeof cvAutosaveTimer !== "undefined") clearTimeout(cvAutosaveTimer);
+  cvSetSaveStatus("saving");
   // saveCvNow() now returns the Supabase error (or null) — confirmed-
   // live bug this fixes: this showed "נשמר ✓" even when the save
   // itself failed, with no way for the user to know their edits
   // weren't actually safe.
   const error = typeof saveCvNow === "function" ? await saveCvNow() : null;
-  if (!error) {
-    status.textContent = dkL("נשמר ✓", "Saved ✓");
-    status.className = "bshell-top-status saved";
-    if (window.refreshMyPanel) window.refreshMyPanel();
-    setTimeout(() => { if (status.textContent === dkL("נשמר ✓", "Saved ✓")) status.textContent = ""; }, 2500);
-  } else {
-    status.textContent = dkL("לא נשמר — נסו שוב", "Not saved — try again");
-    status.className = "bshell-top-status failed";
-  }
+  cvSetSaveStatus(error ? "failed" : "saved");
+  if (!error && window.refreshMyPanel) window.refreshMyPanel();
+}
+
+/* "התחלה מדף ריק" — keeps the design, clears the example content
+   (js/builder.js's cvBlankContent). Undoable like any other edit. */
+function cvbshellStartBlank() {
+  const c = state.content || {};
+  const hasText = [c.name, c.title, c.contact, c.summary, c.education, c.skills].some((v) => v && String(v).trim())
+    || (c.jobs || []).some((j) => j.title || j.place || j.dates || j.bullets)
+    || (c.projects || []).length;
+  if (hasText && !confirm(dkL("לנקות את כל התוכן ולהתחיל מדף ריק? העיצוב נשאר, ואפשר לבטל עם \"↶ בטל\".", "Clear all the content and start from a blank page? The design stays, and you can undo with \"↶ Undo\"."))) return;
+  cvbshellSnapshot();
+  cvReplaceContent(cvBlankContent(), false);
+  cvbshellRenderCanvas(() => cvbshellSelectText("name"));
 }
 
 /* ---------- Hierarchy sidebar ---------- */
@@ -381,7 +395,7 @@ function cvbshellRenderHierarchy() {
     const rows = items.map((item, i) => {
       const isSelItem = cvbshellSelection && cvbshellSelection.kind === kind && cvbshellSelection.idx === i;
       return `<button type="button" class="bshell-item${isSelItem ? " is-selected" : ""}" data-cvbshell-select-${kind}="${i}">${escapeHtml(itemLabelFn(item, i))}</button>`;
-    }).join("") + `<button type="button" class="bshell-add-item" data-cvbshell-add-${kind}>+ ${kind === "job" ? t.addJob : t.addProject}</button>`;
+    }).join("") + `<button type="button" class="bshell-add-item" data-cvbshell-add-${kind}>${kind === "job" ? t.addJob : t.addProject}</button>`;
     return `
       <details class="bshell-sec" open>
         <summary class="bshell-sec-head${isSelSection ? " is-selected" : ""}${hidden ? " is-hidden" : ""}" data-cvbshell-select-section="${type}">
@@ -395,7 +409,21 @@ function cvbshellRenderHierarchy() {
 
   const projectsHidden = !(c.projects && c.projects.length);
 
-  list.innerHTML = [
+  // Two quick ways in, above the structure: fill the CV from one the
+  // person already has (js/cv-import.js), or clear the example text.
+  const startCard = `
+    <div class="cvb-start-card">
+      <button type="button" class="cvb-start-btn cvb-start-import" data-cvbshell-import>
+        <span class="cvb-start-icon" aria-hidden="true">📋</span>
+        <span><strong>${escapeHtml(dkL("יש לי כבר קורות חיים", "Already have a CV?"))}</strong><small>${escapeHtml(dkL("הדביקו ונמלא בשבילכם", "Paste it and we'll fill it in"))}</small></span>
+      </button>
+      <button type="button" class="cvb-start-btn" data-cvbshell-blank>
+        <span class="cvb-start-icon" aria-hidden="true">📄</span>
+        <span><strong>${escapeHtml(dkL("התחלה מדף ריק", "Start blank"))}</strong><small>${escapeHtml(dkL("אותו עיצוב, בלי תוכן לדוגמה", "Same design, no example text"))}</small></span>
+      </button>
+    </div>`;
+
+  list.innerHTML = startCard + [
     textRow("name", t.name),
     textRow("title", t.title),
     textRow("contact", t.contact),
@@ -405,6 +433,11 @@ function cvbshellRenderHierarchy() {
     textRow("education", t.education),
     textRow("skills", t.skills),
   ].join("");
+
+  const importBtn = list.querySelector("[data-cvbshell-import]");
+  if (importBtn) importBtn.addEventListener("click", () => { if (typeof openCvImport === "function") openCvImport(); });
+  const blankBtn = list.querySelector("[data-cvbshell-blank]");
+  if (blankBtn) blankBtn.addEventListener("click", cvbshellStartBlank);
 
   list.querySelectorAll("[data-cvbshell-select-text]").forEach((el) => {
     el.addEventListener("click", (e) => { e.preventDefault(); cvbshellSelectText(el.dataset.cvbshellSelectText); });
@@ -452,9 +485,19 @@ function cvbshellBuildCanvasHtml() {
   const body = renderCVHtml({ layout, font, palette, content: state.content, lang: state.lang, textColor, isPro: state.isPro });
   const fontsLink = document.querySelector('link[href*="fonts.googleapis.com/css2"]');
   const dir = state.lang === "en" ? "ltr" : "rtl";
+  // Faded field names in place of empty fields (a blank or half-filled
+  // CV), so there's still something on the page to see and click.
+  // Canvas-only: the PDF renders renderCVHtml() without this style.
+  const t = FORM_LABELS[state.lang];
+  const placeholderCss = [
+    ['[data-cvkey="name"]', t.name], ['[data-cvkey="title"]', t.title], ['[data-cvkey="contact"]', t.contact],
+    ['[data-cvkey="summary"]', t.summary], ['[data-cvkey="education"]', t.education], ['[data-cvkey="skills"]', t.skills],
+    ["[data-cv-job-idx] .cv-jobtitle", t.role],
+  ].map(([sel, label]) => `${sel}:empty::before{content:${JSON.stringify(label)}; opacity:.42; font-style:italic;}`).join("\n");
   return `<!doctype html><html lang="${state.lang}" dir="${dir}"><head><meta charset="UTF-8">
     ${fontsLink ? fontsLink.outerHTML : ""}
     <style>
+      ${placeholderCss}
       html,body{margin:0; background:#F3F4F6;}
       /* align-items:flex-start — see js/quote-builder-shell.js's
          quoteBshellBuildCanvasHtml(): the flex default (stretch) squashed
@@ -469,6 +512,11 @@ function cvbshellRenderCanvas(afterLoad) {
   const iframe = document.getElementById("cvbshell-canvas-iframe");
   iframe.srcdoc = cvbshellBuildCanvasHtml();
   cvbshellCanvasClickWired = false;
+  // Role/project edits in the Properties panel repaint only this canvas
+  // (never renderPreview()), so they never reached the local draft or
+  // the account autosave — this is the one point every canvas edit
+  // passes through. Unchanged content is a no-op for the autosave.
+  if (typeof saveCvLocalState === "function") saveCvLocalState();
   iframe.onload = () => {
     cvbshellWireCanvasClicks();
     cvbshellFitCanvas();

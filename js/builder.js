@@ -41,6 +41,9 @@ function loadTemplate(slug) {
   document.getElementById("text-color-picker").value = "#222222";
   renderForm();
   renderPreview();
+  // A freshly loaded template is a starting point, not an edit — never
+  // autosaved to the account by itself (js/builder-cloud-save.js).
+  if (typeof cvAutosaveResetBaseline === "function") cvAutosaveResetBaseline();
   // Skipped entirely once this page is scoped to a specific saved CV
   // (?cv=<id> — see js/cv-saves-router.js): writing the placeholder (or
   // currently-active) template's own slug into the URL here used to
@@ -57,6 +60,48 @@ function loadTemplate(slug) {
   const url = new URL(location.href);
   url.searchParams.set("template", slug);
   history.replaceState(null, "", url);
+}
+
+/* Every renderer and form here assumes plain strings and real arrays
+   (job.title.replace(...), content.jobs.map(...)) — anything coming from
+   outside the templates (the AI import, js/cv-import.js) goes through
+   this first, even though the cv-import Edge Function already cleans
+   its own output. */
+function cvNormalizeContent(raw) {
+  const str = (v) => (typeof v === "string" ? v : (typeof v === "number" ? String(v) : ""));
+  const list = (v) => (Array.isArray(v) ? v.filter((x) => x && typeof x === "object") : []);
+  const src = raw && typeof raw === "object" ? raw : {};
+  return {
+    name: str(src.name), title: str(src.title), contact: str(src.contact), summary: str(src.summary),
+    jobs: list(src.jobs).map((j) => ({ title: str(j.title), place: str(j.place), dates: str(j.dates), bullets: str(j.bullets) })),
+    projects: list(src.projects).map((p) => ({ title: str(p.title), link: str(p.link), bullets: str(p.bullets) })),
+    education: str(src.education), skills: str(src.skills),
+  };
+}
+
+/* "התחלה מדף ריק": the same design (template, style, color, font,
+   בס"ד) with all of the example content cleared. One empty role stays
+   so the experience section has something to click and fill in;
+   projects is optional and simply starts hidden (empty), same as the
+   Shell's own projects show/hide. The design keys are carried over by
+   cvReplaceContent() below. */
+function cvBlankContent() {
+  return cvNormalizeContent({ jobs: [{}] });
+}
+
+/* Swaps in new content (blank or imported) keeping the design-only keys
+   that ride inside `content` (layoutOverride/showBsd — see
+   renderPreview()), then repaints the old form, the hidden preview and
+   the Shell's canvas. */
+function cvReplaceContent(next, keepPhoto) {
+  const prev = state.content || {};
+  if (prev.layoutOverride) next.layoutOverride = prev.layoutOverride;
+  if (prev.showBsd) next.showBsd = true;
+  next.photo = keepPhoto ? (prev.photo || null) : null;
+  state.content = next;
+  renderForm();
+  renderPreview();
+  if (typeof cvbshellRefreshIfActive === "function") cvbshellRefreshIfActive();
 }
 
 function setLang(lang) {

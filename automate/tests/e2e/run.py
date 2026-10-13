@@ -367,8 +367,9 @@ def run_tests(a, b):
         if "lead_reminder" in [m["purpose"] for m in messages_of(a["id"]) if m["run_id"] == run8["id"]]:
             return True
         fast_forward_runs(a["id"])   # undo a "check again later" the scheduled worker may have written meanwhile
+        drain(1)                     # and tick ourselves — the scheduled worker runs only once a minute
         return False
-    wait_until(reminded, timeout=40)
+    wait_until(reminded, timeout=90)
     msgs8 = [m["purpose"] for m in messages_of(a["id"]) if m["run_id"] == run8["id"]]
     check("T10 resumed → continues (reminder sent)", "lead_reminder" in msgs8, str(msgs8))
 
