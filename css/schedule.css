@@ -87,6 +87,10 @@
 .sched-result-actions { display: flex; gap: 10px; align-items: center; }
 .sched-solver-status { font-size: 13px; color: var(--grey); margin-top: 12px; min-height: 18px; }
 .sched-solver-status.running { color: var(--ink-dark); font-weight: 600; }
+.sched-health { margin-top: 10px; background: #FDF1E4; color: #7A4A12; border-radius: 10px; padding: 10px 14px; font-size: 13px; }
+.sched-health ul { margin: 6px 0; padding-inline-start: 18px; }
+.sched-health .btn-mini { margin-top: 6px; }
+.sched-row.sched-row-warn { background: #FDF1E4; }
 
 .sched-result-viewbar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .sched-view-toggle { display: flex; gap: 6px; }

@@ -170,12 +170,18 @@ function snapshotPlacement(placement) {
   return out;
 }
 
-function solve(problem, timeBudgetMs, initialPlacement, onProgress) {
+/* movableIds (optional): when given, ONLY these lessons may move — every
+   other lesson stays exactly where initialPlacement has it. Used by
+   "complete the schedule" so lessons that are already fine (including the
+   user's manual moves) aren't reshuffled just to place a few missing ones. */
+function solve(problem, timeBudgetMs, initialPlacement, onProgress, movableIds) {
   const S = makeSolverState(problem);
-  const lessons = problem.lessons;
+  const allLessons = problem.lessons;
+  const movable = movableIds ? new Set(movableIds) : null;
+  const lessons = movable ? allLessons.filter((l) => movable.has(l.id)) : allLessons;
   const { days, periods } = problem;
 
-  lessons.forEach((lesson) => {
+  allLessons.forEach((lesson) => {
     const given = initialPlacement && initialPlacement[lesson.id];
     if (given && given.day < days && given.period < periods) {
       place(S, lesson, given.day, given.period);
@@ -195,7 +201,7 @@ function solve(problem, timeBudgetMs, initialPlacement, onProgress) {
   let bestPlacement = snapshotPlacement(S.placement);
   let bestHard = S.hard, bestSoft = S.soft;
 
-  if (lessons.length > 1) {
+  if (lessons.length > 1 || (movable && lessons.length === 1)) {
     let temp = 6.0;
     const coolingRate = 0.9995;
     const startTime = Date.now();
@@ -205,7 +211,7 @@ function solve(problem, timeBudgetMs, initialPlacement, onProgress) {
     while (Date.now() - startTime < timeBudgetMs) {
       iter++;
       const beforeCost = S.hard * 1000 + S.soft;
-      const swap = Math.random() < 0.75;
+      const swap = lessons.length > 1 && Math.random() < 0.75;
 
       if (swap) {
         const i = lessons[Math.floor(Math.random() * lessons.length)];
@@ -274,7 +280,7 @@ self.onmessage = function (e) {
 
   const result = solve(problem, timeBudgetMs, msg.initialPlacement || null, (iter, hard, soft, bestHard, bestSoft) => {
     self.postMessage({ type: "progress", iter, hard, soft, bestHard, bestSoft });
-  });
+  }, msg.movableIds || null);
 
   self.postMessage({ type: "done", placement: result.placement, hard: result.hard, soft: result.soft });
 };

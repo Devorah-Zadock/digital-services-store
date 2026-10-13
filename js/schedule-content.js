@@ -299,6 +299,121 @@ function scheduleFindConflicts(problem, placement) {
   return bad;
 }
 
+/* --- Checks shared by the result screen, the generate button and tests ---
+   All three are read-only: they never change state, they only describe it. */
+
+/* How the current timetable stands against the CURRENT data (not the data
+   it was generated from): which lessons have no slot, which sit outside
+   the school's days/periods, and which are in a hard conflict. A timetable
+   is only "ok" when all three are empty — the result screen never shows
+   success otherwise. */
+function scheduleTimetableHealth(state, placement) {
+  const problem = buildScheduleProblem(state);
+  placement = placement || {};
+  const missing = [], outOfRange = [];
+  problem.lessons.forEach((l) => {
+    const pos = placement[l.id];
+    if (!pos) { missing.push(l); return; }
+    if (!(pos.day >= 0 && pos.day < problem.days && pos.period >= 0 && pos.period < problem.periods)) outOfRange.push(l);
+  });
+  const conflicts = scheduleFindConflicts(problem, placement);
+  // In-range lessons in conflict only — an out-of-range one is already counted above.
+  const outIds = new Set(outOfRange.map((l) => l.id));
+  outIds.forEach((id) => conflicts.delete(id));
+  const total = problem.lessons.length;
+  return {
+    total,
+    placed: total - missing.length - outOfRange.length,
+    missing, outOfRange, conflicts,
+    ok: total > 0 && missing.length === 0 && outOfRange.length === 0 && conflicts.size === 0,
+  };
+}
+
+/* "מתמטיקה – ז1 (2)" lines for a list of lessons, grouped by assignment. */
+function scheduleLessonGroups(state, lessons) {
+  const byAssignment = {};
+  lessons.forEach((l) => { byAssignment[l.assignmentId] = (byAssignment[l.assignmentId] || 0) + 1; });
+  return Object.keys(byAssignment).map((aid) => {
+    const a = state.assignments.find((x) => x.id === aid) || {};
+    const s = state.subjects.find((x) => x.id === a.subjectId);
+    const c = state.classes.find((x) => x.id === a.classId);
+    return `${scheduleDisplayName(s && s.name)} – ${scheduleDisplayName(c && c.name)} (${byAssignment[aid]})`;
+  });
+}
+
+/* Loads that can never fit, whatever the solver does — checked before it
+   runs. Only certain impossibilities (a necessary condition), so passing
+   this check doesn't promise a conflict-free result; the health check
+   above still reports whatever the solver couldn't place. */
+function scheduleCapacityCheck(state) {
+  const days = state.settings.days, periods = state.settings.periodsPerDay;
+  const hoursOf = (a) => Math.max(0, Math.round(a.weeklyHours || 0));
+  const problems = [];
+
+  state.classes.forEach((c) => {
+    const need = state.assignments.filter((a) => a.classId === c.id).reduce((n, a) => n + hoursOf(a), 0);
+    const perDay = c.maxDailyPeriod > 0 ? Math.min(periods, c.maxDailyPeriod) : periods;
+    const have = days * perDay;
+    if (need > have) problems.push({ kind: "class", id: c.id, name: scheduleDisplayName(c.name), need, have });
+  });
+
+  state.teachers.forEach((t) => {
+    const need = state.assignments.filter((a) => a.teacherId === t.id).reduce((n, a) => n + hoursOf(a), 0);
+    const blocked = new Set((t.unavailable || []).filter((k) => {
+      const [d, p] = k.split("-").map(Number);
+      return d < days && p < periods;
+    }));
+    const have = days * periods - blocked.size;
+    if (need > have) problems.push({ kind: "teacher", id: t.id, name: scheduleDisplayName(t.name), need, have });
+  });
+
+  state.rooms.forEach((r) => {
+    const subjIds = new Set(state.subjects.filter((s) => s.roomId === r.id).map((s) => s.id));
+    const need = state.assignments.filter((a) => subjIds.has(a.subjectId)).reduce((n, a) => n + hoursOf(a), 0);
+    const have = Math.max(1, r.count || 1) * days * periods;
+    if (need > have) problems.push({ kind: "room", id: r.id, name: scheduleDisplayName(r.name), need, have });
+  });
+  return problems;
+}
+
+/* Teaching assignments that point at nothing (errors — the solver can't
+   run with them) or at a teacher who isn't marked as teaching that
+   subject (warnings — allowed, but shown). */
+function scheduleValidateAssignments(state) {
+  const errors = [], warnings = [];
+  state.assignments.forEach((a) => {
+    const c = state.classes.find((x) => x.id === a.classId);
+    const s = state.subjects.find((x) => x.id === a.subjectId);
+    const t = state.teachers.find((x) => x.id === a.teacherId);
+    if (!c || !s || !t) {
+      errors.push({ assignmentId: a.id, missing: [!c && "class", !s && "subject", !t && "teacher"].filter(Boolean) });
+    } else if (!t.subjectIds.includes(s.id)) {
+      warnings.push({ assignmentId: a.id, teacherId: t.id, subjectId: s.id });
+    }
+  });
+  return { errors, warnings };
+}
+
+/* A short fingerprint of everything the solver depends on (lessons, days,
+   periods and every constraint) — names and colours aren't part of it.
+   Stored with a generated timetable so the result screen can tell the
+   data changed since. */
+function scheduleInputsSignature(state) {
+  const p = buildScheduleProblem(state);
+  const norm = JSON.stringify([
+    p.days, p.periods,
+    p.lessons.map((l) => [l.id, l.classId, l.subjectId, l.teacherId]),
+    p.teacherUnavailable.map((t) => [t.id, t.unavailable.slice().sort()]).sort(),
+    p.subjectRoom.map((x) => [x.subjectId, x.roomId]).sort(),
+    p.roomCount.map((x) => [x.id, x.count]).sort(),
+    p.subjectMaxConsecutive.map((x) => [x.subjectId, x.max]).sort(),
+    p.classMaxPeriod.map((x) => [x.classId, x.maxPeriod]).sort(),
+  ]);
+  let h = 5381;
+  for (let i = 0; i < norm.length; i++) h = ((h * 33) ^ norm.charCodeAt(i)) >>> 0;
+  return h.toString(36) + "." + norm.length.toString(36);
+}
+
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     SCHEDULE_DAY_NAMES, SCHEDULE_DAY_NAMES_EN, SCHEDULE_MAX_DAYS, SCHEDULE_MAX_PERIODS, SCHEDULE_TEACHER_DAY_WEIGHT,
@@ -307,5 +422,6 @@ if (typeof module !== "undefined" && module.exports) {
     scheduleAddTeacher, scheduleRemoveTeacher, scheduleAddRoom, scheduleRemoveRoom,
     scheduleAddAssignment, scheduleRemoveAssignment, scheduleTeachersForSubject,
     buildScheduleProblem, scheduleEvaluatePlacement, scheduleFindConflicts,
+    scheduleTimetableHealth, scheduleLessonGroups, scheduleCapacityCheck, scheduleValidateAssignments, scheduleInputsSignature,
   };
 }

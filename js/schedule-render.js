@@ -135,6 +135,9 @@ function wireScheduleUnlock() {
 function schedShowTab(tab) {
   document.querySelectorAll(".sched-tab-btn").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
   document.querySelectorAll(".sched-tab-panel").forEach((p) => p.classList.toggle("active", p.dataset.tabPanel === tab));
+  // Some edits (e.g. weekly hours) don't re-render the result tab, so its
+  // status is recomputed from the current data whenever it's opened.
+  if (tab === "result") renderResultTab();
 }
 
 /* ---------- settings tab ---------- */
@@ -144,20 +147,39 @@ function renderSettingsTab() {
   document.getElementById("sched-periods-input").value = scheduleState.settings.periodsPerDay;
 }
 
+/* Fewer days/periods no longer wipe a generated timetable: lessons that
+   would fall outside the new grid are counted first, and the change only
+   goes ahead after the user agrees. Those lessons then show as "not
+   placed" (see renderScheduleHealth); everything else, including manual
+   moves, stays where it is. */
+function scheduleConfirmGridChange(newDays, newPeriods) {
+  if (!scheduleState.timetable) return true;
+  const placement = scheduleState.timetable.placement || {};
+  const affected = buildScheduleProblem(scheduleState).lessons
+    .filter((l) => placement[l.id] && (placement[l.id].day >= newDays || placement[l.id].period >= newPeriods)).length;
+  if (!affected) return true;
+  return confirm(schedL(
+    `${affected} שיעורים שכבר שובצו נמצאים בימים או בשעות שיוסרו. הם יסומנו "לא שובצו" עד שתשלימו את השיבוץ — שאר מערכת השעות והתיקונים הידניים יישארו כמו שהם. להמשיך?`,
+    `${affected} already-placed lessons are on days or periods that will be removed. They'll be marked "not placed" until you complete the schedule — the rest of the timetable and your manual changes stay as they are. Continue?`));
+}
+
 function wireSettingsTab() {
   document.getElementById("sched-days-select").addEventListener("change", (e) => {
-    scheduleState.settings.days = parseInt(e.target.value, 10);
+    const v = parseInt(e.target.value, 10);
+    if (!scheduleConfirmGridChange(v, scheduleState.settings.periodsPerDay)) { renderSettingsTab(); return; }
+    scheduleState.settings.days = v;
     onScheduleStructureChanged();
   });
   document.getElementById("sched-periods-input").addEventListener("change", (e) => {
     const v = Math.min(SCHEDULE_MAX_PERIODS, Math.max(1, parseInt(e.target.value, 10) || 1));
+    if (!scheduleConfirmGridChange(scheduleState.settings.days, v)) { renderSettingsTab(); return; }
     scheduleState.settings.periodsPerDay = v;
+    renderSettingsTab(); // show the value actually used (e.g. 99 → 12)
     onScheduleStructureChanged();
   });
 }
 
 function onScheduleStructureChanged() {
-  if (scheduleState.timetable) scheduleState.timetable = null;
   renderTeachersTab();
   renderResultTab();
 }
@@ -222,9 +244,8 @@ function wireSubjectsTab() {
     const btn = e.target.closest('[data-action="delete-subject"]');
     if (!btn) return;
     const row = btn.closest("[data-subject-id]");
-    if (!confirm(schedL("למחוק את המקצוע? שיבוצי הוראה שמשתמשים בו יימחקו גם הם.", "Delete this subject? Teaching assignments that use it will be deleted too."))) return;
+    if (!confirm(schedL("למחוק את המקצוע? שיבוצי הוראה שמשתמשים בו יימחקו גם הם.", "Delete this subject? Teaching assignments that use it will be deleted too.") + scheduleTimetableNote())) return;
     scheduleRemoveSubject(scheduleState, row.dataset.subjectId);
-    scheduleState.timetable = null;
     renderSubjectsTab();
     renderTeachersTab();
     renderAssignmentsTab();
@@ -270,9 +291,8 @@ function wireClassesTab() {
     const btn = e.target.closest('[data-action="delete-class"]');
     if (!btn) return;
     const row = btn.closest("[data-class-id]");
-    if (!confirm(schedL("למחוק את הכיתה? שיבוצי הוראה שמשתמשים בה יימחקו גם הם.", "Delete this class? Teaching assignments that use it will be deleted too."))) return;
+    if (!confirm(schedL("למחוק את הכיתה? שיבוצי הוראה שמשתמשים בה יימחקו גם הם.", "Delete this class? Teaching assignments that use it will be deleted too.") + scheduleTimetableNote())) return;
     scheduleRemoveClass(scheduleState, row.dataset.classId);
-    scheduleState.timetable = null;
     renderClassesTab();
     renderAssignmentsTab();
     renderResultTab();
@@ -319,7 +339,6 @@ function wireRoomsTab() {
     const row = btn.closest("[data-room-id]");
     if (!confirm(schedL("למחוק את החדר? מקצועות שמשויכים אליו יישארו בלי חדר נדרש.", "Delete this room? Subjects linked to it will be left without a required room."))) return;
     scheduleRemoveRoom(scheduleState, row.dataset.roomId);
-    scheduleState.timetable = null;
     renderRoomsTab();
     renderSubjectsTab();
     renderResultTab();
@@ -425,11 +444,10 @@ function wireTeachersTab() {
     const delBtn = e.target.closest('[data-action="delete-teacher"]');
     if (delBtn) {
       const card = delBtn.closest("[data-teacher-id]");
-      if (!confirm(schedL("למחוק את המורה? שיבוצי הוראה שמשתמשים בו/בה יימחקו גם הם.", "Delete this teacher? Teaching assignments that use them will be deleted too."))) return;
+      if (!confirm(schedL("למחוק את המורה? שיבוצי הוראה שמשתמשים בו/בה יימחקו גם הם.", "Delete this teacher? Teaching assignments that use them will be deleted too.") + scheduleTimetableNote())) return;
       scheduleAvailCollapsed.delete(card.dataset.teacherId);
       scheduleRemoveTeacher(scheduleState, card.dataset.teacherId);
-      scheduleState.timetable = null;
-      renderTeachersTab();
+        renderTeachersTab();
       renderAssignmentsTab();
       renderResultTab();
       return;
@@ -457,13 +475,34 @@ function wireTeachersTab() {
 
 /* ---------- assignments tab ---------- */
 
+/* A dropdown always shows what is really stored: if the stored value isn't
+   among the options (e.g. the teacher was unticked for this subject, or
+   the referenced row no longer exists), it is shown as such instead of the
+   browser silently displaying the first option while the data keeps the
+   old one. */
+function schedPlaceholderOption(label) {
+  return `<option value="" selected disabled>${schedEsc(label)}</option>`;
+}
+
 function assignmentRowHtml(a) {
-  const classOpts = scheduleState.classes.map((c) => `<option value="${c.id}"${c.id === a.classId ? " selected" : ""}>${schedEsc(scheduleDisplayName(c.name))}</option>`).join("");
-  const subjOpts = scheduleState.subjects.map((s) => `<option value="${s.id}"${s.id === a.subjectId ? " selected" : ""}>${schedEsc(scheduleDisplayName(s.name))}</option>`).join("");
+  const hasClass = scheduleState.classes.some((c) => c.id === a.classId);
+  const hasSubj = scheduleState.subjects.some((s) => s.id === a.subjectId);
+  const classOpts = (hasClass ? "" : schedPlaceholderOption(schedL("— בחרו כיתה —", "— Choose a class —")))
+    + scheduleState.classes.map((c) => `<option value="${c.id}"${c.id === a.classId ? " selected" : ""}>${schedEsc(scheduleDisplayName(c.name))}</option>`).join("");
+  const subjOpts = (hasSubj ? "" : schedPlaceholderOption(schedL("— בחרו מקצוע —", "— Choose a subject —")))
+    + scheduleState.subjects.map((s) => `<option value="${s.id}"${s.id === a.subjectId ? " selected" : ""}>${schedEsc(scheduleDisplayName(s.name))}</option>`).join("");
   const eligible = scheduleTeachersForSubject(scheduleState, a.subjectId);
-  const teacherPool = eligible.length ? eligible : scheduleState.teachers;
-  const teacherOpts = teacherPool.map((t) => `<option value="${t.id}"${t.id === a.teacherId ? " selected" : ""}>${schedEsc(scheduleDisplayName(t.name))}</option>`).join("");
-  return `<div class="sched-row sched-assign-cols" data-assignment-id="${a.id}">
+  const teacherPool = (eligible.length ? eligible : scheduleState.teachers).slice();
+  const stored = scheduleState.teachers.find((t) => t.id === a.teacherId);
+  const notEligible = !!stored && !stored.subjectIds.includes(a.subjectId);
+  if (stored && !teacherPool.includes(stored)) teacherPool.unshift(stored);
+  const teacherOpts = (stored ? "" : schedPlaceholderOption(schedL("— בחרו מורה —", "— Choose a teacher —")))
+    + teacherPool.map((t) => {
+      const label = scheduleDisplayName(t.name) + (t === stored && notEligible ? schedL(" ⚠ לא מסומן/ת כמלמד/ת מקצוע זה", " ⚠ not marked as teaching this subject") : "");
+      return `<option value="${t.id}"${t.id === a.teacherId ? " selected" : ""}>${schedEsc(label)}</option>`;
+    }).join("");
+  const warn = notEligible || !stored || !hasClass || !hasSubj;
+  return `<div class="sched-row sched-assign-cols${warn ? " sched-row-warn" : ""}" data-assignment-id="${a.id}">
     <select class="sched-select" data-field="classId">${classOpts}</select>
     <select class="sched-select" data-field="subjectId">${subjOpts}</select>
     <select class="sched-select" data-field="teacherId">${teacherOpts}</select>
@@ -530,7 +569,6 @@ function wireAssignmentsTab() {
     if (!btn) return;
     const row = btn.closest("[data-assignment-id]");
     scheduleRemoveAssignment(scheduleState, row.dataset.assignmentId);
-    scheduleState.timetable = null;
     renderAssignmentsTab();
     renderResultTab();
   });
@@ -539,8 +577,89 @@ function wireAssignmentsTab() {
 /* ---------- result tab: solver orchestration ---------- */
 
 function getScheduleWorker() {
-  if (!scheduleWorker) scheduleWorker = new Worker("js/schedule-worker.js");
+  if (!scheduleWorker) scheduleWorker = new Worker("js/schedule-worker.js?v=2");
   return scheduleWorker;
+}
+
+/* One sentence appended to a delete confirmation when a timetable exists. */
+function scheduleTimetableNote() {
+  return scheduleState.timetable
+    ? schedL(" השיעורים שלהם יוסרו ממערכת השעות שנוצרה; שאר השיבוץ יישאר כמו שהוא.", " Their lessons will leave the generated timetable; the rest stays as it is.")
+    : "";
+}
+
+/* Why "generate" can't run right now (HTML, already escaped), or "" —
+   rows that point at nothing, or a load that can never fit. */
+function scheduleBlockingHtml() {
+  const lines = [];
+  const v = scheduleValidateAssignments(scheduleState);
+  if (v.errors.length) {
+    lines.push(schedL(`${v.errors.length} שיבוצי הוראה בלי כיתה, מקצוע או מורה (מסומנים בלשונית "שיבוצי הוראה") — בחרו ערך או מחקו אותם.`,
+      `${v.errors.length} teaching assignments have no class, subject or teacher (highlighted in the "Teaching assignments" tab) — pick one or delete them.`));
+  }
+  const days = scheduleState.settings.days, periods = scheduleState.settings.periodsPerDay;
+  // "כיתה ז1", but not "כיתה כיתה 1" when the name already says it.
+  const labelled = (word, name) => (name.startsWith(word) ? name : `${word} ${name}`);
+  scheduleCapacityCheck(scheduleState).forEach((x) => {
+    const over = x.need - x.have;
+    if (x.kind === "class") {
+      lines.push(schedL(`${labelled("כיתה", x.name)}: ${x.need} שעות בשבוע, אבל יש לה רק ${x.have} משבצות. צריך להוריד ${over} שעות, או להוסיף ימים/שעות ביום.`,
+        `${labelled("Class", x.name)}: ${x.need} hours a week, but it only has ${x.have} slots. Remove ${over} hours, or add days/periods.`));
+    } else if (x.kind === "teacher") {
+      lines.push(schedL(`${x.name}: ${x.need} שעות בשבוע, אבל זמינ/ה רק ב־${x.have} משבצות. צריך להוריד ${over} שעות או לפתוח עוד שעות זמינות.`,
+        `${x.name}: ${x.need} hours a week, but available in only ${x.have} slots. Remove ${over} hours or unblock more slots.`));
+    } else {
+      lines.push(schedL(`${labelled("חדר", x.name)}: המקצועות שצריכים אותו דורשים ${x.need} שעות, ויש רק ${x.have} משבצות (${days}×${periods} לכל חדר). צריך להוריד ${over} שעות או להגדיל את מספר החדרים.`,
+        `${labelled("Room", x.name)}: the subjects that need it require ${x.need} hours, but there are only ${x.have} slots. Remove ${over} hours or add rooms.`));
+    }
+  });
+  if (!lines.length) return "";
+  return `<strong>${schedEsc(schedL("אי אפשר ליצור מערכת שעות כרגע:", "The timetable can't be generated yet:"))}</strong>`
+    + `<ul>${lines.map((l) => `<li>${schedEsc(l)}</li>`).join("")}</ul>`;
+}
+
+let scheduleShowBlock = false;
+
+/* The result tab's status, always derived from the CURRENT data and the
+   current placement — never from what the solver reported earlier. Shows
+   success only when every lesson is placed inside the grid with no hard
+   conflict. */
+function renderScheduleHealth() {
+  const box = document.getElementById("sched-health");
+  const status = document.getElementById("sched-solver-status");
+  if (!box || !status || scheduleSolving) return;
+  const tt = scheduleState.timetable;
+  const block = scheduleShowBlock ? scheduleBlockingHtml() : "";
+  if (!block) scheduleShowBlock = false;
+
+  let html = block;
+  if (block) {
+    status.textContent = tt
+      ? schedL("מערכת השעות הקודמת נשמרה כמו שהיא — תקנו את הבעיות שלמטה ונסו שוב.", "Your previous timetable is kept as it is — fix the problems below and try again.")
+      : schedL("מערכת השעות לא נוצרה.", "The timetable wasn't generated.");
+  } else if (!tt) {
+    status.textContent = "";
+  }
+  if (tt) {
+    const h = scheduleTimetableHealth(scheduleState, tt.placement);
+    if (h.ok) {
+      if (!block) status.textContent = schedL("מערכת שעות תקינה: כל השיעורים שובצו, ללא התנגשויות.", "Timetable complete: every lesson is placed, with no conflicts.");
+    } else {
+      if (!block) status.textContent = schedL(`מערכת השעות לא שלמה: שובצו ${h.placed} מתוך ${h.total} שיעורים.`, `The timetable is incomplete: ${h.placed} of ${h.total} lessons placed.`);
+      const lines = [];
+      const stale = tt.inputsSignature && tt.inputsSignature !== scheduleInputsSignature(scheduleState);
+      if (stale) lines.push(schedL("הנתונים השתנו מאז שנוצרה מערכת השעות.", "The data changed since the timetable was generated."));
+      if (h.missing.length) lines.push(schedL(`${h.missing.length} שיעורים לא שובצו: `, `${h.missing.length} lessons not placed: `) + scheduleLessonGroups(scheduleState, h.missing).join(", "));
+      if (h.outOfRange.length) lines.push(schedL(`${h.outOfRange.length} שיעורים נמצאים בימים/בשעות שכבר לא קיימים: `, `${h.outOfRange.length} lessons are on days/periods that no longer exist: `) + scheduleLessonGroups(scheduleState, h.outOfRange).join(", "));
+      if (h.conflicts.size) lines.push(schedL(`${h.conflicts.size} שיעורים בהתנגשות (מסומנים באדום בטבלה).`, `${h.conflicts.size} lessons in conflict (outlined red in the grid).`));
+      html += `<ul>${lines.map((l) => `<li>${schedEsc(l)}</li>`).join("")}</ul>`;
+      if (h.missing.length || h.outOfRange.length) {
+        html += `<button type="button" class="btn-mini" data-action="complete-schedule">${schedEsc(schedL("השלמת השיבוץ — רק שיעורים חסרים או מתנגשים יזוזו", "Complete the schedule — only missing or conflicting lessons move"))}</button>`;
+      }
+    }
+  }
+  box.innerHTML = html;
+  box.hidden = !html;
 }
 
 function setSolvingUi(active, statusText) {
@@ -552,13 +671,24 @@ function setSolvingUi(active, statusText) {
   if (statusText) el.textContent = statusText;
 }
 
-function runSolver(continueFromCurrent) {
+/* completeOnly: place what's missing without moving lessons that are
+   already fine — only missing, out-of-range and conflicting lessons move. */
+function runSolver(continueFromCurrent, completeOnly) {
   if (scheduleSolving || !scheduleIsUnlocked()) return;
   const problem = buildScheduleProblem(scheduleState);
   if (!problem.lessons.length) {
     alert(schedL("אין שיעורים לשיבוץ — הוסיפו שיבוצי הוראה בלשונית המתאימה קודם.", "There are no lessons to schedule — add teaching assignments in their tab first."));
     return;
   }
+  // Rows pointing at nothing, or a load that can never fit: don't run,
+  // explain why, and leave any existing timetable untouched.
+  if (scheduleBlockingHtml()) {
+    scheduleShowBlock = true;
+    renderScheduleHealth();
+    return;
+  }
+  scheduleShowBlock = false;
+  const signature = scheduleInputsSignature(scheduleState);
   const worker = getScheduleWorker();
   const budget = Math.min(9000, Math.max(2500, problem.lessons.length * 15));
   setSolvingUi(true, schedL("מריצים שיבוץ אוטומטי… (", "Running automatic scheduling… (") + problem.lessons.length + schedL(" שיעורים)", " lessons)"));
@@ -570,28 +700,33 @@ function runSolver(continueFromCurrent) {
         schedL(`מחפשים פתרון… הפרות קשות: ${msg.bestHard} · איכות: ${Math.round(msg.bestSoft)} · איטרציה ${msg.iter.toLocaleString("he")}`,
           `Searching for a solution… hard violations: ${msg.bestHard} · quality: ${Math.round(msg.bestSoft)} · iteration ${msg.iter.toLocaleString("en")}`);
     } else if (msg.type === "done") {
-      scheduleState.timetable = { placement: msg.placement, hard: msg.hard, soft: msg.soft, generatedAt: Date.now() };
+      scheduleState.timetable = { placement: msg.placement, hard: msg.hard, soft: msg.soft, generatedAt: Date.now(), inputsSignature: signature };
       setSolvingUi(false);
-      const ok = msg.hard === 0;
-      document.getElementById("sched-solver-status").textContent = ok
-        ? schedL("מערכת שעות נוצרה בהצלחה, ללא התנגשויות.", "Timetable generated successfully, with no conflicts.")
-        : schedL(`מערכת שעות נוצרה עם ${msg.hard} התנגשויות שלא נפתרו — נסו "המשך לשפר", או בדקו שהאילוצים לא סותרים זה את זה.`,
-          `Timetable generated with ${msg.hard} unresolved conflicts — try "Keep improving", or check that your constraints don't contradict each other.`);
       document.getElementById("sched-improve-btn").hidden = false;
-      renderResultTab();
+      renderResultTab(); // status comes from renderScheduleHealth — the current data, not msg.hard
+      if (typeof window.scheduleMarkDirty === "function") window.scheduleMarkDirty(); // a new result must be saved
     }
   };
+  let movableIds = null;
+  if (completeOnly && scheduleState.timetable) {
+    const h = scheduleTimetableHealth(scheduleState, scheduleState.timetable.placement);
+    movableIds = h.missing.concat(h.outOfRange).map((l) => l.id).concat(Array.from(h.conflicts));
+  }
   worker.postMessage({
     cmd: "solve",
     problem,
     timeBudgetMs: budget,
     initialPlacement: continueFromCurrent && scheduleState.timetable ? scheduleState.timetable.placement : null,
+    movableIds,
   });
 }
 
 function wireResultControls() {
   document.getElementById("sched-generate-btn").addEventListener("click", () => runSolver(false));
   document.getElementById("sched-improve-btn").addEventListener("click", () => runSolver(true));
+  document.getElementById("sched-health").addEventListener("click", (e) => {
+    if (e.target.closest('[data-action="complete-schedule"]')) runSolver(true, true);
+  });
 }
 
 /* ---------- result tab: grid rendering + manual drag edit ---------- */
@@ -654,6 +789,7 @@ function scheduleEntityOptionsHtml() {
 function renderResultTab() {
   const view = document.getElementById("sched-result-view");
   const improveBtn = document.getElementById("sched-improve-btn");
+  renderScheduleHealth();
   if (!scheduleState.timetable) {
     view.hidden = true;
     improveBtn.hidden = true;
@@ -729,6 +865,7 @@ function wireResultGrid() {
       placement[lessonId] = { day, period };
     }
     renderResultTab();
+    if (typeof window.scheduleMarkDirty === "function") window.scheduleMarkDirty();
   });
 }
 
@@ -787,16 +924,26 @@ function exportResultCsv() {
   downloadTextFile(csv, `${schedL("מערכת-שעות", "timetable")}-${scheduleDisplayName(entity.name)}.csv`, "text/csv;charset=utf-8;");
 }
 
+function scheduleConfirmIncompleteExport() {
+  if (!scheduleState.timetable) return false;
+  const h = scheduleTimetableHealth(scheduleState, scheduleState.timetable.placement);
+  if (h.ok) return true;
+  return confirm(schedL(
+    `מערכת השעות לא שלמה: שובצו ${h.placed} מתוך ${h.total} שיעורים${h.conflicts.size ? `, ו־${h.conflicts.size} בהתנגשות` : ""}. להמשיך בכל זאת?`,
+    `The timetable is incomplete: ${h.placed} of ${h.total} lessons placed${h.conflicts.size ? `, ${h.conflicts.size} in conflict` : ""}. Continue anyway?`));
+}
+
 function wirePrintExport() {
-  document.getElementById("sched-print-current").addEventListener("click", () => window.print());
+  document.getElementById("sched-print-current").addEventListener("click", () => { if (scheduleConfirmIncompleteExport()) window.print(); });
   document.getElementById("sched-print-all").addEventListener("click", () => {
+    if (!scheduleConfirmIncompleteExport()) return;
     const holder = document.getElementById("sched-print-all-holder");
     holder.innerHTML = buildAllClassesPrintHtml();
     document.body.classList.add("sched-printing-all");
     window.print();
     setTimeout(() => document.body.classList.remove("sched-printing-all"), 500);
   });
-  document.getElementById("sched-export-csv").addEventListener("click", exportResultCsv);
+  document.getElementById("sched-export-csv").addEventListener("click", () => { if (scheduleConfirmIncompleteExport()) exportResultCsv(); });
 }
 
 /* ---------- init ---------- */
