@@ -37,6 +37,7 @@
 <link rel="stylesheet" href="css/deskkit-ui.css?v=50">
 <link rel="stylesheet" href="css/builder.css?v=22">
 <link rel="stylesheet" href="css/builder-shell.css?v=12">
+<link rel="stylesheet" href="css/cv-builder.css?v=1">
 </head>
 <body class="dk-has-app-sidebar">
 <div id="auth-gate-overlay" class="auth-gate-overlay">
@@ -184,14 +185,15 @@
     <button type="button" class="bshell-top-btn" id="cvbshell-undo-btn" disabled title="בטל (Ctrl+Z)" data-i18n="cvb_undo" data-i18n-title="cvb_undo_title">↶ בטל</button>
     <button type="button" class="bshell-top-btn" id="cvbshell-redo-btn" disabled title="בצע שוב (Ctrl+Shift+Z)" data-i18n="cvb_redo" data-i18n-title="cvb_redo_title">↷ חזור</button>
     <button type="button" class="bshell-top-btn" id="cvbshell-ats-btn" data-i18n="cvb_ats">🎯 בדיקת ATS</button>
-    <button type="button" class="bshell-top-btn" id="cvbshell-download-btn" data-i18n="cvb_download">הורדת PDF</button>
-    <button type="button" class="bshell-top-btn bshell-top-btn-primary" id="cvbshell-save-btn" data-i18n="cvb_save">שמירה</button>
+    <button type="button" class="bshell-top-btn" id="cvbshell-save-btn" data-i18n="cvb_save">שמירה</button>
+    <button type="button" class="bshell-top-btn bshell-top-btn-primary cvb-download-cta" id="cvbshell-download-btn"><span class="cvb-download-icon" aria-hidden="true">⬇</span> <span data-i18n="cvb_download">הורדת PDF</span></button>
     <a href="index.html" class="bshell-exit-link" id="cvbshell-exit-link" data-i18n="cvb_exit">יציאה</a>
   </div>
 
   <div class="bshell-mobile-tabs no-print" style="padding:8px 14px; background:var(--surface); border-bottom:1px solid var(--border);">
     <button type="button" class="bshell-top-btn" id="cvbshell-mobile-hier-btn" style="flex:1;" data-i18n="cvb_mobile_structure">מבנה</button>
     <button type="button" class="bshell-top-btn" id="cvbshell-mobile-props-btn" style="flex:1;" data-i18n="cvb_mobile_design">עיצוב</button>
+    <button type="button" class="bshell-top-btn" id="cvbshell-mobile-import-btn" style="flex:1;"></button>
   </div>
 
   <div class="bshell-body">
@@ -241,6 +243,13 @@
         <div class="bshell-settings-group" id="cvbshell-settings-group-photo"></div>
       </div>
     </aside>
+  </div>
+
+  <!-- Phones: the download is always one tap away at the bottom of the
+       screen (the top bar's own copy is hidden there, css/cv-builder.css). -->
+  <div class="cvb-mobile-bar no-print" id="cvbshell-mobile-bar">
+    <span class="bshell-top-status" id="cvbshell-mobile-status"></span>
+    <button type="button" class="bshell-top-btn bshell-top-btn-primary cvb-download-cta" id="cvbshell-mobile-download-btn"><span class="cvb-download-icon" aria-hidden="true">⬇</span> <span data-i18n="cvb_download">הורדת PDF</span></button>
   </div>
 </div>
 
@@ -296,7 +305,7 @@
 <script src="js/cv-content.js?v=2"></script>
 <script src="js/color-utils.js"></script>
 <script src="js/cv-render.js?v=15"></script>
-<script src="js/builder.js?v=14"></script>
+<script src="js/builder.js?v=15"></script>
 <script>window.deferReveal = true;</script>
 <script src="js/vendor/supabase-js-2.116.0.js"></script>
 <script src="js/supabase-config.js?v=2"></script>
@@ -311,12 +320,13 @@
 <script src="js/upsell-banner.js?v=4"></script>
 <script src="js/auth-prompt.js?v=2"></script>
 <script src="js/usage-log.js?v=1"></script>
-<script src="js/builder-cloud-save.js?v=9"></script>
+<script src="js/builder-cloud-save.js?v=10"></script>
 <script src="js/ats-checker.js?v=5"></script>
 <script src="js/ai-writer.js?v=4"></script>
-<script src="js/cv-builder-shell.js?v=14"></script>
+<script src="js/cv-import.js?v=1"></script>
+<script src="js/cv-builder-shell.js?v=15"></script>
 <script src="js/cv-saves-router.js?v=2"></script>
-<script src="js/cv-style-picker.js?v=3"></script>
+<script src="js/cv-style-picker.js?v=4"></script>
 <script src="js/main.js?v=9"></script>
 <script src="js/captcha.js?v=3"></script>
 <script src="js/widgets.js?v=20"></script>

@@ -71,11 +71,24 @@ function cvStylePickerStepHtml(stepIdx) {
       <span class="cv-style-pick-opt-label">${it.label}</span>
       ${it.desc ? `<span class="cv-style-pick-opt-desc">${it.desc}</span>` : ""}
     </button>`).join("");
+  // Step 1: a shortcut for people who already have a CV (js/cv-import.js).
+  // Step 2: the chosen design can start without the example text.
+  const importHtml = isField && typeof openCvImport === "function"
+    ? `<button type="button" class="cv-style-pick-opt cvb-pick-import" data-import>
+        <span class="cv-style-pick-opt-label">📋 ${dkL("יש לי כבר קורות חיים — הדביקו ונמלא בשבילכם", "Already have a CV? Paste it and we'll fill it in")}</span>
+        <span class="cv-style-pick-opt-desc">${dkL("מדביקים את הטקסט, וה-AI ממלא את כל השדות. אפשר לערוך הכול אחר כך.", "Paste the text and AI fills in every field. You can edit everything afterwards.")}</span>
+      </button>`
+    : "";
+  const blankHtml = !isField
+    ? `<label class="cvb-pick-blank"><input type="checkbox" data-blank> ${dkL("התחלה מדף ריק (בלי התוכן לדוגמה)", "Start blank (without the example text)")}</label>`
+    : "";
   return `
     <div class="cv-style-pick-dots">${[0, 1].map((i) => `<span class="cv-style-pick-dot${i === stepIdx ? " active" : ""}"></span>`).join("")}</div>
     <h2>${title}</h2>
     <p class="lead">${cvStyleT("cvsp_lead", "נבחר לכם עיצוב מתאים — אפשר תמיד לשנות אחר כך מתוך ההגדרות.")}</p>
+    ${importHtml}
     <div class="cv-style-pick-opts">${optsHtml}</div>
+    ${blankHtml}
     <button type="button" class="cv-style-pick-skip" data-skip>${cvStyleT("cvsp_skip", "דלג, התחילו עם עיצוב ברירת מחדל")}</button>`;
 }
 
@@ -101,13 +114,21 @@ function showCvStylePicker() {
     });
     const skipBtn = overlay.querySelector("[data-skip]");
     if (skipBtn) skipBtn.addEventListener("click", () => overlay.remove());
+    const importBtn = overlay.querySelector("[data-import]");
+    if (importBtn) importBtn.addEventListener("click", () => { overlay.remove(); openCvImport(); });
   }
 
   function finish(field, layout) {
     const slug = cvPickTemplateSlug(field, layout);
+    const blank = overlay.querySelector("[data-blank]");
     loadTemplate(slug);
     const select = document.getElementById("tpl-select");
     if (select) select.value = state.slug;
+    if (blank && blank.checked && typeof cvReplaceContent === "function") {
+      cvReplaceContent(cvBlankContent(), false);
+      // Still a fresh start, not an edit — nothing to autosave yet.
+      if (typeof cvAutosaveResetBaseline === "function") cvAutosaveResetBaseline();
+    }
     if (typeof cvbshellRefreshIfActive === "function") cvbshellRefreshIfActive();
     overlay.remove();
   }
