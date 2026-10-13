@@ -1,13 +1,18 @@
 // Site-level AI commands (architecture plan, Phase 7) — "✨ פקודה ל-AI"
 // in the Builder: a free-text instruction like "הזז את השירותים לפני
-// האודות" or "שנה את ה-Hero לסגנון ממורכז" gets translated into ONE
-// structured, validated operation on the Site Schema. The model never
-// writes HTML and never touches the DOM directly — it only ever
-// chooses among a small, fixed set of operation kinds, and only
-// targets section types/variants the CLIENT itself already told it
-// exist for this exact project. Anything it can't map onto that exact
-// menu comes back as {op:"unsupported", explanation} instead of being
-// guessed at.
+// האודות" or "שנה את הצבע לכחול וקצר את האודות" gets translated into a
+// short list of structured, validated operations on the Site Schema
+// (structure, colour, font, texts, services, removing an image — the
+// full menu is in ../_shared/site-ai-ops.ts). The model never writes
+// HTML and never touches the DOM directly — it only ever chooses among
+// a small, fixed set of operation kinds, and only targets section
+// types/variants/text fields/fonts/service rows the CLIENT itself
+// already told it exist for this exact project. Anything it can't map
+// onto that menu comes back as {op:"unsupported", explanation} — with a
+// short "here's what I CAN do" line — instead of being guessed at.
+//
+// Privacy: the command and the site's own text go to OpenAI only; this
+// function never logs them (errors log status codes only).
 //
 // Same auth/rate-limit/secret pattern as every other AI Edge Function
 // in this project (site-ai-review, generate-site, ai-rewrite): the
@@ -15,11 +20,12 @@
 // shared ai_usage/ai_usage_daily tables under its own `tool` slug, the
 // existing OPENAI_API_KEY secret.
 //
-// Deploy: paste into Supabase Dashboard → Edge Functions → New Function
-// → name it "site-ai-command" (or `supabase functions deploy
-// site-ai-command`).
+// Deploy: `supabase functions deploy site-ai-command` — it imports
+// ../_shared/site-ai-ops.ts, so the CLI (which bundles _shared) is the
+// way to deploy it, same as the functions that import _shared/mail.ts.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { MAX_OPS, parseSiteContext, TEXT_FIELD_LIMITS, validateCommandResult, type SiteContext } from "../_shared/site-ai-ops.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -49,63 +55,10 @@ function jsonResponse(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
 
-const KNOWN_OPS = new Set(["reorder", "addSection", "removeSection", "setVariant", "unsupported"]);
-
-type SiteContext = {
-  availableTypes: string[]; // every block type this template defines, active or not
-  activeTypes: string[]; // currently showing, in current order
-  variantOptions: Record<string, string[]>; // type -> known variant keys, only for types that have real alternates
-};
-
-// Never trusts the model's op/type/variant/order directly — every field
-// is checked against the EXACT context the client sent for THIS
-// project (not some global list), so the model can never point at a
-// section type or variant that doesn't actually exist here. An
-// operation that fails validation becomes "unsupported" with a generic
-// explanation rather than ever reaching the client as a bad mutation.
-function validateCommandResult(raw: unknown, ctx: SiteContext): Record<string, unknown> {
-  const obj = (raw && typeof raw === "object") ? raw as Record<string, unknown> : {};
-  const op = (typeof obj.op === "string" && KNOWN_OPS.has(obj.op)) ? obj.op : "unsupported";
-  const explanation = (typeof obj.explanation === "string") ? obj.explanation.trim().slice(0, 200) : "";
-
-  const fallbackUnsupported = (why: string) => ({ op: "unsupported", explanation: explanation || why });
-
-  if (op === "unsupported") return fallbackUnsupported("הפעולה הזו עדיין לא נתמכת.");
-
-  if (op === "setVariant") {
-    const type = obj.type;
-    const variant = obj.variant;
-    if (typeof type !== "string" || !ctx.variantOptions[type]) return fallbackUnsupported("אין סגנונות תצוגה חלופיים לחלק הזה.");
-    if (typeof variant !== "string" || ctx.variantOptions[type].indexOf(variant) === -1) return fallbackUnsupported("הסגנון המבוקש לא קיים לחלק הזה.");
-    return { op, type, variant, explanation };
-  }
-
-  if (op === "addSection") {
-    const type = obj.type;
-    if (typeof type !== "string" || ctx.availableTypes.indexOf(type) === -1) return fallbackUnsupported("סוג המקטע המבוקש לא קיים בתבנית הזו.");
-    if (ctx.activeTypes.indexOf(type) !== -1) return fallbackUnsupported("המקטע הזה כבר מופיע באתר.");
-    return { op, type, explanation };
-  }
-
-  if (op === "removeSection") {
-    const type = obj.type;
-    if (typeof type !== "string" || ctx.activeTypes.indexOf(type) === -1) return fallbackUnsupported("המקטע המבוקש לא מופיע כרגע באתר.");
-    if (type === "hero") return fallbackUnsupported("אי אפשר להסיר את ה-Hero.");
-    return { op, type, explanation };
-  }
-
-  if (op === "reorder") {
-    const order = obj.order;
-    if (!Array.isArray(order) || order.length !== ctx.activeTypes.length) return fallbackUnsupported("הסדר המבוקש לא תקין.");
-    const sortedOrder = [...order].sort();
-    const sortedActive = [...ctx.activeTypes].sort();
-    const sameSet = sortedOrder.length === sortedActive.length && sortedOrder.every((v, i) => v === sortedActive[i]);
-    if (!sameSet) return fallbackUnsupported("הסדר המבוקש חייב לכלול בדיוק את החלקים הקיימים.");
-    return { op, order, explanation };
-  }
-
-  return fallbackUnsupported("הפעולה הזו עדיין לא נתמכת.");
-}
+// Validation (op/field/value whitelists, caps, conflict rules) lives in
+// ../_shared/site-ai-ops.ts as a pure module, so it can be unit-tested on
+// its own (site-ai-ops_test.ts) — this file only wires it to auth, usage
+// limits and the OpenAI call.
 
 // Hard cap on the request body: the text here goes straight into an
 // OpenAI prompt that DeskKit pays for, so an unbounded body is an
@@ -137,18 +90,15 @@ Deno.serve(async (req: Request) => {
   try {
     const body = await readJsonCapped(req) as any;
     if (!body) return jsonResponse({ error: "request too large" }, 413);
-    // Language of the text the AI writes back ("en" from the English UI; Hebrew otherwise).
+    // Language of the explanation the AI writes back ("en" from the English
+    // UI; Hebrew otherwise) — separate from the language of any SITE text
+    // it writes, which follows the site itself (ctx.siteLang).
     const outLang = (body as any)?.lang === "en" ? "English" : "Hebrew";
+    const uiLang: "he" | "en" = (body as any)?.lang === "en" ? "en" : "he";
     const command = typeof body.command === "string" ? body.command.trim().slice(0, 300) : "";
-    const availableTypes = Array.isArray(body.availableTypes) ? body.availableTypes.filter((t: unknown) => typeof t === "string") : [];
-    const activeTypes = Array.isArray(body.activeTypes) ? body.activeTypes.filter((t: unknown) => typeof t === "string") : [];
-    const variantOptions: Record<string, string[]> = {};
-    if (body.variantOptions && typeof body.variantOptions === "object") {
-      for (const [k, v] of Object.entries(body.variantOptions as Record<string, unknown>)) {
-        if (Array.isArray(v)) variantOptions[k] = v.filter((x) => typeof x === "string");
-      }
-    }
-    const ctx: SiteContext = { availableTypes, activeTypes, variantOptions };
+    const ctx: SiteContext = parseSiteContext(body as Record<string, unknown>);
+    const { availableTypes, activeTypes, variantOptions } = ctx;
+    const siteTextLang = ctx.siteLang === "en" ? "English" : "Hebrew";
 
     if (!command) return jsonResponse({ error: "missing command" }, 400);
     if (!activeTypes.length) return jsonResponse({ error: "missing site context" }, 400);
@@ -186,14 +136,31 @@ Deno.serve(async (req: Request) => {
           {
             role: "system",
             content:
-              "You translate a site-builder command into ONE structured operation. Respond with ONLY a JSON object. You may ONLY use one of these exact shapes:\n" +
-              '{"op": "reorder", "order": [<every type in activeTypes, in the new order>], "explanation": "<short ' + outLang + ' sentence describing the change>"}\n' +
-              '{"op": "addSection", "type": "<a type from availableTypes that is NOT already in activeTypes>", "explanation": "<short ' + outLang + ' sentence>"}\n' +
-              '{"op": "removeSection", "type": "<a type currently in activeTypes, never \\"hero\\">", "explanation": "<short ' + outLang + ' sentence>"}\n' +
-              '{"op": "setVariant", "type": "<a key from variantOptions>", "variant": "<one of that key\'s listed options>", "explanation": "<short ' + outLang + ' sentence>"}\n' +
-              '{"op": "unsupported", "explanation": "<short ' + outLang + ' sentence explaining this site does not support that request>"}\n' +
-              "If the command asks for a section type, variant, or action not present in availableTypes/variantOptions below (for example a section type this site simply does not have), you MUST respond with \"unsupported\" — never invent a type or variant that isn't listed, and never guess at an operation shape not listed above.\n\n" +
-              `availableTypes: ${JSON.stringify(availableTypes)}\nactiveTypes (current order): ${JSON.stringify(activeTypes)}\nvariantOptions: ${JSON.stringify(variantOptions)}`,
+              "You translate a website-builder command into a list of structured operations. Respond with ONLY a JSON object of this exact form:\n" +
+              '{"ops": [<1 to ' + MAX_OPS + ' operations>], "explanation": "<one short ' + outLang + ' sentence summarizing what will change>"}\n' +
+              "Each operation MUST be one of these exact shapes:\n" +
+              '{"op": "reorder", "order": [<every type in activeTypes, in the new order>]}\n' +
+              '{"op": "addSection", "type": "<a type from availableTypes that is NOT already in activeTypes>"}\n' +
+              '{"op": "removeSection", "type": "<a type currently in activeTypes, never \\"hero\\">"}\n' +
+              '{"op": "setVariant", "type": "<a key from variantOptions>", "variant": "<one of that key\'s listed options>"}\n' +
+              '{"op": "setColor", "color": "<#RRGGBB hex: the site\'s main/accent color; pick a tasteful shade for a named color, e.g. blue -> #2563EB>"}\n' +
+              '{"op": "setFont", "font": "<a key from fonts>"}\n' +
+              '{"op": "setText", "field": "<a key from textFields>", "value": "<the complete new text>"}\n' +
+              '{"op": "addService", "name": "<service name>", "desc": "<short description, optional>", "price": "<price, optional>"}\n' +
+              '{"op": "editService", "index": <index from services>, "name": "<optional>", "desc": "<optional>", "price": "<optional>"}\n' +
+              '{"op": "removeService", "index": <index from services>}\n' +
+              '{"op": "removeImage", "target": "hero" | "gallery"}\n' +
+              "Rules:\n" +
+              "- Use several operations when the command asks for several things (\"make it blue and shorten the about\" = setColor + setText). At most ONE of reorder/addSection/removeSection per answer.\n" +
+              "- setText/addService/editService: write the text yourself when asked (shorter, more professional, a new title...). Write site text in " + siteTextLang + " (the site's language) and stay truthful to the current text: never invent facts, prices, phone numbers, emails or addresses the user didn't give. Max lengths: " + JSON.stringify(TEXT_FIELD_LIMITS) + "; service name 40, desc 90, price 20.\n" +
+              "- Text fields: businessName = business name; heroTitle = main heading (empty = use the business name); tagline = short line under the heading; about = about paragraph; servicesHeading/aboutHeading/contactHeading = section headings (empty = default); phone/whatsapp/email/address = contact details. Only use keys listed in textFields.\n" +
+              "- setFont: \"elegant\"/\"classic\"/\"luxurious\" usually means a serif font, \"modern\"/\"clean\" a sans-serif one, \"friendly\"/\"soft\" a rounded one. Choose ONLY from the listed keys.\n" +
+              "- Uploading, replacing or choosing a new picture is NOT possible: for that use {\"op\": \"unsupported\", \"reason\": \"image\"} (alongside any other operations that WERE asked for). Removing the current picture is possible via removeImage.\n" +
+              '- If nothing in the command maps onto these operations, answer {"ops": [{"op": "unsupported", "reason": "other", "explanation": "<short ' + outLang + ' sentence saying what is not possible>"}]}. Never invent a type, variant, font, field or index that is not listed, and never use any other operation shape.\n\n' +
+              `availableTypes: ${JSON.stringify(availableTypes)}\nactiveTypes (current order): ${JSON.stringify(activeTypes)}\nvariantOptions: ${JSON.stringify(variantOptions)}\n` +
+              `fonts: ${JSON.stringify(ctx.fonts)}\ntextFields (current values): ${JSON.stringify(ctx.textFields)}\n` +
+              `services (index: item): ${JSON.stringify(ctx.services.map((sv, i) => ({ index: i, ...sv })))}\n` +
+              `images: ${JSON.stringify({ heroImage: ctx.images.hero, galleryImages: ctx.images.gallery })}`,
           },
           {
             role: "user",
@@ -204,8 +171,10 @@ Deno.serve(async (req: Request) => {
     });
 
     if (!openaiRes.ok) {
-      const errText = await openaiRes.text();
-      console.error("OpenAI request failed", openaiRes.status, errText.slice(0, 500));
+      // Status only: the error body can echo parts of the prompt, which
+      // carries the user's command and site text.
+      await openaiRes.body?.cancel();
+      console.error("OpenAI request failed", openaiRes.status);
       return jsonResponse({ error: "AI request failed — please try again" }, 502);
     }
 
@@ -218,7 +187,7 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: "the AI returned an unreadable response — please try again" }, 502);
     }
 
-    const result = validateCommandResult(parsed, ctx);
+    const result = validateCommandResult(parsed, ctx, uiLang);
 
     if (result.op === "unsupported") {
       // A refusal is free up to its own (separate) cap: take a refusal
