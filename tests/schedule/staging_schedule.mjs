@@ -60,6 +60,16 @@ try {
   // ---- A: create, autosave, generate, re-save into the SAME row
   const { ctx: ctxA, page } = await signedInPage(A);
   check("A signs in through the real form and reaches the builder", /schedule-builder\.html/.test(page.url()), page.url());
+  const diag = await page.evaluate(async () => {
+    const out = { render: typeof window.scheduleOnStateLoaded, content: typeof scheduleTimetableHealth, scripts: [] };
+    for (const s of document.querySelectorAll("script[src*=schedule]")) {
+      const r = await fetch(s.src).catch(() => null);
+      out.scripts.push(s.getAttribute("src") + "=" + (r ? r.status : "err"));
+    }
+    try { const { data, error } = await supabaseClient.rpc("my_license_templates"); out.rpc = error ? "error:" + (error.code || error.message) : JSON.stringify(data); } catch (e) { out.rpc = "throw"; }
+    return out;
+  });
+  info("page diagnostics: " + JSON.stringify(diag) + " errors=" + JSON.stringify(errors.slice(0, 3)));
   check("license from the real database unlocks the solver", await page.evaluate(() => document.getElementById("sched-unlock-gate").hidden));
   await page.evaluate((s) => { scheduleState = s; window.scheduleOnStateLoaded(); window.scheduleMarkDirty(); }, school);
   await page.waitForTimeout(4500);
