@@ -95,7 +95,9 @@
   /* ---------- PNG ---------- */
   $("sg-png").addEventListener("click", async () => {
     if (!validate(false)) return;
-    const blob = await pad.toBlob("image/png", { trim: true, scale: 3 });
+    // White, not transparent: photo viewers (e.g. Windows Photos) show a
+    // transparent background as black, which looks broken.
+    const blob = await pad.toBlob("image/png", { trim: true, scale: 3, background: "#ffffff" });
     if (!blob) { setMsg(L("יצירת התמונה נכשלה. נסו שוב.", "Couldn't create the image. Please try again."), true); return; }
     triggerDownload(blob, L("חתימה", "signature") + ".png");
     setMsg(L("קובץ החתימה ירד למכשיר.", "Signature image downloaded."));
