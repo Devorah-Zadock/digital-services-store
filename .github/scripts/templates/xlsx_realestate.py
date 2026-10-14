@@ -43,20 +43,20 @@ def apartment_sales(book):
               "One row per unit: details, list price, status and buyer. Once signed, enter the final price and log payments on the 'Buyer payments' sheet — paid and balance update here by themselves."), 17)
     s.label("A4", L("שם הפרויקט", "Project"), bold=True); s.inp("B4", L("מגדלי הגפן, רחובות", "Vine Towers"))
     s.ws.merge_cells("B4:D4")
-    first, last = 14, 313
+    first, last = 12, 311
     R = lambda c: f"${c}${first}:${c}${last}"
     sold_cond = f'({R("H")}="{signed}")+({R("H")}="{handed}")'
-    s.kpi("A6", "C6", L("דירות בפרויקט", "Units"), f"=COUNTA({R('C')})", L.num)
-    s.kpi("A7", "C7", L("נמכרו (חוזה / נמסרו)", "Sold (signed / handed over)"), f'=COUNTIF({R("H")},"{signed}")+COUNTIF({R("H")},"{handed}")', L.num)
-    s.kpi("A8", "C8", L("שמורות / במו״מ", "Reserved"), f'=COUNTIF({R("H")},"{reserved}")', L.num)
-    s.kpi("A9", "C9", L("פנויות", "Available"), f'=COUNTIF({R("H")},"{available}")', L.num)
-    s.kpi("A10", "C10", L("אחוז מכירות", "Sold %"), "=IFERROR(C7/C6,0)", L.pct)
-    s.kpi("E6", "G6", L("שווי מכירות (חוזים)", "Sales value (signed)") + L.cur, f"=SUMPRODUCT(({sold_cond})*({R('G')}))", L.money)
-    s.kpi("E7", "G7", L("נגבה מהרוכשים", "Collected from buyers") + L.cur, f"=SUM({R('K')})", L.money)
-    s.kpi("E8", "G8", L("נשאר לגבות", "Left to collect") + L.cur, "=G6-G7", L.money)
-    s.kpi("E9", "G9", L("מלאי פנוי לפי מחירון", "Unsold stock at list price") + L.cur, f'=SUMPRODUCT(({R("H")}<>"{signed}")*({R("H")}<>"{handed}")*({R("C")}<>"")*({R("F")}))', L.money)
-    s.kpi("E10", "G10", L("מחיר ממוצע למ״ר (נמכרו)", "Avg price per m² (sold)") + L.cur, f"=IFERROR(SUMPRODUCT(({sold_cond})*({R('G')}))/SUMPRODUCT(({sold_cond})*({R('E')})),0)", L.money)
-    s.header(13, [L("בניין", "Building"), L("קומה", "Floor"), L("מס׳ דירה", "Unit no."), L("חדרים", "Rooms"), L("שטח (מ״ר)", "Area (m²)"),
+    s.kpi("A5", "C5", L("דירות בפרויקט", "Units"), f"=COUNTA({R('C')})", L.num)
+    s.kpi("A6", "C6", L("נמכרו (חוזה / נמסרו)", "Sold (signed / handed over)"), f'=COUNTIF({R("H")},"{signed}")+COUNTIF({R("H")},"{handed}")', L.num)
+    s.kpi("A7", "C7", L("שמורות / במו״מ", "Reserved"), f'=COUNTIF({R("H")},"{reserved}")', L.num)
+    s.kpi("A8", "C8", L("פנויות", "Available"), f'=COUNTIF({R("H")},"{available}")', L.num)
+    s.kpi("A9", "C9", L("אחוז מכירות", "Sold %"), "=IFERROR(C6/C5,0)", L.pct)
+    s.kpi("E5", "G5", L("שווי מכירות (חוזים)", "Sales value (signed)") + L.cur, f"=SUMPRODUCT(({sold_cond})*({R('G')}))", L.money)
+    s.kpi("E6", "G6", L("נגבה מהרוכשים", "Collected from buyers") + L.cur, f"=SUM({R('K')})", L.money)
+    s.kpi("E7", "G7", L("נשאר לגבות", "Left to collect") + L.cur, "=G5-G6", L.money)
+    s.kpi("E8", "G8", L("מלאי פנוי לפי מחירון", "Unsold stock at list price") + L.cur, f'=SUMPRODUCT(({R("H")}<>"{signed}")*({R("H")}<>"{handed}")*({R("C")}<>"")*({R("F")}))', L.money)
+    s.kpi("E9", "G9", L("מחיר ממוצע למ״ר (נמכרו)", "Avg price per m² (sold)") + L.cur, f"=IFERROR(SUMPRODUCT(({sold_cond})*({R('G')}))/SUMPRODUCT(({sold_cond})*({R('E')})),0)", L.money)
+    s.header(11, [L("בניין", "Building"), L("קומה", "Floor"), L("מס׳ דירה", "Unit no."), L("חדרים", "Rooms"), L("שטח (מ״ר)", "Area (m²)"),
                   L("מחיר מחירון", "List price") + L.cur, L("מחיר סופי", "Final price") + L.cur, L("סטטוס", "Status"), L("רוכש/ת", "Buyer"), L("טלפון", "Phone"),
                   L("שולם", "Paid") + L.cur, L("יתרה", "Balance") + L.cur, L("אחוז ששולם", "% paid"), L("מחיר למ״ר", "Price per m²") + L.cur,
                   L("תאריך חוזה", "Contract date"), L("חניה / מחסן", "Parking / storage"), L("הערות", "Notes")])
@@ -101,7 +101,7 @@ def apartment_sales(book):
     p.status_colors(f"H{pf}:H{pl}", [(paid, OK_FILL, OK_FONT), (part, AMBER_FILL, AMBER_FONT), (late, RED_FILL, RED_FONT)])
     p.freeze(f"B{pf}")
     book.wb._sheets = [s.ws, p.ws, lst.ws]
-    return {"main": s, "rows": (13, 19)}
+    return {"main": s, "rows": (11, 17)}
 
 
 # ---------------------------------------------------------------- construction budget
@@ -116,19 +116,19 @@ def construction_budget(book):
     lst, _ = lists_sheet(book, [("BuildCats", L("קטגוריות", "Categories"), cats, 35)])
     s = book.sheet(L("תקציב בנייה", "Construction budget"), [22, 24, 18, 15, 15, 15, 15, 14, 11, 14, 13, 24])
     book.wb.move_sheet(s.ws, offset=-1)
-    s.title(L("תקציב בניית בניין — מתוכנן מול בפועל", "Building construction budget — planned vs actual"),
-            L("שורה לכל סעיף: תקציב מתוכנן, חוזה שנחתם וכמה שולם. רואים חריגות בכל סעיף, כמה נשאר לשלם, עלות למ״ר וליחידה, וכמה נשאר מהרזרבה.",
+    s.title(L("תקציב בניית בניין — תכנון מול ביצוע", "Building construction budget — plan vs actual"),
+            L("בתחילת הפרויקט רושמים כמה תכננתם לכל סעיף. במהלך הבנייה מוסיפים את המחיר שסגרתם בפועל עם הקבלן וכמה שילמתם — והגיליון מראה איפה חרגתם, כמה נשאר לשלם, ועלות למ״ר וליחידה.",
               "One row per line item: planned budget, signed contract and what was paid. See overruns per item, what's left to pay, cost per m² and per unit, and how much contingency is left."), 12)
     s.label("A4", L("שם הפרויקט", "Project"), bold=True); s.inp("B4", L("בניין מגורים, רח׳ הגפן 12", "Residential building, 12 Vine St"))
     s.label("A5", L("מספר יחידות דיור", "Housing units"), bold=True); s.inp("B5", 24, L.num)
     s.label("A6", L("שטח בנוי כולל (מ״ר)", "Total built area (m²)"), bold=True); s.inp("B6", 3200, L.num)
     s.label("A7", L("רזרבה לבלתי צפוי", "Contingency reserve"), bold=True); s.inp("B7", 0.07, L.pct)
-    first, last = 22, 221
+    first, last = 10, 209
     R = lambda c: f"${c}${first}:${c}${last}"
-    s.kpi("D4", "E4", L("תקציב מתוכנן", "Planned budget") + L.cur, f"=SUM({R('D')})", L.money)
+    s.kpi("D4", "E4", L("תכנון מקורי (סה״כ)", "Original plan (total)") + L.cur, f"=SUM({R('D')})", L.money)
     s.kpi("D5", "E5", L("כולל רזרבה", "Incl. contingency") + L.cur, "=E4*(1+B7)", L.money)
-    s.kpi("D6", "E6", L("צפי עלות (חוזים + לא נחתם)", "Forecast cost") + L.cur, f"=SUM({R('E')})+SUMIF({R('E')},\"\",{R('D')})", L.money)
-    s.kpi("D7", "E7", L("חריגה מול התקציב", "Over / under budget") + L.cur, "=E4-E6", L.money)
+    s.kpi("D6", "E6", L("צפי עלות בפועל", "Actual cost forecast") + L.cur, f"=SUM({R('E')})+SUMIF({R('E')},\"\",{R('D')})", L.money)
+    s.kpi("D7", "E7", L("נשאר מול התכנון", "Left vs plan") + L.cur, "=E4-E6", L.money)
     s.kpi("G4", "H4", L("שולם עד עכשיו", "Paid so far") + L.cur, f"=SUM({R('F')})", L.money)
     s.kpi("G5", "H5", L("נשאר לשלם", "Left to pay") + L.cur, "=E6-H4", L.money)
     s.kpi("G6", "H6", L("עלות למ״ר", "Cost per m²") + L.cur, "=IFERROR(E6/B6,0)", L.money)
@@ -136,20 +136,8 @@ def construction_budget(book):
     s.kpi("J4", "K4", L("רזרבה שנותרה", "Contingency left") + L.cur, "=E5-E6", L.money)
     s.kpi("J5", "K5", L("ביצוע תשלומים", "Paid vs forecast"), "=IFERROR(H4/E6,0)", L.pct)
     s.negative_red("E7"); s.negative_red("K4")
-    # summary by category (first 12 list items shown; full list in the Lists sheet)
-    s.section("A9", L("סיכום לפי קטגוריה", "Summary by category"), 4)
-    s.header(10, [L("קטגוריה", "Category"), L("מתוכנן", "Planned") + L.cur, L("צפי", "Forecast") + L.cur, L("שולם", "Paid") + L.cur], start=1)
-    s.header(10, [L("קטגוריה", "Category"), L("מתוכנן", "Planned") + L.cur, L("צפי", "Forecast") + L.cur, L("שולם", "Paid") + L.cur], start=6)
-    for i in range(22):
-        r = 11 + (i % 11)
-        c0 = 1 if i < 11 else 6
-        cc = lambda k: chr(ord("A") + c0 - 1 + k)
-        s.calc(f"{cc(0)}{r}", f'=IF({q(lst.ws.title)}!A{5 + i}="","",{q(lst.ws.title)}!A{5 + i})', align=s.align)
-        s.calc(f"{cc(1)}{r}", f'=IF({cc(0)}{r}="","",SUMIF({R("A")},{cc(0)}{r},{R("D")}))', L.money)
-        s.calc(f"{cc(2)}{r}", f'=IF({cc(0)}{r}="","",SUMIF({R("A")},{cc(0)}{r},{R("M")}))', L.money)
-        s.calc(f"{cc(3)}{r}", f'=IF({cc(0)}{r}="","",SUMIF({R("A")},{cc(0)}{r},{R("F")}))', L.money)
-    s.header(21, [L("קטגוריה", "Category"), L("סעיף", "Item"), L("ספק / קבלן", "Supplier / contractor"), L("תקציב מתוכנן", "Planned") + L.cur,
-                  L("חוזה שנחתם", "Contract") + L.cur, L("שולם", "Paid") + L.cur, L("יתרה לתשלום", "Left to pay") + L.cur, L("חריגה", "Variance") + L.cur,
+    s.header(9, [L("קטגוריה", "Category"), L("סעיף", "Item"), L("ספק / קבלן", "Supplier / contractor"), L("תכנון מקורי", "Original plan") + L.cur,
+                  L("מחיר שנסגר בפועל", "Actual agreed price") + L.cur, L("שולם", "Paid") + L.cur, L("יתרה לתשלום", "Left to pay") + L.cur, L("חריגה", "Variance") + L.cur,
                   L("חריגה %", "Variance %"), L("תשלום הבא", "Next payment"), L("מצב", "Status"), L("הערות", "Notes")])
     ex = [(cats[0], L("רכישת קרקע", "Land purchase"), L("בעלי הקרקע", "Land owners"), 9500000, 9500000, 9500000),
           (cats[1], L("אדריכל", "Architect"), L("משרד אדריכלים", "Architects office"), 420000, 450000, 300000),
@@ -172,4 +160,24 @@ def construction_budget(book):
     s.status_colors(f"K{first}:K{last}", [(paid, OK_FILL, OK_FONT), (over, RED_FILL, RED_FONT)])
     s.rule(f"J{first}:J{last}", f'AND(J{first}<>"",J{first}<=TODAY()+7,N(G{first})>0)', AMBER_FILL, AMBER_FONT)
     s.freeze(f"C{first}")
-    return {"main": s, "rows": (21, 27)}
+    # summary by category on its own sheet, so the main sheet's frozen top stays short
+    m = q(s.ws.title)
+    sm = book.sheet(L("סיכום לפי קטגוריה", "By category"), [26, 16, 16, 16, 16])
+    sm.title(L("סיכום לפי קטגוריה", "Summary by category"),
+             L("מתעדכן לבד מגיליון ״תקציב בנייה״. הקטגוריות נלקחות מגיליון הרשימות.", "Updates by itself from the budget sheet. Categories come from the Lists sheet."), 5)
+    sm.header(4, [L("קטגוריה", "Category"), L("תכנון מקורי", "Original plan") + L.cur, L("צפי בפועל", "Actual forecast") + L.cur,
+                  L("הפרש", "Difference") + L.cur, L("שולם", "Paid") + L.cur])
+    MR = lambda c: f"{m}!${c}${first}:${c}${last}"
+    for i in range(35):
+        r = 5 + i
+        sm.calc(f"A{r}", f'=IF({q(lst.ws.title)}!A{5 + i}="","",{q(lst.ws.title)}!A{5 + i})', align=sm.align)
+        sm.calc(f"B{r}", f'=IF(A{r}="","",SUMIF({MR("A")},A{r},{MR("D")}))', L.money)
+        sm.calc(f"C{r}", f'=IF(A{r}="","",SUMIF({MR("A")},A{r},{MR("M")}))', L.money)
+        sm.calc(f"D{r}", f'=IF(A{r}="","",C{r}-B{r})', L.money)
+        sm.calc(f"E{r}", f'=IF(A{r}="","",SUMIF({MR("A")},A{r},{MR("F")}))', L.money)
+    sm.total("A41", L("סה״כ", "Total")); sm.total("B41", "=SUM(B5:B39)", L.money); sm.total("C41", "=SUM(C5:C39)", L.money)
+    sm.total("D41", "=SUM(D5:D39)", L.money); sm.total("E41", "=SUM(E5:E39)", L.money)
+    sm.rule("D5:D39", 'AND(D5<>"",D5>0)')
+    sm.freeze("A5")
+    book.wb._sheets = [s.ws, sm.ws, lst.ws]
+    return {"main": s, "rows": (9, 15)}
