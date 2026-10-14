@@ -29,6 +29,9 @@ const DK_CREATE_OPTIONS = [
   { icon: "💼", product: "quote", title: "הצעת מחיר", titleEn: "Quote", sub: "הצעת מחיר מקצועית ללקוחות", subEn: "A professional price quote for clients", href: "quote-app.html" },
   { icon: "🧾", product: "invoice", title: "חשבונית", titleEn: "Invoice", sub: "חשבוניות וקבלות", subEn: "Invoices and receipts", href: "invoice-app.html" },
   { icon: "📈", product: "xlsx", title: "גליון", titleEn: "Spreadsheet", sub: "גליון עבודה וניהול מידע", subEn: "A worksheet for tracking and managing data", href: "products.html?type=xlsx" },
+  // Free tools: no account needed (free: true skips the sign-in redirect).
+  { icon: "🧮", product: "tax", title: "מחשבון מס", titleEn: "Tax calculator", sub: "נטו לעצמאי ועוסק פטור — חינם", subEn: "Freelancer net pay — free", href: "tax-calculator.html", free: true },
+  { icon: "✍️", product: "sign", title: "חתימה דיגיטלית", titleEn: "Digital signature", sub: "חותמים על הסכם ומורידים PDF — חינם", subEn: "Sign an agreement as a PDF — free", href: "sign.html", free: true },
 ];
 
 /* Very small keyword router for the free-text "אני לא בטוח" box —
@@ -98,6 +101,7 @@ window.openCreateChooser = function openCreateChooser() {
   overlay.querySelectorAll("[data-dk-create-idx]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const opt = DK_CREATE_OPTIONS[Number(btn.dataset.dkCreateIdx)];
+      if (opt.free) { location.href = opt.href; return; }
       dkCreateGoTo(opt.href);
     });
   });
