@@ -279,28 +279,30 @@ body.dk-app-sidebar-mounted .nav-account-wrap { display: none; }
 [data-dk-product="xlsx"] .dk-pcard-thumb-icon { color: #15803D; }
 
 /* ============ Create-chooser modal (js/create-chooser.js) ============ */
-.dk-create-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 18px 0 20px; }
+.dk-create-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 14px 0 12px; }
+/* Eight options + the free-text box fit on a laptop screen without scrolling. */
+#dk-create-overlay .domain-guide-modal { padding: 24px 28px; max-height: 94vh; }
 @media (max-width: 480px) { .dk-create-grid { grid-template-columns: 1fr; } }
 .dk-create-opt {
   display: flex; align-items: center; gap: 12px; text-align: start; background: var(--bg);
-  border: 1.5px solid var(--border); border-radius: 14px; padding: 14px 16px; cursor: pointer;
+  border: 1.5px solid var(--border); border-radius: 14px; padding: 10px 14px; cursor: pointer;
   font-family: inherit; color: var(--text); transition: border-color .15s ease, background .15s ease;
 }
 .dk-create-opt:hover { border-color: var(--primary); background: var(--surface); box-shadow: var(--shadow); }
 .dk-create-opt-icon {
-  width: 40px; height: 40px; border-radius: 12px; font-size: 19px; flex-shrink: 0;
+  width: 36px; height: 36px; border-radius: 11px; font-size: 18px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center; background: var(--primary-light); color: var(--primary-dark);
 }
 .dk-create-opt-title { font-weight: 700; font-size: 14.5px; display: block; }
 .dk-create-opt-sub { font-size: 12px; color: var(--text-secondary); display: block; margin-top: 2px; }
-.dk-create-unsure { border-top: 1px solid var(--border); margin-top: 6px; padding-top: 18px; }
+.dk-create-unsure { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 12px; }
 .dk-create-unsure label { display: block; font-weight: 700; font-size: 13.5px; margin-bottom: 8px; }
 .dk-create-unsure textarea {
   width: 100%; box-sizing: border-box; border: 1.5px solid var(--border); border-radius: 12px;
-  padding: 12px 14px; font-family: inherit; font-size: 14px; resize: vertical; min-height: 72px;
+  padding: 10px 14px; font-family: inherit; font-size: 14px; resize: vertical; min-height: 52px;
 }
 .dk-create-unsure textarea:focus { outline: none; border-color: var(--primary); }
-.dk-create-unsure-btn { width: 100%; margin-top: 10px; }
+.dk-create-unsure-btn { width: 100%; margin-top: 8px; }
 
 /* ============ Shared buttons/primitives reused across new screens ============ */
 .dk-btn {
