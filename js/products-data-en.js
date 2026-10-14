@@ -153,6 +153,12 @@
     "xlsx-loan": ["Loan calculator & repayment schedule", "Monthly payment, total interest and a full repayment schedule. Free.",
       "Enter the amount, yearly interest and term — get the monthly payment, the total you'll pay and how much of it is interest, plus a full month-by-month schedule: interest, principal and balance. For a business, car or personal loan.",
       ["Monthly payment and total interest", "Full schedule up to 30 years", "Interest and principal in every payment", "Change any input — everything updates"]],
+    "xlsx-apartment-sales": ["Apartment sales for developers — units, buyers & payments", "Every unit in the project: what's available, what's sold, what each buyer paid and what's left to collect. Free.",
+      "For developers and project sales teams: one row per unit — building, floor, rooms, area, list and final price, status (available / reserved / signed / handed over) and buyer. Log each buyer's payments by construction stage on the payments sheet — see what's collected, what's left, sold %, average price per m² and overdue payments.",
+      ["Unit inventory: available, reserved and sold", "Buyer payments by construction stage", "Overdue payments marked in red", "Sales value, collected and left to collect"]],
+    "xlsx-construction-budget": ["Building construction budget — planned vs actual", "Every construction item, contract and payment — with overruns, cost per m² and per unit, and contingency. Free.",
+      "For developers, contractors and project managers: one row per item — land, permits, structure, plumbing, electrical, lifts, landscaping and more. For each: planned budget, signed contract and what was paid. The sheet works out the variance per item, forecast total, what's left to pay, cost per m² and per unit, and contingency left — with a summary by category.",
+      ["Planned vs contract vs paid", "Overruns marked in red", "Cost per m² and per housing unit", "Contingency reserve and summary by category"]],
   };
 
   PRODUCTS.forEach((p) => {
