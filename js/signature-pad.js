@@ -200,7 +200,9 @@ function createSignaturePad(container, options) {
     isEmpty() { return strokes.length === 0 && !current; },
     clear() { strokes = []; current = null; redraw(); notify(); },
     undo() { if (strokes.length) { strokes.pop(); redraw(); notify(); } },
-    setColor(c) { color = c; },
+    // A signature is one colour: switching recolours what's already drawn
+    // too (people usually sign first, then pick the ink).
+    setColor(c) { color = c; strokes.forEach((s) => { s.color = c; }); if (current) current.color = c; redraw(); notify(); },
     getColor() { return color; },
     toDataURL(type, o) { return exportCanvas(o).toDataURL(type || "image/png"); },
     toBlob(type, o) {
