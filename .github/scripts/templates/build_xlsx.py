@@ -32,6 +32,7 @@ from lxml import etree  # noqa: E402
 from xlsx_lib import Book, Lang  # noqa: E402
 import xlsx_finance as F  # noqa: E402
 import xlsx_ops as O  # noqa: E402
+import xlsx_realestate as RE  # noqa: E402
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 
@@ -56,6 +57,8 @@ TEMPLATES = [
     ("xlsx-shifts", "weekly-shift-schedule.xlsx", O.shift_schedule),
     ("xlsx-freelance-rate", "freelancer-hourly-rate.xlsx", F.freelancer_rate),
     ("xlsx-loan", "loan-calculator.xlsx", F.loan),
+    ("xlsx-apartment-sales", "apartment-sales-tracker.xlsx", RE.apartment_sales),
+    ("xlsx-construction-budget", "construction-budget.xlsx", RE.construction_budget),
 ]
 
 NS = {"m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
