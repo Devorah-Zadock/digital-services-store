@@ -34,6 +34,7 @@ const DK_SIDEBAR_ICONS = {
   invoice: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>',
   deck: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M10 9v5l4-2.5z" fill="currentColor" stroke="none"/><path d="M8 21h8M12 17v4"/></svg>',
   xlsx: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M4 15h16M10 4v16M15 4v16"/></svg>',
+  tools: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg>',
   settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.04H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1.04-1.56V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.56 1.04H21a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15z"/></svg>',
 };
 
@@ -58,6 +59,7 @@ const DK_SIDEBAR_ITEMS = () => [
   { key: "invoice", product: "invoice", labelKey: "card_invoice_h", label: "חשבונית", href: "invoice-app.html" },
   { key: "deck", product: "deck", labelKey: "card_deck_h", label: "מצגת", href: "products.html?type=deck" },
   { key: "xlsx", product: "xlsx", labelKey: "card_xlsx_h", label: "גליון", href: "products.html?type=xlsx" },
+  { key: "tools", labelKey: "nav_business_tools", label: "כלים לעסק", href: "tools.html", also: ["tax-calculator.html", "sign.html"] },
   { divider: true },
   { key: "settings", labelKey: "nav_settings", label: "הגדרות", href: "account-settings.html" },
 ];
@@ -75,8 +77,8 @@ function dkAppSidebarItemHtml(it, here) {
   // Same page, and for catalog links (products.html?type=deck / xlsx) the same type too.
   const [path, query] = it.href.split("?");
   const wantType = query && new URLSearchParams(query).get("type");
-  const active = path === here && !/[?&]view=intro\b/.test(location.search)
-    && (!wantType || new URLSearchParams(location.search).get("type") === wantType);
+  const active = (it.also && it.also.includes(here)) || (path === here && !/[?&]view=intro\b/.test(location.search)
+    && (!wantType || new URLSearchParams(location.search).get("type") === wantType));
   const iconBox = `<span class="dk-app-sidebar-icon">${DK_SIDEBAR_ICONS[it.key] || ""}</span>`;
   return `<a href="${it.href}" class="dk-app-sidebar-item${active ? " active" : ""}"${it.product ? ` data-dk-product="${it.product}"` : ""} title="${label}">${iconBox}<span class="dk-app-sidebar-item-label">${label}</span></a>`;
 }
