@@ -129,7 +129,9 @@ try {
   page2.dialogs = []; page2.on("dialog", (d) => { page2.dialogs.push([d.type(), d.message()]); d.accept(); });
   page2.on("pageerror", (e) => errors.push(e.message));
   await page2.goto(`${WEB}/schedule-builder.html?schedule=${projectId}`);
-  await page2.waitForFunction(() => !document.getElementById("auth-gate-overlay"), null, { timeout: 25000 }); await page2.waitForTimeout(1200);
+  await page2.waitForFunction(() => !document.getElementById("auth-gate-overlay"), null, { timeout: 25000 });
+  // The offer comes after the project loads from the cloud — give it time.
+  for (let i = 0; i < 20 && !page2.dialogs.some(([t]) => t === "confirm"); i++) await page2.waitForTimeout(300);
   check("closed before saving → reopening offers the unsaved change", page2.dialogs.some(([t, m]) => t === "confirm" && /לשחזר|Restore/.test(m)), JSON.stringify(page2.dialogs));
   await page2.waitForTimeout(4500);
   rows = await rowsOf(A.id);

@@ -146,6 +146,18 @@ def fast_forward_runs(uid):
             rest("PATCH", f"automation_runs?id=eq.{r['id']}", {"next_run_at": "2000-01-01T00:00:00Z", "context": ctx}, prefer="return=minimal")
 
 
+def fast_forward_run(run_id):
+    """Make one run due now (time travel for tests) — leaves the business's
+    other runs alone, so the worker isn't handed a pile of unrelated due runs."""
+    r = rows(f"automation_runs?id=eq.{run_id}&select=context")
+    ctx = (r[0].get("context") if r else None) or {}
+    waits = ctx.get("waits") or {}
+    for k in waits:
+        waits[k] = "2000-01-01T00:00:00Z"
+    ctx["waits"] = waits
+    rest("PATCH", f"automation_runs?id=eq.{run_id}", {"next_run_at": "2000-01-01T00:00:00Z", "context": ctx}, prefer="return=minimal")
+
+
 def fast_forward_messages(uid):
     rest("PATCH", f"automation_messages?user_id=eq.{uid}&status=eq.deferred", {"next_attempt_at": "2000-01-01T00:00:00Z"}, prefer="return=minimal")
 
@@ -360,14 +372,14 @@ def run_tests(a, b):
     lead9 = rows(f"contacts?user_id=eq.{a['id']}&email=eq.lead-9@example.com&select=id")[0]
     check("T10 paused → new enquiries are saved but start no run", not [x for x in runs_of(a["id"], "lead_autopilot") if x["subject_id"] == lead9["id"]])
     api(a, "resume", template="lead_autopilot")
-    fast_forward_runs(a["id"])
+    fast_forward_run(run8["id"])
     # The scheduled staging worker may be handling this run at the same moment
     # (it may have read "paused" just before the resume), so keep ticking.
     def reminded():
         if "lead_reminder" in [m["purpose"] for m in messages_of(a["id"]) if m["run_id"] == run8["id"]]:
             return True
-        fast_forward_runs(a["id"])   # undo a "check again later" the scheduled worker may have written meanwhile
-        drain(1)                     # and tick ourselves — the scheduled worker runs only once a minute
+        fast_forward_run(run8["id"])  # undo a "check again later" the scheduled worker may have written meanwhile
+        drain(1)                      # and tick ourselves — the scheduled worker runs only once a minute
         return False
     wait_until(reminded, timeout=90)
     msgs8 = [m["purpose"] for m in messages_of(a["id"]) if m["run_id"] == run8["id"]]
