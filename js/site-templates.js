@@ -33,6 +33,8 @@ let SITE_RENDER_EN = false;
 let SITE_RENDER_DATA = null;
 let SITE_RENDER_PAGE = "index";
 let SITE_RENDER_URL = "";
+// true only while rendering for the editor canvas (render opts.preview).
+let SITE_RENDER_PREVIEW = false;
 function siteTr(he, en) {
   return SITE_RENDER_EN ? en : he;
 }
@@ -86,7 +88,31 @@ function textStyleAttr(d, key) {
   if (s.color) parts.push(`color:#${String(s.color).replace("#", "")}`);
   if (s.size) parts.push(`font-size:${s.size}px`);
   parts.push(...alignStyleParts(s.align));
+  parts.push(...siteTextExtraParts(s, !!s.align));
   return parts.length ? ` style="${parts.join(";")}"` : "";
+}
+/* The site editor's extra text settings — weight, line spacing, letter
+   spacing, maximum width. Every value is checked against a whitelist /
+   numeric range before it reaches a style attribute; anything else is
+   simply ignored. Absent keys add nothing, so existing projects render
+   byte-for-byte as before. hasAlign: alignStyleParts() already made the
+   element a fit-content block, so maxWidth only adds the cap. */
+const SITE_TEXT_WEIGHTS = ["300", "400", "500", "600", "700", "800", "900"];
+function siteTextExtraParts(s, hasAlign) {
+  const out = [];
+  if (!s || typeof s !== "object") return out;
+  const w = String(s.weight == null ? "" : s.weight);
+  if (SITE_TEXT_WEIGHTS.indexOf(w) !== -1) out.push(`font-weight:${w}`);
+  const lh = Number(s.lineHeight);
+  if (s.lineHeight != null && s.lineHeight !== "" && /^\d(\.\d{1,2})?$/.test(String(s.lineHeight)) && lh >= 1 && lh <= 3) out.push(`line-height:${lh}`);
+  const ls = String(s.letterSpacing == null ? "" : s.letterSpacing).match(/^(-?\d(?:\.\d)?)px$/);
+  if (ls && Number(ls[1]) >= -2 && Number(ls[1]) <= 6) out.push(`letter-spacing:${Number(ls[1])}px`);
+  const mw = String(s.maxWidth == null ? "" : s.maxWidth);
+  if (/^\d{3,4}$/.test(mw) && Number(mw) >= 200 && Number(mw) <= 1600) {
+    if (!hasAlign) out.push("display:block", "margin-inline:auto");
+    out.push(`max-width:${Number(mw)}px`);
+  }
+  return out;
 }
 function t(d, key, html) {
   return `<span class="site-editable" data-textkey="${key}"${textStyleAttr(d, key)}>${html}</span>`;
@@ -124,6 +150,26 @@ function whatsAppLink(d) {
   return waLink(d.whatsapp || (d.noWhatsapp ? "" : d.phone));
 }
 
+/* Editor markers on the built-in templates (read by the on-canvas editor;
+   attributes only, never visible):
+   - data-dk-bind="phone"    → d.phone
+     data-dk-bind="email"    → d.email
+     data-dk-bind="address"  → d.address
+     data-dk-bind="whatsapp" → whatsAppLink(d): d.whatsapp, else d.phone
+                               unless d.noWhatsapp
+     Without data-dk-bind-as the element's text IS the value (a plain
+     <span> wrapped around the escaped value). data-dk-bind-as="href" marks
+     a link whose href comes from the field while its label is fixed text
+     (or holds a value <span> of its own).
+   - data-dk-btn="heroCta"   → the hero's primary button (ctaHtml(), studio's
+     ag-cta, playground's pg-cta, the "centered" hero variant). primaryCtaHref()
+     derives its label and target from whatsAppLink(d) → d.email → d.phone →
+     d.pages.contact, unless the owner set d.heroCta (siteApplyHeroCta).
+   - data-dk-img="hero" (d.heroImage) / "gallery.N" (d.heroImages[N]) —
+     set in heroMediaHtml(). There is no logo field, so no "logo" marker.
+   In-page anchors (href="#id") whose target section isn't on the page are
+   removed by siteDropDeadAnchors() in the render wrapper at the bottom. */
+
 /* Drop-in replacement for every template's own "d.heroImage ? <img
    class=...> : ..." spot — d.heroImages (2+ photos) renders a slow
    crossfading slideshow instead of one static photo, using the exact
@@ -136,6 +182,7 @@ function heroHasImage(d) {
   return !!(d.heroImage || (d.heroImages && d.heroImages.length));
 }
 function heroMediaHtml(d, imgClass) {
+  const fromGallery = !!(d.heroImages && d.heroImages.length);
   const images = (d.heroImages && d.heroImages.length) ? d.heroImages : (d.heroImage ? [d.heroImage] : []);
   if (!images.length) return "";
   const cls = imgClass ? ` ${imgClass}` : "";
@@ -143,9 +190,35 @@ function heroMediaHtml(d, imgClass) {
   // builder's "תיאור התמונה" field) — when it's empty, the alt text stays
   // exactly what it always was.
   const alt = escapeHtmlS(String(d.heroAlt || "").trim() || (d.businessName || "").trim() || siteTr("תמונת נושא", "Cover image"));
-  if (images.length === 1) return `<img class="${imgClass || ""}" src="${images[0]}" alt="${alt}">`;
-  return `<div class="site-hero-slideshow${cls}">${images.map((src, i) =>
-    `<img class="site-hero-slide${i === 0 ? " active" : ""}" src="${src}" alt="${alt}">`).join("")}</div>`;
+  const ist = siteImageStyle(d.imageStyles && d.imageStyles.hero);
+  const imgSt = ist ? siteImageStyleAttr(ist, images.length === 1) : "";
+  if (images.length === 1) return `<img class="${imgClass || ""}" src="${images[0]}" alt="${alt}" data-dk-img="${fromGallery ? "gallery.0" : "hero"}"${imgSt}>`;
+  const wrapSt = ist && ist.ratio ? ` style="aspect-ratio:${ist.ratio}"` : "";
+  return `<div class="site-hero-slideshow${cls}"${wrapSt}>${images.map((src, i) =>
+    `<img class="site-hero-slide${i === 0 ? " active" : ""}" src="${src}" alt="${alt}" data-dk-img="gallery.${i}"${imgSt}>`).join("")}</div>`;
+}
+/* d.imageStyles.hero = { fit: "cover"|"contain", ratio: "1/1"|"4/3"|"3/2"|
+   "16/9"|"3/4", focal: "X% Y%" (0/50/100 each) } — how the hero photo sits
+   in its frame. Whitelisted values only; absent = exactly as before. */
+const SITE_IMAGE_RATIOS = ["1/1", "4/3", "3/2", "16/9", "3/4"];
+const SITE_IMAGE_FOCALS = ["0% 0%", "50% 0%", "100% 0%", "0% 50%", "50% 50%", "100% 50%", "0% 100%", "50% 100%", "100% 100%"];
+function siteImageStyle(st) {
+  if (!st || typeof st !== "object") return null;
+  const out = {};
+  if (st.fit === "cover" || st.fit === "contain") out.fit = st.fit;
+  if (SITE_IMAGE_RATIOS.indexOf(st.ratio) !== -1) out.ratio = st.ratio;
+  if (SITE_IMAGE_FOCALS.indexOf(st.focal) !== -1) out.focal = st.focal;
+  return Object.keys(out).length ? out : null;
+}
+/* single: one <img> (the ratio goes on it); slides keep their frame from
+   the slideshow wrapper, which takes the ratio instead. */
+function siteImageStyleAttr(st, single) {
+  const p = [];
+  const fit = st.fit || (st.ratio && single ? "cover" : "");
+  if (fit) p.push(`object-fit:${fit}`);
+  if (st.ratio && single) p.push(`aspect-ratio:${st.ratio}`, "height:auto");
+  if (st.focal) p.push(`object-position:${st.focal}`);
+  return p.length ? ` style="${p.join(";")}"` : "";
 }
 /* Runs on every page regardless of whether it actually has a slideshow —
    querySelectorAll on an absent class is just an empty, harmless no-op. */
@@ -264,6 +337,46 @@ function siteMoodCss(d) {
     .pg-bubble:nth-child(odd) { background:var(--primary-color) !important; }
     .pg-bubble:nth-child(even) { background:var(--accent-color) !important; color:var(--accent-text); }
   `;
+}
+
+/* Site-wide design choices from the site editor's "עיצוב האתר" panel:
+   d.design = { headingFont: SITE_FONTS key, buttonRadius: "sharp"|"soft"|
+   "pill", buttonFill: "solid"|"outline", bgTone: "white"|"warm"|"cool" }.
+   Every value is whitelisted; no d.design (every existing project) = no
+   CSS at all. Buttons: every hero button (data-dk-btn), the templates' own
+   CTA classes and the section library's .dks-btn. Outline buttons take the
+   colour of the text around them, so they read on light and dark heroes.
+   bgTone is for the light templates only — the dark ones (SITE_DARK_
+   TEMPLATES) are designed around their own background, so it is ignored
+   there and the editor doesn't offer it (siteDesignSupports). */
+const SITE_DARK_TEMPLATES = ["noir", "studio", "cinematic", "neon", "playground"];
+const SITE_DESIGN_RADII = { sharp: "0px", soft: "10px", pill: "999px" };
+const SITE_DESIGN_TONES = { white: "#FFFFFF", warm: "#FBF7F1", cool: "#F3F7FB" };
+/* portfolio's hero "button" is a large text link by design (po-work-idx),
+   so button shapes/fills leave it alone. */
+const SITE_BUTTON_SELECTOR = "[data-dk-btn]:not(.po-work-idx), .dks-btn, .ls-cta, .fr-cta .btn, .po-cta .btn, .gl-cta, .nb-cta, .eg-cta, .pr-cta, .nr-cta, .ag-cta, .bt-cta, .br-btn, .oc-cta, .lx-cta, .cd-cta, .nf-cta, .pg-cta";
+let SITE_RENDER_TEMPLATE = "";
+function siteDesignSupports(template, key) {
+  if (key === "bgTone") return SITE_DARK_TEMPLATES.indexOf(template) === -1;
+  return ["headingFont", "buttonRadius", "buttonFill"].indexOf(key) !== -1;
+}
+function siteDesignCss(d) {
+  const ds = d && d.design;
+  if (!ds || typeof ds !== "object") return "";
+  let css = "";
+  if (typeof ds.headingFont === "string" && Object.prototype.hasOwnProperty.call(SITE_FONTS, ds.headingFont)) {
+    css += `\n    :root :is(h1, h2, h3), [data-textkey^="heading-"], [data-textkey="businessName"], .dks-h { font-family:${SITE_FONTS[ds.headingFont].stack}; }`;
+  }
+  if (Object.prototype.hasOwnProperty.call(SITE_DESIGN_RADII, ds.buttonRadius)) {
+    css += `\n    :is(${SITE_BUTTON_SELECTOR}) { border-radius:${SITE_DESIGN_RADII[ds.buttonRadius]} !important; }`;
+  }
+  if (ds.buttonFill === "outline") {
+    css += `\n    :is(${SITE_BUTTON_SELECTOR}) { background:transparent !important; color:inherit !important; border:2px solid currentColor !important; box-shadow:none !important; filter:none !important; }`;
+  }
+  if (Object.prototype.hasOwnProperty.call(SITE_DESIGN_TONES, ds.bgTone) && siteDesignSupports(SITE_RENDER_TEMPLATE, "bgTone")) {
+    css += `\n    html, body { background:${SITE_DESIGN_TONES[ds.bgTone]}; }`;
+  }
+  return css;
 }
 
 /* Section-group text styles — the Builder Shell's section editor sets one
@@ -421,7 +534,7 @@ function heroVideoBgHtml(d) {
 }
 function waFabHtml(d) {
   const href = whatsAppLink(d);
-  return href ? `<a class="wa-fab" href="${href}" target="_blank" rel="noopener" aria-label="${siteTr("וואטסאפ", "WhatsApp")}">💬</a>` : "";
+  return href ? `<a class="wa-fab" href="${href}" data-dk-bind="whatsapp" data-dk-bind-as="href" target="_blank" rel="noopener" aria-label="${siteTr("וואטסאפ", "WhatsApp")}">💬</a>` : "";
 }
 function servicesData(d) {
   return (d.services || []).filter((s) => s.name && s.name.trim());
@@ -502,6 +615,9 @@ function withFallbackInner(d) {
 /* Falls back through whatever contact channel actually exists, so a CTA
    button never links to nothing. */
 function primaryCtaHref(d, page) {
+  return siteApplyHeroCta(d, siteDerivedCtaHref(d, page));
+}
+function siteDerivedCtaHref(d, page) {
   const wa = whatsAppLink(d);
   if (wa) return { href: wa, label: siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp"), external: true };
   if (d.email) return { href: `mailto:${d.email}`, label: siteTr("שליחת מייל", "Send an email"), external: false };
@@ -510,6 +626,82 @@ function primaryCtaHref(d, page) {
   // same page: "contact" marker — see the comment above previewNavScript().
   if (d.pages && d.pages.contact && page !== "contact") return { href: "contact.html", label: siteTr("יצירת קשר", "Contact Us"), external: false, page: "contact" };
   return null;
+}
+/* d.heroCta = { label?, action?: { kind, value }, style?: { bg, color,
+   size: "sm"|"lg", radius } } — the owner's own hero button, set in the
+   site editor. Each part is optional and validated: an empty/invalid label
+   or an action that resolves to nothing keeps today's derived label/target
+   (siteDerivedCtaHref), so a project without d.heroCta is untouched. */
+const SITE_CTA_SIZES = { sm: "13px", lg: "18px" };
+function siteHexColor(v) {
+  const m = String(v == null ? "" : v).trim().match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  return m ? "#" + m[1].toUpperCase() : "";
+}
+function siteCtaStyle(st) {
+  if (!st || typeof st !== "object") return null;
+  const out = {};
+  const bg = siteHexColor(st.bg), color = siteHexColor(st.color);
+  if (bg) out.bg = bg;
+  if (color) out.color = color;
+  if (Object.prototype.hasOwnProperty.call(SITE_CTA_SIZES, st.size)) out.size = st.size;
+  const r = String(st.radius == null ? "" : st.radius);
+  if (/^\d{1,3}$/.test(r) && Number(r) <= 999) out.radius = Number(r);
+  return Object.keys(out).length ? out : null;
+}
+function siteCtaStyleParts(style) {
+  const s = siteCtaStyle(style);
+  if (!s) return [];
+  const p = [];
+  if (s.bg) p.push(`background:${s.bg}`, `border-color:${s.bg}`);
+  if (s.color) p.push(`color:${s.color}`);
+  if (s.size) p.push(`font-size:${SITE_CTA_SIZES[s.size]}`);
+  if (s.radius != null) p.push(`border-radius:${s.radius}px`);
+  return p;
+}
+/* style="…" for a hero button (cta.style), or "" — used by ctaHtml(),
+   studio's/playground's own buttons and the "centered" hero variant. */
+function siteCtaStyleAttr(cta) {
+  const p = cta ? siteCtaStyleParts(cta.style) : [];
+  return p.length ? ` style="${p.join(";")}"` : "";
+}
+/* Where a button goes — { kind: "tel"|"whatsapp"|"email"|"scroll"|"link",
+   value }. An empty value for tel/whatsapp/email uses the business's own
+   d.phone / whatsAppLink(d) / d.email. Returns null when it leads nowhere.
+   (Same rules as the section library's buttons.) */
+function siteActionTarget(d, action) {
+  const a = action && typeof action === "object" ? action : {};
+  const v = (typeof a.value === "string" ? a.value : "").trim();
+  switch (a.kind) {
+    case "tel": { const n = (v || String(d.phone || "")).replace(/[^\d+]/g, ""); return n ? { href: "tel:" + n } : null; }
+    case "whatsapp": { const href = v ? waLink(v) : whatsAppLink(d); return href ? { href, external: true } : null; }
+    case "email": { const e = v || String(d.email || ""); return /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']+$/.test(e) ? { href: "mailto:" + e } : null; }
+    case "scroll": return { href: /^[A-Za-z][\w-]*$/.test(v) ? "#" + v : "#" };
+    case "link": {
+      if (/^https?:\/\/[^\s"'<>]+$/i.test(v)) return { href: v, external: true };
+      const page = v.match(/^(index|about|contact)\.html$/);
+      if (page) return { href: v, page: page[1] };
+      return null;
+    }
+    default: return null;
+  }
+}
+function siteApplyHeroCta(d, base) {
+  const h = d && d.heroCta;
+  if (!h || typeof h !== "object") return base;
+  const label = typeof h.label === "string" ? h.label.trim().slice(0, 80) : "";
+  const target = h.action ? siteActionTarget(d, h.action) : null;
+  const style = siteCtaStyle(h.style);
+  if (!label && !target && !style) return base;
+  if (!base && !target) return null; // nowhere to go yet: no button, exactly as before
+  const out = Object.assign({}, base);
+  if (target) {
+    out.href = target.href;
+    out.external = !!target.external;
+    if (target.page) out.page = target.page; else delete out.page;
+  }
+  if (label) { out.label = label; out.customLabel = true; }
+  if (style) out.style = style;
+  return out;
 }
 function ctaHtml(cta, cls) {
   if (!cta) return "";
@@ -521,7 +713,7 @@ function ctaHtml(cta, cls) {
   // opened DeskKit's own contact page. The real nav links already carry this
   // marker for exactly this reason; the CTA button just never got it.
   const navAttrs = cta.page ? ` data-site-nav data-page="${cta.page}"` : "";
-  return `<a class="${cls}" href="${escapeHtmlS(cta.href)}"${cta.external ? ' target="_blank" rel="noopener"' : ""}${navAttrs}>${escapeHtmlS(cta.label)}</a>`;
+  return `<a class="${cls}" data-dk-btn="heroCta" href="${escapeHtmlS(cta.href)}"${cta.external ? ' target="_blank" rel="noopener"' : ""}${navAttrs}${siteCtaStyleAttr(cta)}>${escapeHtmlS(cta.label)}</a>`;
 }
 
 /* Builds the shared multi-page nav links (Home / About / Contact) — only
@@ -616,12 +808,147 @@ function searchScriptHtml() {
    from anything the visitor sends. In the builder's preview nothing is
    sent. */
 function siteLeadFormConfig(d) {
-  const on = d && d.leadForm === true && typeof DK_AUTOMATE_ENABLED !== "undefined" && DK_AUTOMATE_ENABLED === true;
-  if (!on || typeof SUPABASE_URL === "undefined") return null;
+  const on = d && d.leadForm === true;
+  return on ? siteLeadDeliveryConfig(d) : null;
+}
+/* Whether this DeskKit environment/account can deliver site enquiries at
+   all (Automate enabled — lead-intake refuses sites whose owner isn't let
+   into Automate, see the inline lead-form section in site-sections.js),
+   and where to: shared by the popup above and the inline form section. */
+function siteLeadDeliveryConfig(d) {
+  if (typeof DK_AUTOMATE_ENABLED === "undefined" || DK_AUTOMATE_ENABLED !== true || typeof SUPABASE_URL === "undefined") return null;
   // The same free Cloudflare Turnstile key DeskKit's own forms use (empty on
   // staging, where lead-intake has no secret and doesn't ask for it).
   const sitekey = (typeof DK_TURNSTILE_SITE_KEY !== "undefined" && /^[0-9A-Za-z_-]{10,80}$/.test(DK_TURNSTILE_SITE_KEY)) ? DK_TURNSTILE_SITE_KEY : "";
-  return { endpoint: SUPABASE_URL + "/functions/v1/lead-intake", accent: d.primaryColor || "#0F766E", biz: (d.businessName || "").trim(), sitekey };
+  return { endpoint: SUPABASE_URL + "/functions/v1/lead-intake", accent: (d && d.primaryColor) || "#0F766E", biz: ((d && d.businessName) || "").trim(), sitekey };
+}
+
+/* The one submission path for every lead form on a site (the floating
+   popup and any inline "leadForm" section): same payload, honeypot
+   ("website"), Turnstile, preview rule and error messages, so lead-intake
+   sees exactly one kind of request. Shipped as dkLeadCore's own source
+   (Function.toString) so it needs no escaping, and guarded so a page with
+   several forms defines window.dkLeadWire once.
+   dkLeadWire(form, opts) — opts: { endpoint, sitekey, captchaEl,
+   msgClass, successText, fields } where fields (inline forms only) is
+   { phone, email, message: "required"|"optional"|"off" } and turns on
+   per-field errors (aria-invalid + [data-dk-err=name] text); without it
+   the popup's original rules apply (name + phone or email). Returns
+   { captcha } so a form can load Turnstile when it's first used. */
+function dkLeadCore(T) {
+  if (window.dkLeadWire) return;
+  var ts = { state: 0, q: [] };
+  function loadTs(cb) {
+    if (ts.state === 2) return cb();
+    ts.q.push(cb);
+    if (ts.state) return;
+    ts.state = 1;
+    window.dkLeadTs = function () { ts.state = 2; ts.q.splice(0).forEach(function (f) { f(); }); };
+    var sc = document.createElement("script");
+    sc.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=dkLeadTs";
+    sc.async = true; document.head.appendChild(sc);
+  }
+  var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  window.dkLeadWire = function (form, o) {
+    o = o || {};
+    var KEY = o.sitekey || "", widget = null, token = "", pending = [];
+    var msg = form.querySelector("[data-dk-lead-msg]"), btn = form.querySelector("[data-dk-lead-send]"), fields = o.fields || null;
+    function say(t, cls) { msg.textContent = t; msg.className = (o.msgClass || "dk-lead-msg") + " " + (cls || ""); }
+    // "I'm not a robot" (Cloudflare Turnstile): loaded only when a form is
+    // first used, so the site itself stays as light as before.
+    function captcha() {
+      if (!KEY || widget !== null || !o.captchaEl) return;
+      widget = false;
+      loadTs(function () {
+        widget = window.turnstile.render(o.captchaEl, { sitekey: KEY, size: "flexible",
+          callback: function (t) { token = t; pending.splice(0).forEach(function (f) { f(); }); },
+          "expired-callback": function () { token = ""; }, "error-callback": function () { token = ""; } });
+      });
+    }
+    function withToken(f) {
+      if (!KEY || token) return f();
+      captcha();
+      pending.push(f); say(T.robot);
+      setTimeout(function () { if (!token && pending.length) { pending = []; say(T.robotFail, "err"); btn.disabled = false; } }, 15000);
+    }
+    function fieldErr(name, text) {
+      var el = form.elements[name], e = form.querySelector('[data-dk-err="' + name + '"]');
+      if (el && el.setAttribute) { if (text) el.setAttribute("aria-invalid", "true"); else el.removeAttribute("aria-invalid"); }
+      if (e) e.textContent = text || "";
+      return text ? el : null;
+    }
+    var m = location.hostname.match(/^([a-z0-9-]+)\.deskkit\.co\.il$/);
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var f = form.elements;
+      function v(n) { return f[n] ? String(f[n].value).trim() : ""; }
+      var body = { site: m ? m[1] : "", name: v("name"), phone: v("phone"), email: v("email"), message: v("message"), website: f.website ? f.website.value : "", consent: true };
+      if (fields) {
+        var bad = [];
+        bad.push(fieldErr("name", body.name ? "" : T.name));
+        var ph = fields.phone, em = fields.email, ms = fields.message;
+        var phErr = ph === "off" ? "" : (!body.phone ? (ph === "required" ? T.phoneReq : "") : (body.phone.replace(/\D/g, "").length < 9 ? T.phone : ""));
+        var emErr = em === "off" ? "" : (!body.email ? (em === "required" ? T.emailReq : "") : (!EMAIL_RE.test(body.email) ? T.email : ""));
+        // lead-intake needs a phone or an email whatever the form shows.
+        if (!body.phone && !body.email && !phErr && !emErr) { if (ph !== "off") phErr = T.contact; if (em !== "off") emErr = T.contact; }
+        if (ph !== "off") bad.push(fieldErr("phone", phErr));
+        if (em !== "off") bad.push(fieldErr("email", emErr));
+        if (ms !== "off") bad.push(fieldErr("message", ms === "required" && !body.message ? T.messageReq : ""));
+        bad = bad.filter(Boolean);
+        if (bad.length) { say(T.fix, "err"); bad[0].focus(); return; }
+      } else {
+        if (!body.name) return say(T.name, "err");
+        if (!body.phone && !body.email) return say(T.contact, "err");
+      }
+      if (!m) return say(T.preview, "ok");
+      btn.disabled = true;
+      withToken(function () {
+        say(T.sending);
+        body.turnstile = token;
+        fetch(o.endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+          .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+          .then(function (r) {
+            if (r.ok) { form.reset(); say(o.successText || T.ok, "ok"); return; }
+            var er = r.j && r.j.error;
+            say(er === "phone" ? T.phone : er === "email" ? T.email : er === "busy" ? T.busy : er === "captcha" ? T.captcha : T.fail, "err");
+          })
+          .catch(function () { say(T.offline, "err"); })
+          .then(function () {
+            btn.disabled = false;
+            // A token works once: get a fresh one for the next send.
+            if (widget && window.turnstile) { token = ""; window.turnstile.reset(widget); }
+          });
+      });
+    });
+    return { captcha: captcha };
+  };
+}
+function siteLeadCoreScript() {
+  const T = {
+    robot: siteTr("רק רגע, מוודאים שאתם לא רובוט…", "One moment, checking you’re not a robot…"),
+    robotFail: siteTr("האימות לא הסתיים. נסו שוב בעוד רגע.", "Verification didn’t finish. Please try again in a moment."),
+    name: siteTr("נא למלא שם.", "Please enter your name."),
+    contact: siteTr("נא להשאיר טלפון או מייל, כדי שנוכל לחזור אליכם.", "Please leave a phone number or email so we can get back to you."),
+    phoneReq: siteTr("נא למלא מספר טלפון.", "Please enter your phone number."),
+    emailReq: siteTr("נא למלא כתובת מייל.", "Please enter your email address."),
+    messageReq: siteTr("נא לכתוב במה אפשר לעזור.", "Please tell us how we can help."),
+    fix: siteTr("נא לתקן את השדות המסומנים.", "Please fix the highlighted fields."),
+    preview: siteTr("זו תצוגה מקדימה — באתר שפורסם הטופס ישלח את הפרטים.", "This is a preview — on the published site this form will send your details."),
+    sending: siteTr("שולחים…", "Sending…"),
+    ok: siteTr("תודה! הפרטים התקבלו ונחזור אליכם בהקדם.", "Thank you! We’ve received your details and will get back to you soon."),
+    phone: siteTr("מספר הטלפון לא נראה תקין.", "That phone number doesn’t look valid."),
+    email: siteTr("כתובת המייל לא נראית תקינה.", "That email address doesn’t look valid."),
+    busy: siteTr("נשלחו הרבה פניות בזמן קצר — נסו שוב מאוחר יותר.", "Too many requests in a short time — please try again later."),
+    captcha: siteTr("האימות נכשל. רעננו את הדף ונסו שוב.", "Verification failed. Please refresh the page and try again."),
+    fail: siteTr("השליחה לא הצליחה. נסו שוב בעוד רגע.", "Sending failed. Please try again in a moment."),
+    offline: siteTr("אין חיבור כרגע. נסו שוב בעוד רגע.", "No connection right now. Please try again in a moment."),
+  };
+  return `<script>(${dkLeadCore.toString()})(${siteJsonForScript(T)});</script>`;
+}
+/* JSON safe to drop inside an inline <script> (no "</script>", no
+   U+2028/2029 surprises). */
+function siteJsonForScript(v) {
+  return JSON.stringify(v).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
 }
 function siteLeadFormHtml(cfg) {
   const accent = /^#[0-9a-f]{3,8}$/i.test(cfg.accent) ? cfg.accent : "#0F766E";
@@ -655,66 +982,22 @@ function siteLeadFormHtml(cfg) {
       <label for="dk-lead-message">${siteTr("במה אפשר לעזור? (לא חובה)", "How can we help? (optional)")}</label><textarea id="dk-lead-message" name="message" maxlength="2000"></textarea>
       <div class="dk-lead-hp" aria-hidden="true"><label>${siteTr("אתר", "Website")}<input name="website" tabindex="-1" autocomplete="off"></label></div>
       ${cfg.sitekey ? `<div id="dk-lead-captcha" style="margin-top:12px;min-height:0;"></div>` : ""}
-      <button type="submit" class="dk-lead-send">${siteTr("שליחה", "Send")}</button>
-      <div class="dk-lead-msg" id="dk-lead-msg" role="status" aria-live="polite"></div>
+      <button type="submit" class="dk-lead-send" data-dk-lead-send>${siteTr("שליחה", "Send")}</button>
+      <div class="dk-lead-msg" id="dk-lead-msg" role="status" aria-live="polite" data-dk-lead-msg></div>
       <div class="dk-lead-note">${siteTr("בשליחת הטופס אתם מבקשים ש", "By sending this form you ask ")}${to} ${siteTr("יחזרו אליכם בנוגע לפנייה. הפרטים יגיעו אליהם בלבד.", "to get back to you about your enquiry. Your details are sent to them only.")}</div>
     </form>
   </div>
+  ${siteLeadCoreScript()}
   <script>
   (function () {
-    var wrap = document.getElementById("dk-lead-wrap"), form = document.getElementById("dk-lead-form"), msg = document.getElementById("dk-lead-msg");
-    var KEY = ${JSON.stringify(cfg.sitekey)}, widget = null, token = "", pending = [];
-    // "I'm not a robot" (Cloudflare Turnstile): loaded only when the form is
-    // first opened, so the site itself stays as light as before.
-    function captcha() {
-      if (!KEY || widget !== null) return;
-      widget = false;
-      window.dkLeadTs = function () {
-        widget = window.turnstile.render("#dk-lead-captcha", { sitekey: KEY, size: "flexible",
-          callback: function (t) { token = t; pending.splice(0).forEach(function (f) { f(); }); },
-          "expired-callback": function () { token = ""; }, "error-callback": function () { token = ""; } });
-      };
-      var sc = document.createElement("script");
-      sc.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=dkLeadTs";
-      sc.async = true; document.head.appendChild(sc);
-    }
-    function withToken(f) {
-      if (!KEY || token) return f();
-      pending.push(f); say("${siteTr("רק רגע, מוודאים שאתם לא רובוט…", "One moment, checking you’re not a robot…")}");
-      setTimeout(function () { if (!token && pending.length) { pending = []; say("${siteTr("האימות לא הסתיים. נסו שוב בעוד רגע.", "Verification didn’t finish. Please try again in a moment.")}", "err"); form.querySelector(".dk-lead-send").disabled = false; } }, 15000);
-    }
-    function open(o) { wrap.classList.toggle("open", o); if (o) { captcha(); document.getElementById("dk-lead-name").focus(); } }
+    var wrap = document.getElementById("dk-lead-wrap"), form = document.getElementById("dk-lead-form");
+    // Sending, Turnstile, honeypot and messages: the shared dkLeadWire (siteLeadCoreScript).
+    var lead = window.dkLeadWire(form, { endpoint: ${siteJsonForScript(cfg.endpoint)}, sitekey: ${siteJsonForScript(cfg.sitekey)}, captchaEl: document.getElementById("dk-lead-captcha") });
+    function open(o) { wrap.classList.toggle("open", o); if (o) { lead.captcha(); document.getElementById("dk-lead-name").focus(); } }
     document.getElementById("dk-lead-open").onclick = function () { open(true); };
     document.getElementById("dk-lead-close").onclick = function () { open(false); };
     wrap.addEventListener("click", function (e) { if (e.target === wrap) open(false); });
     document.addEventListener("keydown", function (e) { if (e.key === "Escape") open(false); });
-    function say(t, cls) { msg.textContent = t; msg.className = "dk-lead-msg " + (cls || ""); }
-    var m = location.hostname.match(/^([a-z0-9-]+)\\.deskkit\\.co\\.il$/);
-    form.addEventListener("submit", function (e) {
-      e.preventDefault();
-      var f = form.elements, body = { site: m ? m[1] : "", name: f.name.value.trim(), phone: f.phone.value.trim(), email: f.email.value.trim(), message: f.message.value.trim(), website: f.website.value, consent: true };
-      if (!body.name) return say("${siteTr("נא למלא שם.", "Please enter your name.")}", "err");
-      if (!body.phone && !body.email) return say("${siteTr("נא להשאיר טלפון או מייל, כדי שנוכל לחזור אליכם.", "Please leave a phone number or email so we can get back to you.")}", "err");
-      if (!m) return say("${siteTr("זו תצוגה מקדימה — באתר שפורסם הטופס ישלח את הפרטים.", "This is a preview — on the published site this form will send your details.")}", "ok");
-      var btn = form.querySelector(".dk-lead-send"); btn.disabled = true;
-      withToken(function () {
-      say("${siteTr("שולחים…", "Sending…")}");
-      body.turnstile = token;
-      fetch(${JSON.stringify(cfg.endpoint)}, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
-        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
-        .then(function (r) {
-          if (r.ok) { form.reset(); say("${siteTr("תודה! הפרטים התקבלו ונחזור אליכם בהקדם.", "Thank you! We’ve received your details and will get back to you soon.")}", "ok"); return; }
-          var e = r.j && r.j.error;
-          say(e === "phone" ? "${siteTr("מספר הטלפון לא נראה תקין.", "That phone number doesn’t look valid.")}" : e === "email" ? "${siteTr("כתובת המייל לא נראית תקינה.", "That email address doesn’t look valid.")}" : e === "busy" ? "${siteTr("נשלחו הרבה פניות בזמן קצר — נסו שוב מאוחר יותר.", "Too many requests in a short time — please try again later.")}" : e === "captcha" ? "${siteTr("האימות נכשל. רעננו את הדף ונסו שוב.", "Verification failed. Please refresh the page and try again.")}" : "${siteTr("השליחה לא הצליחה. נסו שוב בעוד רגע.", "Sending failed. Please try again in a moment.")}", "err");
-        })
-        .catch(function () { say("${siteTr("אין חיבור כרגע. נסו שוב בעוד רגע.", "No connection right now. Please try again in a moment.")}", "err"); })
-        .then(function () {
-          btn.disabled = false;
-          // A token works once: get a fresh one for the next send.
-          if (widget && window.turnstile) { token = ""; window.turnstile.reset(widget); }
-        });
-      });
-    });
   })();
   </script>`;
 }
@@ -809,7 +1092,7 @@ function siteDoc(head, body) {
 <title>${escapeHtmlS(title)}</title>
 ${description ? `<meta name="description" content="${escapeHtmlS(description)}">` : ""}${seo ? "\n" + siteSocialMetaHtml(title, description, d, seo) : ""}
 ${siteFontImport(head.fontFamily, mood ? mood.headingFont : "")}
-<style>${siteBaseCss(head.fontFamily)}${head.css}${SITE_RENDER_EN ? SITE_LTR_CSS : ""}${siteMoodCss(d)}${siteGroupStyleCss(d)}</style>
+<style>${siteBaseCss(head.fontFamily)}${head.css}${SITE_RENDER_EN ? SITE_LTR_CSS : ""}${siteMoodCss(d)}${siteDesignCss(d)}${siteGroupStyleCss(d)}</style>
 </head>
 <body>
 ${head.showBsd ? `<div class="site-bsd" style="position:absolute; top:6px; right:10px; z-index:2147483000; font-size:11px; line-height:1.4; color:${head.bsdColor || "inherit"}; opacity:.75; pointer-events:none;">${siteTr('בס"ד', 'BS"D')}</div>` : ""}
@@ -841,7 +1124,7 @@ function lsHeroSection(d, pal, dd, cta) {
         <h1>${heading(d, "heroTitle", dd.businessName)}</h1>
         <p>${taglineText(d, dd)}</p>
         ${ctaHtml(cta, "ls-cta")}
-        ${d.phone ? `<a class="ls-phone-pill" href="tel:${escapeHtmlS(d.phone)}">${escapeHtmlS(d.phone)}</a>` : ""}
+        ${d.phone ? `<a class="ls-phone-pill" href="tel:${escapeHtmlS(d.phone)}" data-dk-bind="phone" data-dk-bind-as="href"><span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></a>` : ""}
         ${heroMediaHtml(d, "site-hero-photo")}
       </div></section>`;
 }
@@ -894,9 +1177,9 @@ function lsContactSection(d, pal, dd, wa) {
   return (!d.pages || !d.pages.contact) ? `<section class="ls-contact site-reveal" id="ls-contact"><div class="container">
         <h2>${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h2>
         ${dd._hasContact ? `
-          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
         ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</div>`}
       </div></section>` : "";
 }
@@ -978,7 +1261,7 @@ function renderLocalServiceSite(d, page) {
   const rail = railLinks ? `<div class="ls-rail"><div class="ls-rail-inner"><span class="ls-rail-biz">${bizName(d, dd)}</span>${railLinks}</div></div>` : "";
   const topbar = `<div class="ls-topbar"><div class="container row">
       <div class="biz">${bizName(d, dd)}</div>
-      ${d.phone ? `<a class="phone" href="tel:${escapeHtmlS(d.phone)}">${escapeHtmlS(d.phone)}</a>` : ""}
+      ${d.phone ? `<a class="phone" href="tel:${escapeHtmlS(d.phone)}" data-dk-bind="phone" data-dk-bind-as="href"><span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></a>` : ""}
     </div></div>`;
   // previewNavScript() also makes this template's own in-page rail anchors
   // (#ls-services / #ls-about / #ls-contact) safe inside the preview
@@ -999,11 +1282,11 @@ function renderLocalServiceSite(d, page) {
       </div></section>
       <section class="ls-contact site-reveal"><div class="container">
         ${dd._hasContact ? `
-          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
         ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת ליצירת קשר.", "Add your phone, email and address here so visitors can reach you.")}</div>`}
-        ${wa ? `<a class="ls-cta" style="margin-top:10px;" href="${wa}" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}
+        ${wa ? `<a class="ls-cta" style="margin-top:10px;" href="${wa}" data-dk-bind="whatsapp" data-dk-bind-as="href" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}
       </div></section>`;
   } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("local-service")) {
     // Builder v2 (see js/site-blocks.js): the hero/services/about/contact
@@ -1063,9 +1346,9 @@ function frContactSection(d, pal, dd, wa) {
   return `
       <section class="fr-cta site-reveal">
         <h2>${heading(d, "contact", siteTr("בואו נדבר", "Let’s Talk"))}</h2>
-        ${wa ? `<a class="btn" href="${wa}" target="_blank" rel="noopener">${siteTr("וואטסאפ", "WhatsApp")}</a>` : ""}
-        ${d.email ? `<a class="btn" href="mailto:${escapeHtmlS(d.email)}">${siteTr("שליחת מייל", "Send an email")}</a>` : ""}
-        ${d.phone ? `<a class="btn" href="tel:${escapeHtmlS(d.phone)}">${siteTr("התקשרות", "Call")}</a>` : ""}
+        ${wa ? `<a class="btn" href="${wa}" data-dk-bind="whatsapp" data-dk-bind-as="href" target="_blank" rel="noopener">${siteTr("וואטסאפ", "WhatsApp")}</a>` : ""}
+        ${d.email ? `<a class="btn" href="mailto:${escapeHtmlS(d.email)}" data-dk-bind="email" data-dk-bind-as="href">${siteTr("שליחת מייל", "Send an email")}</a>` : ""}
+        ${d.phone ? `<a class="btn" href="tel:${escapeHtmlS(d.phone)}" data-dk-bind="phone" data-dk-bind-as="href">${siteTr("התקשרות", "Call")}</a>` : ""}
       </section>`;
 }
 
@@ -1120,9 +1403,9 @@ function renderFreelancerSite(d, page) {
       </section>
       <section class="fr-cta site-reveal">
         <h2>${heading(d, "contact", siteTr("בואו נדבר", "Let’s Talk"))}</h2>
-        ${wa ? `<a class="btn" href="${wa}" target="_blank" rel="noopener">${siteTr("וואטסאפ", "WhatsApp")}</a>` : ""}
-        ${d.email ? `<a class="btn" href="mailto:${escapeHtmlS(d.email)}">${siteTr("שליחת מייל", "Send an email")}</a>` : ""}
-        ${d.phone ? `<a class="btn" href="tel:${escapeHtmlS(d.phone)}">${siteTr("התקשרות", "Call")}</a>` : ""}
+        ${wa ? `<a class="btn" href="${wa}" data-dk-bind="whatsapp" data-dk-bind-as="href" target="_blank" rel="noopener">${siteTr("וואטסאפ", "WhatsApp")}</a>` : ""}
+        ${d.email ? `<a class="btn" href="mailto:${escapeHtmlS(d.email)}" data-dk-bind="email" data-dk-bind-as="href">${siteTr("שליחת מייל", "Send an email")}</a>` : ""}
+        ${d.phone ? `<a class="btn" href="tel:${escapeHtmlS(d.phone)}" data-dk-bind="phone" data-dk-bind-as="href">${siteTr("התקשרות", "Call")}</a>` : ""}
         ${!wa && !d.email && !d.phone ? `<p style="opacity:.85;">${siteTr("פרטו כאן דרכי יצירת קשר.", "Add your contact details here.")}</p>` : ""}
       </section>`;
   } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("freelancer")) {
@@ -1144,9 +1427,9 @@ function renderFreelancerSite(d, page) {
       ${embedSrc ? `<div class="fr-body" style="padding-top:0;">${videoEmbedHtml(embedSrc)}</div>` : ""}
       <section class="fr-cta site-reveal">
         <h2>${heading(d, "contact", siteTr("בואו נדבר", "Let’s Talk"))}</h2>
-        ${wa ? `<a class="btn" href="${wa}" target="_blank" rel="noopener">${siteTr("וואטסאפ", "WhatsApp")}</a>` : ""}
-        ${d.email ? `<a class="btn" href="mailto:${escapeHtmlS(d.email)}">${siteTr("שליחת מייל", "Send an email")}</a>` : ""}
-        ${d.phone ? `<a class="btn" href="tel:${escapeHtmlS(d.phone)}">${siteTr("התקשרות", "Call")}</a>` : ""}
+        ${wa ? `<a class="btn" href="${wa}" data-dk-bind="whatsapp" data-dk-bind-as="href" target="_blank" rel="noopener">${siteTr("וואטסאפ", "WhatsApp")}</a>` : ""}
+        ${d.email ? `<a class="btn" href="mailto:${escapeHtmlS(d.email)}" data-dk-bind="email" data-dk-bind-as="href">${siteTr("שליחת מייל", "Send an email")}</a>` : ""}
+        ${d.phone ? `<a class="btn" href="tel:${escapeHtmlS(d.phone)}" data-dk-bind="phone" data-dk-bind-as="href">${siteTr("התקשרות", "Call")}</a>` : ""}
       </section>
     `;
   }
@@ -1242,10 +1525,10 @@ function renderCatalogSite(d, page) {
     <nav class="cat-nav"><div class="container row">
       <div class="biz">${bizName(d, dd)}</div>
       ${navLinksHtml ? `<div class="cat-pagenav">${navLinksHtml}</div>` : ""}
-      ${wa ? `<a class="wa-link" href="${wa}" target="_blank" rel="noopener">${siteTr("וואטסאפ", "WhatsApp")}</a>` : ""}
+      ${wa ? `<a class="wa-link" href="${wa}" data-dk-bind="whatsapp" data-dk-bind-as="href" target="_blank" rel="noopener">${siteTr("וואטסאפ", "WhatsApp")}</a>` : ""}
     </div></nav>`;
   const footer = `<footer class="cat-footer">
-      ${d.phone ? `${escapeHtmlS(d.phone)} · ` : ""}${d.email ? `${escapeHtmlS(d.email)} · ` : ""}${d.address ? escapeHtmlS(d.address) : ""}
+      ${d.phone ? `<span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span> · ` : ""}${d.email ? `<span data-dk-bind="email">${escapeHtmlS(d.email)}</span> · ` : ""}${d.address ? `<span data-dk-bind="address">${escapeHtmlS(d.address)}</span>` : ""}
     </footer>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
 
   let main;
@@ -1262,11 +1545,11 @@ function renderCatalogSite(d, page) {
       </div></section>
       <section class="cat-info site-reveal"><div class="container">
         ${dd._hasContact ? `
-          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
         ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת ליצירת קשר.", "Add your phone, email and address here so visitors can reach you.")}</div>`}
-        ${wa ? `<a class="wa-link" style="display:inline-block; margin-top:10px;" href="${wa}" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}
+        ${wa ? `<a class="wa-link" style="display:inline-block; margin-top:10px;" href="${wa}" data-dk-bind="whatsapp" data-dk-bind-as="href" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}
       </div></section>`;
   } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("catalog")) {
     // Builder v2 (see js/site-blocks.js): hero/services/about order below
@@ -1320,9 +1603,9 @@ function glContactSection(d, pal, dd, wa) {
   return (!d.pages || !d.pages.contact) ? `<section class="gl-contact site-reveal"><div class="container">
         <h2>${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h2>
         ${dd._hasContact ? `
-          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
         ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</div>`}
       </div></section>` : "";
 }
@@ -1406,11 +1689,11 @@ function renderGallerySite(d, page) {
       <section class="gl-contact site-reveal"><div class="container">
         <h2>${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h2>
         ${dd._hasContact ? `
-          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
         ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת ליצירת קשר.", "Add your phone, email and address here so visitors can reach you.")}</div>`}
-        ${wa ? `<a class="gl-cta" style="margin-top:14px;" href="${wa}" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}
+        ${wa ? `<a class="gl-cta" style="margin-top:14px;" href="${wa}" data-dk-bind="whatsapp" data-dk-bind-as="href" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}
       </div></section>`;
   } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("gallery")) {
     main = renderBlocksHtml(d, "gallery", "index", {
@@ -1437,9 +1720,9 @@ function renderGallerySite(d, page) {
       ${(!d.pages || !d.pages.contact) ? `<section class="gl-contact site-reveal"><div class="container">
         <h2>${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h2>
         ${dd._hasContact ? `
-          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
         ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</div>`}
       </div></section>` : ""}
     `;
@@ -1483,9 +1766,9 @@ function nbAboutSection(d, pal, dd) {
 function nbContactSection(d, pal, dd, wa) {
   return (!d.pages || !d.pages.contact) ? `<section class="nb-contact site-reveal last"><div class="container">
         ${dd._hasContact ? `
-          ${d.phone ? `<span class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</span>` : ""}
-          ${d.email ? `<span class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</span>` : ""}
-          ${d.address ? `<span class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</span>` : ""}
+          ${d.phone ? `<span class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></span>` : ""}
+          ${d.email ? `<span class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></span>` : ""}
+          ${d.address ? `<span class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></span>` : ""}
         ` : `<p>${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</p>`}
       </div></section>` : "";
 }
@@ -1551,11 +1834,11 @@ function renderBoldSite(d, page) {
         <span class="eyebrow">${siteTr("נשמח לשמוע מכם", "We’d love to hear from you")}</span>
         <h1 style="font-size:34px;">${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h1>
         ${dd._hasContact ? `
-          ${d.phone ? `<span class="line" style="display:inline-block; background:#fff; border:2px solid #111; padding:8px 16px; margin:4px; font-weight:700; font-size:13.5px;">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</span>` : ""}
-          ${d.email ? `<span class="line" style="display:inline-block; background:#fff; border:2px solid #111; padding:8px 16px; margin:4px; font-weight:700; font-size:13.5px;">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</span>` : ""}
-          ${d.address ? `<span class="line" style="display:inline-block; background:#fff; border:2px solid #111; padding:8px 16px; margin:4px; font-weight:700; font-size:13.5px;">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</span>` : ""}
+          ${d.phone ? `<span class="line" style="display:inline-block; background:#fff; border:2px solid #111; padding:8px 16px; margin:4px; font-weight:700; font-size:13.5px;">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></span>` : ""}
+          ${d.email ? `<span class="line" style="display:inline-block; background:#fff; border:2px solid #111; padding:8px 16px; margin:4px; font-weight:700; font-size:13.5px;">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></span>` : ""}
+          ${d.address ? `<span class="line" style="display:inline-block; background:#fff; border:2px solid #111; padding:8px 16px; margin:4px; font-weight:700; font-size:13.5px;">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></span>` : ""}
         ` : `<p>${siteTr("פרטו כאן טלפון, מייל וכתובת ליצירת קשר.", "Add your phone, email and address here so visitors can reach you.")}</p>`}
-        <div style="margin-top:20px;">${wa ? `<a class="nb-cta" href="${wa}" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}</div>
+        <div style="margin-top:20px;">${wa ? `<a class="nb-cta" href="${wa}" data-dk-bind="whatsapp" data-dk-bind-as="href" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}</div>
       </div></section>`;
   } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("bold")) {
     main = renderBlocksHtml(d, "bold", "index", {
@@ -1582,9 +1865,9 @@ function renderBoldSite(d, page) {
       ${(!d.pages || !d.pages.about) ? `<section class="nb-about site-reveal"><div class="container"><p>${aboutText(d, dd)}</p></div></section>` : ""}
       ${(!d.pages || !d.pages.contact) ? `<section class="nb-contact site-reveal last"><div class="container">
         ${dd._hasContact ? `
-          ${d.phone ? `<span class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</span>` : ""}
-          ${d.email ? `<span class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</span>` : ""}
-          ${d.address ? `<span class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</span>` : ""}
+          ${d.phone ? `<span class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></span>` : ""}
+          ${d.email ? `<span class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></span>` : ""}
+          ${d.address ? `<span class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></span>` : ""}
         ` : `<p>${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</p>`}
       </div></section>` : ""}
     `;
@@ -1645,9 +1928,9 @@ function egContactSection(d, pal, dd, wa) {
         <span class="eg-kicker">${siteTr("נשמח לשמוע מכם", "We’d love to hear from you")}</span>
         <h2 style="font-family:'Frank Ruhl Libre',serif; font-size:30px; margin:12px 0 26px;">${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h2>
         ${dd._hasContact ? `
-          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
         ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</div>`}
       </div></section>` : "";
 }
@@ -1719,11 +2002,11 @@ function renderElegantSite(d, page) {
         <span class="eg-kicker">${siteTr("נשמח לשמוע מכם", "We’d love to hear from you")}</span>
         <h2 style="font-family:'Frank Ruhl Libre',serif; font-size:30px; margin:12px 0 26px;">${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h2>
         ${dd._hasContact ? `
-          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
         ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת ליצירת קשר.", "Add your phone, email and address here so visitors can reach you.")}</div>`}
-        ${wa ? `<a class="eg-cta" style="margin-top:16px;" href="${wa}" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}
+        ${wa ? `<a class="eg-cta" style="margin-top:16px;" href="${wa}" data-dk-bind="whatsapp" data-dk-bind-as="href" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}
       </div></section>`;
   } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("elegant")) {
     main = renderBlocksHtml(d, "elegant", "index", {
@@ -1766,9 +2049,9 @@ function renderElegantSite(d, page) {
         <span class="eg-kicker">${siteTr("נשמח לשמוע מכם", "We’d love to hear from you")}</span>
         <h2 style="font-family:'Frank Ruhl Libre',serif; font-size:30px; margin:12px 0 26px;">${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h2>
         ${dd._hasContact ? `
-          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
         ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</div>`}
       </div></section>` : ""}
     `;
@@ -1818,9 +2101,9 @@ function prContactSection(d, pal, dd, wa) {
   return (!d.pages || !d.pages.contact) ? `<section class="pr-contact site-reveal"><div class="container">
         <h2>${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h2>
         ${dd._hasContact ? `
-          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
         ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</div>`}
       </div></section>` : "";
 }
@@ -1891,11 +2174,11 @@ function renderProcessSite(d, page) {
       </div></section>
       <section class="pr-contact site-reveal"><div class="container">
         ${dd._hasContact ? `
-          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
         ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת ליצירת קשר.", "Add your phone, email and address here so visitors can reach you.")}</div>`}
-        ${wa ? `<a class="pr-cta" style="margin-top:14px;" href="${wa}" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}
+        ${wa ? `<a class="pr-cta" style="margin-top:14px;" href="${wa}" data-dk-bind="whatsapp" data-dk-bind-as="href" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}
       </div></section>`;
   } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("process")) {
     main = renderBlocksHtml(d, "process", "index", {
@@ -1928,9 +2211,9 @@ function renderProcessSite(d, page) {
       ${(!d.pages || !d.pages.contact) ? `<section class="pr-contact site-reveal"><div class="container">
         <h2>${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h2>
         ${dd._hasContact ? `
-          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
         ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</div>`}
       </div></section>` : ""}
     `;
@@ -1982,9 +2265,9 @@ function poContactSection(d, pal, dd, wa) {
   return `
       <section class="po-cta site-reveal">
         <h2>${heading(d, "contact", siteTr("בואו נדבר", "Let’s Talk"))}</h2>
-        ${wa ? `<a class="btn" href="${wa}" target="_blank" rel="noopener">${siteTr("וואטסאפ", "WhatsApp")}</a>` : ""}
-        ${d.email ? `<a class="btn" href="mailto:${escapeHtmlS(d.email)}">${siteTr("שליחת מייל", "Send an email")}</a>` : ""}
-        ${d.phone ? `<a class="btn" href="tel:${escapeHtmlS(d.phone)}">${siteTr("התקשרות", "Call")}</a>` : ""}
+        ${wa ? `<a class="btn" href="${wa}" data-dk-bind="whatsapp" data-dk-bind-as="href" target="_blank" rel="noopener">${siteTr("וואטסאפ", "WhatsApp")}</a>` : ""}
+        ${d.email ? `<a class="btn" href="mailto:${escapeHtmlS(d.email)}" data-dk-bind="email" data-dk-bind-as="href">${siteTr("שליחת מייל", "Send an email")}</a>` : ""}
+        ${d.phone ? `<a class="btn" href="tel:${escapeHtmlS(d.phone)}" data-dk-bind="phone" data-dk-bind-as="href">${siteTr("התקשרות", "Call")}</a>` : ""}
       </section>`;
 }
 
@@ -2046,9 +2329,9 @@ function renderPortfolioSite(d, page) {
     main = `
       <section class="po-cta site-reveal">
         <h2>${heading(d, "contact", siteTr("בואו נדבר", "Let’s Talk"))}</h2>
-        ${wa ? `<a class="btn" href="${wa}" target="_blank" rel="noopener">${siteTr("וואטסאפ", "WhatsApp")}</a>` : ""}
-        ${d.email ? `<a class="btn" href="mailto:${escapeHtmlS(d.email)}">${siteTr("שליחת מייל", "Send an email")}</a>` : ""}
-        ${d.phone ? `<a class="btn" href="tel:${escapeHtmlS(d.phone)}">${siteTr("התקשרות", "Call")}</a>` : ""}
+        ${wa ? `<a class="btn" href="${wa}" data-dk-bind="whatsapp" data-dk-bind-as="href" target="_blank" rel="noopener">${siteTr("וואטסאפ", "WhatsApp")}</a>` : ""}
+        ${d.email ? `<a class="btn" href="mailto:${escapeHtmlS(d.email)}" data-dk-bind="email" data-dk-bind-as="href">${siteTr("שליחת מייל", "Send an email")}</a>` : ""}
+        ${d.phone ? `<a class="btn" href="tel:${escapeHtmlS(d.phone)}" data-dk-bind="phone" data-dk-bind-as="href">${siteTr("התקשרות", "Call")}</a>` : ""}
         ${!wa && !d.email && !d.phone ? `<p style="opacity:.85;">${siteTr("פרטו כאן דרכי יצירת קשר.", "Add your contact details here.")}</p>` : ""}
       </section>`;
   } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("portfolio")) {
@@ -2080,9 +2363,9 @@ function renderPortfolioSite(d, page) {
       ${(!d.pages || !d.pages.about) ? `<section class="po-work site-reveal" style="padding-top:0;"><div class="container" style="max-width:680px;"><div class="po-work-head"><span class="kicker">${siteTr("מי אני", "About me")}</span><h2>${heading(d, "about", siteTr("עליי", "About Me"))}</h2></div><p style="font-size:15.5px; line-height:1.85; color:#333;">${aboutText(d, dd)}</p></div></section>` : ""}
       <section class="po-cta site-reveal">
         <h2>${heading(d, "contact", siteTr("בואו נדבר", "Let’s Talk"))}</h2>
-        ${wa ? `<a class="btn" href="${wa}" target="_blank" rel="noopener">${siteTr("וואטסאפ", "WhatsApp")}</a>` : ""}
-        ${d.email ? `<a class="btn" href="mailto:${escapeHtmlS(d.email)}">${siteTr("שליחת מייל", "Send an email")}</a>` : ""}
-        ${d.phone ? `<a class="btn" href="tel:${escapeHtmlS(d.phone)}">${siteTr("התקשרות", "Call")}</a>` : ""}
+        ${wa ? `<a class="btn" href="${wa}" data-dk-bind="whatsapp" data-dk-bind-as="href" target="_blank" rel="noopener">${siteTr("וואטסאפ", "WhatsApp")}</a>` : ""}
+        ${d.email ? `<a class="btn" href="mailto:${escapeHtmlS(d.email)}" data-dk-bind="email" data-dk-bind-as="href">${siteTr("שליחת מייל", "Send an email")}</a>` : ""}
+        ${d.phone ? `<a class="btn" href="tel:${escapeHtmlS(d.phone)}" data-dk-bind="phone" data-dk-bind-as="href">${siteTr("התקשרות", "Call")}</a>` : ""}
       </section>
     `;
   }
@@ -2190,10 +2473,10 @@ function renderBoutiqueSite(d, page) {
     <nav class="bq-nav"><div class="container row">
       <div class="biz">${bizName(d, dd)}</div>
       ${navLinksHtml ? `<div class="bq-pagenav">${navLinksHtml}</div>` : ""}
-      ${wa ? `<a class="wa-link" href="${wa}" target="_blank" rel="noopener">${siteTr("וואטסאפ", "WhatsApp")}</a>` : ""}
+      ${wa ? `<a class="wa-link" href="${wa}" data-dk-bind="whatsapp" data-dk-bind-as="href" target="_blank" rel="noopener">${siteTr("וואטסאפ", "WhatsApp")}</a>` : ""}
     </div></nav>`;
   const footer = `<footer class="bq-footer">
-      ${d.phone ? `${escapeHtmlS(d.phone)} · ` : ""}${d.email ? `${escapeHtmlS(d.email)} · ` : ""}${d.address ? escapeHtmlS(d.address) : ""}
+      ${d.phone ? `<span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span> · ` : ""}${d.email ? `<span data-dk-bind="email">${escapeHtmlS(d.email)}</span> · ` : ""}${d.address ? `<span data-dk-bind="address">${escapeHtmlS(d.address)}</span>` : ""}
     </footer>${waFabHtml(d)}${navLinksHtml ? previewNavScript() : ""}`;
 
   let main;
@@ -2206,11 +2489,11 @@ function renderBoutiqueSite(d, page) {
       <section class="bq-banner bq-banner-noimg"><div class="bq-banner-inner"><span class="eyebrow">${siteTr("נשמח לשמוע מכם", "We’d love to hear from you")}</span><h1>${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h1></div></section>
       <section class="bq-info site-reveal"><div class="container">
         ${dd._hasContact ? `
-          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
         ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת ליצירת קשר.", "Add your phone, email and address here so visitors can reach you.")}</div>`}
-        ${wa ? `<a class="wa-link" style="display:inline-block; margin-top:10px;" href="${wa}" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}
+        ${wa ? `<a class="wa-link" style="display:inline-block; margin-top:10px;" href="${wa}" data-dk-bind="whatsapp" data-dk-bind-as="href" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}
       </div></section>`;
   } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("boutique")) {
     main = renderBlocksHtml(d, "boutique", "index", {
@@ -2296,9 +2579,9 @@ function nrContactSection(d, pal, dd, wa) {
         <span class="nr-kicker">${siteTr("נשמח לשמוע מכם", "We’d love to hear from you")}</span>
         <h2 style="font-family:'Frank Ruhl Libre',serif; font-style:italic; font-size:28px; margin:12px 0 26px; color:#fff;">${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h2>
         ${dd._hasContact ? `
-          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
         ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</div>`}
       </div></section>` : "";
 }
@@ -2361,11 +2644,11 @@ function renderNoirSite(d, page) {
         <span class="nr-kicker">${siteTr("נשמח לשמוע מכם", "We’d love to hear from you")}</span>
         <h2 style="font-family:'Frank Ruhl Libre',serif; font-style:italic; font-size:28px; margin:12px 0 26px; color:#fff;">${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h2>
         ${dd._hasContact ? `
-          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
         ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת ליצירת קשר.", "Add your phone, email and address here so visitors can reach you.")}</div>`}
-        ${wa ? `<a class="nr-cta" style="margin-top:16px;" href="${wa}" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}
+        ${wa ? `<a class="nr-cta" style="margin-top:16px;" href="${wa}" data-dk-bind="whatsapp" data-dk-bind-as="href" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}
       </div></section>`;
   } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("noir")) {
     main = renderBlocksHtml(d, "noir", "index", {
@@ -2394,9 +2677,9 @@ function renderNoirSite(d, page) {
         <span class="nr-kicker">${siteTr("נשמח לשמוע מכם", "We’d love to hear from you")}</span>
         <h2 style="font-family:'Frank Ruhl Libre',serif; font-style:italic; font-size:28px; margin:12px 0 26px; color:#fff;">${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h2>
         ${dd._hasContact ? `
-          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
         ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</div>`}
       </div></section>` : ""}
     `;
@@ -2443,12 +2726,12 @@ function agContactBlockHtml(d, dd, wa, headingHtml) {
         <h2>${headingHtml}</h2>
         <div class="ag-contact-lines">
           ${dd._hasContact ? `
-            ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-            ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-            ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+            ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+            ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+            ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
           ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת ליצירת קשר.", "Add your phone, email and address here so visitors can reach you.")}</div>`}
         </div>
-        ${wa ? `<a class="ag-cta" style="margin-top:20px;" href="${wa}" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}
+        ${wa ? `<a class="ag-cta" style="margin-top:20px;" href="${wa}" data-dk-bind="whatsapp" data-dk-bind-as="href" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}
       </div></section>`;
 }
 function agHeroSection(d, pal, dd, heroCta, inPageRail) {
@@ -2462,7 +2745,7 @@ function agHeroSection(d, pal, dd, heroCta, inPageRail) {
           <span class="kicker">${dd.tagline ? siteTr("ברוכים הבאים", "Welcome") : siteTr("סטודיו יצירתי", "Creative studio")}</span>
           <h1>${heading(d, "heroTitle", dd.businessName)}</h1>
           <p>${taglineText(d, dd)}</p>
-          <a class="ag-cta" href="${escapeHtmlS(heroCta ? heroCta.href : (inPageRail ? "#ag-contact" : "#"))}"${heroCta && heroCta.external ? ' target="_blank" rel="noopener"' : ""}${heroCta && heroCta.page ? ' data-site-nav data-page="contact"' : ""}>${siteTr("רוצה להכיר יותר? ‹", "Want to know more? ›")}</a>
+          <a class="ag-cta" data-dk-btn="heroCta" href="${escapeHtmlS(heroCta ? heroCta.href : (inPageRail ? "#ag-contact" : "#"))}"${heroCta && heroCta.external ? ' target="_blank" rel="noopener"' : ""}${heroCta && heroCta.page ? ' data-site-nav data-page="contact"' : ""}${siteCtaStyleAttr(heroCta)}>${heroCta && heroCta.customLabel ? escapeHtmlS(heroCta.label) : siteTr("רוצה להכיר יותר? ‹", "Want to know more? ›")}</a>
         </div>
       </section>`;
 }
@@ -2593,7 +2876,7 @@ function renderStudioSite(d, page) {
           <span class="kicker">${dd.tagline ? siteTr("ברוכים הבאים", "Welcome") : siteTr("סטודיו יצירתי", "Creative studio")}</span>
           <h1>${heading(d, "heroTitle", dd.businessName)}</h1>
           <p>${taglineText(d, dd)}</p>
-          <a class="ag-cta" href="${escapeHtmlS(heroCta ? heroCta.href : (inPageRail ? "#ag-contact" : "#"))}"${heroCta && heroCta.external ? ' target="_blank" rel="noopener"' : ""}${heroCta && heroCta.page ? ' data-site-nav data-page="contact"' : ""}>${siteTr("רוצה להכיר יותר? ‹", "Want to know more? ›")}</a>
+          <a class="ag-cta" data-dk-btn="heroCta" href="${escapeHtmlS(heroCta ? heroCta.href : (inPageRail ? "#ag-contact" : "#"))}"${heroCta && heroCta.external ? ' target="_blank" rel="noopener"' : ""}${heroCta && heroCta.page ? ' data-site-nav data-page="contact"' : ""}${siteCtaStyleAttr(heroCta)}>${heroCta && heroCta.customLabel ? escapeHtmlS(heroCta.label) : siteTr("רוצה להכיר יותר? ‹", "Want to know more? ›")}</a>
         </div>
       </section>
       <section class="ag-section" id="ag-services" style="border-top:none;"><div class="container site-reveal">
@@ -2671,7 +2954,7 @@ function btGridSection(d, pal, dd, wa, embedSrc) {
     cellsList.push(`<div class="bt-cell" data-svc-idx="${i}"><div class="bt-cell-label">${siteTr("שירות", "Service")}</div><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`);
   });
   if (!d.pages || !d.pages.contact) {
-    cellsList.push(`<div class="bt-cell bt-span-2x2 bt-cell-dark"><div class="bt-cell-label">${siteTr("יצירת קשר", "Contact Us")}</div>${dd._hasContact ? `${d.phone ? `<span class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</span>` : ""}${d.email ? `<span class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</span>` : ""}${d.address ? `<span class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</span>` : ""}` : `<span class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</span>`}${wa ? `<a class="bt-cta-mini" href="${wa}" target="_blank" rel="noopener">${siteTr("וואטסאפ", "WhatsApp")}</a>` : ""}</div>`);
+    cellsList.push(`<div class="bt-cell bt-span-2x2 bt-cell-dark"><div class="bt-cell-label">${siteTr("יצירת קשר", "Contact Us")}</div>${dd._hasContact ? `${d.phone ? `<span class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></span>` : ""}${d.email ? `<span class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></span>` : ""}${d.address ? `<span class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></span>` : ""}` : `<span class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</span>`}${wa ? `<a class="bt-cta-mini" href="${wa}" data-dk-bind="whatsapp" data-dk-bind-as="href" target="_blank" rel="noopener">${siteTr("וואטסאפ", "WhatsApp")}</a>` : ""}</div>`);
   }
   return `
       <section class="bt-section site-reveal"><div class="container">
@@ -2790,11 +3073,11 @@ function renderBentoSite(d, page) {
         <div class="bt-cell bt-cell-dark" style="max-width:640px; margin:0 auto; min-height:0;">
           <div class="bt-cell-label">${siteTr("פרטי קשר", "Contact details")}</div>
           ${dd._hasContact ? `
-            ${d.phone ? `<span class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</span>` : ""}
-            ${d.email ? `<span class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</span>` : ""}
-            ${d.address ? `<span class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</span>` : ""}
+            ${d.phone ? `<span class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></span>` : ""}
+            ${d.email ? `<span class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></span>` : ""}
+            ${d.address ? `<span class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></span>` : ""}
           ` : `<span class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</span>`}
-          ${wa ? `<a class="bt-cta-mini" href="${wa}" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}
+          ${wa ? `<a class="bt-cta-mini" href="${wa}" data-dk-bind="whatsapp" data-dk-bind-as="href" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}
         </div>
       </div></section>`;
   } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("bento")) {
@@ -2814,7 +3097,7 @@ function renderBentoSite(d, page) {
       cellsList.push(`<div class="bt-cell"><div class="bt-cell-label">${siteTr("שירות", "Service")}</div><h3>${escapeHtmlS(s.name)}</h3>${s.desc ? `<p>${escapeHtmlS(s.desc)}</p>` : ""}${s.price ? `<div class="price">${escapeHtmlS(s.price)}</div>` : ""}</div>`);
     });
     if (!d.pages || !d.pages.contact) {
-      cellsList.push(`<div class="bt-cell bt-span-2x2 bt-cell-dark"><div class="bt-cell-label">${siteTr("יצירת קשר", "Contact Us")}</div>${dd._hasContact ? `${d.phone ? `<span class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</span>` : ""}${d.email ? `<span class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</span>` : ""}${d.address ? `<span class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</span>` : ""}` : `<span class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</span>`}${wa ? `<a class="bt-cta-mini" href="${wa}" target="_blank" rel="noopener">${siteTr("וואטסאפ", "WhatsApp")}</a>` : ""}</div>`);
+      cellsList.push(`<div class="bt-cell bt-span-2x2 bt-cell-dark"><div class="bt-cell-label">${siteTr("יצירת קשר", "Contact Us")}</div>${dd._hasContact ? `${d.phone ? `<span class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></span>` : ""}${d.email ? `<span class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></span>` : ""}${d.address ? `<span class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></span>` : ""}` : `<span class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</span>`}${wa ? `<a class="bt-cta-mini" href="${wa}" data-dk-bind="whatsapp" data-dk-bind-as="href" target="_blank" rel="noopener">${siteTr("וואטסאפ", "WhatsApp")}</a>` : ""}</div>`);
     }
     main = `
       <section class="bt-hero"><div class="container">
@@ -2867,9 +3150,9 @@ function cdAboutSection(d, pal, dd) {
 function cdContactSection(d, pal, dd, wa) {
   return (!d.pages || !d.pages.contact) ? `<section class="cd-section site-reveal" style="text-align:center;"><div class="container"><span class="cd-kicker">${siteTr("נשמח לשמוע מכם", "We’d love to hear from you")}</span><h2 style="font-size:28px; font-weight:800; color:#fff; margin:10px 0 26px;">${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h2><div class="cd-panel">
         ${dd._hasContact ? `
-          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
         ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</div>`}
       </div></div></section>` : "";
 }
@@ -2960,11 +3243,11 @@ function renderCinematicSite(d, page) {
         <span class="cd-kicker">${siteTr("נשמח לשמוע מכם", "We’d love to hear from you")}</span><h2 style="font-size:32px; font-weight:800; color:#fff; margin:10px 0 26px;">${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h2>
         <div class="cd-panel">
           ${dd._hasContact ? `
-            ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-            ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-            ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+            ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+            ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+            ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
           ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</div>`}
-          ${wa ? `<a class="cd-cta" style="margin-top:18px;" href="${wa}" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}
+          ${wa ? `<a class="cd-cta" style="margin-top:18px;" href="${wa}" data-dk-bind="whatsapp" data-dk-bind-as="href" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}
         </div>
       </div></section>`;
   } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("cinematic")) {
@@ -2992,9 +3275,9 @@ function renderCinematicSite(d, page) {
       ${(!d.pages || !d.pages.about) ? `<section class="cd-section site-reveal" style="text-align:center;"><div class="container"><span class="cd-kicker">${siteTr("מי אנחנו", "Who we are")}</span><h2 style="font-size:28px; font-weight:800; color:#fff; margin:10px 0 26px;">${heading(d, "about", siteTr("קצת עלינו", "About Us"))}</h2><div class="cd-panel"><p>${aboutText(d, dd)}</p></div></div></section>` : ""}
       ${(!d.pages || !d.pages.contact) ? `<section class="cd-section site-reveal" style="text-align:center;"><div class="container"><span class="cd-kicker">${siteTr("נשמח לשמוע מכם", "We’d love to hear from you")}</span><h2 style="font-size:28px; font-weight:800; color:#fff; margin:10px 0 26px;">${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h2><div class="cd-panel">
         ${dd._hasContact ? `
-          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
         ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</div>`}
       </div></div></section>` : ""}
     `;
@@ -3040,9 +3323,9 @@ function brContactSection(d, pal, dd, wa) {
   return (!d.pages || !d.pages.contact) ? `<section class="br-section br-contact site-reveal last"><div class="container">
         <div class="br-section-head"><span class="br-tag">${siteTr("נשמח לשמוע מכם", "We’d love to hear from you")}</span><h2>${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h2></div>
         ${dd._hasContact ? `
-          ${d.phone ? `<span class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</span>` : ""}
-          ${d.email ? `<span class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</span>` : ""}
-          ${d.address ? `<span class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</span>` : ""}
+          ${d.phone ? `<span class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></span>` : ""}
+          ${d.email ? `<span class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></span>` : ""}
+          ${d.address ? `<span class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></span>` : ""}
         ` : `<p style="font-weight:700;">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</p>`}
       </div></section>` : "";
 }
@@ -3117,11 +3400,11 @@ function renderBrutalSite(d, page) {
       <section class="br-section br-contact site-reveal last"><div class="container">
         <div class="br-section-head"><span class="br-tag">${siteTr("נשמח לשמוע מכם", "We’d love to hear from you")}</span><h2>${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h2></div>
         ${dd._hasContact ? `
-          ${d.phone ? `<span class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</span>` : ""}
-          ${d.email ? `<span class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</span>` : ""}
-          ${d.address ? `<span class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</span>` : ""}
+          ${d.phone ? `<span class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></span>` : ""}
+          ${d.email ? `<span class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></span>` : ""}
+          ${d.address ? `<span class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></span>` : ""}
         ` : `<p style="font-weight:700;">${siteTr("פרטו כאן טלפון, מייל וכתובת ליצירת קשר.", "Add your phone, email and address here so visitors can reach you.")}</p>`}
-        <div style="margin-top:22px;">${wa ? `<a class="br-btn" href="${wa}" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}</div>
+        <div style="margin-top:22px;">${wa ? `<a class="br-btn" href="${wa}" data-dk-bind="whatsapp" data-dk-bind-as="href" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}</div>
       </div></section>`;
   } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("brutal")) {
     main = renderBlocksHtml(d, "brutal", "index", {
@@ -3149,9 +3432,9 @@ function renderBrutalSite(d, page) {
       ${(!d.pages || !d.pages.contact) ? `<section class="br-section br-contact site-reveal last"><div class="container">
         <div class="br-section-head"><span class="br-tag">${siteTr("נשמח לשמוע מכם", "We’d love to hear from you")}</span><h2>${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h2></div>
         ${dd._hasContact ? `
-          ${d.phone ? `<span class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</span>` : ""}
-          ${d.email ? `<span class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</span>` : ""}
-          ${d.address ? `<span class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</span>` : ""}
+          ${d.phone ? `<span class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></span>` : ""}
+          ${d.email ? `<span class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></span>` : ""}
+          ${d.address ? `<span class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></span>` : ""}
         ` : `<p style="font-weight:700;">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</p>`}
       </div></section>` : ""}
     `;
@@ -3197,9 +3480,9 @@ function nfAboutSection(d, pal, dd) {
 function nfContactSection(d, pal, dd, wa) {
   return (!d.pages || !d.pages.contact) ? `<section class="nf-section site-reveal" style="text-align:center;"><div class="container"><span class="nf-kicker">${siteTr("נשמח לשמוע מכם", "We’d love to hear from you")}</span><h2 class="nf-split" style="font-size:28px; font-weight:800; color:#fff; margin:10px 0 26px;">${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h2><div class="nf-panel">
         ${dd._hasContact ? `
-          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
         ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</div>`}
       </div></div></section>` : "";
 }
@@ -3363,11 +3646,11 @@ function renderNeonSite(d, page) {
         <span class="nf-kicker">${siteTr("נשמח לשמוע מכם", "We’d love to hear from you")}</span><h2 class="nf-split" style="font-size:32px; font-weight:800; color:#fff; margin:10px 0 26px;">${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h2>
         <div class="nf-panel">
           ${dd._hasContact ? `
-            ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-            ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-            ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+            ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+            ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+            ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
           ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</div>`}
-          ${wa ? `<a class="nf-cta" style="margin-top:18px;" href="${wa}" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}
+          ${wa ? `<a class="nf-cta" style="margin-top:18px;" href="${wa}" data-dk-bind="whatsapp" data-dk-bind-as="href" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}
         </div>
       </div></section>`;
   } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("neon")) {
@@ -3395,9 +3678,9 @@ function renderNeonSite(d, page) {
       ${(!d.pages || !d.pages.about) ? `<section class="nf-section site-reveal" style="text-align:center;"><div class="container"><span class="nf-kicker">${siteTr("מי אנחנו", "Who we are")}</span><h2 class="nf-split" style="font-size:28px; font-weight:800; color:#fff; margin:10px 0 26px;">${heading(d, "about", siteTr("קצת עלינו", "About Us"))}</h2><div class="nf-panel"><p>${aboutText(d, dd)}</p></div></div></section>` : ""}
       ${(!d.pages || !d.pages.contact) ? `<section class="nf-section site-reveal" style="text-align:center;"><div class="container"><span class="nf-kicker">${siteTr("נשמח לשמוע מכם", "We’d love to hear from you")}</span><h2 class="nf-split" style="font-size:28px; font-weight:800; color:#fff; margin:10px 0 26px;">${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h2><div class="nf-panel">
         ${dd._hasContact ? `
-          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
         ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</div>`}
       </div></div></section>` : ""}
     `;
@@ -3446,9 +3729,9 @@ function ocContactSection(d, pal, dd, wa) {
         <div class="oc-section-head"><span class="oc-tag">${siteTr("נשמח לשמוע מכם", "We’d love to hear from you")}</span><h2>${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h2></div>
         <div class="oc-contact">
           ${dd._hasContact ? `
-            ${d.phone ? `<span class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</span>` : ""}
-            ${d.email ? `<span class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</span>` : ""}
-            ${d.address ? `<span class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</span>` : ""}
+            ${d.phone ? `<span class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></span>` : ""}
+            ${d.email ? `<span class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></span>` : ""}
+            ${d.address ? `<span class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></span>` : ""}
           ` : `<p style="font-weight:700;">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</p>`}
         </div>
       </div></section>` : "";
@@ -3573,11 +3856,11 @@ function renderChaosSite(d, page) {
         <div class="oc-section-head"><span class="oc-tag">${siteTr("נשמח לשמוע מכם", "We’d love to hear from you")}</span><h2>${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h2></div>
         <div class="oc-contact">
           ${dd._hasContact ? `
-            ${d.phone ? `<span class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</span>` : ""}
-            ${d.email ? `<span class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</span>` : ""}
-            ${d.address ? `<span class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</span>` : ""}
+            ${d.phone ? `<span class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></span>` : ""}
+            ${d.email ? `<span class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></span>` : ""}
+            ${d.address ? `<span class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></span>` : ""}
           ` : `<p style="font-weight:700;">${siteTr("פרטו כאן טלפון, מייל וכתובת ליצירת קשר.", "Add your phone, email and address here so visitors can reach you.")}</p>`}
-          <div style="margin-top:20px;">${wa ? `<a class="oc-cta" href="${wa}" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}</div>
+          <div style="margin-top:20px;">${wa ? `<a class="oc-cta" href="${wa}" data-dk-bind="whatsapp" data-dk-bind-as="href" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}</div>
         </div>
       </div></section>`;
   } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("chaos")) {
@@ -3603,9 +3886,9 @@ function renderChaosSite(d, page) {
         <div class="oc-section-head"><span class="oc-tag">${siteTr("נשמח לשמוע מכם", "We’d love to hear from you")}</span><h2>${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h2></div>
         <div class="oc-contact">
           ${dd._hasContact ? `
-            ${d.phone ? `<span class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</span>` : ""}
-            ${d.email ? `<span class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</span>` : ""}
-            ${d.address ? `<span class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</span>` : ""}
+            ${d.phone ? `<span class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></span>` : ""}
+            ${d.email ? `<span class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></span>` : ""}
+            ${d.address ? `<span class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></span>` : ""}
           ` : `<p style="font-weight:700;">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</p>`}
         </div>
       </div></section>` : ""}
@@ -3663,9 +3946,9 @@ function lxAboutSection(d, pal, dd) {
 function lxContactSection(d, pal, dd, wa) {
   return (!d.pages || !d.pages.contact) ? `<section class="lx-section lx-contact site-reveal"><div class="container"><span class="lx-kicker2">${siteTr("נשמח לשמוע מכם", "We’d love to hear from you")}</span><h2 style="font-family:'Frank Ruhl Libre',serif; font-weight:500; font-size:30px; margin:12px 0 26px; color:#2A2620;">${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h2><div class="lx-panel">
         ${dd._hasContact ? `
-          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
         ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</div>`}
       </div></div></section>` : "";
 }
@@ -3775,11 +4058,11 @@ function renderLuxurySite(d, page) {
         <span class="lx-kicker2">${siteTr("נשמח לשמוע מכם", "We’d love to hear from you")}</span><h2 style="font-family:'Frank Ruhl Libre',serif; font-weight:500; font-size:32px; margin:12px 0 26px; color:#2A2620;">${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h2>
         <div class="lx-panel">
           ${dd._hasContact ? `
-            ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-            ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-            ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+            ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+            ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+            ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
           ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</div>`}
-          ${wa ? `<a class="lx-cta" style="margin-top:18px; display:inline-block;" href="${wa}" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}
+          ${wa ? `<a class="lx-cta" style="margin-top:18px; display:inline-block;" href="${wa}" data-dk-bind="whatsapp" data-dk-bind-as="href" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}
         </div>
       </div></section>`;
   } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("luxury3d")) {
@@ -3810,9 +4093,9 @@ function renderLuxurySite(d, page) {
       ${(!d.pages || !d.pages.about) ? `<section class="lx-section lx-about site-reveal"><div class="container"><span class="lx-kicker2">${siteTr("מי אנחנו", "Who we are")}</span><h2 style="font-family:'Frank Ruhl Libre',serif; font-weight:500; font-size:30px; margin:12px 0 26px; color:#2A2620;">${heading(d, "about", siteTr("קצת עלינו", "About Us"))}</h2><div class="lx-panel"><p>${aboutText(d, dd)}</p></div></div></section>` : ""}
       ${(!d.pages || !d.pages.contact) ? `<section class="lx-section lx-contact site-reveal"><div class="container"><span class="lx-kicker2">${siteTr("נשמח לשמוע מכם", "We’d love to hear from you")}</span><h2 style="font-family:'Frank Ruhl Libre',serif; font-weight:500; font-size:30px; margin:12px 0 26px; color:#2A2620;">${heading(d, "contact", siteTr("יצירת קשר", "Contact Us"))}</h2><div class="lx-panel">
         ${dd._hasContact ? `
-          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
         ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</div>`}
       </div></div></section>` : ""}
       ${parallaxScript}
@@ -3860,7 +4143,7 @@ function pgHeroSection(d, pal, dd, cta) {
         <span class="pg-kicker">${dd.tagline ? siteTr("ברוכים הבאים", "Welcome") : siteTr("עסק שמרים אנרגיה", "A business full of energy")}</span>
         <h1>${heading(d, "heroTitle", dd.businessName)}</h1>
         <p>${taglineText(d, dd)}</p>
-        ${cta ? `<span class="pg-cta-wrap" style="filter:url(#pg-goo-filter);"><a id="pg-goo-btn" class="pg-cta" href="${escapeHtmlS(cta.href)}"${cta.external ? ' target="_blank" rel="noopener"' : ""}${cta.page ? ` data-site-nav data-page="${cta.page}"` : ""}>${escapeHtmlS(cta.label)}</a></span>` : ""}
+        ${cta ? `<span class="pg-cta-wrap" style="filter:url(#pg-goo-filter);"><a id="pg-goo-btn" class="pg-cta" data-dk-btn="heroCta" href="${escapeHtmlS(cta.href)}"${cta.external ? ' target="_blank" rel="noopener"' : ""}${cta.page ? ` data-site-nav data-page="${cta.page}"` : ""}${siteCtaStyleAttr(cta)}>${escapeHtmlS(cta.label)}</a></span>` : ""}
       </div></section>
       ${gooSvg}`;
 }
@@ -4023,9 +4306,9 @@ function pgAboutSection(d, pal, dd) {
 function pgContactSection(d, pal, dd, wa) {
   return (!d.pages || !d.pages.contact) ? `<section class="pg-section site-reveal" style="text-align:center;"><div class="container"><span class="pg-kicker2">${siteTr("נשמח לשמוע מכם", "We’d love to hear from you")}</span><h2 style="font-size:26px; font-weight:900; color:#fff; margin:10px 0 26px;">${heading(d, "contact", siteTr("בואו נדבר", "Let’s Talk"))}</h2><div class="pg-panel">
         ${dd._hasContact ? `
-          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+          ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+          ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+          ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
         ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</div>`}
       </div></div></section>` : "";
 }
@@ -4116,11 +4399,11 @@ function renderPlaygroundSite(d, page) {
         <span class="pg-kicker2">${siteTr("נשמח לשמוע מכם", "We’d love to hear from you")}</span><h2 style="font-size:30px; font-weight:900; color:#fff; margin:10px 0 26px;">${heading(d, "contact", siteTr("בואו נדבר", "Let’s Talk"))}</h2>
         <div class="pg-panel">
           ${dd._hasContact ? `
-            ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} ${escapeHtmlS(d.phone)}</div>` : ""}
-            ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} ${escapeHtmlS(d.email)}</div>` : ""}
-            ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} ${escapeHtmlS(d.address)}</div>` : ""}
+            ${d.phone ? `<div class="line">${siteTr("טלפון:", "Phone:")} <span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></div>` : ""}
+            ${d.email ? `<div class="line">${siteTr("מייל:", "Email:")} <span data-dk-bind="email">${escapeHtmlS(d.email)}</span></div>` : ""}
+            ${d.address ? `<div class="line">${siteTr("כתובת:", "Address:")} <span data-dk-bind="address">${escapeHtmlS(d.address)}</span></div>` : ""}
           ` : `<div class="line">${siteTr("פרטו כאן טלפון, מייל וכתובת.", "Add your phone, email and address here.")}</div>`}
-          ${wa ? `<a class="pg-cta" style="margin-top:18px;" href="${wa}" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}
+          ${wa ? `<a class="pg-cta" style="margin-top:18px;" href="${wa}" data-dk-bind="whatsapp" data-dk-bind-as="href" target="_blank" rel="noopener">${siteTr("שליחת הודעה בוואטסאפ", "Message us on WhatsApp")}</a>` : ""}
         </div>
       </div></section>`;
   } else if (typeof isTemplateMigrated === "function" && isTemplateMigrated("playground")) {
@@ -4213,15 +4496,38 @@ Object.keys(SITE_TEMPLATES).forEach((key) => {
   // opts.siteUrl (optional): the site's live address, when the builder
   // knows it — only used for the canonical/og:url tags of a site whose
   // owner filled in the SEO panel (see siteSeoFields).
+  // opts.preview (optional): true ONLY for the editor's own canvas and
+  // thumbnails — lets custom sections show placeholders (an empty video,
+  // a gallery with no photos yet). Never pass it when publishing.
   tpl.render = function (d, page, opts) {
-    const prev = [SITE_RENDER_EN, SITE_RENDER_DATA, SITE_RENDER_PAGE, SITE_RENDER_URL];
+    const prev = [SITE_RENDER_EN, SITE_RENDER_DATA, SITE_RENDER_PAGE, SITE_RENDER_URL, SITE_RENDER_PREVIEW, SITE_RENDER_TEMPLATE];
+    SITE_RENDER_TEMPLATE = key;
     SITE_RENDER_EN = !!(d && d.siteLang === "en");
     SITE_RENDER_DATA = d || null;
     SITE_RENDER_PAGE = page || "index";
     SITE_RENDER_URL = (opts && opts.siteUrl) || "";
-    try { return renderInner.call(this, d, page); } finally { [SITE_RENDER_EN, SITE_RENDER_DATA, SITE_RENDER_PAGE, SITE_RENDER_URL] = prev; }
+    SITE_RENDER_PREVIEW = !!(opts && opts.preview === true);
+    try { return siteDropDeadAnchors(renderInner.call(this, d, page)); } finally { [SITE_RENDER_EN, SITE_RENDER_DATA, SITE_RENDER_PAGE, SITE_RENDER_URL, SITE_RENDER_PREVIEW, SITE_RENDER_TEMPLATE] = prev; }
   };
 });
+
+/* A nav/rail link to an in-page anchor ("#ag-services") whose section
+   isn't on the page — hidden via d.hiddenBlocks, or moved to its own page —
+   is dropped instead of pointing at nothing. Generic for every template:
+   it only looks at the finished document. The hero button (data-dk-btn)
+   is kept and pointed at "#" instead, the same fallback studio's hero
+   already uses when it has nowhere to go. A page where every anchor has
+   its target (every existing site) comes back unchanged. */
+function siteDropDeadAnchors(html) {
+  if (typeof html !== "string" || html.indexOf('href="#') === -1) return html;
+  const ids = new Set();
+  html.replace(/\sid="([^"]+)"/g, (m, id) => { ids.add(id); return m; });
+  return html.replace(/<a\b([^>]*?)\shref="#([A-Za-z][\w:.-]*)"([^>]*)>([\s\S]*?)<\/a>/g, (m, pre, id, post, inner) => {
+    if (ids.has(id) || /<a\b/.test(inner)) return m;
+    if (/data-dk-btn=/.test(pre + post)) return `<a${pre} href="#"${post}>${inner}</a>`;
+    return "";
+  });
+}
 
 /* "Smart search" filter checkboxes on the catalog page (sites.html) —
    cross-cutting attributes that don't map to the category tabs above,

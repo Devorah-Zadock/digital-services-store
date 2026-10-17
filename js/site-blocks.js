@@ -188,7 +188,46 @@ const SITE_BLOCK_DEFS = {
 // set of blocks.
 SITE_BLOCK_DEFS["blank"] = SITE_BLOCK_DEFS["local-service"];
 
+/* Which built-in blocks hide through d.pages (their own active() above:
+   about/contact move to a separate page) and which through
+   d.hiddenBlocks (everything else). Recorded HERE, at load time, before
+   anything gets a chance to patch active() at runtime (the Shell's
+   bshellPatchBlockVisibility does), so siteBlockSetVisible() in
+   js/site-sections.js and activeBlocksForPage() below can tell the two
+   apart without guessing from a type's name. "blank" shares
+   local-service's objects, so it is recorded once for both. */
+Object.keys(SITE_BLOCK_DEFS).forEach((template) => {
+  const defs = SITE_BLOCK_DEFS[template];
+  Object.keys(defs).forEach((type) => {
+    if (defs[type]._pagesGate === undefined) defs[type]._pagesGate = !!defs[type].active;
+  });
+});
+
+/* Custom section instances (js/site-sections.js) sit in d.blockOrder[page]
+   as "x:<id>" next to the built-in type keys; their content lives in
+   d.sections[id]. They are never keys of SITE_BLOCK_DEFS, so the
+   per-template filters below let them through explicitly. A key whose
+   d.sections entry is missing (or of an unknown type) is skipped silently. */
+function isCustomBlockKey(key) {
+  return typeof key === "string" && key.indexOf("x:") === 0 && key.length > 2;
+}
+function customBlockIsRenderable(d, key) {
+  if (!isCustomBlockKey(key)) return false;
+  const sections = d && d.sections && typeof d.sections === "object" ? d.sections : null;
+  const sec = sections && Object.prototype.hasOwnProperty.call(sections, key.slice(2)) ? sections[key.slice(2)] : null;
+  if (!sec || typeof sec !== "object") return false;
+  return typeof siteSectionTypeKnown !== "function" || siteSectionTypeKnown(sec.type);
+}
+
 const SITE_MIGRATED_TEMPLATES = Object.keys(SITE_BLOCK_DEFS);
+
+/* The in-page anchor ids the templates' own side rails link to (the only
+   two templates with in-page rail links — see their railLinks). */
+const SITE_BLOCK_ANCHORS = {
+  "local-service": { services: "ls-services", about: "ls-about", contact: "ls-contact" },
+  "studio": { services: "ag-services", about: "ag-about", contact: "ag-contact" },
+};
+SITE_BLOCK_ANCHORS["blank"] = SITE_BLOCK_ANCHORS["local-service"];
 
 function isTemplateMigrated(template) {
   return SITE_MIGRATED_TEMPLATES.indexOf(template) !== -1;
@@ -223,8 +262,14 @@ function activeBlocksForPage(d, template, page) {
   const order = ensureBlockOrder(d, template, page);
   if (!defs || !order) return [];
   return order.filter((type) => {
+    if (isCustomBlockKey(type)) return customBlockIsRenderable(d, type);
     const def = defs[type];
     if (!def) return false;
+    // d.hiddenBlocks gates every block without a d.pages gate of its own —
+    // the same rule the Shell patches onto active() at runtime, applied
+    // here too so renders made without the Shell (admin, tests, the new
+    // editor) agree with it. No d.hiddenBlocks = exactly as before.
+    if (!def._pagesGate && d.hiddenBlocks && d.hiddenBlocks[type]) return false;
     return !def.active || def.active(d);
   });
 }
@@ -235,10 +280,22 @@ function activeBlocksForPage(d, template, page) {
    monolithic render<Name>Site functions already compute for themselves. */
 function renderBlocksHtml(d, template, page, ctx) {
   const types = activeBlocksForPage(d, template, page);
+  // Per-render bookkeeping for custom sections: each library type's
+  // <style> is emitted once, just before its first instance on the page.
+  const sectionsCtx = Object.assign({}, ctx, { template, emittedStyles: {} });
   const blocksHtml = types.map((type) => {
+    if (isCustomBlockKey(type)) {
+      if (typeof siteSectionRenderHtml !== "function") return "";
+      try { return siteSectionRenderHtml(d, template, type.slice(2), sectionsCtx); } catch (e) { return ""; }
+    }
     const variantKey = (d.blockVariants && d.blockVariants[type]) || "default";
     const renderFn = blockRenderFnFor(template, type, variantKey);
-    return renderFn(d, ctx.pal, ctx.dd, ctx);
+    const html = renderFn(d, ctx.pal, ctx.dd, ctx);
+    // A generic variant doesn't know the template's own anchor id, which
+    // left the template's in-page rail link ("#ls-services") pointing at
+    // nothing. Give the variant's outer <section> that id (invisible).
+    const anchor = renderFn !== SITE_BLOCK_DEFS[template][type].render && SITE_BLOCK_ANCHORS[template] && SITE_BLOCK_ANCHORS[template][type];
+    return anchor ? html.replace(/^(\s*)<section (?![^>]*\sid=)/, `$1<section id="${anchor}" `) : html;
   }).join("\n");
   // Video isn't part of the reorderable hierarchy (optional, and not
   // one of the sections the user actually asked to see as a tree node)
@@ -266,7 +323,7 @@ function genericHeroVariantCentered(d, pal, dd, ctx) {
   const cta = ctx && ctx.cta;
   const media = heroMediaHtml(d, "");
   const navAttrs = cta && cta.page ? ` data-site-nav data-page="${cta.page}"` : "";
-  const ctaButton = cta ? `<a href="${escapeHtmlS(cta.href)}"${cta.external ? ' target="_blank" rel="noopener"' : ""}${navAttrs} style="display:inline-block; background:#fff; color:#${pal.primaryDark}; font-weight:700; padding:14px 30px; border-radius:30px; text-decoration:none;">${escapeHtmlS(cta.label)}</a>` : "";
+  const ctaButton = cta ? `<a href="${escapeHtmlS(cta.href)}"${cta.external ? ' target="_blank" rel="noopener"' : ""}${navAttrs} data-dk-btn="heroCta" style="display:inline-block; background:#fff; color:#${pal.primaryDark}; font-weight:700; padding:14px 30px; border-radius:30px; text-decoration:none;${typeof siteCtaStyleParts === "function" && cta.style ? siteCtaStyleParts(cta.style).map((x) => " " + x + ";").join("") : ""}">${escapeHtmlS(cta.label)}</a>` : "";
   return `
     <section style="position:relative; text-align:center; padding:72px 24px 60px; background:#${pal.primaryDark}; color:#fff; overflow:hidden;">
       ${heroVideoBgHtml(d)}
@@ -274,7 +331,7 @@ function genericHeroVariantCentered(d, pal, dd, ctx) {
         <h1 style="font-size:clamp(28px,5vw,46px); margin:0 0 14px; font-weight:800; line-height:1.15;">${heading(d, "heroTitle", dd.businessName)}</h1>
         <p style="font-size:18px; opacity:.92; margin:0 0 26px;">${taglineText(d, dd)}</p>
         ${ctaButton}
-        ${d.phone ? `<div style="margin-top:14px;"><a href="tel:${escapeHtmlS(d.phone)}" style="color:#fff; opacity:.85; font-size:15px;">${escapeHtmlS(d.phone)}</a></div>` : ""}
+        ${d.phone ? `<div style="margin-top:14px;"><a href="tel:${escapeHtmlS(d.phone)}" data-dk-bind="phone" data-dk-bind-as="href" style="color:#fff; opacity:.85; font-size:15px;"><span data-dk-bind="phone">${escapeHtmlS(d.phone)}</span></a></div>` : ""}
       </div>
       ${media ? `<div style="max-width:380px; margin:36px auto 0; border-radius:18px; overflow:hidden; box-shadow:0 18px 40px rgba(0,0,0,.35); position:relative; z-index:1;">${media}</div>` : ""}
     </section>`;
@@ -336,7 +393,10 @@ function blockRenderFnFor(template, type, variantKey) {
 /* Swap by TYPE, not array position — the hierarchy panel only shows
    (and only lets you move relative to) the currently ACTIVE blocks, so
    "move up" has to mean "swap with the previous visible one," skipping
-   past any inactive type sitting between them in the saved order. */
+   past any inactive type sitting between them in the saved order.
+   Works unchanged for custom "x:<id>" keys: they appear in the active
+   list (activeBlocksForPage) and are swapped by key like any other.
+   js/site-sections.js's siteSectionMove() moves to any visible index. */
 function moveBlockUp(d, template, page, type) {
   const order = ensureBlockOrder(d, template, page);
   const active = activeBlocksForPage(d, template, page);
