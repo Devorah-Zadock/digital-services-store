@@ -19,6 +19,7 @@
   .au-usage { font-size: 13px; color: var(--grey); text-align: start; }
   .au-usage b { color: var(--ink-dark); }
   .au-tabs { display: flex; gap: 4px; border-bottom: 1px solid #E3EAE7; margin-bottom: 20px; overflow-x: auto; scrollbar-width: none; }
+  .au-tabs[hidden] { display: none; }   /* the simple view hides the tab bar */
   .au-tab { font: inherit; font-weight: 600; font-size: 15px; background: none; border: 0; border-bottom: 3px solid transparent; padding: 10px 14px; color: var(--grey); cursor: pointer; white-space: nowrap; }
   .au-tab.active { color: var(--ink-dark); border-bottom-color: #14B8A6; }
   .au-tab .au-count { display: inline-block; min-width: 18px; padding: 0 6px; border-radius: 99px; background: #B42318; color: #fff; font-size: 11px; line-height: 18px; margin-inline-start: 4px; }
