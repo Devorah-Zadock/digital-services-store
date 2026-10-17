@@ -204,12 +204,13 @@ function siteFontImport(fontKey, headingKey) {
    content sections. No d.mood (every existing project, and "ללא") means
    no extra CSS and no extra font at all — the page is byte-for-byte what
    it was before moods existed. Fonts are SITE_FONTS keys, all Hebrew-
-   capable Google Fonts. */
+   capable Google Fonts. accentText is the text colour that reads on the
+   accent (dark on the light accents, white on the rose one). */
 const SITE_MOODS = {
-  tech: { label: "מודרני-טכנולוגי", labelEn: "Modern Tech", primaryColor: "#2563EB", accent: "#06B6D4", headingFont: "rubik", bodyFont: "heebo", radius: "14px", sectionPadding: "clamp(56px, 8vw, 88px)" },
-  warm: { label: "חם וטבעי", labelEn: "Warm & Rustic", primaryColor: "#9A5B2E", accent: "#D9A066", headingFont: "frankRuhl", bodyFont: "assistant", radius: "8px", sectionPadding: "clamp(60px, 9vw, 96px)" },
-  minimal: { label: "מינימליסטי-אומנותי", labelEn: "Minimalist / Artistic", primaryColor: "#1F2937", accent: "#E11D48", headingFont: "davidLibre", bodyFont: "assistant", radius: "0px", sectionPadding: "clamp(72px, 11vw, 120px)" },
-  corporate: { label: "עסקי בולט", labelEn: "Corporate Bold", primaryColor: "#1E3A8A", accent: "#F59E0B", headingFont: "secularOne", bodyFont: "heebo", radius: "6px", sectionPadding: "clamp(52px, 7vw, 80px)" },
+  tech: { label: "מודרני-טכנולוגי", labelEn: "Modern Tech", primaryColor: "#2563EB", accent: "#06B6D4", accentText: "#082F49", headingFont: "rubik", bodyFont: "heebo", radius: "14px", sectionPadding: "clamp(56px, 8vw, 88px)" },
+  warm: { label: "חם וטבעי", labelEn: "Warm & Rustic", primaryColor: "#9A5B2E", accent: "#D9A066", accentText: "#2B1A0E", headingFont: "frankRuhl", bodyFont: "assistant", radius: "8px", sectionPadding: "clamp(60px, 9vw, 96px)" },
+  minimal: { label: "מינימליסטי-אומנותי", labelEn: "Minimalist / Artistic", primaryColor: "#1F2937", accent: "#E11D48", accentText: "#FFFFFF", headingFont: "davidLibre", bodyFont: "assistant", radius: "0px", sectionPadding: "clamp(72px, 11vw, 120px)" },
+  corporate: { label: "עסקי בולט", labelEn: "Corporate Bold", primaryColor: "#1E3A8A", accent: "#F59E0B", accentText: "#1F1300", headingFont: "secularOne", bodyFont: "heebo", radius: "6px", sectionPadding: "clamp(52px, 7vw, 80px)" },
 };
 function siteMoodOf(d) {
   return (d && d.mood && Object.prototype.hasOwnProperty.call(SITE_MOODS, d.mood)) ? SITE_MOODS[d.mood] : null;
@@ -228,7 +229,16 @@ function siteMoodOf(d) {
      never carry .site-reveal, so they're untouched; an inline padding a
      template set on purpose (style="padding-top:0") still wins.
    Radius and vertical padding can't make anything wider, so they can't
-   add horizontal scroll at any width. */
+   add horizontal scroll at any width.
+   - Colour: the mood's primary colour already reaches every template
+     through d.primaryColor (derivePalette). That alone was nearly
+     invisible on the dark/signature templates (noir, cinematic, neon,
+     luxury3d, playground), which use it only as a pale tint or not at
+     all, so a mood also paints, in its accent: every template's main
+     call-to-action button, the small labels/prices those dark templates
+     tint near-white, and the few hardcoded signature colours (neon's
+     glow blobs, luxury3d's parallax band, playground's bubbles). Colours
+     only — no size, spacing or layout. */
 function siteMoodCss(d) {
   const mood = siteMoodOf(d);
   if (!mood) return "";
@@ -236,14 +246,55 @@ function siteMoodCss(d) {
   const body = SITE_FONTS[d.fontFamily] || SITE_FONTS.heebo;
   const primary = /^#?[0-9a-f]{6}$/i.test(String(d.primaryColor || "")) ? "#" + String(d.primaryColor).replace("#", "") : mood.primaryColor;
   return `
-    :root { --primary-color:${primary}; --accent-color:${mood.accent}; --font-family-headings:${heading.stack}; --font-family-body:${body.stack};
+    :root { --primary-color:${primary}; --accent-color:${mood.accent}; --accent-text:${mood.accentText || "#fff"}; --font-family-headings:${heading.stack}; --font-family-body:${body.stack};
       --border-radius:${mood.radius}; --section-padding:${mood.sectionPadding}; }
     :root :is(h1, h2, h3), [data-textkey^="heading-"], [data-textkey="businessName"] { font-family:var(--font-family-headings); }
     [data-svc-idx]:not(.pg-bubble):not(.fr-tag):not(.po-work-row):not(.nr-menu-row):not(.pr-step),
     .site-hero-photo:not(.round), .site-hero-slideshow:not(.round), .site-video-wrap, .site-search-input { border-radius:var(--border-radius); }
     section.site-reveal { padding-block:var(--section-padding); }
     ::selection { background:var(--accent-color); color:#fff; }
+    .ls-cta, .fr-cta .btn, .po-cta .btn, .gl-cta, .nb-cta, .eg-cta, .pr-cta, .nr-cta, .ag-cta, .bt-cta, .br-btn, .oc-cta, .lx-cta, .cd-cta, .nf-cta, .pg-cta {
+      background:var(--accent-color); border-color:var(--accent-color); color:var(--accent-text); }
+    .nr-hero .eyebrow { border-color:var(--accent-color); color:var(--accent-color); }
+    .nr-kicker, .nr-menu-row .price, .nr-nav .biz, .ag-hero-text .kicker, .cd-kicker, .cd-card .price, .nf-kicker, .nf-card .price, .pg-kicker, .pg-kicker2 { color:var(--accent-color); }
+    .lx-kicker, .lx-kicker2 { color:var(--primary-color); }
+    .nf-blob-2 { background:var(--accent-color); }
+    .nf-blob-3 { background:var(--primary-color); background:color-mix(in srgb, var(--primary-color) 55%, #fff); }
+    .lx-parallax-bg { background:linear-gradient(160deg, #EEE8DD, var(--accent-color) 60%, var(--primary-color)); }
+    .pg-bubble:nth-child(odd) { background:var(--primary-color) !important; }
+    .pg-bubble:nth-child(even) { background:var(--accent-color) !important; color:var(--accent-text); }
   `;
+}
+
+/* Section-group text styles — the Builder Shell's section editor sets one
+   font/colour/size for ALL service names and one for ALL service
+   descriptions (never per item), stored next to the per-text styles as
+   d.textStyles["svc-name"] / d.textStyles["svc-desc"]. A service name or
+   description isn't a t()/heading() span, so instead of changing every
+   template's card markup these selectors name each template's own
+   elements: the h3/p every card template already uses inside its
+   [data-svc-idx] card, noir's menu rows, freelancer's tags, playground's
+   bubbles, and the generic "grid" services layout (site-blocks.js). Only
+   emitted when one of these keys is set, so every existing site renders
+   exactly as before. !important: the group choice must beat the
+   templates' own rules and the grid layout's inline sizes. */
+const SITE_GROUP_GRID = `div[style*="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))"] > div`;
+const SITE_GROUP_STYLE_SELECTORS = {
+  "svc-name": `[data-svc-idx] h3, .nr-menu-row .name, .fr-tag, .pg-bubble > span, ${SITE_GROUP_GRID} > h3`,
+  "svc-desc": `[data-svc-idx] p, .nr-menu-desc, ${SITE_GROUP_GRID} > p`,
+};
+function siteGroupStyleCss(d) {
+  const ts = d && d.textStyles;
+  if (!ts || typeof ts !== "object") return "";
+  return Object.keys(SITE_GROUP_STYLE_SELECTORS).map((key) => {
+    const s = ts[key];
+    if (!s) return "";
+    const parts = [];
+    if (s.font && SITE_FONTS[s.font]) parts.push(`font-family:${SITE_FONTS[s.font].stack} !important`);
+    if (s.color && /^#?[0-9a-f]{6}$/i.test(String(s.color))) parts.push(`color:#${String(s.color).replace("#", "")} !important`);
+    if (s.size && /^\d{1,3}$/.test(String(s.size))) parts.push(`font-size:${s.size}px !important`);
+    return parts.length ? `\n    :is(${SITE_GROUP_STYLE_SELECTORS[key]}) { ${parts.join("; ")}; }` : "";
+  }).join("");
 }
 function siteBaseCss(fontKey) {
   const font = SITE_FONTS[fontKey] || SITE_FONTS.heebo;
@@ -671,8 +722,11 @@ function siteLeadFormHtml(cfg) {
 /* head.showBsd (d.showBsd, opt-in from either builder) adds a small בס"ד
    in the page's top-right corner on every template — one place here
    instead of per template, same reasoning as copyrightLineHtml(). It
-   scrolls away with the page (absolute, not fixed) and sits on a light
-   pill so it stays readable over dark heroes too. */
+   scrolls away with the page (absolute, not fixed). Plain small text —
+   no chip, border or background (it used to sit on a white pill, which
+   read as a button): it takes the page's own text colour, so it is
+   light on the dark templates and dark on the light ones; a template
+   whose page opens on a coloured hero passes head.bsdColor instead. */
 /* Appended to English (dir="ltr") pages only — see siteTr(). Mirrors the
    few template rules that use physical left/right for an RTL layout;
    everything written with logical properties (inset-inline-*,
@@ -755,10 +809,10 @@ function siteDoc(head, body) {
 <title>${escapeHtmlS(title)}</title>
 ${description ? `<meta name="description" content="${escapeHtmlS(description)}">` : ""}${seo ? "\n" + siteSocialMetaHtml(title, description, d, seo) : ""}
 ${siteFontImport(head.fontFamily, mood ? mood.headingFont : "")}
-<style>${siteBaseCss(head.fontFamily)}${head.css}${SITE_RENDER_EN ? SITE_LTR_CSS : ""}${siteMoodCss(d)}</style>
+<style>${siteBaseCss(head.fontFamily)}${head.css}${SITE_RENDER_EN ? SITE_LTR_CSS : ""}${siteMoodCss(d)}${siteGroupStyleCss(d)}</style>
 </head>
 <body>
-${head.showBsd ? `<div class="site-bsd" style="position:absolute; top:6px; right:10px; z-index:2147483000; font-size:11px; line-height:1.4; color:#333; background:rgba(255,255,255,.85); padding:1px 6px; border-radius:6px; pointer-events:none;">${siteTr('בס"ד', 'BS"D')}</div>` : ""}
+${head.showBsd ? `<div class="site-bsd" style="position:absolute; top:6px; right:10px; z-index:2147483000; font-size:11px; line-height:1.4; color:${head.bsdColor || "inherit"}; opacity:.75; pointer-events:none;">${siteTr('בס"ד', 'BS"D')}</div>` : ""}
 ${body}${head.lead ? "\n" + siteLeadFormHtml(head.lead) : ""}
 ${heroSlideshowScript()}
 ${scrollRevealScript()}
@@ -1097,7 +1151,9 @@ function renderFreelancerSite(d, page) {
     `;
   }
   const titles = { index: dd.businessName, about: `${siteTr("אודות", "About")} — ${dd.businessName}`, contact: `${siteTr("יצירת קשר", "Contact Us")} — ${dd.businessName}` };
-  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd, lead: siteLeadFormConfig(d) }, `${navBar}${main}${footer}`);
+  // No nav bar (single page): the page opens straight on the coloured
+  // hero, whose text is white — בס"ד matches it (see siteDoc).
+  return siteDoc({ title: titles[page], description: dd.tagline, css, fontFamily: d.fontFamily, showBsd: d.showBsd, bsdColor: navLinksHtml ? "" : "#fff", lead: siteLeadFormConfig(d) }, `${navBar}${main}${footer}`);
 }
 
 /* ---------- Template 3: small catalog / shop ---------- */

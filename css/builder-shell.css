@@ -112,6 +112,7 @@
   font-size: 15px; font-weight: 600; color: var(--text); list-style: none; transition: border-color .15s ease, background .15s ease;
 }
 .bshell-sec-head::-webkit-details-marker { display: none; }
+button.bshell-sec-head { font-family: inherit; } /* the "header & footer" row is a button, not a <summary> */
 .bshell-sec-head:hover { border-color: var(--brand-color, var(--primary)); }
 .bshell-sec-head.is-selected { background: var(--primary-light); color: var(--primary-dark); }
 .bshell-sec-head.is-hidden { opacity: .55; }
@@ -138,8 +139,11 @@
 .bshell-canvas-frame-holder { width: 100%; max-width: 1440px; transition: max-width .2s ease; }
 .bshell-canvas-frame-holder.device-tablet { max-width: 768px; }
 .bshell-canvas-frame-holder.device-mobile { max-width: 390px; }
-.bshell-canvas-shadow { background: var(--bg-card, var(--surface)); border-radius: var(--radius-md, 16px); box-shadow: var(--shadow-card, var(--shadow-md, 0 24px 60px rgba(16,24,40,.14))); overflow: hidden; }
+.bshell-canvas-shadow { position: relative; background: var(--bg-card, var(--surface)); border-radius: var(--radius-md, 16px); box-shadow: var(--shadow-card, var(--shadow-md, 0 24px 60px rgba(16,24,40,.14))); overflow: hidden; }
 .bshell-canvas-iframe { width: 100%; height: calc(100vh - 64px - 56px); border: none; display: block; background: #fff; }
+/* The next full render loads here, invisible, on top of the current one
+   — swapped in only once it's ready (bshellSwapInCanvas). */
+.bshell-canvas-iframe.bshell-canvas-buffer { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
 
 /* ---------- Right: contextual Properties panel (~300px) ---------- */
 .bshell-props { width: 300px; flex: none; background: var(--surface); border-inline-start: 1px solid var(--border); overflow-y: auto; padding: 18px 16px; }
@@ -273,3 +277,85 @@
 .bshell-og-opt { display: flex; flex-direction: column; gap: 4px; padding: 4px; border: 1.5px solid var(--border); border-radius: 8px; background: var(--surface); cursor: pointer; font-family: inherit; font-size: 11px; color: var(--text-secondary); }
 .bshell-og-opt img, .bshell-og-opt .site-photo-placeholder { width: 100%; aspect-ratio: 1.91 / 1; object-fit: cover; border-radius: 5px; display: flex; align-items: center; justify-content: center; background: var(--bg); }
 .bshell-og-opt.active { border-color: var(--primary-dark); background: var(--primary-light); color: var(--primary-dark); font-weight: 700; }
+
+/* ---------- Section editor (click anything in the canvas) ----------
+   One panel per section: its texts, its service cards (each a small
+   card of fields), its style groups, then layout/visibility. The field
+   that was clicked in the canvas gets .is-focused — a teal ring that
+   fades to a quiet tint, so the eye lands on it. */
+.bshell-svc-list-label { margin-top: 4px; }
+.bshell-svc-list { display: grid; gap: 10px; margin-bottom: 10px; }
+.bshell-svc-item { border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px 12px; background: var(--surface); transition: border-color .2s ease, box-shadow .2s ease; }
+.bshell-svc-item .bshell-props-label { margin: 8px 0 4px; font-size: 12px; }
+.bshell-svc-item input[type="text"], .bshell-svc-item textarea {
+  width: 100%; box-sizing: border-box; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);
+  font-family: inherit; font-size: 13.5px; color: var(--text); background: var(--surface);
+}
+.bshell-svc-item textarea { resize: vertical; min-height: 54px; }
+.bshell-svc-item-head { display: flex; align-items: center; gap: 8px; }
+.bshell-svc-item-num { width: 22px; height: 22px; flex: none; border-radius: 50%; background: var(--bg); color: var(--text-secondary); font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+.bshell-svc-item-title { flex: 1; min-width: 0; font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bshell-icon-btn { width: 28px; height: 28px; flex: none; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--text-secondary); cursor: pointer; font-size: 13px; line-height: 1; }
+.bshell-icon-btn:hover { border-color: var(--border); background: var(--bg); color: var(--text); }
+.bshell-props-field.is-focused, .bshell-svc-item.is-focused { border-radius: 12px; animation: bshell-focus-ring 1.6s ease-out forwards; }
+.bshell-svc-item.is-focused { border-color: var(--primary); }
+.bshell-props-field.is-focused { padding: 8px; margin-inline: -8px; }
+@keyframes bshell-focus-ring {
+  0% { box-shadow: 0 0 0 3px rgba(20,184,166,.45); background: var(--primary-light); }
+  100% { box-shadow: 0 0 0 1px rgba(20,184,166,.35); background: rgba(204,251,241,.35); }
+}
+.bshell-style-group { padding: 10px 0 12px; border-top: 1px dashed var(--border); }
+.bshell-style-group:first-of-type { border-top: none; padding-top: 0; }
+.bshell-style-group-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 7px; }
+.bshell-style-group-name { font-size: 12.5px; font-weight: 700; color: var(--text); }
+.bshell-style-reset { background: none; border: none; padding: 0; font-family: inherit; font-size: 11.5px; color: var(--primary-dark); cursor: pointer; text-decoration: underline; }
+.bshell-style-row { display: grid; grid-template-columns: minmax(0, 1.5fr) 40px minmax(0, 1fr); gap: 6px; margin-bottom: 6px; }
+.bshell-style-row select { width: 100%; min-width: 0; box-sizing: border-box; padding: 7px 6px; border-radius: 8px; border: 1px solid var(--border); font-family: inherit; font-size: 12.5px; color: var(--text); background: var(--surface); }
+.bshell-style-row input[type="color"] { width: 40px; height: 34px; box-sizing: border-box; border: 1px solid var(--border); border-radius: 8px; padding: 2px; cursor: pointer; background: var(--surface); }
+.bshell-style-group .bshell-align-row { margin-bottom: 0; }
+.bshell-style-hint { margin: 4px 0 0; }
+
+/* "↩ חזרה לעיצוב הקודם" — a quiet text link right under the mood grid. */
+.bshell-mood-restore { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; background: none; border: none; padding: 2px 0; font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--primary-dark); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.bshell-mood-restore:hover { color: var(--text); }
+
+/* ---------- Publish dialog (js/site-wizard-router.js dkOpenPublishModal)
+   The reparented #export-panel brought its own sidebar colours along —
+   an ice-teal panel, a beige/orange status box (#publish-note), a gold
+   Pro card and a near-black "open site" button — four palettes in one
+   small dialog. Inside the dialog it's one calm system instead: white
+   cards on the dialog's white, thin neutral borders, and the builder's
+   teal as the single accent (primary button solid, everything else
+   outlined or text). Only inside .dk-publish-modal: the legacy sidebar
+   (?shell=0) keeps its own look. */
+.dk-publish-modal .export-panel { background: transparent; padding: 0; gap: 14px; }
+.dk-publish-modal #unlock-done-heading { color: var(--text) !important; font-size: 14.5px !important; font-weight: 600 !important; }
+.dk-publish-modal .finish-gate-note { color: var(--text-secondary); font-size: 12.5px; }
+.dk-publish-modal #publish-note:not(:empty) {
+  background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 14px;
+  padding: 14px 16px; font-weight: 500; font-size: 13.5px; box-shadow: 0 1px 2px rgba(16,24,40,.04);
+}
+.dk-publish-modal .publish-live-head { margin-bottom: 12px !important; font-size: 15px; color: var(--primary-dark); }
+.dk-publish-modal .publish-url-box {
+  display: flex; align-items: center; gap: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 8px 8px 8px 12px;
+}
+.dk-publish-modal #publish-url-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; font-weight: 600; color: var(--primary-dark); text-align: left; }
+.dk-publish-modal .publish-copy-btn { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; font-weight: 600; white-space: nowrap; }
+.dk-publish-modal .publish-copy-btn:hover { border-color: var(--primary); color: var(--primary-dark); }
+.dk-publish-modal .btn-teal {
+  background: var(--primary); color: #fff; box-shadow: none; border-radius: 10px; padding: 12px 18px; font-weight: 700;
+}
+.dk-publish-modal .btn-teal:hover { background: var(--primary-dark); transform: none; box-shadow: none; }
+.dk-publish-modal .host-info-box { background: var(--bg) !important; color: var(--text-secondary) !important; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: 12.5px; line-height: 1.6; }
+.dk-publish-modal .dk-pro-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 1px 2px rgba(16,24,40,.04); }
+.dk-publish-modal .dk-pro-chip { background: var(--primary-light); color: var(--primary-dark); }
+.dk-publish-modal .dk-pro-perks li::before { color: var(--primary); }
+.dk-publish-modal .dk-btn.dk-pro-btn { background: var(--surface); border: 1.5px solid var(--primary); color: var(--primary-dark); box-shadow: none; }
+.dk-publish-modal .dk-btn.dk-pro-btn:hover { background: var(--primary-light); color: var(--primary-dark); }
+.dk-publish-modal .dk-details summary { color: var(--text-secondary); }
+.dk-publish-modal .dk-details summary:hover { color: var(--primary-dark); }
+.dk-publish-modal #watermark-removed { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px; color: var(--primary-dark) !important; }
+.dk-publish-modal .go-live-box { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.6; }
+@media (max-width: 480px) {
+  .dk-publish-modal { padding: 24px 18px; }
+}
