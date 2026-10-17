@@ -217,6 +217,35 @@ if __name__ == "__main__":
         call("PATCH", "/config/auth", patch)
         print("Templates installed. Current values:")
         auth_show()
+    elif cmd == "save-errors":
+        # Read-only: failed saves of site projects in the last N hours —
+        # API status codes and database error texts only, redacted (public log).
+        hours = int(sys.argv[2]) if len(sys.argv) > 2 else 48
+        end_dt = datetime.datetime.now(datetime.timezone.utc)
+        start = (end_dt - datetime.timedelta(hours=hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        end = end_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+        scrub = lambda t: re.sub(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", "<id>",
+                                 re.sub(r"[\w.+-]+@[\w-]+\.[\w.-]+", "<email>", re.sub(r"\b\d{1,3}(\.\d{1,3}){3}\b", "<ip>", str(t))))[:400]
+        queries = [
+            ("API requests to site_projects with an error status",
+             "select timestamp, request.method as method, response.status_code as status from edge_logs "
+             "cross join unnest(metadata) as m cross join unnest(m.request) as request cross join unnest(m.response) as response "
+             "where request.path like '%site_projects%' and response.status_code >= 400 order by timestamp desc limit 60"),
+            ("Database errors mentioning site_projects",
+             "select timestamp, event_message from postgres_logs where event_message ilike '%site_projects%' order by timestamp desc limit 40"),
+            ("Recent database ERROR lines",
+             "select timestamp, event_message from postgres_logs cross join unnest(metadata) as m cross join unnest(m.parsed) as p "
+             "where p.error_severity = 'ERROR' order by timestamp desc limit 40"),
+        ]
+        for title, sql in queries:
+            res = call("GET", "/analytics/endpoints/logs?" + urllib.parse.urlencode({"sql": sql, "iso_timestamp_start": start, "iso_timestamp_end": end})) or {}
+            print(f"== {title} (last {hours} h)")
+            if res.get("error"):
+                print("  logs API error:", scrub(res.get("error"))[:300]); continue
+            rows = res.get("result") or res.get("data") or []
+            print(f"  {len(rows)} rows")
+            for r in rows:
+                print("  " + " | ".join(scrub(v) for v in r.values()))
     elif cmd == "auth-errors":
         minutes = int(sys.argv[2]) if len(sys.argv) > 2 else 60
         start = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=minutes)).strftime("%Y-%m-%dT%H:%M:%SZ")
