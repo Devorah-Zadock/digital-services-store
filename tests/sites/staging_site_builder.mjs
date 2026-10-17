@@ -6,7 +6,7 @@
 // Never publishes and never sends email.
 import { chromium } from "playwright";
 
-const URL = process.env.STG_URL, SERVICE = process.env.STG_SERVICE, WEB = process.env.STG_WEB_URL;
+const URL = process.env.STG_URL, SERVICE = process.env.STG_SERVICE, WEB = process.env.STG_WEB_URL, ANON = process.env.STG_ANON;
 const results = [];
 const check = (name, ok, detail = "") => { results.push([name, !!ok]); console.log((ok ? "PASS " : "FAIL ") + name + (ok ? "" : `  [${String(detail).slice(0, 300)}]`)); };
 const admin = (path, init = {}) => fetch(`${URL}${path}`, { ...init, headers: { apikey: SERVICE, Authorization: `Bearer ${SERVICE}`, "Content-Type": "application/json", ...(init.headers || {}) } });
@@ -90,6 +90,33 @@ try {
   await page.waitForTimeout(12000);
   rows = await rowsOf(user.id);
   check("network back: the change reaches the same row (retry)", rows.length === 1 && rows[0].data.tagline === "שינוי בזמן ניתוק", rows.length + " " + (rows[0] && rows[0].data.tagline));
+
+  // per-account project limit (supabase/sql/project_limits.sql): with the
+  // limit set to 1, a NEW site is refused (friendly dialog), saving the
+  // existing one still works, nothing is deleted.
+  const limitRow = await (await admin("/rest/v1/project_limits?tbl=eq.site_projects&select=max_per_user,paid_max_per_user")).json();
+  check("project limits table exists on staging", Array.isArray(limitRow) && limitRow.length === 1, JSON.stringify(limitRow));
+  try {
+    await admin("/rest/v1/project_limits?tbl=eq.site_projects", { method: "PATCH", body: JSON.stringify({ max_per_user: 1, paid_max_per_user: 1 }) });
+    const token = await page.evaluate(() => supabaseClient.auth.getSession().then(({ data }) => data.session.access_token));
+    const ins = await fetch(`${URL}/rest/v1/site_projects`, { method: "POST", headers: { apikey: ANON, Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ user_id: user.id, template: "blank", data: {} }) });
+    const insBody = await ins.text();
+    check("limit reached: a new site is refused with project_limit", !ins.ok && /project_limit:site_projects:1/.test(insBody), ins.status + " " + insBody.slice(0, 160));
+    await page.evaluate(() => supabaseClient.from("site_projects").insert({ user_id: siteCurrentUserId, template: "blank", data: {} }));
+    await page.waitForTimeout(800);
+    check("the browser explains the limit in plain words", await page.evaluate(() => { const m = document.getElementById("dk-limit-modal"); return !!m && /עד 1 אתרים|up to 1 sites/.test(m.innerText); }));
+    await page.evaluate(() => { const m = document.getElementById("dk-limit-modal"); if (m) m.remove(); });
+    await fr.locator('[data-textkey="tagline"]').first().click();
+    await page.keyboard.press("Control+A");
+    await page.keyboard.type("שמירה מעל המגבלה");
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(6000);
+    rows = await rowsOf(user.id);
+    check("limit reached: saving the EXISTING site still works, nothing deleted", rows.length === 1 && rows[0].data.tagline === "שמירה מעל המגבלה", rows.length + " " + (rows[0] && rows[0].data.tagline));
+  } finally {
+    const orig = Array.isArray(limitRow) && limitRow[0] ? limitRow[0] : { max_per_user: 15, paid_max_per_user: 40 };
+    await admin("/rest/v1/project_limits?tbl=eq.site_projects", { method: "PATCH", body: JSON.stringify(orig) });
+  }
 
   check("no JavaScript errors", errors.length === 0, errors.slice(0, 3).join(" | "));
   await ctx.close();
