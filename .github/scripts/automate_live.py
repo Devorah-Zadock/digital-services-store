@@ -327,7 +327,14 @@ def cmd_owner_mail(on):
     """Real emails for the OWNER'S ADDRESS ONLY (on), or back to simulated (off).
     AUTOMATE_MAIL_ALLOWLIST stays the one admin address, so any other
     recipient is still only simulated — the mailer checks it on every email."""
-    e = owner_email()
+    # The one account on the Automate pilot list (the owner's own account) —
+    # not "the admin", since more than one account may hold an admin password.
+    rows = q("live", """select lower(e) as e from public.automate_settings s,
+                         jsonb_array_elements_text(s.value -> 'emails') e where s.key = 'access'""")
+    if len(rows) != 1:
+        die(f"expected exactly one account on the Automate pilot list, found {len(rows)}")
+    e = rows[0]["e"]
+    print(f"::add-mask::{e}")
     api("POST", f"/projects/{LIVE_REF}/secrets", [
         {"name": "AUTOMATE_MAIL_MODE", "value": "live" if on else "sink"},
         {"name": "AUTOMATE_MAIL_ALLOWLIST", "value": e},
@@ -369,7 +376,7 @@ def cmd_pilot_check():
                (select count(*) from public.automation_messages where user_id not in (select id from pilot_users)) as other_messages,
                (select count(*) from public.automation_messages where status = 'sent') as really_sent,
                (select count(*) from public.automation_messages where status = 'sent'
-                  and lower(to_email) not in (select e from owner)) as sent_not_owner""")[0]
+                  and lower(to_email) not in (select e from pilot)) as sent_not_owner""")[0]
     have = {s.get("name") for s in (api("GET", f"/projects/{LIVE_REF}/secrets") or [])}
     print(f"pilot accounts: {iso['pilot_n']} (not the owner: {iso['pilot_not_owner']})")
     print(f"data of other accounts — automations: {iso['other_automations']}, contacts: {iso['other_contacts']}, emails: {iso['other_messages']}")
