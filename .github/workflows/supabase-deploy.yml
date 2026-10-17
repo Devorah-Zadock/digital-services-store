@@ -22,7 +22,7 @@ on:
         description: "What to do"
         type: choice
         default: check-live
-        options: [check-live, deploy-functions, run-sql, auth-settings, turnstile-enable, turnstile-disable, auth-errors, smtp-resend, auth-templates, admin-lockdown, admin-reset, site-links-email-dry, site-links-email, staging-check, staging-create, auth-logins, usage-report]
+        options: [check-live, deploy-functions, run-sql, auth-settings, turnstile-enable, turnstile-disable, auth-errors, smtp-resend, auth-templates, admin-lockdown, admin-reset, site-links-email-dry, site-links-email, staging-check, staging-create, auth-logins, usage-report, save-errors]
       sql_files:
         description: "run-sql: space-separated SQL files"
         default: ""
@@ -80,6 +80,10 @@ jobs:
       - name: Recent Auth errors (read-only, redacted)
         if: github.event_name == 'workflow_dispatch' && inputs.task == 'auth-errors'
         run: python3 .github/scripts/supabase_api.py auth-errors 90
+
+      - name: Failed site saves (read-only, redacted)
+        if: github.event_name == 'workflow_dispatch' && inputs.task == 'save-errors'
+        run: python3 .github/scripts/supabase_api.py save-errors 48
 
       - name: Admin sign-ins (read-only, fingerprints only)
         if: github.event_name == 'workflow_dispatch' && inputs.task == 'auth-logins'
