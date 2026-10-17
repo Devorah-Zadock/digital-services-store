@@ -23,7 +23,7 @@ on:
       task:
         description: "Step"
         type: choice
-        options: [rehearse, preflight, install, upgrade, check, pilot-prepare, pilot-check]
+        options: [rehearse, preflight, install, upgrade, check, pilot-prepare, pilot-check, owner-mail-on, owner-mail-off]
 
 permissions:
   contents: read
@@ -151,3 +151,11 @@ jobs:
       - name: Pilot check (read-only)
         if: inputs.task == 'pilot-check'
         run: python3 .github/scripts/automate_live.py pilot-check
+      # Real emails only to the owner's own admin address (for testing on her
+      # own sites); every other recipient stays simulated. -off reverts.
+      - name: Owner-only real mail on/off
+        if: inputs.task == 'owner-mail-on' || inputs.task == 'owner-mail-off'
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/automate_live.py ${{ inputs.task }}
+          python3 .github/scripts/automate_live.py pilot-check

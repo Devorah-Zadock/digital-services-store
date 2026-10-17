@@ -608,11 +608,76 @@
     }).join("");
   }
 
+  // ------------------------------------------------------------ simple screen
+  // Three switches instead of the full catalogue: the three automations a
+  // small business understands at a glance. Same API as the full screen
+  // (activate / pause / resume), so both screens always agree.
+  const SIMPLE = [
+    { key: "lead_autopilot", icon: "📩",
+      title: L("מישהו השאיר פרטים באתר", "Someone left their details on your site"),
+      what: L("הפונה מקבל מייל תודה מיד, ואת/ה מקבל/ת מייל עם הפרטים שלו.", "They get a thank-you email right away, and you get an email with their details."),
+      hint: L("צריך באתר את הטופס \"השאירו פרטים\": בבונה האתרים ← הגדרות האתר ← להפעיל את הטופס, ולפרסם את האתר מחדש.", "Your site needs the \"Leave your details\" form: in the site builder → Site settings → turn on the form, then republish.") },
+    { key: "quote_followup", icon: "📨",
+      title: L("הצעת מחיר בלי תשובה", "A quote with no answer"),
+      what: L("אחרי 3 ימים בלי תשובה — תזכורת עדינה ללקוח (תאשר/י לפני שהיא יוצאת).", "After 3 days with no answer, a gentle reminder to the client (you approve it before it goes out)."),
+      hint: L("עובד על הצעות מחיר שנשלחות מכאן כקישור (בלשונית \"הצעות מחיר\" במסך המלא).", "Works on quotes sent from here as a link (the \"Quotes\" tab in the full screen).") },
+    { key: "invoice_collect", icon: "💸",
+      title: L("חשבונית שלא שולמה", "An unpaid invoice"),
+      what: L("אחרי מועד התשלום — תזכורת מנומסת ללקוח (תאשר/י לפני שהיא יוצאת).", "After the due date, a polite reminder to the client (you approve it before it goes out)."),
+      hint: L("בוחרים חשבונית למעקב בלשונית \"חשבוניות\" במסך המלא.", "Pick an invoice to track in the \"Invoices\" tab of the full screen.") },
+  ];
+  function renderSimple() {
+    if (!S.overview) return;
+    const p = S.overview.profile;
+    const rows = SIMPLE.map((x) => {
+      const a = S.autos[x.key]; const on = !!a && a.status !== "paused";
+      return `<div class="au-simple-row">
+        <span class="au-simple-icon">${x.icon}</span>
+        <div class="au-simple-text"><b>${esc(x.title)}</b><span>${esc(x.what)}</span>${on ? `<div class="au-simple-hint">💡 ${esc(x.hint)}</div>` : ""}</div>
+        <label class="au-sw" title="${on ? L("פעיל", "On") : L("כבוי", "Off")}"><input type="checkbox" data-simple="${x.key}"${on ? " checked" : ""} aria-label="${esc(x.title)}"><span></span></label>
+      </div>`;
+    }).join("");
+    const recent = (S.contacts || []).slice(0, 5);
+    $("au-simple").innerHTML = `
+      <div class="au-card">
+        <div class="au-item"><div class="au-item-main">
+          <div class="au-item-title">${p ? esc(p.business_name) : L("עוד לא מילאת את פרטי העסק", "Your business details aren't filled in yet")}</div>
+          <div class="au-item-sub">${p ? `${L("התראות נשלחות אל", "Notifications go to")} <span dir="ltr">${esc(p.notify_email || p.reply_email || S.user.email || "")}</span>` : L("שם העסק והמייל שלך — כדי שהמיילים ייצאו בשמך.", "Your business name and email, so emails go out in your name.")}</div>
+        </div><button class="au-btn${p ? "" : " primary"}" id="au-simple-profile">${p ? L("עריכה", "Edit") : L("מילוי פרטים", "Fill in")}</button></div>
+      </div>
+      <h2 class="au-section-title">${L("מה יקרה אוטומטית", "What happens automatically")}</h2>
+      <div class="au-card">${rows}</div>
+      <h2 class="au-section-title">${L("פניות אחרונות", "Latest enquiries")}</h2>
+      <div class="au-card">${recent.length ? recent.map((c) => `<div class="au-item-sub" style="padding:4px 0;"><b style="color:var(--ink-dark);">${esc(c.name || "")}</b> · ${esc(c.email || c.phone || "")} · ${esc(when(c.created_at))}</div>`).join("")
+        : `<span class="au-item-sub">${L("עוד אין פניות. ברגע שמישהו ימלא את הטופס באתר שלך — הוא יופיע כאן.", "No enquiries yet. As soon as someone fills in the form on your site, they'll appear here.")}</span>`}</div>
+      <div class="au-actions" style="margin-top:18px;"><a class="au-btn" href="#today">${L("כל האפשרויות ←", "All options →")}</a></div>`;
+    $("au-simple-profile").onclick = () => openWizard(2);
+    $("au-simple").querySelectorAll("[data-simple]").forEach((box) => box.addEventListener("change", async () => {
+      const key = box.dataset.simple; const a = S.autos[key];
+      if (box.checked && !S.overview.profile) { box.checked = false; openWizard(2); return; }
+      box.disabled = true;
+      try {
+        if (!box.checked) await api("pause", { template: key });
+        else if (a) await api("resume", { template: key });
+        else {
+          const t = S.catalog.templates.find((x) => x.key === key);
+          await api("activate", { template: key, config: t ? englishTextDefaults(t, null) : {} });
+        }
+        toast(box.checked ? L("הופעל ✓", "Turned on ✓") : L("כובה", "Turned off"));
+        await refresh(true);
+      } catch (err) { box.checked = !box.checked; toast(err.message); }
+      box.disabled = false;
+    }));
+  }
+
   // ------------------------------------------------------------ tabs + refresh
-  const TABS = ["today", "automations", "contacts", "quotes", "invoices", "history"];
-  function currentTab() { const h = location.hash.replace("#", ""); return TABS.includes(h) ? h : "today"; }
+  const TABS = ["simple", "today", "automations", "contacts", "quotes", "invoices", "history"];
+  function currentTab() { const h = location.hash.replace("#", ""); return TABS.includes(h) ? h : "simple"; }
   function showTab() {
     const t = currentTab();
+    // The simple screen stands alone; the full tab bar shows only in "all options".
+    $("au-tabs").hidden = t === "simple";
+    if (t === "simple") renderSimple();
     document.querySelectorAll(".au-tab").forEach((b) => b.classList.toggle("active", b.dataset.tab === t));
     TABS.forEach((k) => { $("panel-" + k).hidden = k !== t; });
     if (t === "history") renderHistory();
@@ -626,6 +691,7 @@
       if (withOverview) await loadOverview();
       await loadData();
       renderHeader(); renderTemplates(); renderContacts(); renderQuotes(); renderInvoices();
+      if (currentTab() === "simple") renderSimple();
       const t = currentTab();
       if (t === "today") await renderToday();
       if (t === "history") await renderHistory();
@@ -653,9 +719,10 @@
       return;
     }
     $("au-gate").hidden = true; $("au-main").hidden = false;
+    $("au-tab-simple").textContent = L("→ המסך הפשוט", "← Simple view");
     await refresh(false);
     showTab();
-    if (!S.overview.profile) openWizard(1);
+    if (!S.overview.profile) openWizard(currentTab() === "simple" ? 2 : 1);
     setInterval(() => { if (!document.hidden && $("au-modal").hidden) refresh(); }, 30000);
   }
   document.addEventListener("DOMContentLoaded", start);

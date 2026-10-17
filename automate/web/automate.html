@@ -46,6 +46,22 @@
   .au-pill.info { background: #E3F3F0; color: #0F766E; }
   .au-empty { text-align: center; color: var(--grey); padding: 26px 10px; }
   .au-section-title { font-family: Rubik, Heebo, sans-serif; font-size: 18px; margin: 22px 0 10px; }
+  /* simple screen */
+  .au-simple-row { display: flex; align-items: center; gap: 14px; }
+  .au-simple-row + .au-simple-row { border-top: 1px solid #EEF2F1; margin-top: 14px; padding-top: 14px; }
+  .au-simple-icon { font-size: 26px; width: 44px; height: 44px; border-radius: 12px; background: #E8F5F2; display: flex; align-items: center; justify-content: center; flex: none; }
+  .au-simple-text { flex: 1; min-width: 0; }
+  .au-simple-text b { display: block; font-size: 15.5px; }
+  .au-simple-text span { font-size: 13.5px; color: var(--grey); }
+  .au-simple-hint { font-size: 13px; background: #FFFBF2; border: 1px solid #F5C77E; border-radius: 10px; padding: 8px 10px; margin-top: 8px; }
+  .au-sw { position: relative; width: 48px; height: 28px; flex: none; }
+  .au-sw input { opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; position: absolute; z-index: 1; }
+  .au-sw span { position: absolute; inset: 0; border-radius: 99px; background: #CBD5D1; transition: background .15s; }
+  .au-sw span::after { content: ""; position: absolute; top: 3px; inset-inline-start: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: transform .15s; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+  .au-sw input:checked + span { background: #14B8A6; }
+  .au-sw input:checked + span::after { transform: translateX(-20px); }
+  [dir="ltr"] .au-sw input:checked + span::after { transform: translateX(20px); }
+  .au-sw input:disabled { cursor: wait; }
   .au-tpl-icon { font-size: 26px; line-height: 1; }
   .au-tpl h3 { margin: 8px 0 4px; font-size: 17px; }
   .au-tpl p { margin: 0 0 10px; color: #475467; font-size: 14px; line-height: 1.6; }
@@ -118,7 +134,8 @@
 
     <div id="au-alerts"></div>
 
-    <nav class="au-tabs" role="tablist">
+    <nav class="au-tabs" role="tablist" id="au-tabs" hidden>
+      <button class="au-tab" data-tab="simple" role="tab" id="au-tab-simple">→ המסך הפשוט</button>
       <button class="au-tab" data-tab="today" role="tab"><span data-i18n="au_tab_today">היום</span> <span class="au-count" id="au-today-count" hidden></span></button>
       <button class="au-tab" data-tab="automations" role="tab" data-i18n="au_tab_automations">אוטומציות</button>
       <button class="au-tab" data-tab="contacts" role="tab" data-i18n="au_tab_contacts">לקוחות ופניות</button>
@@ -127,8 +144,13 @@
       <button class="au-tab" data-tab="history" role="tab" data-i18n="au_tab_history">מה קרה</button>
     </nav>
 
+    <!-- המסך הפשוט: שלושה מתגים, ברירת המחדל -->
+    <section class="au-panel" id="panel-simple">
+      <div id="au-simple"></div>
+    </section>
+
     <!-- היום -->
-    <section class="au-panel" id="panel-today">
+    <section class="au-panel" id="panel-today" hidden>
       <div id="au-approvals"></div>
       <h2 class="au-section-title" data-i18n="au_needs_attention">דורש טיפול</h2>
       <div class="au-list" id="au-attention"></div>
@@ -199,6 +221,6 @@
 <script src="js/mobile-nav.js?v=2"></script>
 <script src="js/i18n-automate.js?v=2"></script>
 <script src="js/i18n.js?v=41"></script>
-<script src="js/automate-app.js?v=2"></script>
+<script src="js/automate-app.js?v=3"></script>
 </body>
 </html>
