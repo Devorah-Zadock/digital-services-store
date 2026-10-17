@@ -323,6 +323,19 @@ def cmd_pilot_secrets():
     print("Automate secrets set: mail simulated only, allowlist = owner, new worker secret")
 
 
+def cmd_owner_mail(on):
+    """Real emails for the OWNER'S ADDRESS ONLY (on), or back to simulated (off).
+    AUTOMATE_MAIL_ALLOWLIST stays the one admin address, so any other
+    recipient is still only simulated — the mailer checks it on every email."""
+    e = owner_email()
+    api("POST", f"/projects/{LIVE_REF}/secrets", [
+        {"name": "AUTOMATE_MAIL_MODE", "value": "live" if on else "sink"},
+        {"name": "AUTOMATE_MAIL_ALLOWLIST", "value": e},
+    ])
+    print("Automate mail: real emails to the owner's address only; everyone else simulated" if on
+          else "Automate mail: back to simulated only (no real email at all)")
+
+
 def cmd_pilot_cron():
     url = f"{LIVE_URL}/functions/v1/automate-worker"
     q("live", "create extension if not exists pg_cron; create extension if not exists pg_net")
@@ -354,11 +367,13 @@ def cmd_pilot_check():
                (select count(*) from public.automations where user_id not in (select id from pilot_users)) as other_automations,
                (select count(*) from public.contacts where user_id not in (select id from pilot_users)) as other_contacts,
                (select count(*) from public.automation_messages where user_id not in (select id from pilot_users)) as other_messages,
-               (select count(*) from public.automation_messages where status = 'sent') as really_sent""")[0]
+               (select count(*) from public.automation_messages where status = 'sent') as really_sent,
+               (select count(*) from public.automation_messages where status = 'sent'
+                  and lower(to_email) not in (select e from owner)) as sent_not_owner""")[0]
     have = {s.get("name") for s in (api("GET", f"/projects/{LIVE_REF}/secrets") or [])}
     print(f"pilot accounts: {iso['pilot_n']} (not the owner: {iso['pilot_not_owner']})")
     print(f"data of other accounts — automations: {iso['other_automations']}, contacts: {iso['other_contacts']}, emails: {iso['other_messages']}")
-    print(f"emails really sent: {iso['really_sent']}; mail allowlist secret: {'set' if 'AUTOMATE_MAIL_ALLOWLIST' in have else 'MISSING'}")
+    print(f"emails really sent: {iso['really_sent']} (to anyone but the owner: {iso['sent_not_owner']}); mail allowlist secret: {'set' if 'AUTOMATE_MAIL_ALLOWLIST' in have else 'MISSING'}")
     bad = []
     if st["mode"] != "allowlist":
         bad.append("access is open to everyone")
@@ -366,8 +381,8 @@ def cmd_pilot_check():
         bad.append("the pilot list is not exactly the owner")
     if int(iso["other_automations"]) or int(iso["other_contacts"]) or int(iso["other_messages"]):
         bad.append("Automate holds data of accounts outside the pilot")
-    if int(iso["really_sent"]):
-        bad.append("an email was really sent")
+    if int(iso["sent_not_owner"]):
+        bad.append("an email was really sent to someone other than the owner")
     if "AUTOMATE_MAIL_ALLOWLIST" not in have:
         bad.append("no mail allowlist")
     if "ADMIN_TEST_CODES" in have:
@@ -405,5 +420,9 @@ if __name__ == "__main__":
         cmd_pilot_cron()
     elif cmd == "pilot-check":
         cmd_pilot_check()
+    elif cmd == "owner-mail-on":
+        cmd_owner_mail(True)
+    elif cmd == "owner-mail-off":
+        cmd_owner_mail(False)
     else:
         sys.exit(__doc__)

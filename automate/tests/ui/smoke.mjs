@@ -29,8 +29,13 @@ try {
   await page.click("#qa-auth-submit");
   await page.waitForURL(/automate\.html/, { timeout: 20000 }).catch(() => {});
   if (!/automate\.html/.test(page.url())) await page.goto(`${WEB}/automate.html`);
+  // Default view is the simple screen: first visit asks only for the business details.
+  await page.waitForSelector("#wz-name", { timeout: 20000 });
+  check("simple screen is the default; first visit asks for business details", await page.locator("#panel-simple:not([hidden])").count() === 1);
+  // The full set-up wizard (business packs) lives under "all options".
+  await page.goto(`${WEB}/automate.html#automations`); await page.reload();
   await page.waitForSelector(".au-pack", { timeout: 20000 });
-  check("signed in; first visit opens the setup wizard", true);
+  check("signed in; the full screen opens the setup wizard", true);
 
   await page.click('[data-pack="home_services"]');
   await page.click("#wz-next");
@@ -43,6 +48,20 @@ try {
   await page.waitForSelector(".au-tpl", { timeout: 15000 });
   const active = await page.locator(".au-pill.on").count();
   check("one click activates the business pack (≥5 automations active)", active >= 5, `active=${active}`);
+
+  // simple screen: three switches that mirror the same automations
+  await page.goto(`${WEB}/automate.html#simple`); await page.reload();
+  await page.waitForSelector("[data-simple]", { timeout: 15000 });
+  const sw = await page.locator("[data-simple]").count();
+  const leadOn = await page.locator('[data-simple="lead_autopilot"]').isChecked();
+  check("simple screen shows three switches; the new-lead one is on after the pack", sw === 3 && leadOn, `switches=${sw} leadOn=${leadOn}`);
+  await page.locator('[data-simple="lead_autopilot"]').uncheck({ force: true });
+  await page.waitForTimeout(2500);
+  const paused = await (await admin(`/rest/v1/automations?user_id=eq.${uid}&template_key=eq.lead_autopilot&select=status`)).json();
+  await page.locator('[data-simple="lead_autopilot"]').check({ force: true });
+  await page.waitForTimeout(2500);
+  const resumed = await (await admin(`/rest/v1/automations?user_id=eq.${uid}&template_key=eq.lead_autopilot&select=status`)).json();
+  check("a switch pauses and resumes the automation", paused[0]?.status === "paused" && resumed[0]?.status === "active", `${paused[0]?.status} → ${resumed[0]?.status}`);
 
   await page.goto(`${WEB}/automate.html#contacts`);
   await page.waitForSelector("#au-demo-lead:not([hidden])", { timeout: 15000 });
