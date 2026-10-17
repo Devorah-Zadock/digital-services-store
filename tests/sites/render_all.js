@@ -11,7 +11,13 @@
    The samples carry no seo/mood settings, so the output must stay
    byte-identical to the baseline taken before the SEO panel and the
    design moods existed (tests/sites/e2e_seo_moods.py compares them).
-   The clock is pinned so the footer's "© year" can't change the hashes. */
+   The clock is pinned so the footer's "© year" can't change the hashes.
+
+   One intentional change since that baseline: בס"ד (d.showBsd, the
+   "full" sample) is now plain text instead of a white pill. Its new
+   inline style is mapped back to the old one before hashing, so the
+   comparison still proves every other byte of every document is
+   unchanged (--raw hashes the real output). */
 const fs = require("fs");
 const vm = require("vm");
 const path = require("path");
@@ -53,6 +59,9 @@ const SAMPLES = {
 };
 
 const EMPTY_SETTINGS = process.argv.includes("--empty-settings");
+const RAW = process.argv.includes("--raw");
+const BSD_STYLE_NOW = /<div class="site-bsd" style="position:absolute; top:6px; right:10px; z-index:2147483000; font-size:11px; line-height:1.4; color:(?:inherit|#fff); opacity:.75; pointer-events:none;">/g;
+const BSD_STYLE_BASELINE = 'style="position:absolute; top:6px; right:10px; z-index:2147483000; font-size:11px; line-height:1.4; color:#333; background:rgba(255,255,255,.85); padding:1px 6px; border-radius:6px; pointer-events:none;"';
 function renderAll() {
   const keys = vm.runInContext("Object.keys(SITE_TEMPLATES)", ctx);
   const out = {};
@@ -63,7 +72,8 @@ function renderAll() {
         if (EMPTY_SETTINGS) Object.assign(ctx.__d, { seo: { title: " ", description: "", ogImage: "" }, mood: "", heroAlt: "  " });
         ctx.__k = k;
         ctx.__p = page;
-        const html = vm.runInContext("SITE_TEMPLATES[__k].render(__d, __p)", ctx);
+        let html = vm.runInContext("SITE_TEMPLATES[__k].render(__d, __p)", ctx);
+        if (!RAW) html = html.replace(BSD_STYLE_NOW, `<div class="site-bsd" ${BSD_STYLE_BASELINE}>`);
         out[`${k}/${name}/${page}`] = crypto.createHash("sha256").update(html).digest("hex");
       }
     }

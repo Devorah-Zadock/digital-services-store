@@ -87,7 +87,11 @@ function bshellAnchorCandidates(template, type) {
    Section still do their own .closest("body > *") on it. */
 function bshellQueryAnchor(root, candidates) {
   for (const c of candidates) {
-    const el = c.charAt(0) === "#" ? root.querySelector(c) : root.querySelector(`[data-textkey="${c}"]`);
+    const sel = c.charAt(0) === "#" ? c : `[data-textkey="${c}"]`;
+    // The anchor can be the section element itself (chaos's services
+    // rail IS #oc-hscroll) — querySelector alone never matches root.
+    if (root.matches && root.matches(sel)) return root;
+    const el = root.querySelector(sel);
     if (el) return el;
   }
   return null;
@@ -111,7 +115,7 @@ const BSHELL_TEXT_CONTENT_MAP = {
 };
 
 let bshellActiveFlag = false;
-let bshellSelection = null; // { kind: "text"|"service"|"section", key?|idx?|type? }
+let bshellSelection = null; // { kind: "section", type, rootEl, focus? } | { kind: "settings" } — see bshellResolveClickTarget
 let bshellUndoStack = [];
 // Which hierarchy sections (by type) are collapsed — starts empty, i.e.
 // every section begins expanded, same as the old hardcoded-open
@@ -525,7 +529,7 @@ function bshellRenderHierarchy() {
     if (def.hasItems) {
       const services = dd._services || d.services || [];
       itemsHtml = services.map((s, i) => {
-        const isSelectedItem = bshellSelection && bshellSelection.kind === "service" && bshellSelection.idx === i;
+        const isSelectedItem = bshellSelection && bshellSelection.kind === "section" && bshellSelection.focus && bshellSelection.focus.svc === i;
         return `<button type="button" class="bshell-item${isSelectedItem ? " is-selected" : ""}" data-bshell-select-service="${i}">${escapeHtmlS(s.name && s.name.trim() ? s.name : `${bsL("שירות", "Service")} ${i + 1}`)}</button>`;
       }).join("") + `<button type="button" class="bshell-add-item" data-bshell-add-service>${bsL("+ הוספת שירות", "+ Add service")}</button>`;
     }
@@ -538,7 +542,15 @@ function bshellRenderHierarchy() {
         </summary>
         ${itemsHtml ? `<div class="bshell-sec-body">${itemsHtml}</div>` : ""}
       </details>`;
-  }).join("");
+  }).join("") + (types.length ? `
+      <div class="bshell-sec">
+        <button type="button" class="bshell-sec-head${bshellSelection && bshellSelection.kind === "section" && bshellSelection.type === BSHELL_SITE_TYPE ? " is-selected" : ""}" data-bshell-select-site>
+          <span>${bsL("ראש ותחתית האתר", "Header & footer")}</span>
+        </button>
+      </div>` : "");
+  list.querySelectorAll("[data-bshell-select-site]").forEach((el) => {
+    el.addEventListener("click", () => bshellSelectSection(BSHELL_SITE_TYPE));
+  });
 
   list.querySelectorAll("[data-bshell-select-section]").forEach((el) => {
     el.addEventListener("click", (e) => {
@@ -553,73 +565,389 @@ function bshellRenderHierarchy() {
     el.addEventListener("click", () => bshellSelectService(parseInt(el.dataset.bshellSelectService, 10)));
   });
   list.querySelectorAll("[data-bshell-add-service]").forEach((el) => {
-    el.addEventListener("click", () => {
-      bshellSnapshot();
-      d.services = d.services || [];
-      d.services.push({ name: "", desc: "", price: "" });
-      const newIdx = d.services.length - 1;
-      bshellRenderCanvas(() => bshellSelectService(newIdx));
-      bshellRenderHierarchy();
-      bshellScheduleSave();
-    });
+    el.addEventListener("click", bshellAddService);
   });
 }
 
 /* ---------- Canvas: render + click-to-select ---------- */
 
-/* Setting .srcdoc is asynchronous — the new document isn't ready the
-   instant this returns, it's ready once the iframe fires "load". Every
-   call site that needs to touch the FRESH document afterward (reselect
-   whatever was selected, since the old selection's rootEl belongs to
-   the document that just got replaced) passes afterLoad rather than
-   assuming contentDocument is already the new one. */
-function bshellRenderCanvas(afterLoad) {
-  const iframe = document.getElementById("bshell-canvas-iframe");
-  iframe.srcdoc = currentSiteHtml("index");
-  bshellCanvasClickWired = false;
-  iframe.onload = () => {
-    bshellWireCanvasClicks();
-    bshellApplySelectionVisual();
-    if (afterLoad) afterLoad();
-  };
+/* The canvas used to reload its whole iframe (srcdoc = ...) on every
+   change that wasn't a single data-textkey span — every keystroke in a
+   service name, a phone number or the contact details, every mood/colour
+   whose colour sits in an inline style (the "centered" hero / "grid"
+   services layouts in site-blocks.js), every toggle. A reload is a
+   visible flash: the page blanks, scrolls back to the top and replays
+   its fade-in animations. Now every change goes through one path:
+
+   1. bshellPatchCanvas() renders the page in memory (the same
+      currentSiteHtml() string the published site is made from), diffs it
+      against the page the canvas is showing, and changes only what
+      differs in the live document — a text node, an attribute, the
+      template's <style>, or (when the shape of something changed, e.g. a
+      service was added) that one element's contents. No navigation.
+   2. Only when the page's top-level structure itself changed (a section
+      shown/hidden, the language switched) does it fall back to
+      bshellSwapInCanvas(): the new page loads in a hidden second iframe
+      on top, jumps to the same scroll position with everything already
+      revealed, and only then replaces the old one — double-buffered, so
+      there's nothing to see in between.
+
+   Every top-level element of the page is tagged data-bshell-top="N" in
+   the canvas copy only (never in what's published), so the diff can find
+   "the Nth section" in the live document even after the template's own
+   scripts have added things around it. */
+let bshellCanvasHtml = "";     // the currentSiteHtml() string the visible canvas shows
+let bshellCanvasBuffer = null; // a hidden iframe still loading the next full render
+
+function bshellTaggedDoc(html) {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  Array.from(doc.body.children).forEach((el, i) => el.setAttribute("data-bshell-top", String(i)));
+  return doc;
 }
 
+/* afterLoad runs once the canvas shows the new page — right away when it
+   could be patched in place, after the swap otherwise. Every call site
+   that needs to touch the FRESH document (reselect whatever was
+   selected) passes it rather than assuming either. */
+function bshellRenderCanvas(afterLoad) {
+  const html = currentSiteHtml("index");
+  if (bshellPatchCanvas(html)) {
+    bshellReanchorSelection();
+    if (afterLoad) afterLoad();
+    return;
+  }
+  bshellSwapInCanvas(html, afterLoad);
+}
+
+function bshellPatchCanvas(html) {
+  const iframe = document.getElementById("bshell-canvas-iframe");
+  const doc = iframe && iframe.contentDocument;
+  if (!doc || !doc.body || !bshellCanvasHtml || bshellCanvasBuffer) return false;
+  if (!doc.querySelector("body > [data-bshell-top]")) return false;
+  if (html === bshellCanvasHtml) return true;
+  const oldDoc = bshellTaggedDoc(bshellCanvasHtml);
+  const newDoc = bshellTaggedDoc(html);
+  const attr = (d, name) => d.documentElement.getAttribute(name);
+  if (attr(oldDoc, "lang") !== attr(newDoc, "lang") || attr(oldDoc, "dir") !== attr(newDoc, "dir")) return false;
+  if (oldDoc.body.getAttribute("class") !== newDoc.body.getAttribute("class")) return false;
+  const oldTop = Array.from(oldDoc.body.children);
+  const newTop = Array.from(newDoc.body.children);
+  if (oldTop.length !== newTop.length || oldTop.some((el, i) => el.tagName !== newTop[i].tagName)) return false;
+  // A template script with the data baked in (cinematic's glow, neon's
+  // particles and luxury3d's tint are coloured from the primary colour
+  // when they start) can't be patched: its old copy keeps running. Those
+  // changes — colour/mood on those templates only — take the swap.
+  const scriptsOf = (d) => Array.from(d.querySelectorAll("script")).map((s) => s.textContent).join("\u0000");
+  if (scriptsOf(oldDoc) !== scriptsOf(newDoc)) return false;
+  // Find every live counterpart BEFORE changing anything, so a page that
+  // can't be patched is left exactly as it was for the full swap.
+  const jobs = [];
+  for (let i = 0; i < oldTop.length; i++) {
+    if (oldTop[i].isEqualNode(newTop[i])) continue;
+    const live = doc.querySelector(`body > [data-bshell-top="${i}"]`);
+    if (!live) return false;
+    jobs.push([live, oldTop[i], newTop[i]]);
+  }
+  const oldStyle = oldDoc.head.querySelector("style");
+  const newStyle = newDoc.head.querySelector("style");
+  const liveStyle = doc.head.querySelector('style:not([id^="bshell"])');
+  if ((oldStyle ? oldStyle.textContent : "") !== (newStyle ? newStyle.textContent : "")) {
+    if (!liveStyle || !newStyle) return false;
+    liveStyle.textContent = newStyle.textContent;
+  }
+  // The Google Fonts <link>s (a font or mood change loads another family).
+  const links = (d) => Array.from(d.head.querySelectorAll("link")).map((l) => l.outerHTML).join("");
+  if (links(oldDoc) !== links(newDoc)) {
+    doc.head.querySelectorAll("link").forEach((l) => l.remove());
+    doc.head.insertAdjacentHTML("afterbegin", Array.from(newDoc.head.querySelectorAll("link")).map((l) => l.outerHTML).join(""));
+  }
+  // <title>/<meta> differences (SEO fields) are invisible in the canvas.
+  const touchedTops = new Set();
+  jobs.forEach(([live, o, n]) => bshellPatchNode(doc, live, o, n, touchedTops));
+  touchedTops.forEach((top) => bshellRerunTrailingScript(doc, top));
+  bshellCanvasHtml = html;
+  return true;
+}
+
+/* Brings one live element in line with its new rendering, as narrowly as
+   possible: same tag + same child shape -> recurse (so typing a service
+   name only rewrites that name's text node); anything else -> this one
+   element's contents are rebuilt from the new rendering. touchedTops
+   collects the top-level sections whose markup was rebuilt, so their
+   own trailing <script> can be re-run once afterwards. */
+function bshellPatchNode(doc, live, o, n, touchedTops) {
+  if (o.isEqualNode(n)) return;
+  if (o.tagName !== n.tagName || o.tagName === "SCRIPT") {
+    const fresh = doc.importNode(n, true);
+    live.replaceWith(fresh);
+    bshellAfterRebuild(doc, fresh, touchedTops);
+    return;
+  }
+  Array.from(n.attributes).forEach((a) => { if (o.getAttribute(a.name) !== a.value) live.setAttribute(a.name, a.value); });
+  Array.from(o.attributes).forEach((a) => { if (!n.hasAttribute(a.name)) live.removeAttribute(a.name); });
+  if (live.classList && live.classList.contains("site-reveal")) live.classList.add("site-in");
+  const oc = o.childNodes, nc = n.childNodes, lc = live.childNodes;
+  const sameShape = oc.length === nc.length && lc.length === oc.length
+    && Array.prototype.every.call(oc, (c, i) => c.nodeName === nc[i].nodeName && lc[i].nodeName === c.nodeName);
+  if (sameShape) {
+    for (let i = 0; i < oc.length; i++) {
+      if (oc[i].nodeType === 1) bshellPatchNode(doc, lc[i], oc[i], nc[i], touchedTops);
+      else if (oc[i].nodeValue !== nc[i].nodeValue) lc[i].nodeValue = nc[i].nodeValue;
+    }
+    return;
+  }
+  live.innerHTML = n.innerHTML;
+  bshellAfterRebuild(doc, live, touchedTops);
+}
+
+/* Markup rebuilt from a string needs what the original page load gave
+   it: no fade-in (the reveal-on-scroll observer only ran once, at load —
+   and the owner is looking right at this part anyway), and working
+   <script>s (innerHTML/importNode never run them, so each is swapped
+   for a fresh copy that does — e.g. a services search box). */
+function bshellAfterRebuild(doc, el, touchedTops) {
+  if (el.classList && el.classList.contains("site-reveal")) el.classList.add("site-in");
+  if (el.querySelectorAll) el.querySelectorAll(".site-reveal").forEach((r) => r.classList.add("site-in"));
+  const scripts = el.tagName === "SCRIPT" ? [el] : Array.from(el.querySelectorAll ? el.querySelectorAll("script") : []);
+  scripts.forEach((old) => {
+    const s = doc.createElement("script");
+    s.textContent = old.textContent;
+    old.replaceWith(s);
+  });
+  const top = el.closest ? el.closest("body > *") : null;
+  if (top && el.tagName !== "SCRIPT") touchedTops.add(top);
+}
+
+/* Some sections set themselves up once from a <script> placed right
+   after their markup (local-service's sideways services rail,
+   playground's physics bubbles) — the same convention renderBlocksHtml()
+   relies on. When that section's markup was rebuilt, the script runs
+   again against the new elements. The hero photo slideshow's timer is
+   one global script at the end of <body>, so it's re-run the same way
+   whenever a rebuilt section holds a slideshow. */
+function bshellRerunTrailingScript(doc, top) {
+  if (!top.isConnected) return;
+  const next = top.nextElementSibling;
+  if (next && next.tagName === "SCRIPT") {
+    const s = doc.createElement("script");
+    s.textContent = next.textContent;
+    top.after(s);
+  }
+  if (top.querySelector(".site-hero-slideshow") && typeof heroSlideshowScript === "function") {
+    const s = doc.createElement("script");
+    s.textContent = heroSlideshowScript().replace(/^<script>|<\/script>$/g, "");
+    doc.body.appendChild(s);
+  }
+}
+
+/* The full re-render, double-buffered (see the comment above
+   bshellCanvasHtml). The very first load has nothing to keep on screen,
+   so it just loads. */
+function bshellSwapInCanvas(html, afterLoad) {
+  const cur = document.getElementById("bshell-canvas-iframe");
+  const tagged = "<!doctype html>\n" + bshellTaggedDoc(html).documentElement.outerHTML;
+  const curDoc = cur.contentDocument;
+  if (!bshellCanvasHtml || !curDoc || !curDoc.body || !curDoc.body.children.length) {
+    if (bshellCanvasBuffer) { bshellCanvasBuffer.remove(); bshellCanvasBuffer = null; }
+    cur.onload = () => {
+      bshellCanvasHtml = html;
+      bshellOnCanvasLoad();
+      if (afterLoad) afterLoad();
+    };
+    cur.srcdoc = tagged;
+    return;
+  }
+  if (bshellCanvasBuffer) bshellCanvasBuffer.remove(); // a newer render replaces one still loading
+  const scrollY = cur.contentWindow ? cur.contentWindow.scrollY : 0;
+  const buf = document.createElement("iframe");
+  buf.className = cur.className + " bshell-canvas-buffer";
+  buf.title = cur.title;
+  buf.setAttribute("aria-hidden", "true");
+  bshellCanvasBuffer = buf;
+  buf.onload = () => {
+    if (bshellCanvasBuffer !== buf) return;
+    const bdoc = buf.contentDocument;
+    // A new iframe first "loads" an empty about:blank — wait for the page.
+    if (!bdoc || !bdoc.head || !bdoc.querySelector("body > [data-bshell-top]")) return;
+    const still = bdoc.createElement("style");
+    still.id = "bshell-swap-still";
+    still.textContent = "*,*::before,*::after{transition:none !important;} html{scroll-behavior:auto !important;}";
+    bdoc.head.appendChild(still);
+    bdoc.querySelectorAll(".site-reveal").forEach((el) => el.classList.add("site-in"));
+    buf.contentWindow.scrollTo(0, scrollY);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (bshellCanvasBuffer !== buf) return;
+      bshellCanvasBuffer = null;
+      cur.remove();
+      buf.id = "bshell-canvas-iframe";
+      buf.classList.remove("bshell-canvas-buffer");
+      buf.removeAttribute("aria-hidden");
+      buf.onload = null;
+      still.remove();
+      bshellCanvasHtml = html;
+      bshellOnCanvasLoad();
+      if (afterLoad) afterLoad();
+    }));
+  };
+  cur.parentNode.appendChild(buf);
+  buf.srcdoc = tagged;
+}
+
+function bshellOnCanvasLoad() {
+  bshellWireCanvasClicks();
+  bshellReanchorSelection();
+}
+
+/* Click-to-edit + hover hints, wired once per loaded document. */
 function bshellWireCanvasClicks() {
   const iframe = document.getElementById("bshell-canvas-iframe");
   const doc = iframe.contentDocument;
-  if (!doc || bshellCanvasClickWired) return;
+  if (!doc || doc.__bshellWired) return;
+  doc.__bshellWired = true;
   bshellCanvasClickWired = true;
+  const ui = doc.createElement("style");
+  ui.id = "bshell-canvas-ui";
+  // A subtle dashed outline on whatever a click would open, and a hand
+  // cursor everywhere, so it's obvious the page itself is clickable.
+  ui.textContent = `
+    body, body * { cursor:pointer !important; }
+    .bshell-hover-target { outline:1.5px dashed rgba(20,184,166,.9) !important; outline-offset:2px !important; }
+    .bshell-hover-target.bshell-hover-section { outline-offset:-3px !important; }
+    .bshell-outline-target.bshell-hover-target { outline-style:solid !important; }`;
+  doc.head.appendChild(ui);
   doc.addEventListener("click", (e) => {
     if (e.target.closest("#bshell-mini-toolbar")) return;
     const a = e.target.closest("a");
     if (a) e.preventDefault(); // selecting, not navigating, inside the canvas
-    const resolved = bshellResolveClickTarget(e, doc);
+    if (e.target.closest("#deskkit-badge")) return;
+    const resolved = bshellResolveClickTarget(e.target, doc);
     if (!resolved) { bshellDeselect(); return; }
     bshellSelection = resolved;
     bshellApplySelectionVisual();
     bshellRenderProperties();
     bshellRenderHierarchy();
   }, true);
+  let hovered = null;
+  const setHover = (el) => {
+    if (el === hovered) return;
+    if (hovered) hovered.classList.remove("bshell-hover-target", "bshell-hover-section");
+    hovered = el;
+    if (el) {
+      el.classList.add("bshell-hover-target");
+      if (el.parentElement === doc.body) el.classList.add("bshell-hover-section");
+    }
+  };
+  doc.addEventListener("mouseover", (e) => setHover(bshellHoverTargetOf(e.target)));
+  doc.addEventListener("mouseleave", () => setHover(null));
 }
 
-function bshellResolveClickTarget(e, doc) {
-  const svcEl = e.target.closest("[data-svc-idx]");
-  if (svcEl) return { kind: "service", idx: parseInt(svcEl.dataset.svcIdx, 10), rootEl: svcEl };
+/* What a click on el would open, as the element to outline on hover:
+   one service card, one text, one contact link — or the whole section. */
+function bshellHoverTargetOf(el) {
+  if (!el || !el.closest || el.closest("#bshell-mini-toolbar, #deskkit-badge")) return null;
+  return el.closest("[data-svc-idx]") || bshellGridCardOf(el) || el.closest("[data-textkey]")
+    || el.closest('a[href^="tel:"], a[href^="mailto:"], a[href*="wa.me/"]') || el.closest("body > *");
+}
 
-  const textEl = e.target.closest("[data-textkey]");
-  if (textEl && BSHELL_TEXT_CONTENT_MAP[textEl.dataset.textkey]) {
-    return { kind: "text", key: textEl.dataset.textkey, rootEl: textEl };
-  }
+/* The generic "grid" services layout (site-blocks.js) has no data-svc-idx
+   on its cards — in the canvas they're found by position instead. */
+function bshellGridCardOf(el) {
+  const card = el.closest && el.closest(`${SITE_GROUP_GRID}`);
+  if (!card || card.closest("[data-svc-idx]")) return null;
+  card.dataset.bshellGridIdx = String(Array.prototype.indexOf.call(card.parentElement.children, card));
+  return card;
+}
 
-  const sectionRoot = e.target.closest("body > *");
-  if (!sectionRoot) return null;
+/* ---------- Selection model ----------
+   Every click in the canvas opens the editor of the SECTION it belongs
+   to (bshellSelection = { kind: "section", type, rootEl, focus }) —
+   hero/services/about/contact/... as defined in SITE_BLOCK_DEFS, plus
+   "site": the header/side rail/footer around them, which aren't blocks.
+   focus says what inside the section was clicked, so its field is
+   scrolled to, highlighted and focused: { svc: index } for one service
+   card, { key: textkey } for a text, { contact: "phone"|"email"|... }
+   for a contact detail. */
+const BSHELL_SITE_TYPE = "site";
+
+function bshellSectionTypeOfTop(top) {
   const template = siteState.template;
   const types = Object.keys(SITE_BLOCK_DEFS[template] || {});
   for (const type of types) {
-    if (bshellQueryAnchor(sectionRoot, bshellAnchorCandidates(template, type))) {
-      return { kind: "section", type, rootEl: sectionRoot };
+    if (bshellQueryAnchor(top, bshellAnchorCandidates(template, type))) return type;
+  }
+  return null;
+}
+
+/* Whether a section's editor shows the contact details: the contact
+   section itself, or a fused block that holds them (bento's grid). */
+function bshellSectionHasContact(type, rootEl) {
+  if (type === "contact" || type === BSHELL_SITE_TYPE) return true;
+  return !!(rootEl && rootEl.querySelector('[data-textkey="heading-contact"]'));
+}
+
+function bshellResolveClickTarget(target, doc) {
+  const top = target.closest("body > *");
+  if (!top) return null;
+  const d = siteState.data;
+  let type = bshellSectionTypeOfTop(top) || BSHELL_SITE_TYPE;
+  let focus = null;
+  const svcEl = target.closest("[data-svc-idx]");
+  const gridCard = !svcEl && bshellGridCardOf(target);
+  const textEl = target.closest("[data-textkey]");
+  const link = target.closest('a[href^="tel:"], a[href^="mailto:"], a[href*="wa.me/"]');
+  if (svcEl) focus = { svc: parseInt(svcEl.dataset.svcIdx, 10) };
+  else if (gridCard) focus = { svc: parseInt(gridCard.dataset.bshellGridIdx, 10) };
+  else if (textEl && BSHELL_TEXT_CONTENT_MAP[textEl.dataset.textkey]) focus = { key: textEl.dataset.textkey };
+  else if (link) {
+    const href = link.getAttribute("href") || "";
+    focus = { contact: href.startsWith("mailto:") ? "email" : href.indexOf("wa.me/") !== -1 ? "whatsapp" : "phone" };
+  } else {
+    // A plain "טלפון: 050-..." line: match the clicked text to the details.
+    const text = (target.textContent || "").trim();
+    for (const k of ["email", "phone", "address"]) {
+      const v = String(d[k] || "").trim();
+      if (v && text && text.length < 200 && text.indexOf(v) !== -1) { focus = { contact: k }; break; }
     }
   }
+  // Contact details are edited where the contact section is: a phone in
+  // the header or the hero opens the contact section (or, on a template
+  // with no inline contact section, the header & footer panel).
+  if (focus && focus.contact && !bshellSectionHasContact(type, top)) {
+    const def = SITE_BLOCK_DEFS[siteState.template].contact;
+    type = (def && (!def.active || def.active(d))) ? "contact" : BSHELL_SITE_TYPE;
+  }
+  // The business name in the header/footer belongs to the header & footer
+  // panel; inside the hero it stays with the hero.
+  const rootEl = type === BSHELL_SITE_TYPE ? (bshellSectionTypeOfTop(top) ? null : top) : bshellFindSectionRoot(doc, type);
+  const sel = { kind: "section", type, rootEl, focus, topIdx: rootEl === top ? top.getAttribute("data-bshell-top") : null };
+  sel.focusEl = (focus && (focus.svc != null || focus.key)) ? (svcEl || gridCard || textEl) : null;
+  return sel;
+}
+
+function bshellFindSectionRoot(doc, type) {
+  if (!doc) return null;
+  if (type === BSHELL_SITE_TYPE) {
+    // The first top-level element that isn't one of the blocks — the
+    // header/side rail on every template.
+    return Array.from(doc.body.children).find((el) => el.hasAttribute("data-bshell-top") && el.tagName !== "SCRIPT"
+      && el.id !== "deskkit-badge" && !bshellSectionTypeOfTop(el) && el.textContent.trim()) || null;
+  }
+  const anchorEl = bshellFindAnchorEl(doc, siteState.template, type);
+  return anchorEl ? anchorEl.closest("body > *") : null;
+}
+
+/* The element inside the section that the focus points at (outlined
+   instead of the whole section). */
+function bshellFindFocusEl(doc, sel) {
+  if (!doc || !sel || !sel.focus) return null;
+  const scope = sel.rootEl || doc;
+  if (sel.focus.svc != null) {
+    const card = scope.querySelector(`[data-svc-idx="${sel.focus.svc}"]`);
+    if (card) return card;
+    const grid = scope.querySelector(SITE_GROUP_GRID);
+    return grid ? grid.parentElement.children[sel.focus.svc] || null : null;
+  }
+  if (sel.focus.key) return scope.querySelector(`[data-textkey="${sel.focus.key}"]`);
   return null;
 }
 
@@ -630,33 +958,31 @@ function bshellDeselect() {
   bshellRenderHierarchy();
 }
 
-function bshellSelectSection(type) {
-  const iframe = document.getElementById("bshell-canvas-iframe");
-  const doc = iframe.contentDocument;
-  const anchorEl = doc && bshellFindAnchorEl(doc, siteState.template, type);
-  const rootEl = anchorEl ? anchorEl.closest("body > *") : null;
+function bshellSelectSection(type, focus) {
+  const doc = document.getElementById("bshell-canvas-iframe").contentDocument;
   // A HIDDEN section renders nothing in the canvas at all, so there's
   // no element to anchor on — select it anyway (rootEl: null), purely
   // so the Properties panel's own visibility switch can still show and
   // bring it back. bshellApplySelectionVisual() already no-ops safely
   // without a rootEl; only the scroll+outline step is skipped.
-  bshellSelection = { kind: "section", type, rootEl };
-  if (rootEl) rootEl.scrollIntoView({ behavior: "smooth", block: "center" });
+  bshellSelection = { kind: "section", type, rootEl: bshellFindSectionRoot(doc, type), focus: focus || null };
+  bshellSelection.focusEl = bshellFindFocusEl(doc, bshellSelection);
+  const target = bshellSelection.focusEl || bshellSelection.rootEl;
+  if (target) target.scrollIntoView({ behavior: "smooth", block: "center" });
   bshellApplySelectionVisual();
   bshellRenderProperties();
   bshellRenderHierarchy();
 }
 
+/* One service card (from the hierarchy list, or after adding/duplicating
+   one): its section's editor, scrolled to and focused on that card. */
 function bshellSelectService(idx) {
-  const iframe = document.getElementById("bshell-canvas-iframe");
-  const doc = iframe.contentDocument;
-  const el = doc && doc.querySelector(`[data-svc-idx="${idx}"]`);
-  if (!el) return;
-  bshellSelection = { kind: "service", idx, rootEl: el };
-  el.scrollIntoView({ behavior: "smooth", block: "center" });
-  bshellApplySelectionVisual();
-  bshellRenderProperties();
-  bshellRenderHierarchy();
+  const type = bshellItemsType();
+  if (type) bshellSelectSection(type, { svc: idx });
+}
+function bshellItemsType() {
+  const defs = SITE_BLOCK_DEFS[siteState.template] || {};
+  return Object.keys(defs).find((t) => defs[t].hasItems) || null;
 }
 
 /* Site-wide settings (contact info, WhatsApp, copyright, brand color/
@@ -689,7 +1015,13 @@ function bshellApplySelectionVisual() {
   doc.querySelectorAll(".bshell-outline-target").forEach((el) => el.classList.remove("bshell-outline-target"));
   const oldToolbar = doc.getElementById("bshell-mini-toolbar");
   if (oldToolbar) oldToolbar.remove();
-  if (!bshellSelection || !bshellSelection.rootEl || !doc.contains(bshellSelection.rootEl)) return;
+  if (!bshellSelection) return;
+  // The clicked service/text when there is one, else the whole section.
+  const focusEl = bshellSelection.focusEl && doc.contains(bshellSelection.focusEl) ? bshellSelection.focusEl : null;
+  const el = focusEl || bshellSelection.rootEl;
+  if (!el || !doc.contains(el)) return;
+  const isSvc = !!(focusEl && bshellSelection.focus && bshellSelection.focus.svc != null);
+  const isBlock = !focusEl && bshellSelection.type !== BSHELL_SITE_TYPE;
 
   if (!doc.getElementById("bshell-outline-style")) {
     const style = doc.createElement("style");
@@ -703,7 +1035,6 @@ function bshellApplySelectionVisual() {
     doc.head.appendChild(style);
   }
 
-  const el = bshellSelection.rootEl;
   el.classList.add("bshell-outline-target");
   const rect = el.getBoundingClientRect();
   const scrollY = doc.defaultView.scrollY || doc.documentElement.scrollTop;
@@ -717,13 +1048,13 @@ function bshellApplySelectionVisual() {
   // "nothing else to do here" for a plain text selection (every kind
   // except service/section had 3 of 4 icons permanently greyed out).
   const toolbarButtons = [`<button type="button" data-tool="edit" title="${bsL("עריכה", "Edit")}">✎</button>`];
-  if (bshellSelection.kind === "service") {
+  if (isSvc) {
     toolbarButtons.push(`<button type="button" data-tool="duplicate" title="${bsL("שכפול", "Duplicate")}">⧉</button>`);
   }
-  if (bshellSelection.kind === "section") {
+  if (isBlock) {
     toolbarButtons.push(`<button type="button" data-tool="hide" title="${bsL("הסתרה/הצגה", "Hide/show")}">◐</button>`);
   }
-  if (bshellSelection.kind === "service") {
+  if (isSvc) {
     toolbarButtons.push(`<button type="button" data-tool="delete" title="${bsL("מחיקה", "Delete")}">🗑</button>`);
   }
   toolbar.innerHTML = toolbarButtons.join("");
@@ -739,25 +1070,17 @@ function bshellApplySelectionVisual() {
 
 function bshellToolbarAction(tool) {
   if (!bshellSelection) return;
+  const svcIdx = bshellSelection.focus && bshellSelection.focus.svc;
   if (tool === "edit") {
     document.getElementById("bshell-hier").classList.remove("bshell-drawer-open");
     document.getElementById("bshell-props").classList.add("bshell-drawer-open");
-    const first = document.querySelector("#bshell-props-body input, #bshell-props-body textarea");
+    const focused = document.querySelector("#bshell-props-body .is-focused input, #bshell-props-body .is-focused textarea");
+    const first = focused || document.querySelector("#bshell-props-body input, #bshell-props-body textarea");
     if (first) first.focus();
     return;
   }
-  if (tool === "duplicate" && bshellSelection.kind === "service") {
-    bshellSnapshot();
-    const d = siteState.data;
-    const copyIdx = bshellSelection.idx + 1;
-    const copy = Object.assign({}, d.services[bshellSelection.idx]);
-    d.services.splice(copyIdx, 0, copy);
-    bshellRenderCanvas(() => bshellSelectService(copyIdx));
-    bshellRenderHierarchy();
-    bshellScheduleSave();
-    return;
-  }
-  if (tool === "hide" && bshellSelection.kind === "section") {
+  if (tool === "duplicate" && svcIdx != null) return bshellDuplicateService(svcIdx);
+  if (tool === "hide" && bshellSelection.type !== BSHELL_SITE_TYPE) {
     bshellSnapshot();
     bshellToggleSectionVisibility(bshellSelection.type);
     bshellDeselect();
@@ -766,15 +1089,39 @@ function bshellToolbarAction(tool) {
     bshellScheduleSave();
     return;
   }
-  if (tool === "delete" && bshellSelection.kind === "service") {
-    if (siteState.data.services.length <= 1) return; // a services section needs at least one row to mean anything
-    bshellSnapshot();
-    siteState.data.services.splice(bshellSelection.idx, 1);
-    bshellDeselect();
-    bshellRenderCanvas();
-    bshellRenderHierarchy();
-    bshellScheduleSave();
-  }
+  if (tool === "delete" && svcIdx != null) bshellDeleteService(svcIdx);
+}
+
+/* Shared by the canvas mini-toolbar and the section editor's own
+   per-service buttons. */
+function bshellDuplicateService(idx) {
+  const d = siteState.data;
+  if (!d.services || !d.services[idx]) return;
+  bshellSnapshot();
+  d.services.splice(idx + 1, 0, Object.assign({}, d.services[idx]));
+  bshellRenderCanvas(() => bshellSelectService(idx + 1));
+  bshellRenderHierarchy();
+  bshellScheduleSave();
+}
+function bshellDeleteService(idx) {
+  const d = siteState.data;
+  if (!d.services || d.services.length <= 1) return; // a services section needs at least one row to mean anything
+  bshellSnapshot();
+  d.services.splice(idx, 1);
+  const type = bshellSelection && bshellSelection.type;
+  bshellRenderCanvas(() => { if (type) bshellSelectSection(type); });
+  bshellRenderHierarchy();
+  bshellScheduleSave();
+}
+function bshellAddService() {
+  const d = siteState.data;
+  bshellSnapshot();
+  d.services = d.services || [];
+  d.services.push({ name: "", desc: "", price: "" });
+  const newIdx = d.services.length - 1;
+  bshellRenderCanvas(() => bshellSelectService(newIdx));
+  bshellRenderHierarchy();
+  bshellScheduleSave();
 }
 
 /* hiddenBlocks (new, additive) gates hero/services the same way
@@ -834,96 +1181,258 @@ function bshellRenderProperties() {
   }
   empty.style.display = "none";
   body.style.display = "";
-  if (bshellSelection.kind === "text") body.innerHTML = bshellPropsHtmlForText(bshellSelection.key);
-  else if (bshellSelection.kind === "service") body.innerHTML = bshellPropsHtmlForService(bshellSelection.idx);
-  else if (bshellSelection.kind === "section") body.innerHTML = bshellPropsHtmlForSection(bshellSelection.type);
+  if (bshellSelection.kind === "section") body.innerHTML = bshellPropsHtmlForSection(bshellSelection.type);
   else if (bshellSelection.kind === "settings") body.innerHTML = bshellPropsHtmlForSettings();
   bshellWirePropertiesPanel();
+  if (bshellSelection.kind === "section" && bshellSelection.focus) bshellFocusInProps(bshellSelection.focus);
 }
 
-function bshellPropsHtmlForText(key) {
-  const field = BSHELL_TEXT_CONTENT_MAP[key];
-  const d = siteState.data;
-  const content = field ? field.get(d) : "";
-  const style = (d.textStyles && d.textStyles[key]) || {};
-  const inputTag = field && field.multiline
-    ? `<textarea id="bshell-prop-content" maxlength="500">${escapeHtmlS(content)}</textarea>`
-    : `<input type="text" id="bshell-prop-content" maxlength="90" value="${escapeHtmlS(content)}" placeholder="${field && field.placeholder ? escapeHtmlS(field.placeholder) : ""}">`;
-  return `
-    <span class="bshell-props-kind">${bsL("טקסט", "Text")}</span>
-    <div class="bshell-props-field">
-      <label class="bshell-props-label">${field ? escapeHtmlS(field.label) : bsL("טקסט", "Text")}</label>
-      ${inputTag}
-    </div>
-    <div class="bshell-props-row">
-      <div class="bshell-props-field">
-        <label class="bshell-props-label">${bsL("גודל (px)", "Size (px)")}</label>
-        <input type="number" id="bshell-prop-size" min="8" max="140" value="${style.size || ""}" placeholder="${bsL("ברירת מחדל", "Default")}">
-      </div>
-      <div class="bshell-props-field">
-        <label class="bshell-props-label">${bsL("צבע", "Color")}</label>
-        <input type="color" id="bshell-prop-color" value="${style.color ? "#" + String(style.color).replace("#", "") : "#000000"}">
-      </div>
-    </div>
-    <div class="bshell-props-field">
-      <label class="bshell-props-label">${bsL("יישור", "Alignment")}</label>
-      <div class="bshell-align-row">
-        <button type="button" class="bshell-align-btn${style.align === "right" ? " active" : ""}" data-align="right">${bsL("ימין", "Right")}</button>
-        <button type="button" class="bshell-align-btn${style.align === "center" ? " active" : ""}" data-align="center">${bsL("מרכז", "Center")}</button>
-        <button type="button" class="bshell-align-btn${style.align === "left" ? " active" : ""}" data-align="left">${bsL("שמאל", "Left")}</button>
-      </div>
-    </div>
-    <button type="button" class="bshell-props-reset" id="bshell-prop-reset">${bsL("איפוס עיצוב מותאם", "Reset custom style")}</button>`;
+/* ---------- Section editor ----------
+   One panel per section: ALL of its texts (and, for the services
+   section, every service card, each one a small group of fields), then
+   its style controls, then layout/visibility. Which texts a section has
+   is read from the section itself in the canvas (the data-textkey
+   elements inside it), so every template — and fused blocks like
+   freelancer's about+tags or bento's grid — gets exactly the fields it
+   really shows; a hidden section falls back to its usual set.
+
+   Style controls are per GROUP, never per item: one font/colour/size
+   for the section's title, one for the hero's tagline, one for ALL
+   service names and one for ALL service descriptions. Fonts only from
+   SITE_FONTS, sizes from a short list that fits each group. The title
+   and texts keep using d.textStyles[textkey] (the same per-text styles
+   saved projects already have, so they render exactly as before); the
+   service groups are d.textStyles["svc-name"] / ["svc-desc"]
+   (siteGroupStyleCss in site-templates.js). */
+const BSHELL_SECTION_DEFAULT_KEYS = {
+  hero: ["businessName", "heading-heroTitle", "tagline"],
+  services: ["heading-services"],
+  about: ["heading-about", "aboutText"],
+  aboutTags: ["aboutText"],
+  contact: ["heading-contact"],
+  grid: [],
+  [BSHELL_SITE_TYPE]: ["businessName"],
+};
+const BSHELL_ITEM_WORD = {
+  services: [bsL("שירות", "Service"), bsL("השירותים", "services")],
+  products: [bsL("מוצר", "Product"), bsL("המוצרים", "products")],
+  work: [bsL("עבודה", "Project"), bsL("העבודות", "projects")],
+};
+// Size choices (px) per kind of text — big enough to matter, never wild.
+const BSHELL_STYLE_SIZES = {
+  hero: [28, 32, 36, 42, 48, 56, 64, 72],
+  heading: [20, 24, 28, 32, 36, 42, 48],
+  name: [14, 16, 18, 20, 22, 24, 28, 32],
+  body: [12, 13, 14, 15, 16, 17, 18, 20, 22],
+};
+const BSHELL_CONTACT_FIELDS = [
+  { key: "phone", label: bsL("טלפון", "Phone"), dir: "ltr" },
+  { key: "email", label: bsL("מייל", "Email"), dir: "ltr" },
+  { key: "address", label: bsL("כתובת", "Address") },
+  { key: "whatsapp", label: bsL("מספר וואטסאפ אחר (אם שונה מהטלפון)", "Other WhatsApp number (if different from phone)"), dir: "ltr" },
+];
+
+function bshellSectionLabel(type) {
+  if (type === BSHELL_SITE_TYPE) return bsL("ראש ותחתית האתר", "Header & footer");
+  const def = SITE_BLOCK_DEFS[siteState.template][type];
+  return def ? bsLabel(def.label) || type : type;
 }
 
-function bshellPropsHtmlForService(idx) {
-  const s = siteState.data.services[idx] || { name: "", desc: "", price: "" };
-  return `
-    <span class="bshell-props-kind">${bsL("כרטיס שירות", "Service card")}</span>
-    <div class="bshell-props-field">
-      <label class="bshell-props-label">${bsL("שם השירות", "Service name")}</label>
-      <input type="text" id="bshell-prop-svc-name" maxlength="40" value="${escapeHtmlS(s.name)}">
-    </div>
-    <div class="bshell-props-field">
-      <label class="bshell-props-label">${bsL("תיאור קצר", "Short description")}</label>
-      <textarea id="bshell-prop-svc-desc" maxlength="90">${escapeHtmlS(s.desc)}</textarea>
-    </div>
-    <div class="bshell-props-field">
-      <label class="bshell-props-label">${bsL("מחיר (לא חובה)", "Price (optional)")}</label>
-      <input type="text" id="bshell-prop-svc-price" maxlength="20" value="${escapeHtmlS(s.price)}">
-    </div>`;
+function bshellSectionTextKeys(type, rootEl) {
+  const keys = (BSHELL_SECTION_DEFAULT_KEYS[type] || []).slice();
+  if (rootEl) {
+    rootEl.querySelectorAll("[data-textkey]").forEach((el) => {
+      const k = el.dataset.textkey;
+      if (BSHELL_TEXT_CONTENT_MAP[k] && keys.indexOf(k) === -1) keys.push(k);
+    });
+  }
+  // The about section's own title only exists on some templates.
+  return keys.filter((k) => k !== "heading-about" || type !== "about" || !rootEl || rootEl.querySelector('[data-textkey="heading-about"]'));
 }
 
 function bshellPropsHtmlForSection(type) {
   const d = siteState.data;
+  const sel = bshellSelection;
+  const rootEl = sel && sel.rootEl;
   const def = SITE_BLOCK_DEFS[siteState.template][type];
-  const options = (typeof variantOptionsFor === "function") ? variantOptionsFor(siteState.template, type) : null;
+  const keys = bshellSectionTextKeys(type, rootEl);
+  const hasItems = !!(def && def.hasItems);
+  const hasContact = bshellSectionHasContact(type, rootEl);
+  const word = BSHELL_ITEM_WORD[TEMPLATE_SECTION_ROLE[siteState.template]] || BSHELL_ITEM_WORD.services;
+
+  const textField = (key) => {
+    const f = BSHELL_TEXT_CONTENT_MAP[key];
+    const v = f.get(d);
+    const input = f.multiline
+      ? `<textarea data-text-key="${key}" maxlength="500" rows="5">${escapeHtmlS(v)}</textarea>`
+      : `<input type="text" data-text-key="${key}" maxlength="90" value="${escapeHtmlS(v)}" placeholder="${f.placeholder ? escapeHtmlS(f.placeholder) : ""}">`;
+    return `<div class="bshell-props-field" data-field-key="${key}"><label class="bshell-props-label">${escapeHtmlS(f.label)}</label>${input}</div>`;
+  };
+  const services = d.services || [];
+  const itemsHtml = hasItems ? `
+      <div class="bshell-props-label bshell-svc-list-label">${bsL(`רשימת ${word[1]}`, `Your ${word[1]}`)}</div>
+      <div class="bshell-svc-list">${services.map((s, i) => `
+        <div class="bshell-svc-item" data-svc-item="${i}">
+          <div class="bshell-svc-item-head">
+            <span class="bshell-svc-item-num">${i + 1}</span>
+            <span class="bshell-svc-item-title">${escapeHtmlS((s.name || "").trim() || `${word[0]} ${i + 1}`)}</span>
+            <button type="button" class="bshell-icon-btn" data-svc-action="duplicate" data-svc-idx="${i}" title="${bsL("שכפול", "Duplicate")}" aria-label="${bsL("שכפול", "Duplicate")}">⧉</button>
+            ${services.length > 1 ? `<button type="button" class="bshell-icon-btn" data-svc-action="delete" data-svc-idx="${i}" title="${bsL("מחיקה", "Delete")}" aria-label="${bsL("מחיקה", "Delete")}">🗑</button>` : ""}
+          </div>
+          <label class="bshell-props-label">${bsL("שם", "Name")}</label>
+          <input type="text" data-svc-idx="${i}" data-svc-field="name" maxlength="40" value="${escapeHtmlS(s.name || "")}">
+          <label class="bshell-props-label">${bsL("תיאור קצר", "Short description")}</label>
+          <textarea data-svc-idx="${i}" data-svc-field="desc" maxlength="90" rows="2">${escapeHtmlS(s.desc || "")}</textarea>
+          <label class="bshell-props-label">${bsL("מחיר (לא חובה)", "Price (optional)")}</label>
+          <input type="text" data-svc-idx="${i}" data-svc-field="price" maxlength="20" value="${escapeHtmlS(s.price || "")}">
+        </div>`).join("")}
+      </div>
+      <button type="button" class="bshell-add-item" data-svc-action="add">${bsL(`+ הוספת ${word[0]}`, `+ Add ${word[0].toLowerCase()}`)}</button>` : "";
+  const contactHtml = hasContact ? `
+      <div class="bshell-props-label bshell-svc-list-label">${bsL("פרטי קשר", "Contact details")}</div>
+      ${BSHELL_CONTACT_FIELDS.map((f) => `<div class="bshell-props-field" data-contact-field="${f.key}">
+        <label class="bshell-props-label">${f.label}</label>
+        <input type="text" data-contact-key="${f.key}"${f.dir ? ` dir="${f.dir}"` : ""} value="${escapeHtmlS(d[f.key] || "")}">
+      </div>`).join("")}
+      <p class="bshell-settings-field-hint">${bsL("אותם פרטים מופיעים בכל מקום באתר (כותרת, כפתורים, תחתית).", "The same details appear everywhere on the site (header, buttons, footer).")}</p>` : "";
+
+  // Style groups: the title first, then the section's other texts, then
+  // the items as two groups.
+  const groups = keys.map((key) => {
+    const label = key.indexOf("heading-") === 0 ? (key === "heading-heroTitle" ? bsL("כותרת ראשית", "Main heading") : bsL("כותרת החלק", "Section title")) : BSHELL_TEXT_CONTENT_MAP[key].label;
+    const sizes = key === "heading-heroTitle" ? BSHELL_STYLE_SIZES.hero : key.indexOf("heading-") === 0 ? BSHELL_STYLE_SIZES.heading : key === "businessName" ? BSHELL_STYLE_SIZES.name : BSHELL_STYLE_SIZES.body;
+    return { key, label, sizes, align: true };
+  });
+  if (hasItems) {
+    const doc = document.getElementById("bshell-canvas-iframe").contentDocument;
+    const has = (k) => !doc || !rootEl || rootEl.querySelector(`:is(${SITE_GROUP_STYLE_SELECTORS[k]})`);
+    if (has("svc-name")) groups.push({ key: "svc-name", label: bsL(`שמות ${word[1]}`, `Names of the ${word[1]}`), sizes: BSHELL_STYLE_SIZES.name, hint: true });
+    if (has("svc-desc")) groups.push({ key: "svc-desc", label: bsL(`תיאורי ${word[1]}`, `Descriptions of the ${word[1]}`), sizes: BSHELL_STYLE_SIZES.body, hint: true });
+  }
+
+  const options = def && (typeof variantOptionsFor === "function") ? variantOptionsFor(siteState.template, type) : null;
   const current = (d.blockVariants && d.blockVariants[type]) || "default";
   // def.active() IS the ground truth for "visible inline right now,"
   // whichever flag it actually reads (d.pages[type] for a real
   // separate-page toggle, d.hiddenBlocks[type] for the Shell's own
   // additive one — see bshellToggleSectionVisibility for which).
-  const reallyVisible = def.active ? !!def.active(d) : true;
-  return `
-    <span class="bshell-props-kind">Section</span>
-    ${options ? `
-    <div class="bshell-props-field">
-      <label class="bshell-props-label">${bsL("עיצוב (Layout)", "Layout")}</label>
-      <select id="bshell-prop-variant">
-        ${Object.entries(options).map(([key, o]) => `<option value="${key}"${key === current ? " selected" : ""}>${escapeHtmlS(bsLabel(o.label))}</option>`).join("")}
-      </select>
-    </div>` : `<p style="font-size:12.5px; color:var(--text-muted); margin:0 0 16px;">${bsL("לחלק הזה אין כרגע עיצובים חלופיים.", "This section has no alternative layouts yet.")}</p>`}
-    <div class="bshell-props-field">
-      <div class="bshell-toggle-row">
-        <label class="bshell-props-label" style="margin:0;">${bsL("הצגת החלק הזה", "Show this section")}</label>
-        <label class="bshell-switch">
-          <input type="checkbox" id="bshell-prop-visible"${reallyVisible ? " checked" : ""}>
-          <span class="bshell-switch-track"></span>
-          <span class="bshell-switch-thumb"></span>
-        </label>
+  const reallyVisible = def && def.active ? !!def.active(d) : true;
+  const displayHtml = def ? `
+    <div class="bshell-settings-group">
+      <div class="bshell-settings-group-title">${bsL("תצוגה", "Display")}</div>
+      ${options ? `
+      <div class="bshell-props-field">
+        <label class="bshell-props-label">${bsL("עיצוב (Layout)", "Layout")}</label>
+        <select id="bshell-prop-variant">
+          ${Object.entries(options).map(([key, o]) => `<option value="${key}"${key === current ? " selected" : ""}>${escapeHtmlS(bsLabel(o.label))}</option>`).join("")}
+        </select>
+      </div>` : ""}
+      <div class="bshell-props-field">
+        <div class="bshell-toggle-row">
+          <label class="bshell-props-label" style="margin:0;">${bsL("הצגת החלק הזה", "Show this section")}</label>
+          <label class="bshell-switch">
+            <input type="checkbox" id="bshell-prop-visible"${reallyVisible ? " checked" : ""}>
+            <span class="bshell-switch-track"></span>
+            <span class="bshell-switch-thumb"></span>
+          </label>
+        </div>
       </div>
+      ${type === "hero" ? bshellBsdHeroRow(d) : ""}
+    </div>` : `
+    <div class="bshell-settings-group">
+      <div class="bshell-props-field">
+        <div class="bshell-toggle-row">
+          <label class="bshell-props-label" style="margin:0;">${bsL("הסתרת שורת זכויות יוצרים בתחתית", "Hide the copyright line at the bottom")}</label>
+          <label class="bshell-switch">
+            <input type="checkbox" id="bshell-prop-hide-copyright"${d.hideCopyright ? " checked" : ""}>
+            <span class="bshell-switch-track"></span>
+            <span class="bshell-switch-thumb"></span>
+          </label>
+        </div>
+      </div>
+    </div>`;
+
+  return `
+    <span class="bshell-props-kind">${escapeHtmlS(bshellSectionLabel(type))}</span>
+    <div class="bshell-settings-group">
+      <div class="bshell-settings-group-title">${bsL("תוכן", "Content")}</div>
+      ${keys.map(textField).join("")}
+      ${itemsHtml}
+      ${contactHtml}
     </div>
-    ${type === "hero" ? bshellBsdHeroRow(d) : ""}`;
+    ${groups.length ? `
+    <div class="bshell-settings-group">
+      <div class="bshell-settings-group-title">${bsL("עיצוב הטקסטים", "Text style")}</div>
+      ${groups.map(bshellStyleGroupHtml).join("")}
+      ${groups.some((g) => g.hint) ? `<p class="bshell-settings-field-hint bshell-style-hint">${bsL(`העיצוב חל על כל ${word[1]} יחד, כדי שהאתר יישאר אחיד.`, `The style applies to all ${word[1]} together, so the site stays consistent.`)}</p>` : ""}
+    </div>` : ""}
+    ${displayHtml}`;
+}
+
+/* One style group: font / colour / size (and alignment for a single
+   text). The colour box shows the colour the text has right now in the
+   canvas until a colour is actually picked — only a touched colour is
+   saved. */
+function bshellStyleGroupHtml(g) {
+  const d = siteState.data;
+  const s = (d.textStyles && d.textStyles[g.key]) || {};
+  const fontKeys = Object.keys(SITE_FONTS);
+  const sizes = g.sizes.slice();
+  if (s.size && sizes.indexOf(Number(s.size)) === -1) sizes.push(Number(s.size)); // a size saved earlier stays selectable
+  sizes.sort((a, b) => a - b);
+  const shown = s.color ? "#" + String(s.color).replace("#", "") : bshellCurrentTextColor(g.key);
+  const custom = !!(s.font || s.color || s.size || s.align);
+  return `
+    <div class="bshell-style-group" data-style-key="${g.key}">
+      <div class="bshell-style-group-head">
+        <span class="bshell-style-group-name">${escapeHtmlS(g.label)}</span>
+        ${custom ? `<button type="button" class="bshell-style-reset" data-style-reset>${bsL("↺ ברירת מחדל", "↺ Default")}</button>` : ""}
+      </div>
+      <div class="bshell-style-row">
+        <select data-style-prop="font" aria-label="${bsL("גופן", "Font")}">
+          <option value="">${bsL("גופן התבנית", "Template font")}</option>
+          ${fontKeys.map((k) => `<option value="${k}"${s.font === k ? " selected" : ""}>${escapeHtmlS(bsLabel(SITE_FONTS[k].name))}</option>`).join("")}
+        </select>
+        <input type="color" data-style-prop="color" value="${escapeHtmlS(shown)}" aria-label="${bsL("צבע", "Color")}"${s.color ? ' data-touched="1"' : ""}>
+        <select data-style-prop="size" aria-label="${bsL("גודל", "Size")}">
+          <option value="">${bsL("גודל רגיל", "Normal size")}</option>
+          ${sizes.map((n) => `<option value="${n}"${String(s.size) === String(n) ? " selected" : ""}>${n}px</option>`).join("")}
+        </select>
+      </div>
+      ${g.align ? `<div class="bshell-align-row">
+        <button type="button" class="bshell-align-btn${s.align === "right" ? " active" : ""}" data-align="right">${bsL("ימין", "Right")}</button>
+        <button type="button" class="bshell-align-btn${s.align === "center" ? " active" : ""}" data-align="center">${bsL("מרכז", "Center")}</button>
+        <button type="button" class="bshell-align-btn${s.align === "left" ? " active" : ""}" data-align="left">${bsL("שמאל", "Left")}</button>
+      </div>` : ""}
+    </div>`;
+}
+
+function bshellCurrentTextColor(key) {
+  const doc = document.getElementById("bshell-canvas-iframe").contentDocument;
+  const el = doc && (SITE_GROUP_STYLE_SELECTORS[key] ? doc.querySelector(`:is(${SITE_GROUP_STYLE_SELECTORS[key]})`) : doc.querySelector(`[data-textkey="${key}"]`));
+  const m = el ? String(doc.defaultView.getComputedStyle(el).color).match(/\d+/g) : null;
+  return m ? "#" + m.slice(0, 3).map((n) => Number(n).toString(16).padStart(2, "0")).join("") : "#000000";
+}
+
+/* Scrolls the clicked thing's field into view in the panel, highlights
+   it and puts the cursor in it (a service card: its name). On a phone
+   the panel is a closed drawer, so only the highlight is set there. */
+function bshellFocusInProps(focus) {
+  const body = document.getElementById("bshell-props-body");
+  let el = null;
+  if (focus.svc != null) el = body.querySelector(`[data-svc-item="${focus.svc}"]`);
+  else if (focus.key) el = body.querySelector(`[data-field-key="${focus.key}"]`);
+  else if (focus.contact) el = body.querySelector(`[data-contact-field="${focus.contact}"]`);
+  if (!el) return;
+  el.classList.add("is-focused");
+  const props = document.getElementById("bshell-props");
+  const drawerClosed = window.matchMedia && window.matchMedia("(max-width: 860px)").matches && !props.classList.contains("bshell-drawer-open");
+  el.scrollIntoView({ block: "center" });
+  const input = el.querySelector("input, textarea");
+  if (input && !drawerClosed) {
+    input.focus({ preventScroll: true });
+    try { input.setSelectionRange(input.value.length, input.value.length); } catch (err) { /* not a text field */ }
+  }
 }
 
 /* בס"ד sits at the very top of the site, so the Hero panel is where
@@ -1115,24 +1624,53 @@ function bshellMoodPickerHtml(d) {
           ${btn("", bsL("ללא", "None"), null)}
           ${Object.keys(SITE_MOODS).map((k) => btn(k, bsL(SITE_MOODS[k].label, SITE_MOODS[k].labelEn), SITE_MOODS[k])).join("")}
         </div>
+        ${d.moodPrev && typeof d.moodPrev === "object" ? `<button type="button" class="bshell-mood-restore" id="bshell-mood-restore">${bsL("↩ חזרה לעיצוב הקודם", "↩ Back to the previous design")}</button>` : ""}
         <p class="bshell-settings-field-hint bshell-mood-hint">${bsL("בוחר צבע, גופנים, פינות ומרווחים שמתאימים זה לזה. אפשר לשנות צבע וגופן גם אחרי הבחירה.", "Picks a colour, fonts, corners and spacing that go together. You can still change the colour and font afterwards.")}</p>
       </div>`;
 }
 
 /* Choosing a mood writes its colour + body font into d.primaryColor /
-   d.fontFamily. The look the site had before its FIRST mood is kept in
-   d.moodBefore, so "ללא" can put it back — but only a value still showing
-   the mood's own choice: a colour/font the owner picked by hand after the
-   mood stays. "ללא" deletes d.mood (and d.moodBefore), which is exactly
-   the "no mood" shape every older project already has. */
+   d.fontFamily, and clears the colour/font of every per-text and group
+   style (d.textStyles) — a heading the owner once coloured red by hand
+   would otherwise keep that red under every mood, and the mood would
+   seem to change nothing but the font. Sizes and alignment stay. The
+   owner can still recolour anything afterwards.
+
+   Two ways back, each kept in the project data:
+   - d.moodBefore: the look before the FIRST mood, for "ללא" — which puts
+     back only what still shows the mood's own choice (a colour/font the
+     owner picked by hand after the mood stays), then deletes d.mood/
+     d.moodBefore/d.moodPrev: exactly the "no mood" shape every older
+     project already has.
+   - d.moodPrev: the exact design settings from just before the LAST
+     mood click (mood, colour, font, every text style), for the
+     "↩ חזרה לעיצוב הקודם" button under the picker
+     (bshellRestorePrevDesign). */
+const BSHELL_DESIGN_KEYS = ["mood", "moodBefore", "primaryColor", "fontFamily", "textStyles"];
+
 function bshellApplyMood(d, key) {
   const next = (key && SITE_MOODS[key]) ? SITE_MOODS[key] : null;
   const cur = (d.mood && SITE_MOODS[d.mood]) ? SITE_MOODS[d.mood] : null;
   if (next) {
-    if (!cur) d.moodBefore = { primaryColor: d.primaryColor, fontFamily: d.fontFamily };
+    const prev = {};
+    BSHELL_DESIGN_KEYS.forEach((k) => { if (d[k] !== undefined) prev[k] = JSON.parse(JSON.stringify(d[k])); });
+    if (!cur) {
+      const styles = {};
+      Object.keys(d.textStyles || {}).forEach((k) => {
+        const s = d.textStyles[k] || {};
+        if (s.color || s.font) styles[k] = Object.assign({}, s.color ? { color: s.color } : {}, s.font ? { font: s.font } : {});
+      });
+      d.moodBefore = { primaryColor: d.primaryColor, fontFamily: d.fontFamily };
+      if (Object.keys(styles).length) d.moodBefore.textStyles = styles;
+    }
     d.mood = key;
     d.primaryColor = next.primaryColor;
     d.fontFamily = next.bodyFont;
+    // Emptied entries stay as {} (renders nothing, keeps the key order).
+    Object.keys(d.textStyles || {}).forEach((k) => {
+      if (d.textStyles[k]) { delete d.textStyles[k].color; delete d.textStyles[k].font; }
+    });
+    d.moodPrev = prev;
     return;
   }
   const before = d.moodBefore;
@@ -1143,9 +1681,28 @@ function bshellApplyMood(d, key) {
     if (d.fontFamily === cur.bodyFont) {
       if (before.fontFamily === undefined) delete d.fontFamily; else d.fontFamily = before.fontFamily;
     }
+    Object.keys(before.textStyles || {}).forEach((k) => {
+      d.textStyles = d.textStyles || {};
+      const s = d.textStyles[k] || (d.textStyles[k] = {});
+      ["color", "font"].forEach((p) => { if (before.textStyles[k][p] && !s[p]) s[p] = before.textStyles[k][p]; });
+    });
   }
   delete d.mood;
   delete d.moodBefore;
+  delete d.moodPrev;
+}
+
+/* "↩ חזרה לעיצוב הקודם": exactly the design settings from before the
+   last mood choice (which may itself have been another mood). Used once
+   — the button disappears until the next mood choice. */
+function bshellRestorePrevDesign(d) {
+  const prev = d.moodPrev;
+  if (!prev || typeof prev !== "object") return false;
+  BSHELL_DESIGN_KEYS.forEach((k) => {
+    if (prev[k] === undefined) delete d[k]; else d[k] = JSON.parse(JSON.stringify(prev[k]));
+  });
+  delete d.moodPrev;
+  return true;
 }
 
 /* ---------- SEO / "איך האתר נראה בגוגל" ----------
@@ -1319,142 +1876,131 @@ function bshellGalleryPreviewHtml(d) {
 }
 
 function bshellWirePropertiesPanel() {
-  if (bshellSelection.kind === "text") return bshellWireTextProps(bshellSelection.key);
-  if (bshellSelection.kind === "service") return bshellWireServiceProps(bshellSelection.idx);
   if (bshellSelection.kind === "section") return bshellWireSectionProps(bshellSelection.type);
   if (bshellSelection.kind === "settings") return bshellWireSettingsProps();
 }
 
-function bshellWireTextProps(key) {
-  const field = BSHELL_TEXT_CONTENT_MAP[key];
-  const contentEl = document.getElementById("bshell-prop-content");
-  const sizeEl = document.getElementById("bshell-prop-size");
-  const colorEl = document.getElementById("bshell-prop-color");
-  const resetBtn = document.getElementById("bshell-prop-reset");
-
-  if (contentEl) {
-    contentEl.addEventListener("focus", () => bshellBeginEdit(contentEl));
-    contentEl.addEventListener("blur", () => bshellEndEdit(contentEl));
-    contentEl.addEventListener("input", () => {
-      if (field) field.set(siteState.data, contentEl.value);
-      bshellPatchTextContent(key, contentEl.value, !!(field && field.multiline));
-      bshellScheduleSave();
-    });
-  }
-
-  function commitStyle() {
-    const s = (siteState.data.textStyles && siteState.data.textStyles[key]) || {};
-    const next = Object.assign({}, s);
-    if (sizeEl) { if (sizeEl.value) next.size = sizeEl.value; else delete next.size; }
-    if (colorEl && colorEl.dataset.touched) next.color = colorEl.value.replace("#", "");
-    siteState.data.textStyles = siteState.data.textStyles || {};
-    if (next.size || next.color || next.align || next.font) siteState.data.textStyles[key] = next;
-    else delete siteState.data.textStyles[key];
-    bshellPatchTextStyle(key);
-    bshellScheduleSave();
-  }
-  if (sizeEl) {
-    sizeEl.addEventListener("focus", () => bshellBeginEdit(sizeEl));
-    sizeEl.addEventListener("blur", () => bshellEndEdit(sizeEl));
-    sizeEl.addEventListener("input", commitStyle);
-  }
-  if (colorEl) {
-    colorEl.addEventListener("focus", () => bshellBeginEdit(colorEl));
-    colorEl.addEventListener("change", () => bshellEndEdit(colorEl));
-    colorEl.addEventListener("input", () => { colorEl.dataset.touched = "1"; commitStyle(); });
-  }
-  document.querySelectorAll(".bshell-align-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      bshellSnapshot();
-      const wasActive = btn.classList.contains("active");
-      document.querySelectorAll(".bshell-align-btn").forEach((b) => b.classList.remove("active"));
-      const s = (siteState.data.textStyles && siteState.data.textStyles[key]) || {};
-      const next = Object.assign({}, s);
-      if (wasActive) delete next.align; else { btn.classList.add("active"); next.align = btn.dataset.align; }
-      siteState.data.textStyles = siteState.data.textStyles || {};
-      if (next.size || next.color || next.align || next.font) siteState.data.textStyles[key] = next;
-      else delete siteState.data.textStyles[key];
-      bshellPatchTextStyle(key);
-      bshellScheduleSave();
-    });
-  });
-  if (resetBtn) {
-    resetBtn.addEventListener("click", () => {
-      bshellSnapshot();
-      delete (siteState.data.textStyles || {})[key];
-      bshellPatchTextStyle(key);
-      bshellRenderProperties();
-      bshellScheduleSave();
-    });
-  }
-}
-
-function bshellPatchTextContent(key, value, multiline) {
-  const doc = document.getElementById("bshell-canvas-iframe").contentDocument;
-  if (!doc) return;
-  if (!value.trim()) { bshellRenderCanvas(bshellReanchorSelection); return; } // empty -> fall back to template default, needs a real re-render
-  const html = multiline ? nl2brS(value) : escapeHtmlS(value);
-  doc.querySelectorAll(`[data-textkey="${key}"]`).forEach((el) => { el.innerHTML = html; });
-  bshellApplySelectionVisual();
-}
-function bshellPatchTextStyle(key) {
-  const doc = document.getElementById("bshell-canvas-iframe").contentDocument;
-  if (!doc) return;
-  const css = textStyleCss((siteState.data.textStyles || {})[key]);
-  doc.querySelectorAll(`[data-textkey="${key}"]`).forEach((el) => {
-    if (css) el.setAttribute("style", css); else el.removeAttribute("style");
-  });
-  bshellApplySelectionVisual();
-}
-
-function bshellWireServiceProps(idx) {
-  const nameEl = document.getElementById("bshell-prop-svc-name");
-  const descEl = document.getElementById("bshell-prop-svc-desc");
-  const priceEl = document.getElementById("bshell-prop-svc-price");
-  const bind = (el, key) => {
-    if (!el) return;
-    el.addEventListener("focus", () => bshellBeginEdit(el));
-    el.addEventListener("blur", () => bshellEndEdit(el));
-    el.addEventListener("input", () => {
-      siteState.data.services[idx][key] = el.value;
-      // service-card markup (num/name/desc/price together) isn't a
-      // single data-textkey span, so a real re-render is the simplest
-      // correct patch — bshellReanchorSelection() re-points the
-      // selection at the matching card in the FRESH document (instead
-      // of the full bshellSelectService(), which also rebuilds the
-      // properties panel and would steal focus/cursor out of the field
-      // the user is still typing in).
-      bshellRenderCanvas(bshellReanchorSelection);
-      bshellRenderHierarchy();
-      bshellScheduleSave();
-    });
-  };
-  bind(nameEl, "name"); bind(descEl, "desc"); bind(priceEl, "price");
-}
-
-/* Lighter than a full re-select: keeps the current selection's TYPE/
-   KEY/IDX, just re-points rootEl at the matching element in whatever
-   document is now loaded in the canvas, and refreshes the outline/
-   toolbar — without touching the Properties panel, so it never steals
-   focus out of a field the user is actively typing in. Falls back to
-   clearing the selection if the element genuinely isn't there anymore
-   (e.g. it just got hidden). */
+/* Lighter than a full re-select: keeps the current selection's type and
+   focus, just re-points rootEl/focusEl at the matching elements in
+   whatever document the canvas now shows (after a patch or a swap), and
+   refreshes the outline/toolbar — without touching the Properties panel,
+   so it never steals focus out of a field the user is typing in. A
+   section that is now hidden simply has no element to outline. */
 function bshellReanchorSelection() {
-  if (!bshellSelection) return;
+  const sel = bshellSelection;
+  if (!sel || sel.kind !== "section") { bshellApplySelectionVisual(); return; }
   const doc = document.getElementById("bshell-canvas-iframe").contentDocument;
   if (!doc) return;
-  let el = null;
-  if (bshellSelection.kind === "service") el = doc.querySelector(`[data-svc-idx="${bshellSelection.idx}"]`);
-  else if (bshellSelection.kind === "text") el = doc.querySelector(`[data-textkey="${bshellSelection.key}"]`);
-  else if (bshellSelection.kind === "section") {
-    const anchorEl = bshellFindAnchorEl(doc, siteState.template, bshellSelection.type);
-    el = anchorEl ? anchorEl.closest("body > *") : null;
+  if (sel.type === BSHELL_SITE_TYPE) {
+    sel.rootEl = (sel.topIdx != null && doc.querySelector(`body > [data-bshell-top="${sel.topIdx}"]`)) || (sel.topIdx == null ? null : bshellFindSectionRoot(doc, sel.type));
+  } else {
+    sel.rootEl = bshellFindSectionRoot(doc, sel.type);
   }
-  if (el) { bshellSelection.rootEl = el; bshellApplySelectionVisual(); }
-  else { bshellSelection = null; bshellRenderProperties(); }
+  sel.focusEl = bshellFindFocusEl(doc, sel);
+  bshellApplySelectionVisual();
 }
 
+/* Writes one style group (d.textStyles[key]) — an empty group is
+   removed, so "back to default" leaves no trace in the saved data. */
+function bshellSetTextStyle(key, prop, value) {
+  const d = siteState.data;
+  d.textStyles = d.textStyles || {};
+  const next = Object.assign({}, d.textStyles[key]);
+  if (value) next[prop] = value; else delete next[prop];
+  if (next.font || next.color || next.size || next.align) d.textStyles[key] = next;
+  else delete d.textStyles[key];
+}
+
+/* Everything in the section editor is wired by delegation on the panel
+   body — fields are re-rendered often (a service added, a group reset),
+   and every edit ends the same way: change siteState.data, patch the
+   canvas in place (bshellRenderCanvas), autosave. */
 function bshellWireSectionProps(type) {
+  const d = siteState.data;
+  const body = document.getElementById("bshell-props-body");
+  const isField = (el) => el.matches && el.matches("[data-text-key], [data-svc-field], [data-contact-key], input[type=color][data-style-prop]");
+  body.addEventListener("focusin", (e) => { if (isField(e.target)) bshellBeginEdit(e.target); });
+  body.addEventListener("focusout", (e) => { if (isField(e.target)) bshellEndEdit(e.target); });
+  body.addEventListener("input", (e) => {
+    const el = e.target;
+    if (el.dataset.textKey) {
+      BSHELL_TEXT_CONTENT_MAP[el.dataset.textKey].set(d, el.value);
+      if (el.dataset.textKey === "businessName") {
+        const t = SITE_TEMPLATES[siteState.template];
+        document.getElementById("bshell-top-name").textContent = el.value.trim() || (t ? bsLabel(t.label) : bsL("הפרויקט שלי", "My project"));
+      }
+    } else if (el.dataset.svcField) {
+      const i = parseInt(el.dataset.svcIdx, 10);
+      if (!d.services || !d.services[i]) return;
+      d.services[i][el.dataset.svcField] = el.value;
+      if (el.dataset.svcField === "name") {
+        const title = el.closest(".bshell-svc-item").querySelector(".bshell-svc-item-title");
+        if (title) title.textContent = el.value.trim() || title.textContent;
+        bshellRenderHierarchy();
+      }
+    } else if (el.dataset.contactKey) {
+      d[el.dataset.contactKey] = el.value;
+    } else if (el.dataset.styleProp === "color") {
+      el.dataset.touched = "1";
+      bshellSetTextStyle(el.closest("[data-style-key]").dataset.styleKey, "color", el.value.replace("#", ""));
+    } else {
+      return;
+    }
+    bshellRenderCanvas();
+    bshellScheduleSave();
+  });
+  body.addEventListener("change", (e) => {
+    const el = e.target;
+    if (el.tagName !== "SELECT" || !el.dataset.styleProp) return;
+    bshellSnapshot();
+    bshellSetTextStyle(el.closest("[data-style-key]").dataset.styleKey, el.dataset.styleProp, el.value);
+    bshellRenderCanvas();
+    bshellRefreshStyleGroup(el.closest("[data-style-key]"));
+    bshellScheduleSave();
+  });
+  body.addEventListener("click", (e) => {
+    const svcBtn = e.target.closest("[data-svc-action]");
+    if (svcBtn) {
+      const i = parseInt(svcBtn.dataset.svcIdx, 10);
+      if (svcBtn.dataset.svcAction === "add") bshellAddService();
+      else if (svcBtn.dataset.svcAction === "duplicate") bshellDuplicateService(i);
+      else if (svcBtn.dataset.svcAction === "delete") bshellDeleteService(i);
+      return;
+    }
+    const group = e.target.closest("[data-style-key]");
+    if (!group) return;
+    const key = group.dataset.styleKey;
+    const alignBtn = e.target.closest(".bshell-align-btn");
+    if (alignBtn) {
+      bshellSnapshot();
+      const s = (d.textStyles && d.textStyles[key]) || {};
+      bshellSetTextStyle(key, "align", s.align === alignBtn.dataset.align ? "" : alignBtn.dataset.align);
+    } else if (e.target.closest("[data-style-reset]")) {
+      bshellSnapshot();
+      delete (d.textStyles || {})[key];
+    } else {
+      return;
+    }
+    bshellRenderCanvas();
+    bshellRefreshStyleGroup(group);
+    bshellScheduleSave();
+  });
+  bshellWireSectionDisplayProps(type);
+}
+
+/* Re-renders one style group in place (its reset link / active buttons)
+   without rebuilding the whole panel. */
+function bshellRefreshStyleGroup(groupEl) {
+  if (!groupEl) return;
+  const key = groupEl.dataset.styleKey;
+  const label = groupEl.querySelector(".bshell-style-group-name").textContent;
+  const sizes = Array.from(groupEl.querySelectorAll('[data-style-prop="size"] option')).map((o) => Number(o.value)).filter(Boolean);
+  const tmp = document.createElement("div");
+  tmp.innerHTML = bshellStyleGroupHtml({ key, label, sizes, align: !!groupEl.querySelector(".bshell-align-row") });
+  groupEl.replaceWith(tmp.firstElementChild);
+}
+
+function bshellWireSectionDisplayProps(type) {
   const variantEl = document.getElementById("bshell-prop-variant");
   const visibleEl = document.getElementById("bshell-prop-visible");
   if (variantEl) {
@@ -1485,17 +2031,22 @@ function bshellWireSectionProps(type) {
       bshellScheduleSave();
     });
   }
+  const hideCopyrightEl = document.getElementById("bshell-prop-hide-copyright");
+  if (hideCopyrightEl) {
+    hideCopyrightEl.addEventListener("change", () => {
+      bshellSnapshot();
+      siteState.data.hideCopyright = hideCopyrightEl.checked;
+      bshellRenderCanvas(() => bshellSelectSection(type));
+      bshellScheduleSave();
+    });
+  }
 }
 
 /* ---------- Settings (site-wide, no canvas anchor) ----------
-   Plain text fields re-render the whole canvas on every keystroke —
-   same already-shipped pattern bshellWireServiceProps uses for name/
-   desc/price, since none of these fields (phone/email/address/
-   videoUrl) are a single data-textkey span that could be live-patched
-   in place. Color/font go through bshellApplyGlobalStylesLive()
-   instead, same reasoning as the old sidebar's own applyGlobalStylesLive()
-   — reloading the entire iframe on every drag of the color wheel would
-   be visibly laggy where patching just the <style> tag's text isn't. */
+   Every field here ends in bshellRenderCanvas(), which patches the
+   canvas in place (see the comment above bshellCanvasHtml) — a phone
+   number typed here updates the header, the hero and the contact
+   section without reloading the page. */
 function bshellWireSettingsProps() {
   const d = siteState.data;
 
@@ -1527,6 +2078,16 @@ function bshellWireSettingsProps() {
       bshellScheduleSave();
     });
   });
+  const moodRestoreEl = document.getElementById("bshell-mood-restore");
+  if (moodRestoreEl) {
+    moodRestoreEl.addEventListener("click", () => {
+      bshellSnapshot();
+      if (!bshellRestorePrevDesign(d)) return;
+      bshellRenderProperties();
+      bshellApplyGlobalStylesLive();
+      bshellScheduleSave();
+    });
+  }
 
   // Alt text only — nothing visible on the canvas changes.
   const heroAltEl = document.getElementById("bshell-set-hero-alt");
@@ -1719,25 +2280,15 @@ function bshellWireSettingsProps() {
   }
 }
 
-/* Same trick applyGlobalStylesLive() (site-builder.js) already uses for
-   the old sidebar's own color/font fields, aimed at the Shell's iframe
-   instead of the old #site-preview-frame — patches the live <style>
-   tag's text (and the Google Fonts <link>s) from a freshly rendered
-   copy of the page, rather than reloading the whole iframe. Falls back
-   to a full canvas re-render if the current document has no <style>
-   tag to patch yet (shouldn't normally happen). */
+/* Colour/font/mood changes. This used to swap only the page's first
+   <style> tag — which missed every colour that isn't in it: the
+   "centered" hero / "grid" services layouts (site-blocks.js) paint the
+   primary colour in inline style attributes, and per-text colours sit
+   on the text itself, so on those projects a new colour or mood seemed
+   to change only the font. bshellRenderCanvas()'s in-place patch covers
+   the <style>, the font <link>s and every inline style alike, still
+   without reloading the iframe (so dragging the colour wheel stays
+   smooth). */
 function bshellApplyGlobalStylesLive() {
-  const iframe = document.getElementById("bshell-canvas-iframe");
-  const doc = iframe && iframe.contentDocument;
-  const styleEl = doc && doc.querySelector("style");
-  if (!styleEl) { bshellRenderCanvas(); return; }
-  const html = currentSiteHtml("index");
-  const styleMatch = html.match(/<style>([\s\S]*?)<\/style>/);
-  if (!styleMatch) { bshellRenderCanvas(); return; }
-  styleEl.textContent = styleMatch[1];
-  const linkMatches = html.match(/<link rel="preconnect"[^>]*>|<link href="https:\/\/fonts\.googleapis\.com[^>]*>/g);
-  if (linkMatches) {
-    doc.querySelectorAll('head link[rel="preconnect"], head link[href*="fonts.googleapis.com"]').forEach((el) => el.remove());
-    doc.head.insertAdjacentHTML("afterbegin", linkMatches.join(""));
-  }
+  bshellRenderCanvas();
 }

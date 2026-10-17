@@ -1661,7 +1661,7 @@ function renderPublishClaimedScreen(url, selfHosted, slug) {
   const offerRename = selfHosted && slug;
   const isAuto = slug && AUTO_SLUG_PATTERN.test(slug);
   note.innerHTML = `
-    <div style="margin-bottom:4px; font-weight:700; color:var(--ink-dark);">${dkL("האתר שלכם באוויר ✓", "Your site is live ✓")}</div>
+    <div class="publish-live-head" style="margin-bottom:4px; font-weight:700;">${dkL("האתר שלכם באוויר ✓", "Your site is live ✓")}</div>
     <div class="publish-url-box">
       <span id="publish-url-text" dir="ltr">${url}</span>
       <button type="button" id="publish-copy-btn" class="btn-mini publish-copy-btn">${dkL("העתקת קישור", "Copy link")}</button>
