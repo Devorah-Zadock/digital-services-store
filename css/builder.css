@@ -90,9 +90,8 @@
 .builder-hier-block { padding-bottom: 14px; margin-bottom: 10px; border-bottom: 1px solid #EAEDEC; }
 .builder-hier-block .preview-tabs { margin-bottom: 10px; }
 /* Real cards, not a bare bullet list — each row reads as its own block
-   you can click, matching the "block list" clarity SITE123 gets from
-   bordered rows with their own icon chip, adapted to DeskKit's own
-   rounded/teal language instead of copying its visual style. */
+   you can click: bordered rows with their own icon chip, in DeskKit's
+   own rounded/teal language. */
 .hier-tree { display: flex; flex-direction: column; gap: 6px; }
 .hier-row {
   display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 9px;

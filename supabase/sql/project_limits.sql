@@ -8,7 +8,12 @@
 --   * Accounts that bought anything get the higher limit.
 --   * The numbers live in public.project_limits, so they can be changed
 --     with one UPDATE, no code change.
---   * Server-side code (service role) isn't limited.
+--   * Server-side code (service role) and DeskKit's own owner/admin
+--     accounts (public.admin_users) aren't limited.
+--   * Free-plan numbers follow the market (Carrd: 3 free sites, Webflow: 2,
+--     most CV builders: 1); quotes/invoices are everyday business records,
+--     so they get room for real use. Each row is a few KB; photos have
+--     their own storage allowance (storage_quota_and_rates.sql).
 -- The error text "project_limit:<table>:<limit>" is what the browser looks
 -- for (js/supabase-config.js) to show a friendly explanation.
 
@@ -21,11 +26,11 @@ alter table public.project_limits enable row level security;
 revoke all on public.project_limits from anon, authenticated;
 
 insert into public.project_limits (tbl, max_per_user, paid_max_per_user) values
-  ('site_projects', 15, 40),
-  ('cv_saves', 20, 60),
-  ('quote_saves', 300, 1000),
-  ('invoice_saves', 1000, 5000),
-  ('schedule_projects', 20, 60)
+  ('site_projects', 3, 10),
+  ('cv_saves', 3, 10),
+  ('quote_saves', 100, 1000),
+  ('invoice_saves', 500, 5000),
+  ('schedule_projects', 3, 10)
 on conflict (tbl) do nothing;
 
 create or replace function public.enforce_project_limit()
@@ -41,6 +46,13 @@ declare
 begin
   if coalesce(auth.role(), '') = 'service_role' or new.user_id is null then
     return new;
+  end if;
+  if to_regclass('public.admin_users') is not null then
+    execute $q$select exists (select 1 from public.admin_users a join auth.users u on lower(u.email) = a.email
+                              where u.id = $1 and a.role in ('owner', 'admin'))$q$ into v_exists using new.user_id;
+    if v_exists then
+      return new;
+    end if;
   end if;
   -- An upsert of a project that already exists is a save, not a new project.
   execute format('select exists (select 1 from public.%I where id = $1)', tg_table_name) into v_exists using new.id;
