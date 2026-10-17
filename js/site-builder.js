@@ -836,8 +836,13 @@ function siteWatermarkHtml() {
 function currentSiteUrl() {
   return (typeof sitePublishedUrl !== "undefined" && sitePublishedUrl) ? String(sitePublishedUrl) : "";
 }
-function currentSiteHtml(page) {
-  const html = SITE_TEMPLATES[siteState.template].render(siteState.data, page || "index", { siteUrl: currentSiteUrl() });
+/* opts.preview: true ONLY for the editor's own canvas (js/builder-shell.js)
+   — lets added sections show their placeholders there. Publishing and
+   every other caller pass nothing, so the published HTML never has them. */
+function currentSiteHtml(page, opts) {
+  const renderOpts = { siteUrl: currentSiteUrl() };
+  if (opts && opts.preview === true) renderOpts.preview = true;
+  const html = SITE_TEMPLATES[siteState.template].render(siteState.data, page || "index", renderOpts);
   const unlocked = typeof currentUnlockKey === "function" && localStorage.getItem(currentUnlockKey()) === "1";
   if (unlocked) return html;
   return html.includes("</body>") ? html.replace("</body>", siteWatermarkHtml() + "</body>") : html + siteWatermarkHtml();
@@ -944,7 +949,10 @@ function renderHierarchyPanel() {
 
 function renderMigratedHierarchy(tree, addBlockRow, template, d) {
   const defs = SITE_BLOCK_DEFS[template];
-  const active = activeBlocksForPage(d, template, "index");
+  // Only the template's own blocks: sections added from the section
+  // library ("x:<id>" keys) have no SITE_BLOCK_DEFS entry and are managed
+  // by the site editor (js/builder-shell.js), not this legacy panel.
+  const active = activeBlocksForPage(d, template, "index").filter((type) => defs[type]);
   // Same universal data-textkey selectors FIELD_SCROLL_TARGETS already
   // uses — unlike a template-specific CSS class (.ls-hero/.pg-hero),
   // these keep working regardless of which Section Variant (Phase 2) is

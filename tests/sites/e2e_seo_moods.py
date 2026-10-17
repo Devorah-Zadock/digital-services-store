@@ -86,6 +86,20 @@ class Backend:
             return route.fulfill(status=200, content_type="application/json", body="{}")
         return route.fulfill(status=200, content_type="application/json", body="[]")
 
+def open_panel(pg, mode):
+    """Opens one of the site editor's panels the way a person does: from
+    the top bar's actions menu (design / business / seo / settings…) or,
+    for the hero photos, from advanced settings."""
+    if mode == "heroimages":
+        open_panel(pg, "settings")
+        pg.click('#bsx-panel [data-goto="heroimages"]')
+    else:
+        pg.click("#bsx-more-btn")
+        pg.click(f'#bsx-more-menu [data-menu="{mode}"]')
+    pg.wait_for_selector(f'#bsx-panel[data-mode="{mode}"]:not([hidden])')
+    pg.wait_for_timeout(100)
+
+
 def offline(port):
     """Everything that isn't the local server or the mocked Supabase gets an
     empty answer (Google Fonts, captcha...) — the tests never touch the net."""
@@ -139,12 +153,12 @@ def run(br, port):
     pg.wait_for_timeout(400)
     check("Builder Shell opens the seeded project", pg.evaluate("siteState.template") == "local-service")
 
-    pg.click("#bshell-settings-btn")
-    pg.wait_for_selector("#bshell-seo-group")
-    check("Settings panel has the SEO group", pg.is_visible("#bshell-seo-group") and "איך האתר נראה בגוגל" in pg.inner_text("#bshell-seo-group"))
-    check("Settings panel has the mood picker (none + 4)", pg.locator(".bshell-mood-btn").count() == 5,
+    open_panel(pg, "design")
+    check("Site design panel has the mood picker (none + 4)", pg.locator(".bshell-mood-btn").count() == 5,
           pg.locator(".bshell-mood-btn").count())
     check("Mood 'ללא' is selected for an existing project", pg.get_attribute('.bshell-mood-btn[data-mood=""]', "aria-checked") == "true")
+    open_panel(pg, "seo")
+    check("SEO panel has the SEO group", pg.is_visible("#bshell-seo-group") and "איך האתר נראה בגוגל" in pg.inner_text("#bshell-seo-group"))
 
     def count_state(sel): return pg.get_attribute(sel, "data-state")
     def count_color(sel): return pg.evaluate(f"getComputedStyle(document.querySelector('{sel}')).color")
@@ -257,6 +271,7 @@ def run(br, port):
     pg.evaluate("sitePublishedUrl = null")
 
     # hero alt
+    open_panel(pg, "heroimages")
     pg.fill("#bshell-set-hero-alt", 'הצוות "שלנו" & <הסטודיו>')
     check("Hero alt text reaches the hero <img>", head_info()["heroAlt"] == 'הצוות "שלנו" & <הסטודיו>', head_info()["heroAlt"])
 
@@ -269,8 +284,10 @@ def run(br, port):
           (saved.get("seo"), be.posts, list(be.rows), pg.inner_text("#bshell-top-status"), pg.evaluate("[siteCurrentUserId, siteProjectId]")))
 
     # clearing every SEO field returns exactly today's head
+    open_panel(pg, "seo")
     pg.fill("#bshell-seo-title", "")
     pg.fill("#bshell-seo-desc", "")
+    open_panel(pg, "heroimages")
     pg.fill("#bshell-set-hero-alt", "")
     check("Clearing the SEO fields removes d.seo", pg.evaluate("siteState.data.seo === undefined && siteState.data.heroAlt === undefined"))
     same = pg.evaluate("""(orig) => SITE_TEMPLATES['local-service'].render(siteState.data, 'index') === SITE_TEMPLATES['local-service'].render(orig, 'index')""", original)
@@ -281,6 +298,7 @@ def run(br, port):
     before_data = pg.evaluate("JSON.stringify(siteState.data)")
     moods = pg.evaluate("JSON.parse(JSON.stringify(SITE_MOODS))")
     check("Exactly 4 moods", sorted(moods) == sorted(MOODS), list(moods))
+    open_panel(pg, "design")
     for key in MOODS:
         pg.click(f'.bshell-mood-btn[data-mood="{key}"]')
         m = moods[key]
@@ -308,8 +326,7 @@ def run(br, port):
     check("'ללא' keeps a colour picked by hand after the mood", pg.evaluate("siteState.data.primaryColor") == "#ff0000")
     pg.click("#bshell-undo-btn"); pg.click("#bshell-undo-btn")
     check("Undo goes back through the mood change", pg.evaluate("siteState.data.mood") == "tech")
-    pg.click("#bshell-settings-btn")
-    pg.wait_for_selector(".bshell-mood-btn")
+    open_panel(pg, "design")
     pg.click('.bshell-mood-btn[data-mood=""]')
     after_html = pg.evaluate("SITE_TEMPLATES['local-service'].render(siteState.data, 'index')")
     check("'ללא' restores byte-identical HTML", after_html == before_html, (len(after_html), len(before_html)))

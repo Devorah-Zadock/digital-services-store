@@ -1,52 +1,42 @@
 /* ===========================================================
-   Builder-Shell — DeskKit's central editing surface (Hierarchy ->
-   Canvas -> Selection -> Properties -> Editing -> Undo -> Responsive
-   -> Preview -> Save). Reachable via sites.html?shell=1&template=X
-   (see the branch added in site-builder.js's own DOMContentLoaded
-   handler, right where it would otherwise call showWizard()).
+   Site editor — the on-canvas editing surface of the website builder
+   (sites.html). Reached for every migrated template (BSHELL_SUPPORTED_
+   TEMPLATES, see site-builder.js's DOMContentLoaded handler); ?shell=0
+   stays as the escape hatch back to the old sidebar form.
 
-   ONE Shell, driven by each template's own Schema — never a per-
-   template copy of this file. Proved first on local-service alone
-   (Phase 2), then generalized here to every migrated template once
-   all 18 were on the Section/Block system (Phase 7): BSHELL_
-   SUPPORTED_TEMPLATES is literally SITE_MIGRATED_TEMPLATES (site-
-   blocks.js's own registry, not a separate list this file keeps in
-   sync by hand), section labels come from SITE_BLOCK_DEFS[template]
-   [type].label, and the anchor a click resolves a whole Section from
-   is computed generically (see bshellAnchorCandidates) rather than
-   hardcoded per template. The ~5 templates whose services-equivalent
-   block renders no heading element at all (catalog/boutique/chaos/
-   bento/freelancer) are the only explicit exceptions, in
-   BSHELL_ANCHOR_RAW_OVERRIDES below — everything else Just Works
-   because every migrated template's sections already go through the
-   same universal heading()/aboutText() helpers with the same textkey
-   scheme. The design never changes to fit the Builder; the Builder
-   reads the design's own Schema.
+   The site itself is the editor: hover shows what can be edited, a click
+   selects it (outline + a small floating toolbar next to it), texts are
+   edited right where they are, sections get their own frame + toolbar
+   with "+" buttons between them, and ONE optional side panel (a bottom
+   sheet on a phone) holds whatever doesn't fit in a toolbar. The panels,
+   the add-section gallery, the dock and dialogs live in
+   js/builder-shell-panels.js.
 
-   Operates on the SAME siteState object, the SAME site_projects row,
-   and the SAME save/publish/watermark machinery as the existing
-   builder (js/site-builder.js, js/site-cloud-save.js) — this file adds
-   a new way to look at and edit that data, not a second data model.
-   Nothing here renders anything site-templates.js/site-blocks.js
-   don't already know how to render; this file is the editing chrome
-   around them.
+   Same data model as before, nothing new to migrate: siteState.data is
+   the one source of truth (BSHELL_TEXT_CONTENT_MAP / d.textStyles /
+   d.services / d.phone… for the template's own sections; d.sections /
+   d.blockOrder through the section library's functions for added
+   sections — every one of those calls is guarded, so the editor works,
+   with "add section" hidden, when js/site-sections.js isn't loaded).
+   Rendering is always the template's own render (currentSiteHtml), so
+   what the canvas shows is what gets published; everything the editor
+   adds to the canvas (data-bshell-top tags, its CSS, contenteditable)
+   lives only in the canvas iframe, never in currentSiteHtml().
    =========================================================== */
 
 const BSHELL_SUPPORTED_TEMPLATES = SITE_MIGRATED_TEMPLATES;
 
 // UI language helpers — js/i18n.js's dkL() and js/i18n-sites.js's
-// dkSitesLabel() when loaded, plain Hebrew otherwise (this file must keep
-// working on any page that loads it without the i18n scripts).
+// dkSitesLabel() when loaded, plain Hebrew otherwise.
 function bsL(he, en) { return typeof dkL === "function" ? dkL(he, en) : he; }
 function bsLabel(he) { return typeof dkSitesLabel === "function" ? dkSitesLabel(he) : he; }
+function bsxEsc(s) { return escapeHtmlS(s); }
+function bsxCss(s) { return (window.CSS && CSS.escape) ? CSS.escape(String(s)) : String(s).replace(/["\\]/g, "\\$&"); }
 
-/* Raw CSS-selector anchor overrides for the handful of (template,type)
-   pairs whose block has no heading(d, type, ...) element to anchor on
-   at all — mirrors site-builder.js's own SECTION_PATCH_ANCHOR_OVERRIDES
-   (same underlying fact about these templates, independently needed
-   here since this file resolves a CLICK to a section, that one
-   resolves a TEXT KEY to a section). Every other (template,type) pair
-   needs no entry here: its default candidate chain already finds it. */
+/* ---------- Section anchors (which top-level element is which block) ----------
+   Raw CSS-selector overrides for the (template,type) pairs whose block has
+   no heading(d, type, ...) element to anchor on — everything else is found
+   through the shared heading()/aboutText() textkeys. */
 const BSHELL_ANCHOR_RAW_OVERRIDES = {
   catalog: { services: "#cat-grid" },
   boutique: { services: "#bq-grid" },
@@ -54,20 +44,6 @@ const BSHELL_ANCHOR_RAW_OVERRIDES = {
   bento: { grid: "#bt-grid" },
   freelancer: { aboutTags: "#fr-services-wrap" },
 };
-
-/* The ordered list of candidate anchors to try for one (template,type)
-   pair — first match in the live DOM wins. "hero" is special-cased
-   because every hero calls heading(d,"heroTitle",...), never
-   heading(d,"hero",...). "about" (and any raw-overridden type, which
-   may also legitimately contain the about text, e.g. freelancer's
-   fused aboutTags) falls back to the universal "aboutText" textkey,
-   since several templates' about section never calls heading(d,
-   "about",...) at all, just aboutText(d,dd) with a plain Hebrew
-   caption instead (confirmed per-template, not guessed) — "contact"
-   deliberately has no such fallback: every single contact block
-   verified to always call heading(d,"contact",...), so adding one
-   would only risk silently resolving to the ABOUT section instead on
-   a future bug, never a real template fact to design around. */
 function bshellAnchorCandidates(template, type) {
   if (type === "hero") return ["heading-heroTitle"];
   const raw = (BSHELL_ANCHOR_RAW_OVERRIDES[template] || {})[type];
@@ -77,19 +53,9 @@ function bshellAnchorCandidates(template, type) {
   if (type === "about" || raw) candidates.push("aboutText");
   return candidates;
 }
-
-/* Resolves a candidate chain against any root (a whole document, or a
-   single section element to search WITHIN) — a candidate starting
-   with "#" is a raw CSS selector (an id added to that template's own
-   services wrapper purely as a stable hook), anything else is a
-   data-textkey lookup. Returns the element itself (the anchor), not
-   yet the enclosing Section root — callers that need the whole
-   Section still do their own .closest("body > *") on it. */
 function bshellQueryAnchor(root, candidates) {
   for (const c of candidates) {
     const sel = c.charAt(0) === "#" ? c : `[data-textkey="${c}"]`;
-    // The anchor can be the section element itself (chaos's services
-    // rail IS #oc-hscroll) — querySelector alone never matches root.
     if (root.matches && root.matches(sel)) return root;
     const el = root.querySelector(sel);
     if (el) return el;
@@ -99,290 +65,599 @@ function bshellQueryAnchor(root, candidates) {
 function bshellFindAnchorEl(doc, template, type) {
   return bshellQueryAnchor(doc, bshellAnchorCandidates(template, type));
 }
-
-// Content getter/setter per editable text field — the Properties
-// panel's "Text" type reads/writes through this, same underlying
-// d.businessName/d.headings/d.tagline/d.about fields the old sidebar
-// builder already uses, so nothing about the data model changes.
-const BSHELL_TEXT_CONTENT_MAP = {
-  businessName: { label: bsL("שם העסק", "Business name"), get: (d) => d.businessName || "", set: (d, v) => { d.businessName = v; } },
-  "heading-heroTitle": { label: bsL("כותרת ראשית", "Main heading"), placeholder: bsL("ברירת מחדל: שם העסק", "Default: your business name"), get: (d) => (d.headings && d.headings.heroTitle) || "", set: (d, v) => { d.headings = d.headings || {}; d.headings.heroTitle = v; } },
-  tagline: { label: bsL("שורת תיאור", "Tagline"), get: (d) => d.tagline || "", set: (d, v) => { d.tagline = v; } },
-  aboutText: { label: bsL("טקסט אודות", "About text"), multiline: true, get: (d) => d.about || "", set: (d, v) => { d.about = v; } },
-  "heading-services": { label: bsL("כותרת השירותים", "Services heading"), placeholder: bsL("ברירת מחדל: השירותים שלנו", "Leave empty for the default heading"), get: (d) => (d.headings && d.headings.services) || "", set: (d, v) => { d.headings = d.headings || {}; d.headings.services = v; } },
-  "heading-about": { label: bsL("כותרת האודות", "About heading"), placeholder: bsL("ברירת מחדל: קצת עלינו", "Leave empty for the default heading"), get: (d) => (d.headings && d.headings.about) || "", set: (d, v) => { d.headings = d.headings || {}; d.headings.about = v; } },
-  "heading-contact": { label: bsL("כותרת יצירת הקשר", "Contact heading"), placeholder: bsL("ברירת מחדל: יצירת קשר", "Leave empty for the default heading"), get: (d) => (d.headings && d.headings.contact) || "", set: (d, v) => { d.headings = d.headings || {}; d.headings.contact = v; } },
-};
-
-let bshellActiveFlag = false;
-let bshellSelection = null; // { kind: "section", type, rootEl, focus? } | { kind: "settings" } — see bshellResolveClickTarget
-let bshellUndoStack = [];
-// Which hierarchy sections (by type) are collapsed — starts empty, i.e.
-// every section begins expanded, same as the old hardcoded-open
-// behavior. Tracked separately from bshellSelection because collapsing
-// a section must survive bshellRenderHierarchy() re-renders (every
-// selection change repaints the whole list from scratch), and because
-// <details open> alone can't be the source of truth here: the summary's
-// own click handler calls e.preventDefault() (selecting a section must
-// never ALSO fire the browser's native toggle at the same time as the
-// custom one below), which also suppresses the native open/close toggle
-// entirely — leaving nothing to ever flip it, confirmed-live as the
-// chevron always pointing "open" and never collapsing on click.
-let bshellCollapsedSections = new Set();
-let bshellRedoStack = [];
-const BSHELL_UNDO_CAP = 30;
-let bshellSaveTimer = null;
-let bshellCanvasClickWired = false;
-
-/* ---------- Entry / exit ---------- */
-
-function bshellActivate() {
-  bshellActiveFlag = true;
-  document.getElementById("tpl-catalog-section").style.display = "none";
-  document.getElementById("wizard-section").style.display = "none";
-  document.getElementById("builder-top-banner").style.display = "none";
-  const seo = document.getElementById("sites-seo-content");
-  if (seo) seo.style.display = "none";
-  document.getElementById("bshell-root").classList.add("active");
-
-  const t = SITE_TEMPLATES[siteState.template];
-  document.getElementById("bshell-top-name").textContent = (siteState.data.businessName || "").trim() || (t ? bsLabel(t.label) : bsL("הפרויקט שלי", "My project"));
-
-  bshellWireTopBar();
-  bshellRenderHierarchy();
-  bshellRenderCanvas();
-  bshellSyncUndoButtons();
+function bshellFindSectionRoot(doc, type) {
+  if (!doc || !doc.body) return null;
+  const anchorEl = bshellFindAnchorEl(doc, siteState.template, type);
+  return anchorEl ? anchorEl.closest("body > *") : null;
 }
 
-/* ---------- Undo / Redo — one full siteState.data snapshot per
-   logical edit (not per keystroke; see bshellBeginEdit()), capped so a
-   long session doesn't grow this unboundedly. Independent of the
-   AI-command undo stack in site-ai-command.js — same pattern, separate
-   subsystem, since the two are never active in the same edit at once. */
+/* Content getter/setter per built-in text field — the same d.* fields the
+   old sidebar builder writes. */
+const BSHELL_TEXT_CONTENT_MAP = {
+  businessName: { label: bsL("שם העסק", "Business name"), get: (d) => d.businessName || "", set: (d, v) => { d.businessName = v; } },
+  "heading-heroTitle": { label: bsL("כותרת ראשית", "Main heading"), heading: true, get: (d) => (d.headings && d.headings.heroTitle) || "", set: (d, v) => { d.headings = d.headings || {}; d.headings.heroTitle = v; } },
+  tagline: { label: bsL("שורת תיאור", "Tagline"), get: (d) => d.tagline || "", set: (d, v) => { d.tagline = v; } },
+  aboutText: { label: bsL("טקסט אודות", "About text"), multiline: true, get: (d) => d.about || "", set: (d, v) => { d.about = v; } },
+  "heading-services": { label: bsL("כותרת השירותים", "Services heading"), heading: true, get: (d) => (d.headings && d.headings.services) || "", set: (d, v) => { d.headings = d.headings || {}; d.headings.services = v; } },
+  "heading-about": { label: bsL("כותרת האודות", "About heading"), heading: true, get: (d) => (d.headings && d.headings.about) || "", set: (d, v) => { d.headings = d.headings || {}; d.headings.about = v; } },
+  "heading-contact": { label: bsL("כותרת יצירת הקשר", "Contact heading"), heading: true, get: (d) => (d.headings && d.headings.contact) || "", set: (d, v) => { d.headings = d.headings || {}; d.headings.contact = v; } },
+};
+const BSHELL_STYLE_SIZES = {
+  hero: [28, 32, 36, 42, 48, 56, 64, 72],
+  heading: [20, 24, 28, 32, 36, 42, 48],
+  name: [14, 16, 18, 20, 22, 24, 28, 32],
+  body: [12, 13, 14, 15, 16, 17, 18, 20, 22],
+};
+const BSHELL_ITEM_WORD = {
+  services: [bsL("שירות", "Service"), bsL("השירותים", "services")],
+  products: [bsL("מוצר", "Product"), bsL("המוצרים", "products")],
+  work: [bsL("עבודה", "Project"), bsL("העבודות", "projects")],
+};
+function bshellItemWord() { return BSHELL_ITEM_WORD[TEMPLATE_SECTION_ROLE[siteState.template]] || BSHELL_ITEM_WORD.services; }
 
+/* hiddenBlocks (additive) gates the blocks that have no active() of their
+   own (hero, services, ...) the same way def.active() gates about/contact
+   via d.pages. _bshellHiddenGate marks which types this touched, so hiding
+   writes the right flag. (When the section library is loaded it defines
+   its own siteBlockSetVisible; this patch only fills in what's missing.) */
+(function bshellPatchBlockVisibility() {
+  (SITE_MIGRATED_TEMPLATES || []).forEach((template) => {
+    const defs = SITE_BLOCK_DEFS[template];
+    if (!defs) return;
+    Object.keys(defs).forEach((type) => {
+      if (!defs[type].active) {
+        defs[type]._bshellHiddenGate = true;
+        defs[type].active = (d) => !(d.hiddenBlocks && d.hiddenBlocks[type]);
+      }
+    });
+  });
+})();
+function bshellSetBuiltinVisible(type, visible) {
+  const d = siteState.data;
+  if (typeof siteBlockSetVisible === "function") { siteBlockSetVisible(d, siteState.template, type, visible); return; }
+  const def = (SITE_BLOCK_DEFS[siteState.template] || {})[type];
+  if (!def) return;
+  if (def._bshellHiddenGate) {
+    d.hiddenBlocks = d.hiddenBlocks || {};
+    if (visible) delete d.hiddenBlocks[type]; else d.hiddenBlocks[type] = true;
+  } else {
+    // about/contact: the same mechanism as the "separate page" switches.
+    ensurePagesShape(d).pages[type] = !visible;
+  }
+}
+function bshellBuiltinVisible(type) {
+  const def = (SITE_BLOCK_DEFS[siteState.template] || {})[type];
+  return !!def && (!def.active || !!def.active(siteState.data));
+}
+
+/* ---------- Icons (inline SVG, stroke = currentColor) ---------- */
+const BSX_SVG = (p, extra) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${extra || ""}>${p}</svg>`;
+const BSX_ICONS = {
+  menu: BSX_SVG('<path d="M4 6h16M4 12h16M4 18h16"/>'),
+  back: BSX_SVG('<path d="M9 6l6 6-6 6"/>'),
+  undo: BSX_SVG('<path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>'),
+  redo: BSX_SVG('<path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>'),
+  desktop: BSX_SVG('<rect x="2.5" y="4" width="19" height="12.5" rx="2"/><path d="M8.5 20.5h7M12 16.5v4"/>'),
+  tablet: BSX_SVG('<rect x="5" y="2.5" width="14" height="19" rx="2.2"/><path d="M11 18.5h2"/>'),
+  mobile: BSX_SVG('<rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path d="M11 18.5h2"/>'),
+  layers: BSX_SVG('<path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/>'),
+  eye: BSX_SVG('<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
+  eyeOff: BSX_SVG('<path d="M3 3l18 18"/><path d="M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.6 6.6A17 17 0 0 0 2 12s3.6 7 10 7a9.6 9.6 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>'),
+  help: BSX_SVG('<circle cx="12" cy="12" r="9.5"/><path d="M9.6 9.3a2.5 2.5 0 0 1 4.9.7c0 1.7-2.5 2.2-2.5 3.7"/><path d="M12 17h.01"/>'),
+  more: BSX_SVG('<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>'),
+  save: BSX_SVG('<path d="M5 3h11l4 4v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a1 1 0 0 1 1-2z"/><path d="M8 3v5h7V3M8 21v-6h8v6"/>'),
+  plus: BSX_SVG('<path d="M12 5v14M5 12h14"/>'),
+  grip: BSX_SVG('<circle cx="9" cy="6" r="1.2"/><circle cx="15" cy="6" r="1.2"/><circle cx="9" cy="12" r="1.2"/><circle cx="15" cy="12" r="1.2"/><circle cx="9" cy="18" r="1.2"/><circle cx="15" cy="18" r="1.2"/>'),
+  up: BSX_SVG('<path d="M12 19V5M6 11l6-6 6 6"/>'),
+  down: BSX_SVG('<path d="M12 5v14M6 13l6 6 6-6"/>'),
+  palette: BSX_SVG('<path d="M12 3a9 9 0 1 0 0 18c1 0 1.6-.8 1.6-1.6 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.7-1.6 1.6-1.6H16a5 5 0 0 0 5-5C21 6.5 17 3 12 3z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10.5" cy="7" r="1.2"/><circle cx="15.5" cy="7.5" r="1.2"/>'),
+  copy: BSX_SVG('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>'),
+  trash: BSX_SVG('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>'),
+  settings: BSX_SVG('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),
+  sliders: BSX_SVG('<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>'),
+  bold: BSX_SVG('<path d="M7 5h6a3.5 3.5 0 0 1 0 7H7zM7 12h7a3.5 3.5 0 0 1 0 7H7z"/>', ' stroke-width="2.4"'),
+  alignStart: BSX_SVG('<path d="M4 6h16M4 10h10M4 14h16M4 18h10"/>'),
+  alignCenter: BSX_SVG('<path d="M4 6h16M7 10h10M4 14h16M7 18h10"/>'),
+  alignEnd: BSX_SVG('<path d="M4 6h16M10 10h10M4 14h16M10 18h10"/>'),
+  link: BSX_SVG('<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>'),
+  image: BSX_SVG('<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="M21 16l-5-5L5 20"/>'),
+  upload: BSX_SVG('<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>'),
+  gallery: BSX_SVG('<rect x="7" y="7" width="14" height="13" rx="2"/><path d="M17 4H5a2 2 0 0 0-2 2v11"/><path d="M21 16l-4-4-7 7"/>'),
+  fit: BSX_SVG('<path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"/>'),
+  video: BSX_SVG('<rect x="2.5" y="5" width="15" height="14" rx="2"/><path d="M17.5 10l4-2.5v9l-4-2.5"/>'),
+  phone: BSX_SVG('<path d="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 6 6L15 14l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>'),
+  mail: BSX_SVG('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>'),
+  pin: BSX_SVG('<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>'),
+  whatsapp: BSX_SVG('<path d="M4 20l1.3-3.9A8.5 8.5 0 1 1 8 19.1z"/><path d="M9.5 9.2c.4 1.8 2 3.5 3.8 4.2l1.2-1.2 1.8.8-.3 1.6c-3.4.2-7.2-3.5-7-7l1.6-.3.8 1.8z"/>'),
+  form: BSX_SVG('<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h4"/>'),
+  business: BSX_SVG('<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 12h18"/>'),
+  contact: BSX_SVG('<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2.3"/><path d="M5.5 16.5c.8-1.8 2-2.6 3.5-2.6s2.7.8 3.5 2.6M15 9h3M15 13h3"/>'),
+  close: BSX_SVG('<path d="M6 6l12 12M18 6L6 18"/>'),
+  check: BSX_SVG('<path d="M5 12.5l4.5 4.5L19 7.5"/>'),
+  caret: BSX_SVG('<path d="M6 9l6 6 6-6"/>'),
+  sparkle: BSX_SVG('<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>'),
+  search: BSX_SVG('<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/>'),
+  parent: BSX_SVG('<path d="M4 9V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v4"/><path d="M12 20V10M8 14l4-4 4 4"/>'),
+  edit: BSX_SVG('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>'),
+  text: BSX_SVG('<path d="M5 6V4h14v2M12 4v16M9 20h6"/>'),
+  globe: BSX_SVG('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.4 2.6 3.6 5.6 3.6 9s-1.2 6.4-3.6 9c-2.4-2.6-3.6-5.6-3.6-9s1.2-6.4 3.6-9z"/>'),
+  external: BSX_SVG('<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/>'),
+  item: BSX_SVG('<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 10h8M8 14h5"/>'),
+  bsd: '<span class="bsx-bsd-glyph" aria-hidden="true">בס״ד</span>',
+  minus: BSX_SVG('<path d="M5 12h14"/>'),
+};
+function bsxIcon(name) { return BSX_ICONS[name] || ""; }
+
+/* ---------- State ---------- */
+let bshellActiveFlag = false;
+let bshellUndoStack = [];
+let bshellRedoStack = [];
+const BSHELL_UNDO_CAP = 60;
+let bshellSaveTimer = null;
+let bsxSel = null;        // the selection (see bsxResolve for its shape)
+let bsxHover = null;      // what the pointer is over (same shape)
+let bsxEdit = null;       // the inline text edit in progress
+let bsxMap = { keys: [], rootOf: new Map(), keyOfTop: new Map(), firstBlockIdx: -1 };
+let bsxDevice = "desktop";
+let bsxDrag = null;       // section drag in progress
+let bsxPointerOverTools = false;
+let bsxHoverClearTimer = null;
+let bsxCapsMemo = null;
+let bsxDirty = false;
+
+function bsxFrame() { return document.getElementById("bshell-canvas-iframe"); }
+function bsxDoc() { const f = bsxFrame(); return f && f.contentDocument; }
+function bsxSiteRtl() { return siteState.data.siteLang !== "en"; }
+
+/* ---------- What the renderer / section library can do ----------
+   Every optional capability is detected, never assumed: a control is only
+   shown when the code that renders its setting is actually loaded, so
+   nothing in the editor looks editable without being so. */
+function bsxCaps() {
+  if (bsxCapsMemo) return bsxCapsMemo;
+  const ok = (f) => { try { return !!f(); } catch (e) { return false; } };
+  bsxCapsMemo = {
+    lib: typeof SITE_SECTION_LIBRARY !== "undefined" && Array.isArray(SITE_SECTION_LIBRARY) && typeof siteSectionCreate === "function" && typeof siteSectionInsert === "function",
+    textWeight: ok(() => /font-weight\s*:\s*700/.test(textStyleAttr({ textStyles: { k: { weight: "700" } } }, "k"))),
+    textAdvanced: ok(() => /line-height/.test(textStyleAttr({ textStyles: { k: { lineHeight: "1.6" } } }, "k"))),
+    heroCta: ok(() => { const r = primaryCtaHref({ heroCta: { label: "Pq", action: { kind: "link", value: "https://example.com/" } } }, "index"); return r && r.label === "Pq"; }),
+    ctaStyle: ok(() => /background/.test(ctaHtml({ href: "#", label: "x", style: { bg: "#123456" } }, "c"))),
+    imageStyles: ok(() => /object-fit/.test(heroMediaHtml({ heroImage: "x.jpg", imageStyles: { hero: { fit: "contain" } } }, "c"))),
+    design: typeof siteDesignCss === "function",
+    secStyle: (typeof SITE_SECTION_STYLE_PROPS === "object" && SITE_SECTION_STYLE_PROPS) ? SITE_SECTION_STYLE_PROPS : { text: ["size", "color", "align", "font", "weight"], button: [], image: [] },
+  };
+  return bsxCapsMemo;
+}
+function bsxLibOn() { return bsxCaps().lib; }
+function bsxLibEntry(type) {
+  if (typeof SITE_SECTION_LIBRARY === "undefined" || !Array.isArray(SITE_SECTION_LIBRARY)) return null;
+  return SITE_SECTION_LIBRARY.find((e) => e && e.type === type) || null;
+}
+function bsxLoc(o) {
+  if (!o) return "";
+  if (typeof o === "string") return bsLabel(o);
+  return bsL(o.he || o.en || "", o.en || o.he || "");
+}
+function bsxAvailableTypes() {
+  if (!bsxLibOn()) return [];
+  let types = [];
+  try { types = typeof siteSectionsAvailable === "function" ? (siteSectionsAvailable(siteState.template) || []) : SITE_SECTION_LIBRARY; } catch (e) { types = []; }
+  // entries ({type, ...}) or plain type names — both accepted
+  return types.map((t) => (t && typeof t === "object" ? t.type : t)).filter((t) => bsxLibEntry(t));
+}
+
+/* ---------- Entry ---------- */
+function bshellActivate() {
+  bshellActiveFlag = true;
+  bsxCapsMemo = null;
+  ["tpl-catalog-section", "wizard-section", "builder-top-banner"].forEach((id) => { const el = document.getElementById(id); if (el) el.style.display = "none"; });
+  const seo = document.getElementById("sites-seo-content");
+  if (seo) seo.style.display = "none";
+  // The global DeskKit sidebar stays, collapsed by default inside the
+  // editor (its own per-viewer setting — see js/app-sidebar.js).
+  document.body.dataset.dkSidebarScope = "builder";
+  if (typeof dkApplyAppSidebarPref === "function") dkApplyAppSidebarPref();
+  document.getElementById("bshell-root").classList.add("active");
+  ensurePagesShape(siteState.data);
+  bsxUpdateTopName();
+  bsxWireChrome();
+  bshellRenderCanvas();
+  bshellSyncUndoButtons();
+  bsxSetStatus(bsxDirty ? "saving" : "");
+  if (typeof bsxRenderDock === "function") bsxRenderDock();
+  bsxStartLoop();
+}
+
+function bsxUpdateTopName() {
+  const t = SITE_TEMPLATES[siteState.template];
+  const el = document.getElementById("bshell-top-name");
+  if (el) el.textContent = (siteState.data.businessName || "").trim() || (t ? bsLabel(t.label) : bsL("הפרויקט שלי", "My project"));
+}
+
+/* site-cloud-save.js replaces siteState.data when the account's saved copy
+   arrives (and calls showWizard()) — after that the editor shows the new
+   data instead of the copy it started with. */
+(function bsxHookExternalLoads() {
+  if (typeof showWizard !== "function") return;
+  const orig = showWizard;
+  // eslint-disable-next-line no-global-assign
+  showWizard = function () {
+    orig.apply(this, arguments);
+    if (!bshellActiveFlag) return;
+    ["wizard-section"].forEach((id) => { const el = document.getElementById(id); if (el) el.style.display = "none"; });
+    bsxCancelEdit();
+    ensurePagesShape(siteState.data);
+    bsxUpdateTopName();
+    bshellRenderCanvas(() => { if (typeof bsxRefreshPanel === "function") bsxRefreshPanel(); });
+    if (typeof bsxRenderDock === "function") bsxRenderDock();
+  };
+})();
+
+/* ---------- Top bar ---------- */
+function bsxFillIcons(root) {
+  root.querySelectorAll("[data-icon]").forEach((el) => { if (!el.querySelector("svg")) el.insertAdjacentHTML("afterbegin", bsxIcon(el.dataset.icon)); });
+  root.querySelectorAll("[data-icon-before]").forEach((el) => { if (!el.querySelector("svg")) el.insertAdjacentHTML("afterbegin", bsxIcon(el.dataset.iconBefore)); });
+}
+function bsxTip(el, text, keys) {
+  if (!el) return;
+  el.title = text + (keys ? ` (${keys})` : "");
+  el.setAttribute("aria-label", text);
+}
+
+function bsxWireChrome() {
+  const root = document.getElementById("bshell-root");
+  if (root.dataset.wired) return;
+  root.dataset.wired = "1";
+  bsxFillIcons(root);
+  const mac = /Mac|iPhone|iPad/.test(navigator.platform || "");
+  const mod = mac ? "⌘" : "Ctrl";
+  bsxTip(document.getElementById("bsx-sidebar-btn"), bsL("תפריט DeskKit (פתיחה/סגירה)", "DeskKit menu (open/close)"));
+  const back = document.getElementById("bsx-back");
+  back.querySelector(".bsx-back-label").textContent = bsL("הפרויקטים שלי", "My projects");
+  back.title = bsL("חזרה לפרויקטים שלי", "Back to my projects");
+  bsxTip(document.getElementById("bshell-save-btn"), bsL("שמירה עכשיו", "Save now"), `${mod}+S`);
+  document.getElementById("bsx-save-retry").textContent = bsL("לנסות שוב", "Retry");
+  bsxTip(document.getElementById("bshell-undo-btn"), bsL("ביטול", "Undo"), `${mod}+Z`);
+  bsxTip(document.getElementById("bshell-redo-btn"), bsL("חזרה על הפעולה", "Redo"), `${mod}+Shift+Z`);
+  const devLabels = { desktop: bsL("מחשב", "Desktop"), tablet: bsL("טאבלט", "Tablet"), mobile: bsL("נייד", "Mobile") };
+  document.querySelectorAll("#bshell-device-row .bshell-device-btn").forEach((b) => { bsxTip(b, devLabels[b.dataset.device]); b.setAttribute("aria-pressed", String(b.classList.contains("active"))); });
+  document.getElementById("bshell-device-row").setAttribute("aria-label", bsL("גודל מסך", "Screen size"));
+  const structBtn = document.getElementById("bsx-structure-btn");
+  structBtn.querySelector("span").textContent = bsL("מבנה האתר", "Site structure");
+  structBtn.title = bsL("כל החלקים באתר — סידור, הצגה והסתרה", "All sections — order, show and hide");
+  const prevBtn = document.getElementById("bshell-preview-btn");
+  prevBtn.querySelector("span").textContent = bsL("תצוגה מקדימה", "Preview");
+  prevBtn.title = bsL("איך האתר ייראה למבקרים", "See the site as visitors will");
+  bsxTip(document.getElementById("bsx-help-btn"), bsL("עזרה קצרה", "Quick help"));
+  bsxTip(document.getElementById("bsx-more-btn"), bsL("עוד פעולות", "More actions"));
+  document.getElementById("bshell-publish-btn").textContent = bsL("פרסום", "Publish");
+  document.getElementById("bsx-ai-title").textContent = bsL("עזרה מ-DeskKit", "Help from DeskKit");
+  document.getElementById("bshell-ai-input").placeholder = bsL("מה תרצו לשנות?", "What would you like to change?");
+  document.getElementById("bshell-ai-submit").textContent = bsL("שליחה", "Send");
+  bsxTip(document.getElementById("bsx-ai-close"), bsL("סגירה", "Close"));
+  bsxTip(document.getElementById("bsx-panel-close"), bsL("סגירת החלונית", "Close panel"));
+  bsxTip(document.getElementById("bsx-panel-back"), bsL("חזרה", "Back"));
+  const iframe = bsxFrame();
+  if (iframe) iframe.title = bsL("עריכת האתר", "Site editor");
+
+  document.getElementById("bshell-undo-btn").addEventListener("click", bshellUndo);
+  document.getElementById("bshell-redo-btn").addEventListener("click", bshellRedo);
+  document.getElementById("bshell-save-btn").addEventListener("click", () => { bsxCommitEdit(); bshellSaveNow(); });
+  document.getElementById("bsx-save-retry").addEventListener("click", () => bshellSaveNow());
+  document.getElementById("bsx-sidebar-btn").addEventListener("click", () => {
+    if (typeof dkToggleAppSidebar === "function") dkToggleAppSidebar();
+    bsxSyncSidebarBtn();
+  });
+  new MutationObserver(bsxSyncSidebarBtn).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+  bsxSyncSidebarBtn();
+
+  document.getElementById("bshell-device-row").addEventListener("click", (e) => {
+    const btn = e.target.closest(".bshell-device-btn");
+    if (btn) bsxSetDevice(btn.dataset.device);
+  });
+  structBtn.addEventListener("click", () => bsxTogglePanel("structure"));
+  prevBtn.addEventListener("click", () => { if (typeof bsxStartPreview === "function") bsxStartPreview(); });
+  document.getElementById("bsx-help-btn").addEventListener("click", (e) => { e.stopPropagation(); bsxToggleHelp(); });
+  const moreBtn = document.getElementById("bsx-more-btn");
+  moreBtn.addEventListener("click", (e) => { e.stopPropagation(); bsxToggleMoreMenu(); });
+  document.getElementById("bsx-ai-close").addEventListener("click", () => {
+    document.getElementById("bshell-ai-panel").setAttribute("hidden", "");
+  });
+  document.addEventListener("click", (e) => {
+    const menu = document.getElementById("bsx-more-menu");
+    if (menu && !menu.hidden && !menu.contains(e.target)) { menu.hidden = true; moreBtn.setAttribute("aria-expanded", "false"); }
+    const help = document.getElementById("bsx-help");
+    if (help && !help.contains(e.target)) bsxCloseHelp();
+    bsxClosePopoverIfOutside(e.target);
+  });
+  document.getElementById("bsx-panel-close").addEventListener("click", () => bsxClosePanel());
+  document.getElementById("bsx-panel-back").addEventListener("click", () => { if (typeof bsxPanelBack === "function") bsxPanelBack(); });
+
+  document.addEventListener("keydown", bsxOnKey, true);
+  window.addEventListener("beforeunload", (e) => {
+    if (!bshellActiveFlag) return;
+    bsxCommitEdit();
+    if (bsxDirty || bsxSaveState.failed) { e.preventDefault(); e.returnValue = ""; }
+  });
+  window.addEventListener("resize", () => bsxClosePopover());
+
+  bshellWireAiPanel();
+  bsxWireOverlay();
+}
+
+function bsxSyncSidebarBtn() {
+  const btn = document.getElementById("bsx-sidebar-btn");
+  if (!btn) return;
+  const mounted = document.body.classList.contains("dk-app-sidebar-mounted");
+  btn.hidden = !mounted || window.innerWidth <= 900;
+  const open = mounted && !document.body.classList.contains("dk-app-sidebar-collapsed");
+  btn.classList.toggle("is-on", open);
+  btn.setAttribute("aria-pressed", String(open));
+}
+
+function bsxSetDevice(device) {
+  bsxDevice = device === "tablet" || device === "mobile" ? device : "desktop";
+  document.querySelectorAll("#bshell-device-row .bshell-device-btn").forEach((b) => {
+    const on = b.dataset.device === bsxDevice;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-pressed", String(on));
+  });
+  const holder = document.getElementById("bshell-canvas-holder");
+  holder.classList.remove("device-tablet", "device-mobile");
+  if (bsxDevice !== "desktop") holder.classList.add("device-" + bsxDevice);
+  const pf = document.getElementById("bsx-preview-frame");
+  if (pf && typeof bsxSyncPreviewDevice === "function") bsxSyncPreviewDevice();
+}
+
+function bsxToggleMoreMenu(force) {
+  const menu = document.getElementById("bsx-more-menu");
+  const btn = document.getElementById("bsx-more-btn");
+  const open = force !== undefined ? force : menu.hidden;
+  if (!open) { menu.hidden = true; btn.setAttribute("aria-expanded", "false"); return; }
+  const items = [
+    ["ai", "sparkle", bsL("עזרה מ-DeskKit (AI)", "Help from DeskKit (AI)")],
+    ["sep"],
+    ["design", "palette", bsL("עיצוב האתר", "Site design")],
+    ["business", "business", bsL("פרטי העסק ויצירת קשר", "Business & contact details")],
+    ["structure", "layers", bsL("מבנה האתר", "Site structure")],
+    ["seo", "search", bsL("איך האתר נראה בגוגל (SEO)", "How the site looks on Google (SEO)")],
+    ["settings", "sliders", bsL("הגדרות מתקדמות", "Advanced settings")],
+    ["sep"],
+    ["preview", "eye", bsL("תצוגה מקדימה", "Preview")],
+    ["newtab", "external", bsL("תצוגה מקדימה בכרטיסייה חדשה", "Preview in a new tab")],
+    ["help", "help", bsL("עזרה קצרה", "Quick help")],
+  ];
+  menu.innerHTML = items.map((it) => it[0] === "sep" ? '<div class="bsx-menu-sep" role="separator"></div>'
+    : `<button type="button" class="bsx-menu-item" role="menuitem" data-menu="${it[0]}">${bsxIcon(it[1])}<span>${bsxEsc(it[2])}</span></button>`).join("");
+  menu.hidden = false;
+  btn.setAttribute("aria-expanded", "true");
+  const first = menu.querySelector("button");
+  if (first) first.focus();
+  menu.onclick = (e) => {
+    const b = e.target.closest("[data-menu]");
+    if (!b) return;
+    e.stopPropagation();
+    menu.hidden = true;
+    btn.setAttribute("aria-expanded", "false");
+    const k = b.dataset.menu;
+    if (k === "ai") {
+      bsxClosePanel();
+      document.getElementById("bshell-ai-btn").click();
+    } else if (k === "preview") { if (typeof bsxStartPreview === "function") bsxStartPreview(); }
+    else if (k === "newtab") bsxOpenPreviewTab();
+    else if (k === "help") bsxToggleHelp(true);
+    else bsxOpenPanel(k);
+  };
+  menu.onkeydown = (e) => {
+    const list = Array.from(menu.querySelectorAll("button"));
+    const i = list.indexOf(document.activeElement);
+    if (e.key === "ArrowDown") { e.preventDefault(); list[(i + 1) % list.length].focus(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); list[(i - 1 + list.length) % list.length].focus(); }
+    else if (e.key === "Escape") { e.preventDefault(); bsxToggleMoreMenu(false); btn.focus(); }
+  };
+}
+
+async function bsxOpenPreviewTab() {
+  bsxCommitEdit();
+  // The preview tab loads the project from the account, so save first.
+  if (bsxDirty) await bshellSaveNow();
+  const url = new URL(location.href);
+  url.searchParams.set("fullpreview", "1");
+  url.searchParams.set("template", siteState.template);
+  window.open(url.toString(), "_blank", "noopener");
+}
+
+/* "?" — a few short tips, not a manual. */
+function bsxToggleHelp(force) {
+  const existing = document.getElementById("bsx-help");
+  if (existing && force !== true) { bsxCloseHelp(); return; }
+  if (existing) return;
+  const btn = document.getElementById("bsx-help-btn");
+  const mac = /Mac|iPhone|iPad/.test(navigator.platform || "");
+  const mod = mac ? "⌘" : "Ctrl";
+  const box = document.createElement("div");
+  box.id = "bsx-help";
+  box.className = "bsx-help";
+  box.setAttribute("role", "dialog");
+  box.innerHTML = `<h3>${bsL("איך עורכים?", "How to edit")}</h3><ol>
+    <li>${bsL("לוחצים על כל טקסט באתר ומקלידים במקום.", "Click any text on the site and type right there.")}</li>
+    <li>${bsL("לוחצים על תמונה, כפתור או טלפון — ליד יופיע סרגל קטן עם האפשרויות.", "Click an image, button or phone number — a small toolbar appears next to it.")}</li>
+    <li>${bsL("מעבר עם העכבר על חלק מציג סרגל להזזה, עיצוב והסתרה, ו-＋ להוספת חלק חדש.", "Hover a section for move, design and hide tools, and ＋ to add a new section.")}</li>
+    <li>${bsL("הכלים בתחתית המסך: הוספה, עיצוב האתר, פרטי העסק ועוד.", "The tools at the bottom: add, site design, business details and more.")}</li>
+    <li>${bsL("הכול נשמר לבד.", "Everything saves by itself.")} <kbd>${mod}+Z</kbd> ${bsL("מבטל,", "undoes,")} <kbd>Esc</kbd> ${bsL("מבטל בחירה.", "deselects.")}</li>
+  </ol>`;
+  document.getElementById("bshell-root").appendChild(box);
+  const r = btn.getBoundingClientRect();
+  const w = Math.min(300, window.innerWidth - 24);
+  let left = bsxSiteDirIsRtlUi() ? r.left : r.right - w;
+  left = Math.max(12, Math.min(left, window.innerWidth - w - 12));
+  box.style.left = left + "px";
+  box.style.top = (r.bottom + 8) + "px";
+  btn.setAttribute("aria-expanded", "true");
+}
+function bsxCloseHelp() {
+  const el = document.getElementById("bsx-help");
+  if (el) el.remove();
+  const btn = document.getElementById("bsx-help-btn");
+  if (btn) btn.setAttribute("aria-expanded", "false");
+}
+function bsxSiteDirIsRtlUi() { return (document.documentElement.getAttribute("dir") || "rtl") === "rtl"; }
+
+/* ---------- Undo / Redo — one siteState.data snapshot per logical edit
+   (never per keystroke), capped. */
 function bshellSnapshot() {
   bshellUndoStack.push(JSON.stringify(siteState.data));
   if (bshellUndoStack.length > BSHELL_UNDO_CAP) bshellUndoStack.shift();
   bshellRedoStack = [];
   bshellSyncUndoButtons();
 }
-
 function bshellSyncUndoButtons() {
-  const undoBtn = document.getElementById("bshell-undo-btn");
-  const redoBtn = document.getElementById("bshell-redo-btn");
-  if (undoBtn) undoBtn.disabled = bshellUndoStack.length === 0;
-  if (redoBtn) redoBtn.disabled = bshellRedoStack.length === 0;
+  const u = document.getElementById("bshell-undo-btn");
+  const r = document.getElementById("bshell-redo-btn");
+  if (u) u.disabled = bshellUndoStack.length === 0;
+  if (r) r.disabled = bshellRedoStack.length === 0;
 }
-
 function bshellRestoreAfterHistoryMove() {
   ensurePagesShape(siteState.data);
   bshellSyncUndoButtons();
-  bshellSelection = null;
-  bshellRenderCanvas();
-  bshellRenderHierarchy();
-  bshellRenderProperties();
-  bshellScheduleSave();
+  bsxUpdateTopName();
+  bsxMarkDirty();
+  bshellRenderCanvas(() => {
+    if (typeof bsxRefreshPanel === "function") bsxRefreshPanel();
+  });
+  if (typeof bsxRenderDock === "function") bsxRenderDock();
 }
-
 function bshellUndo() {
+  bsxCommitEdit();
   if (!bshellUndoStack.length) return;
   bshellRedoStack.push(JSON.stringify(siteState.data));
   siteState.data = JSON.parse(bshellUndoStack.pop());
   bshellRestoreAfterHistoryMove();
 }
-
 function bshellRedo() {
+  bsxCommitEdit();
   if (!bshellRedoStack.length) return;
   bshellUndoStack.push(JSON.stringify(siteState.data));
   siteState.data = JSON.parse(bshellRedoStack.pop());
   bshellRestoreAfterHistoryMove();
 }
-
-/* A text/number/color input snapshots once, on focus (before the
-   user's very first keystroke in this round of edits) — not on every
-   "input" event, which would make Undo revert one character at a
-   time. Idempotent per focus via a dataset flag so re-focusing the
-   same still-unblurred field doesn't stack extra snapshots. */
+/* A field snapshots once, on focus — not on every keystroke. */
 function bshellBeginEdit(inputEl) {
   if (inputEl.dataset.bshellEditing === "1") return;
   inputEl.dataset.bshellEditing = "1";
   bshellSnapshot();
 }
-function bshellEndEdit(inputEl) {
-  delete inputEl.dataset.bshellEditing;
+function bshellEndEdit(inputEl) { delete inputEl.dataset.bshellEditing; }
+
+/* ---------- Saving ----------
+   Autosave ~1.2s after the last change. One save at a time: a change made
+   while a save is on its way is saved right after it (saveSiteNow itself
+   is also serialized in site-cloud-save.js). A failed save keeps the
+   changes marked unsaved, says so, and retries with a growing delay. */
+const bsxSaveState = { inflight: null, pending: false, failed: false, retryDelay: 4000 };
+function bsxMarkDirty() { bsxDirty = true; }
+function bshellScheduleSave() {
+  bsxMarkDirty();
+  if (!bsxSaveState.failed) bsxSetStatus("saving");
+  clearTimeout(bshellSaveTimer);
+  bshellSaveTimer = setTimeout(bshellSaveNow, 1200);
+}
+function bsxSetStatus(state) {
+  const el = document.getElementById("bshell-top-status");
+  const retry = document.getElementById("bsx-save-retry");
+  if (!el) return;
+  const text = { saved: bsL("נשמר", "Saved"), saving: bsL("שומר…", "Saving…"), failed: bsL("לא נשמר — ננסה שוב", "Not saved — retrying") }[state] || "";
+  el.textContent = text;
+  el.className = "bshell-top-status" + (state ? " " + state : "");
+  el.dataset.state = state || "";
+  el.title = state === "failed" ? bsL("השינויים עדיין לא נשמרו. ננסה שוב אוטומטית.", "Your changes aren't saved yet. We'll keep trying.") : "";
+  if (retry) retry.hidden = state !== "failed";
+}
+function bshellSaveNow() {
+  clearTimeout(bshellSaveTimer);
+  if (bsxSaveState.inflight) { bsxSaveState.pending = true; return bsxSaveState.inflight; }
+  bsxSetStatus("saving");
+  const wasDirty = bsxDirty;
+  bsxDirty = false; // edits made from here on mark it dirty again
+  const run = (async () => {
+    let error = null;
+    try { error = typeof saveSiteNow === "function" ? await saveSiteNow() : null; } catch (err) { error = err || new Error("save failed"); }
+    bsxSaveState.inflight = null;
+    if (error) {
+      bsxDirty = bsxDirty || wasDirty || true;
+      bsxSaveState.failed = true;
+      bsxSetStatus("failed");
+      clearTimeout(bshellSaveTimer);
+      bshellSaveTimer = setTimeout(bshellSaveNow, bsxSaveState.retryDelay);
+      bsxSaveState.retryDelay = Math.min(bsxSaveState.retryDelay * 2, 30000);
+      bsxSaveState.pending = false;
+      return error;
+    }
+    bsxSaveState.failed = false;
+    bsxSaveState.retryDelay = 4000;
+    if (bsxSaveState.pending || bsxDirty) {
+      bsxSaveState.pending = false;
+      return bshellSaveNow();
+    }
+    bsxSetStatus("saved");
+    return null;
+  })();
+  bsxSaveState.inflight = run;
+  return run;
 }
 
-/* ---------- Top bar ---------- */
-
-function bshellWireTopBar() {
-  const root = document.getElementById("bshell-root");
-  if (root.dataset.topWired) return;
-  root.dataset.topWired = "1";
-
-  document.getElementById("bshell-undo-btn").addEventListener("click", bshellUndo);
-  document.getElementById("bshell-redo-btn").addEventListener("click", bshellRedo);
-  document.addEventListener("keydown", (e) => {
-    if (!bshellActiveFlag) return;
-    const mod = e.ctrlKey || e.metaKey;
-    if (!mod || e.key.toLowerCase() !== "z") return;
-    const activeTag = document.activeElement && document.activeElement.tagName;
-    if (activeTag === "INPUT" || activeTag === "TEXTAREA") return; // don't fight native text-field undo
-    e.preventDefault();
-    if (e.shiftKey) bshellRedo(); else bshellUndo();
-  });
-
-  document.getElementById("bshell-settings-btn").addEventListener("click", bshellSelectSettings);
-
-  document.getElementById("bshell-device-row").addEventListener("click", (e) => {
-    const btn = e.target.closest(".bshell-device-btn");
-    if (!btn) return;
-    document.querySelectorAll(".bshell-device-btn").forEach((b) => b.classList.toggle("active", b === btn));
-    const holder = document.getElementById("bshell-canvas-holder");
-    holder.classList.remove("device-tablet", "device-mobile");
-    if (btn.dataset.device === "tablet") holder.classList.add("device-tablet");
-    else if (btn.dataset.device === "mobile") holder.classList.add("device-mobile");
-  });
-
-  document.getElementById("bshell-save-btn").addEventListener("click", async () => {
-    const btn = document.getElementById("bshell-save-btn");
-    btn.disabled = true;
-    await bshellSaveNow();
-    btn.disabled = false;
-  });
-
-  document.getElementById("bshell-preview-btn").addEventListener("click", () => {
-    const url = new URL(location.href);
-    url.searchParams.set("fullpreview", "1");
-    url.searchParams.set("template", siteState.template);
-    window.open(url.toString(), "_blank", "noopener");
-  });
-
-  // Publish reuses the existing finish/payment/watermark flow wholesale
-  // — that screen already knows how to do this correctly (Gumroad,
-  // license redemption, server-enforced watermark); rebuilding it
-  // inside the prototype is explicitly out of scope for "prove the
-  // editing model works."
-  document.getElementById("bshell-publish-btn").addEventListener("click", () => {
-    bshellSaveNow().then(() => {
-      bshellActiveFlag = false;
-      document.getElementById("bshell-root").classList.remove("active");
-      showWizard();
-      const gate = document.getElementById("finish-btn");
-      if (gate) gate.scrollIntoView({ behavior: "smooth", block: "center" });
-    });
-  });
-
-  document.getElementById("bshell-mobile-hier-btn").addEventListener("click", () => {
-    document.getElementById("bshell-props").classList.remove("bshell-drawer-open");
-    document.getElementById("bshell-hier").classList.toggle("bshell-drawer-open");
-  });
-  document.getElementById("bshell-mobile-props-btn").addEventListener("click", () => {
-    document.getElementById("bshell-hier").classList.remove("bshell-drawer-open");
-    document.getElementById("bshell-props").classList.toggle("bshell-drawer-open");
-  });
-
-  bshellWireAiPanel();
-}
-
-/* ---------- AI help popover — reuses the exact same validated-op
-   pipeline as the old sidebar's AI command bar (site-ai-command.js):
-   free text + real site context -> site-ai-command Edge Function ->
-   a short list of validated ops -> confirm -> apply. applySiteAiOp()
-   is the shared pure-mutation function; this file only adds the
-   Shell-specific bookkeeping (its own unified Undo/Redo + canvas +
-   hierarchy + autosave) around it, so an AI-driven change in the
-   Shell is captured by the same Undo button as a manual edit. */
-
+/* ---------- AI helper — the same validated-op pipeline as before
+   (site-ai-command.js); only the bookkeeping is the editor's. ---------- */
 let bshellAiPending = null;
-
 function bshellApplyAiOp(result) {
   const template = siteState.template;
   const d = ensurePagesShape(siteState.data);
+  bsxCommitEdit();
   bshellSnapshot();
   if (!applySiteAiOp(d, template, result)) {
-    bshellUndoStack.pop(); // nothing was actually applied
+    bshellUndoStack.pop();
     bshellSyncUndoButtons();
     bshellAiNote(bsL("השינוי כבר לא מתאים למצב הנוכחי של האתר, ולכן לא בוצע.", "That change no longer fits the site's current state, so it wasn't made."));
     return;
   }
-  // A selected service/section may no longer exist (or sit at another
-  // index) after the change; the Settings panel just needs repainting so
-  // it shows the new colour/font/contact values.
-  if (bshellSelection && bshellSelection.kind !== "settings") bshellDeselect();
-  else bshellRenderProperties();
-  const t = SITE_TEMPLATES[siteState.template];
-  document.getElementById("bshell-top-name").textContent = (d.businessName || "").trim() || (t ? bsLabel(t.label) : bsL("הפרויקט שלי", "My project"));
-  bshellRenderCanvas();
-  bshellRenderHierarchy();
+  bsxDeselect();
+  bsxUpdateTopName();
+  bshellRenderCanvas(() => { if (typeof bsxRefreshPanel === "function") bsxRefreshPanel(); });
   bshellScheduleSave();
-  // Same Undo as every manual edit in the Shell (bshellSnapshot above) —
-  // offered right here too, so the way back is one click away.
   bshellAiNote(`${bsL("בוצע ✓", "Done ✓")} ${escapeHtmlS(result.explanation || "")}
     <div class="bshell-ai-confirm-row"><button type="button" id="bshell-ai-undo">${bsL("↶ ביטול השינוי", "↶ Undo this change")}</button></div>`);
   const undoBtn = document.getElementById("bshell-ai-undo");
-  if (undoBtn) undoBtn.addEventListener("click", () => {
-    bshellUndo();
-    bshellAiNote(bsL("השינוי בוטל.", "Change undone."));
-  });
+  if (undoBtn) undoBtn.addEventListener("click", () => { bshellUndo(); bshellAiNote(bsL("השינוי בוטל.", "Change undone.")); });
 }
-
-function bshellAiNote(html) {
-  const note = document.getElementById("bshell-ai-note");
-  if (note) note.innerHTML = html;
-}
-
-/* What the AI can actually do is exactly site-ai-command's op menu
-   (supabase/functions/_shared/site-ai-ops.ts): reorder / add / remove a
-   section, switch a section's display variant, change the main colour or
-   the font, rewrite a text (title, tagline, about, headings, contact
-   details), add / edit / remove a service, or remove an image. The chips
-   are built from THIS site's real context, so every suggestion is one
-   the server can carry out, and the hint line says plainly what kind of
-   request works. */
+function bshellAiNote(html) { const note = document.getElementById("bshell-ai-note"); if (note) note.innerHTML = html; }
 const BSHELL_AI_TYPE_NAMES = { services: bsL("השירותים", "the services"), about: bsL("האודות", "the about section"), contact: bsL("חלק צור קשר", "the contact section"), aboutTags: bsL("התגיות", "the tags"), grid: bsL("הרשת", "the grid") };
 const BSHELL_AI_HINT = bsL("אפשר לבקש: לשנות צבע או גופן, לכתוב מחדש טקסט (כותרת, אודות, פרטי קשר), להוסיף/לערוך/להסיר שירות, לשנות סדר חלקים או סגנון תצוגה. אפשר כמה דברים בבקשה אחת.", "You can ask to: change the color or font, rewrite a text (heading, about, contact details), add/edit/remove a service, reorder sections or switch a display style. Several things in one request is fine.");
-
 function bshellAiExamples() {
   const ctx = siteAiCommandContext();
   const name = (t) => BSHELL_AI_TYPE_NAMES[t] || t;
   const variants = (siteState.data && siteState.data.blockVariants) || {};
-  const out = [];
-  // Content/design first — that's what people ask for most.
-  out.push(bsL("שנה את הצבע לכחול והפוך את הגופן לאלגנטי", "Make the color blue and the font more elegant"));
+  const out = [bsL("שנה את הצבע לכחול והפוך את הגופן לאלגנטי", "Make the color blue and the font more elegant")];
   if (ctx.textFields.about) out.push(bsL("קצר את טקסט האודות", "Make the about text shorter"));
   else out.push(bsL("כתוב שורת תיאור מקצועית יותר", "Write a more professional tagline"));
   const movable = ctx.activeTypes.filter((t) => t !== "hero" && BSHELL_AI_TYPE_NAMES[t]);
   if (movable.length >= 2) out.push(bsL(`הזז את ${name(movable[1])} לפני ${name(movable[0])}`, `Move ${name(movable[1])} before ${name(movable[0])}`));
-  if (ctx.variantOptions.hero) {
-    out.push(variants.hero === "centered" ? bsL("החזר את ה-Hero לעיצוב הקלאסי", "Switch the Hero back to the classic layout") : bsL("הפוך את ה-Hero לממורכז", "Make the Hero centered"));
-  }
-  if (ctx.variantOptions.services && ctx.activeTypes.indexOf("services") !== -1) {
-    out.push(variants.services === "grid" ? bsL("החזר את השירותים לעיצוב ברירת המחדל", "Switch the services back to the default layout") : bsL("הצג את השירותים כרשת כרטיסים", "Show the services as a card grid"));
-  }
-  const addable = ctx.availableTypes.filter((t) => ctx.activeTypes.indexOf(t) === -1 && BSHELL_AI_TYPE_NAMES[t]);
-  if (out.length < 3 && addable.length) out.push(bsL(`הוסף את ${name(addable[0])}`, `Add ${name(addable[0])}`));
-  const removable = movable.filter((t) => t !== "grid");
-  if (out.length < 3 && removable.length) out.push(bsL(`הסר את ${name(removable[removable.length - 1])}`, `Remove ${name(removable[removable.length - 1])}`));
+  if (ctx.variantOptions.hero) out.push(variants.hero === "centered" ? bsL("החזר את ה-Hero לעיצוב הקלאסי", "Switch the Hero back to the classic layout") : bsL("הפוך את ה-Hero לממורכז", "Make the Hero centered"));
   return out.slice(0, 3);
 }
-
 function bshellRenderAiExamples() {
   const hint = document.getElementById("bshell-ai-hint");
   if (hint) hint.textContent = BSHELL_AI_HINT;
   const box = document.getElementById("bshell-ai-examples");
   if (!box) return;
-  box.innerHTML = bshellAiExamples().map((ex) => {
-    const safe = escapeHtmlS(ex);
-    return `<button type="button" data-ai-example="${safe.replace(/"/g, "&quot;")}">${safe}</button>`;
-  }).join("");
+  let ex = [];
+  try { ex = bshellAiExamples(); } catch (e) { ex = []; }
+  box.innerHTML = ex.map((x) => { const safe = escapeHtmlS(x); return `<button type="button" data-ai-example="${safe}">${safe}</button>`; }).join("");
 }
-
 function bshellWireAiPanel() {
   const btn = document.getElementById("bshell-ai-btn");
   const panel = document.getElementById("bshell-ai-panel");
   const input = document.getElementById("bshell-ai-input");
   const submitBtn = document.getElementById("bshell-ai-submit");
-
   btn.addEventListener("click", (e) => {
     e.stopPropagation();
     const willOpen = panel.hasAttribute("hidden");
@@ -392,45 +667,33 @@ function bshellWireAiPanel() {
   });
   document.addEventListener("click", (e) => {
     if (panel.hasAttribute("hidden")) return;
-    // !isConnected: a click on the note's own Confirm/Undo buttons, which
-    // their handler has already replaced by the time this runs — still a
-    // click inside the panel, so the "Done" note stays visible.
     if (e.target === btn || panel.contains(e.target) || !e.target.isConnected) return;
     panel.setAttribute("hidden", "");
     btn.setAttribute("aria-expanded", "false");
   });
-
-  // Delegated — the chips are rebuilt on every open (bshellRenderAiExamples).
   document.getElementById("bshell-ai-examples").addEventListener("click", (e) => {
     const chip = e.target.closest("[data-ai-example]");
     if (!chip) return;
     input.value = chip.dataset.aiExample;
     input.focus();
   });
-
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") { e.preventDefault(); bshellAiSubmit(); }
-  });
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); bshellAiSubmit(); } });
   submitBtn.addEventListener("click", bshellAiSubmit);
 }
-
 async function bshellAiSubmit() {
   const input = document.getElementById("bshell-ai-input");
   const btn = document.getElementById("bshell-ai-submit");
   const command = (input.value || "").trim();
   if (!command) return;
-
   bshellAiPending = null;
   bshellAiNote(bsL("ה-AI מעבד את הפקודה…", "The AI is working on your request…"));
   const originalLabel = btn.textContent;
   btn.disabled = true;
   btn.textContent = bsL("מעבד...", "Working...");
-
   try {
     const { data: sessionData } = await supabaseClient.auth.getSession();
     const token = sessionData.session && sessionData.session.access_token;
     if (!token) throw new Error("not signed in");
-
     const res = await fetch(SUPABASE_URL + "/functions/v1/site-ai-command", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + token, apikey: SUPABASE_ANON_KEY },
@@ -438,24 +701,18 @@ async function bshellAiSubmit() {
     });
     const data = await res.json();
     if (!res.ok || data.error) throw new Error(data.error || "unexpected error");
-
     if (data.limitReached) {
       bshellAiNote(data.isPro
         ? bsL("הגעת למכסת השימוש ההוגן היומית לפקודות AI. אפשר להמשיך מחר.", "You've reached today's fair-use limit for AI commands. You can continue tomorrow.")
         : bsL("הגעת למכסת הניסיונות החינמיים לפקודות AI. רוצה להמשיך? שדרג לגרסת Pro בתשלום חד-פעמי!", "You've used up your free AI command tries. Want to keep going? Upgrade to Pro with a one-time payment!"));
       return;
     }
-
-    // Re-checked against the live data (siteAiCleanOps, site-ai-
-    // command.js) before anything is even offered for confirmation.
     const result = data.result;
     const ops = (result && result.op !== "unsupported") ? siteAiCleanOps(result, ensurePagesShape(siteState.data), siteState.template) : [];
     if (!ops.length) {
-      // The server's explanation already says what CAN be done.
       bshellAiNote(escapeHtmlS((result && result.op === "unsupported" && result.explanation) || `${bsL("לא הצלחתי לבצע את הפעולה הזו.", "I couldn't do that.")} ${BSHELL_AI_HINT}`));
       return;
     }
-
     bshellAiPending = result;
     bshellAiNote(siteAiConfirmHtml(result, ops, "bshell-ai", "bshell-ai-confirm-yes"));
     document.getElementById("bshell-ai-confirm").addEventListener("click", () => {
@@ -463,12 +720,9 @@ async function bshellAiSubmit() {
       bshellAiPending = null;
       input.value = "";
     });
-    document.getElementById("bshell-ai-cancel").addEventListener("click", () => {
-      bshellAiPending = null;
-      bshellAiNote(bsL("בוטל.", "Canceled."));
-    });
+    document.getElementById("bshell-ai-cancel").addEventListener("click", () => { bshellAiPending = null; bshellAiNote(bsL("בוטל.", "Canceled.")); });
   } catch (err) {
-    console.error("bshell AI command failed:", err && err.message ? err.message : "error"); // never the command or site text
+    console.error("bshell AI command failed:", err && err.message ? err.message : "error");
     bshellAiNote(bsL("משהו השתבש. אפשר לנסות שוב בעוד רגע.", "Something went wrong. Please try again in a moment."));
   } finally {
     btn.disabled = false;
@@ -476,151 +730,34 @@ async function bshellAiSubmit() {
   }
 }
 
-async function bshellSaveNow() {
-  clearTimeout(bshellSaveTimer);
-  const status = document.getElementById("bshell-top-status");
-  status.textContent = bsL("שומרים...", "Saving...");
-  status.className = "bshell-top-status saving";
-  // saveSiteNow() now returns the Supabase error (or null) instead of
-  // being fire-and-forget — confirmed-live bug this fixes: this always
-  // showed "נשמר ✓" even when the save itself failed, so a user who hit
-  // a real save error had no way to know their edits weren't actually
-  // safe to walk away from.
-  const error = typeof saveSiteNow === "function" ? await saveSiteNow() : null;
-  if (!error) {
-    const savedLabel = bsL("נשמר ✓", "Saved ✓");
-    status.textContent = savedLabel;
-    status.className = "bshell-top-status saved";
-    setTimeout(() => { if (status.textContent === savedLabel) status.textContent = ""; }, 2500);
-  } else {
-    status.textContent = bsL("לא נשמר — ננסה שוב", "Not saved — retrying");
-    status.className = "bshell-top-status failed";
-    // Retry shortly rather than leaving a failed save sitting there
-    // until the next real edit happens to trigger bshellScheduleSave().
-    bshellSaveTimer = setTimeout(bshellSaveNow, 4000);
-  }
-}
-function bshellScheduleSave() {
-  clearTimeout(bshellSaveTimer);
-  bshellSaveTimer = setTimeout(bshellSaveNow, 1200);
-}
-
-/* ---------- Hierarchy sidebar ---------- */
-
-function bshellRenderHierarchy() {
-  const list = document.getElementById("bshell-hier-list");
-  const d = siteState.data;
-  const template = siteState.template;
-  document.getElementById("bshell-settings-btn").classList.toggle("is-selected", !!(bshellSelection && bshellSelection.kind === "settings"));
-  // The FULL saved order, not activeBlocksForPage()'s filtered list —
-  // a hidden block still needs its own row (dimmed, with a dot) so the
-  // Properties panel's visibility switch can bring it back. Filtering
-  // to only-active here would mean hiding hero/services from the Shell
-  // itself permanently removes the one way to un-hide them again.
-  const types = (typeof ensureBlockOrder === "function") ? (ensureBlockOrder(d, template, "index") || []) : [];
-  const dd = (typeof withFallback === "function") ? withFallback(d) : d;
-
-  list.innerHTML = types.map((type) => {
-    const def = SITE_BLOCK_DEFS[template][type];
-    if (!def) return "";
-    const isSelectedSection = bshellSelection && bshellSelection.kind === "section" && bshellSelection.type === type;
-    const hidden = !!(def.active && !def.active(d));
-    let itemsHtml = "";
-    if (def.hasItems) {
-      const services = dd._services || d.services || [];
-      itemsHtml = services.map((s, i) => {
-        const isSelectedItem = bshellSelection && bshellSelection.kind === "section" && bshellSelection.focus && bshellSelection.focus.svc === i;
-        return `<button type="button" class="bshell-item${isSelectedItem ? " is-selected" : ""}" data-bshell-select-service="${i}">${escapeHtmlS(s.name && s.name.trim() ? s.name : `${bsL("שירות", "Service")} ${i + 1}`)}</button>`;
-      }).join("") + `<button type="button" class="bshell-add-item" data-bshell-add-service>${bsL("+ הוספת שירות", "+ Add service")}</button>`;
-    }
-    return `
-      <details class="bshell-sec"${bshellCollapsedSections.has(type) ? "" : " open"}>
-        <summary class="bshell-sec-head${isSelectedSection ? " is-selected" : ""}${hidden ? " is-hidden" : ""}" data-bshell-select-section="${type}">
-          <span class="bshell-sec-chevron"></span>
-          <span>${escapeHtmlS(bsLabel(def.label) || type)}</span>
-          ${hidden ? `<span class="bshell-sec-hidden-dot" title="${bsL("מוסתר", "Hidden")}"></span>` : ""}
-        </summary>
-        ${itemsHtml ? `<div class="bshell-sec-body">${itemsHtml}</div>` : ""}
-      </details>`;
-  }).join("") + (types.length ? `
-      <div class="bshell-sec">
-        <button type="button" class="bshell-sec-head${bshellSelection && bshellSelection.kind === "section" && bshellSelection.type === BSHELL_SITE_TYPE ? " is-selected" : ""}" data-bshell-select-site>
-          <span>${bsL("ראש ותחתית האתר", "Header & footer")}</span>
-        </button>
-      </div>` : "");
-  list.querySelectorAll("[data-bshell-select-site]").forEach((el) => {
-    el.addEventListener("click", () => bshellSelectSection(BSHELL_SITE_TYPE));
-  });
-
-  list.querySelectorAll("[data-bshell-select-section]").forEach((el) => {
-    el.addEventListener("click", (e) => {
-      e.preventDefault();
-      const type = el.dataset.bshellSelectSection;
-      if (bshellCollapsedSections.has(type)) bshellCollapsedSections.delete(type);
-      else bshellCollapsedSections.add(type);
-      bshellSelectSection(type);
-    });
-  });
-  list.querySelectorAll("[data-bshell-select-service]").forEach((el) => {
-    el.addEventListener("click", () => bshellSelectService(parseInt(el.dataset.bshellSelectService, 10)));
-  });
-  list.querySelectorAll("[data-bshell-add-service]").forEach((el) => {
-    el.addEventListener("click", bshellAddService);
-  });
-}
-
-/* ---------- Canvas: render + click-to-select ---------- */
-
-/* The canvas used to reload its whole iframe (srcdoc = ...) on every
-   change that wasn't a single data-textkey span — every keystroke in a
-   service name, a phone number or the contact details, every mood/colour
-   whose colour sits in an inline style (the "centered" hero / "grid"
-   services layouts in site-blocks.js), every toggle. A reload is a
-   visible flash: the page blanks, scrolls back to the top and replays
-   its fade-in animations. Now every change goes through one path:
-
-   1. bshellPatchCanvas() renders the page in memory (the same
-      currentSiteHtml() string the published site is made from), diffs it
-      against the page the canvas is showing, and changes only what
-      differs in the live document — a text node, an attribute, the
-      template's <style>, or (when the shape of something changed, e.g. a
-      service was added) that one element's contents. No navigation.
-   2. Only when the page's top-level structure itself changed (a section
-      shown/hidden, the language switched) does it fall back to
-      bshellSwapInCanvas(): the new page loads in a hidden second iframe
-      on top, jumps to the same scroll position with everything already
-      revealed, and only then replaces the old one — double-buffered, so
-      there's nothing to see in between.
-
-   Every top-level element of the page is tagged data-bshell-top="N" in
-   the canvas copy only (never in what's published), so the diff can find
-   "the Nth section" in the live document even after the template's own
-   scripts have added things around it. */
-let bshellCanvasHtml = "";     // the currentSiteHtml() string the visible canvas shows
-let bshellCanvasBuffer = null; // a hidden iframe still loading the next full render
+/* ---------- Canvas: render + in-place patching ----------
+   Every change renders the page in memory (the same currentSiteHtml()
+   string the published site is made from) and patches only what differs
+   in the live canvas document — no reload, no flash, the scroll position
+   stays. Only a change to the page's top-level structure (a section
+   added/removed/moved, language switched) loads the new page in a hidden
+   second iframe and swaps it in once it's ready. Every top-level element
+   is tagged data-bshell-top="N" in the canvas copy only. */
+let bshellCanvasHtml = "";
+let bshellCanvasBuffer = null;
 
 function bshellTaggedDoc(html) {
   const doc = new DOMParser().parseFromString(html, "text/html");
   Array.from(doc.body.children).forEach((el, i) => el.setAttribute("data-bshell-top", String(i)));
   return doc;
 }
-
-/* afterLoad runs once the canvas shows the new page — right away when it
-   could be patched in place, after the swap otherwise. Every call site
-   that needs to touch the FRESH document (reselect whatever was
-   selected) passes it rather than assuming either. */
+function bsxCanvasSiteHtml() { return currentSiteHtml("index", { preview: true }); }
 function bshellRenderCanvas(afterLoad) {
-  const html = currentSiteHtml("index");
+  const html = bsxCanvasSiteHtml();
   if (bshellPatchCanvas(html)) {
-    bshellReanchorSelection();
+    bsxOnCanvasUpdated();
     if (afterLoad) afterLoad();
     return;
   }
   bshellSwapInCanvas(html, afterLoad);
 }
-
 function bshellPatchCanvas(html) {
-  const iframe = document.getElementById("bshell-canvas-iframe");
+  const iframe = bsxFrame();
   const doc = iframe && iframe.contentDocument;
   if (!doc || !doc.body || !bshellCanvasHtml || bshellCanvasBuffer) return false;
   if (!doc.querySelector("body > [data-bshell-top]")) return false;
@@ -633,14 +770,8 @@ function bshellPatchCanvas(html) {
   const oldTop = Array.from(oldDoc.body.children);
   const newTop = Array.from(newDoc.body.children);
   if (oldTop.length !== newTop.length || oldTop.some((el, i) => el.tagName !== newTop[i].tagName)) return false;
-  // A template script with the data baked in (cinematic's glow, neon's
-  // particles and luxury3d's tint are coloured from the primary colour
-  // when they start) can't be patched: its old copy keeps running. Those
-  // changes — colour/mood on those templates only — take the swap.
   const scriptsOf = (d) => Array.from(d.querySelectorAll("script")).map((s) => s.textContent).join("\u0000");
   if (scriptsOf(oldDoc) !== scriptsOf(newDoc)) return false;
-  // Find every live counterpart BEFORE changing anything, so a page that
-  // can't be patched is left exactly as it was for the full swap.
   const jobs = [];
   for (let i = 0; i < oldTop.length; i++) {
     if (oldTop[i].isEqualNode(newTop[i])) continue;
@@ -655,26 +786,17 @@ function bshellPatchCanvas(html) {
     if (!liveStyle || !newStyle) return false;
     liveStyle.textContent = newStyle.textContent;
   }
-  // The Google Fonts <link>s (a font or mood change loads another family).
   const links = (d) => Array.from(d.head.querySelectorAll("link")).map((l) => l.outerHTML).join("");
   if (links(oldDoc) !== links(newDoc)) {
     doc.head.querySelectorAll("link").forEach((l) => l.remove());
     doc.head.insertAdjacentHTML("afterbegin", Array.from(newDoc.head.querySelectorAll("link")).map((l) => l.outerHTML).join(""));
   }
-  // <title>/<meta> differences (SEO fields) are invisible in the canvas.
   const touchedTops = new Set();
   jobs.forEach(([live, o, n]) => bshellPatchNode(doc, live, o, n, touchedTops));
   touchedTops.forEach((top) => bshellRerunTrailingScript(doc, top));
   bshellCanvasHtml = html;
   return true;
 }
-
-/* Brings one live element in line with its new rendering, as narrowly as
-   possible: same tag + same child shape -> recurse (so typing a service
-   name only rewrites that name's text node); anything else -> this one
-   element's contents are rebuilt from the new rendering. touchedTops
-   collects the top-level sections whose markup was rebuilt, so their
-   own trailing <script> can be re-run once afterwards. */
 function bshellPatchNode(doc, live, o, n, touchedTops) {
   if (o.isEqualNode(n)) return;
   if (o.tagName !== n.tagName || o.tagName === "SCRIPT") {
@@ -699,12 +821,6 @@ function bshellPatchNode(doc, live, o, n, touchedTops) {
   live.innerHTML = n.innerHTML;
   bshellAfterRebuild(doc, live, touchedTops);
 }
-
-/* Markup rebuilt from a string needs what the original page load gave
-   it: no fade-in (the reveal-on-scroll observer only ran once, at load —
-   and the owner is looking right at this part anyway), and working
-   <script>s (innerHTML/importNode never run them, so each is swapped
-   for a fresh copy that does — e.g. a services search box). */
 function bshellAfterRebuild(doc, el, touchedTops) {
   if (el.classList && el.classList.contains("site-reveal")) el.classList.add("site-in");
   if (el.querySelectorAll) el.querySelectorAll(".site-reveal").forEach((r) => r.classList.add("site-in"));
@@ -717,14 +833,6 @@ function bshellAfterRebuild(doc, el, touchedTops) {
   const top = el.closest ? el.closest("body > *") : null;
   if (top && el.tagName !== "SCRIPT") touchedTops.add(top);
 }
-
-/* Some sections set themselves up once from a <script> placed right
-   after their markup (local-service's sideways services rail,
-   playground's physics bubbles) — the same convention renderBlocksHtml()
-   relies on. When that section's markup was rebuilt, the script runs
-   again against the new elements. The hero photo slideshow's timer is
-   one global script at the end of <body>, so it's re-run the same way
-   whenever a rebuilt section holds a slideshow. */
 function bshellRerunTrailingScript(doc, top) {
   if (!top.isConnected) return;
   const next = top.nextElementSibling;
@@ -739,12 +847,8 @@ function bshellRerunTrailingScript(doc, top) {
     doc.body.appendChild(s);
   }
 }
-
-/* The full re-render, double-buffered (see the comment above
-   bshellCanvasHtml). The very first load has nothing to keep on screen,
-   so it just loads. */
 function bshellSwapInCanvas(html, afterLoad) {
-  const cur = document.getElementById("bshell-canvas-iframe");
+  const cur = bsxFrame();
   const tagged = "<!doctype html>\n" + bshellTaggedDoc(html).documentElement.outerHTML;
   const curDoc = cur.contentDocument;
   if (!bshellCanvasHtml || !curDoc || !curDoc.body || !curDoc.body.children.length) {
@@ -757,7 +861,7 @@ function bshellSwapInCanvas(html, afterLoad) {
     cur.srcdoc = tagged;
     return;
   }
-  if (bshellCanvasBuffer) bshellCanvasBuffer.remove(); // a newer render replaces one still loading
+  if (bshellCanvasBuffer) bshellCanvasBuffer.remove();
   const scrollY = cur.contentWindow ? cur.contentWindow.scrollY : 0;
   const buf = document.createElement("iframe");
   buf.className = cur.className + " bshell-canvas-buffer";
@@ -767,17 +871,18 @@ function bshellSwapInCanvas(html, afterLoad) {
   buf.onload = () => {
     if (bshellCanvasBuffer !== buf) return;
     const bdoc = buf.contentDocument;
-    // A new iframe first "loads" an empty about:blank — wait for the page.
     if (!bdoc || !bdoc.head || !bdoc.querySelector("body > [data-bshell-top]")) return;
     const still = bdoc.createElement("style");
     still.id = "bshell-swap-still";
     still.textContent = "*,*::before,*::after{transition:none !important;} html{scroll-behavior:auto !important;}";
     bdoc.head.appendChild(still);
     bdoc.querySelectorAll(".site-reveal").forEach((el) => el.classList.add("site-in"));
+    bsxInjectCanvasUi(bdoc);
     buf.contentWindow.scrollTo(0, scrollY);
     requestAnimationFrame(() => requestAnimationFrame(() => {
       if (bshellCanvasBuffer !== buf) return;
       bshellCanvasBuffer = null;
+      bsxCancelEdit();
       cur.remove();
       buf.id = "bshell-canvas-iframe";
       buf.classList.remove("bshell-canvas-buffer");
@@ -792,818 +897,2036 @@ function bshellSwapInCanvas(html, afterLoad) {
   cur.parentNode.appendChild(buf);
   buf.srcdoc = tagged;
 }
-
 function bshellOnCanvasLoad() {
-  bshellWireCanvasClicks();
-  bshellReanchorSelection();
+  const doc = bsxDoc();
+  if (!doc) return;
+  bsxInjectCanvasUi(doc);
+  bsxWireCanvas(doc);
+  bsxOnCanvasUpdated();
 }
 
-/* Click-to-edit + hover hints, wired once per loaded document. */
-function bshellWireCanvasClicks() {
-  const iframe = document.getElementById("bshell-canvas-iframe");
-  const doc = iframe.contentDocument;
-  if (!doc || doc.__bshellWired) return;
-  doc.__bshellWired = true;
-  bshellCanvasClickWired = true;
+/* ---------- The canvas in edit mode ----------
+   Only in the canvas copy: everything is visible (no reveal-on-scroll
+   waiting), embedded players don't eat clicks, and nothing navigates,
+   dials or submits — selecting and activating are kept apart. */
+function bsxInjectCanvasUi(doc) {
+  if (!doc || !doc.head || doc.getElementById("bshell-canvas-ui")) return;
   const ui = doc.createElement("style");
   ui.id = "bshell-canvas-ui";
-  // A subtle dashed outline on whatever a click would open, and a hand
-  // cursor everywhere, so it's obvious the page itself is clickable.
   ui.textContent = `
-    body, body * { cursor:pointer !important; }
-    .bshell-hover-target { outline:1.5px dashed rgba(20,184,166,.9) !important; outline-offset:2px !important; }
-    .bshell-hover-target.bshell-hover-section { outline-offset:-3px !important; }
-    .bshell-outline-target.bshell-hover-target { outline-style:solid !important; }`;
+    body, body * { cursor: pointer; }
+    iframe { pointer-events: none !important; }
+    .site-reveal { opacity: 1 !important; transform: none !important; }
+    [data-bsx-editing] { cursor: text !important; outline: none !important; -webkit-user-select: text !important; user-select: text !important; caret-color: #0F766E; }
+    [data-bsx-editing] * { cursor: text !important; }
+    [data-bsx-editing]:empty::before { content: attr(data-bsx-ph); opacity: .45; }
+    [data-dk-empty]:not(:empty)::before { content: none !important; }
+    ::selection { background: rgba(20,184,166,.28); }
+    a, img { -webkit-user-drag: none; }
+  `;
   doc.head.appendChild(ui);
-  doc.addEventListener("click", (e) => {
-    if (e.target.closest("#bshell-mini-toolbar")) return;
-    const a = e.target.closest("a");
-    if (a) e.preventDefault(); // selecting, not navigating, inside the canvas
-    if (e.target.closest("#deskkit-badge")) return;
-    const resolved = bshellResolveClickTarget(e.target, doc);
-    if (!resolved) { bshellDeselect(); return; }
-    bshellSelection = resolved;
-    bshellApplySelectionVisual();
-    bshellRenderProperties();
-    bshellRenderHierarchy();
+}
+
+function bsxWireCanvas(doc) {
+  if (!doc || doc.__bsxWired) return;
+  doc.__bsxWired = true;
+  doc.addEventListener("mousedown", bsxOnCanvasDown, true);
+  doc.addEventListener("click", bsxOnCanvasClick, true);
+  doc.addEventListener("dblclick", (e) => { if (!bsxEdit || !bsxEdit.el.contains(e.target)) e.preventDefault(); }, true);
+  doc.addEventListener("auxclick", (e) => e.preventDefault(), true);
+  doc.addEventListener("submit", (e) => { e.preventDefault(); e.stopPropagation(); }, true);
+  doc.addEventListener("dragstart", (e) => e.preventDefault(), true);
+  doc.addEventListener("keydown", bsxOnKey, true);
+  doc.addEventListener("mousemove", bsxOnCanvasMove, { passive: true });
+  doc.documentElement.addEventListener("mouseleave", () => { bsxPointer = null; bsxScheduleHoverClear(); });
+  // Scrolling moves the page under a still pointer: re-read what is under it.
+  doc.addEventListener("scroll", () => {
+    if (!bsxPointer || bsxDrag) return;
+    const t = doc.elementFromPoint(bsxPointer.x, bsxPointer.y);
+    if (t) bsxOnCanvasMove({ target: t, clientX: bsxPointer.x, clientY: bsxPointer.y });
+  }, { passive: true, capture: true });
+  doc.addEventListener("paste", bsxOnPaste, true);
+  doc.addEventListener("input", bsxOnEditInput, true);
+  doc.addEventListener("focusout", (e) => {
+    if (bsxEdit && e.target === bsxEdit.el) setTimeout(() => { if (bsxEdit && bsxEdit.el === e.target && doc.activeElement !== e.target) bsxCommitEdit(); }, 0);
   }, true);
-  let hovered = null;
-  const setHover = (el) => {
-    if (el === hovered) return;
-    if (hovered) hovered.classList.remove("bshell-hover-target", "bshell-hover-section");
-    hovered = el;
-    if (el) {
-      el.classList.add("bshell-hover-target");
-      if (el.parentElement === doc.body) el.classList.add("bshell-hover-section");
-    }
-  };
-  doc.addEventListener("mouseover", (e) => setHover(bshellHoverTargetOf(e.target)));
-  doc.addEventListener("mouseleave", () => setHover(null));
 }
 
-/* What a click on el would open, as the element to outline on hover:
-   one service card, one text, one contact link — or the whole section. */
-function bshellHoverTargetOf(el) {
-  if (!el || !el.closest || el.closest("#bshell-mini-toolbar, #deskkit-badge")) return null;
-  return el.closest("[data-svc-idx]") || bshellGridCardOf(el) || el.closest("[data-textkey]")
-    || el.closest('a[href^="tel:"], a[href^="mailto:"], a[href*="wa.me/"]') || el.closest("body > *");
+/* ---------- The section map: which top-level element is which section ---------- */
+function bsxVisibleKeys() {
+  if (typeof activeBlocksForPage !== "function") return [];
+  try { return activeBlocksForPage(siteState.data, siteState.template, "index") || []; } catch (e) { return []; }
 }
+function bsxOrder() {
+  if (typeof ensureBlockOrder !== "function") return [];
+  return ensureBlockOrder(siteState.data, siteState.template, "index") || [];
+}
+function bsxIsCustom(key) { return typeof key === "string" && key.indexOf("x:") === 0; }
+function bsxIsBlockKey(key) { return !!key && key !== "video" && key.indexOf("site:") !== 0; }
+function bsxCustomId(key) { return bsxIsCustom(key) ? key.slice(2) : null; }
+function bsxSecData(key) {
+  const id = bsxCustomId(key);
+  const d = siteState.data;
+  return id && d.sections && d.sections[id] ? d.sections[id] : null;
+}
+function bsxRootOf(doc, key) {
+  if (!doc || !doc.body) return null;
+  if (bsxIsCustom(key)) {
+    const el = doc.querySelector(`[data-dk-sec="${bsxCss(bsxCustomId(key))}"]`);
+    return el ? el.closest("body > *") : null;
+  }
+  if (key === "video" || key.indexOf("site:") === 0) return null;
+  return bshellFindSectionRoot(doc, key);
+}
+function bsxBuildMap() {
+  const doc = bsxDoc();
+  const m = { keys: [], rootOf: new Map(), keyOfTop: new Map(), firstBlockIdx: -1 };
+  if (!doc || !doc.body) { bsxMap = m; return m; }
+  bsxVisibleKeys().forEach((key) => {
+    const r = bsxRootOf(doc, key);
+    if (r && !m.keyOfTop.has(r)) { m.keys.push(key); m.rootOf.set(key, r); m.keyOfTop.set(r, key); }
+  });
+  const firstIdx = m.keys.length ? Math.min(...m.keys.map((k) => parseInt(m.rootOf.get(k).getAttribute("data-bshell-top"), 10))) : -1;
+  m.firstBlockIdx = firstIdx;
+  const v = doc.querySelector(".site-video-wrap");
+  if (v) {
+    const top = v.closest("body > *");
+    if (top && !m.keyOfTop.has(top)) { m.rootOf.set("video", top); m.keyOfTop.set(top, "video"); }
+  }
+  Array.from(doc.body.children).forEach((el) => {
+    if (!el.hasAttribute("data-bshell-top") || m.keyOfTop.has(el) || /^(SCRIPT|STYLE|LINK)$/.test(el.tagName) || el.id === "deskkit-badge") return;
+    const key = "site:" + el.getAttribute("data-bshell-top");
+    m.keyOfTop.set(el, key);
+    m.rootOf.set(key, el);
+  });
+  bsxMap = m;
+  return m;
+}
+function bsxSectionLabel(key) {
+  if (!key) return "";
+  if (key === "video") return bsL("סרטון", "Video");
+  if (key.indexOf("site:") === 0) {
+    const idx = parseInt(key.slice(5), 10);
+    return (bsxMap.firstBlockIdx === -1 || idx < bsxMap.firstBlockIdx) ? bsL("ראש האתר", "Site header") : bsL("תחתית האתר", "Site footer");
+  }
+  if (bsxIsCustom(key)) {
+    const s = bsxSecData(key);
+    const e = s && bsxLibEntry(s.type);
+    if (e) return bsxLoc(e.label);
+    if (typeof siteBlockLabel === "function") { try { const l = siteBlockLabel(siteState.template, key, siteState.data); if (l) return bsxLoc(l); } catch (err) { /* generic */ } }
+    return bsL("חלק", "Section");
+  }
+  if (key === "hero") return bsL("פתיח", "Hero");
+  if (key === "services") return bsxCap(bshellItemWord()[1]);
+  const def = (SITE_BLOCK_DEFS[siteState.template] || {})[key];
+  return def ? bsLabel(def.label) || key : key;
+}
+function bsxCap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 
-/* The generic "grid" services layout (site-blocks.js) has no data-svc-idx
-   on its cards — in the canvas they're found by position instead. */
-function bshellGridCardOf(el) {
-  const card = el.closest && el.closest(`${SITE_GROUP_GRID}`);
-  if (!card || card.closest("[data-svc-idx]")) return null;
+/* ---------- What is under the pointer / was clicked ----------
+   A descriptor: { kind, el, secKey, label, loc, ... } where kind is
+   text | button | image | contact | item | video | section. Markers from
+   the section library / templates win (data-dk-*); the template's own
+   data-textkey / data-svc-idx come next; then a few safe heuristics for
+   things older templates render without markers (the hero photo by its
+   src, the hero button by its link, contact details by their value). */
+function bsxResolve(target) {
+  if (target && target.nodeType !== 1) target = target.parentElement;
+  if (!target || !target.closest) return null;
+  if (target.closest("#deskkit-badge")) return null;
+  const top = target.closest("body > *");
+  if (!top || /^(SCRIPT|STYLE)$/.test(top.tagName)) return null;
+  const secKey = bsxMap.keyOfTop.get(top);
+  if (!secKey) return null;
+  const d = siteState.data;
+  const base = (kind, el, extra) => Object.assign({ kind, el, secKey }, extra || {});
+  const inTop = (el) => el && top.contains(el) ? el : null;
+
+  const btnEl = inTop(target.closest("[data-dk-btn]"));
+  const imgEl = inTop(target.closest("[data-dk-img]"));
+  const bindEl = inTop(target.closest("[data-dk-bind]"));
+  const itemEl = inTop(target.closest("[data-dk-item]"));
+  const fieldEl = inTop(target.closest("[data-dk-field]"));
+  const secEl = inTop(target.closest("[data-dk-sec]"));
+  const textEl = inTop(target.closest("[data-textkey]"));
+  const svcEl = inTop(target.closest("[data-svc-idx]")) || (typeof SITE_GROUP_GRID === "string" ? inTop(bsxGridCardOf(target)) : null);
+  const secId = secEl ? secEl.getAttribute("data-dk-sec") : null;
+  const videoEl = inTop(target.closest("[data-dk-video]"));
+
+  if (btnEl) {
+    const path = btnEl.getAttribute("data-dk-btn");
+    const bsec = btnEl.closest("[data-dk-sec]");
+    return base("button", btnEl, bsec ? { secId: bsec.getAttribute("data-dk-sec"), path } : { btn: path });
+  }
+  if (imgEl) {
+    const path = imgEl.getAttribute("data-dk-img");
+    const isec = imgEl.closest("[data-dk-sec]");
+    return base("image", imgEl, isec ? { secId: isec.getAttribute("data-dk-sec"), path } : { img: path });
+  }
+  if (videoEl && secId) return base("video", videoEl, { secId, path: videoEl.getAttribute("data-dk-video") || "url" });
+  if (bindEl) return base("contact", bindEl, { bind: bindEl.getAttribute("data-dk-bind") });
+  if (itemEl && secId) {
+    const f = fieldEl && itemEl.contains(fieldEl) ? fieldEl : null;
+    return base("item", itemEl, { secId, itemPath: itemEl.getAttribute("data-dk-item"), fieldEl: f, field: f ? f.getAttribute("data-dk-field") : null });
+  }
+  if (fieldEl && secId) return base("text", fieldEl, { secId, path: fieldEl.getAttribute("data-dk-field") });
+  if (textEl && BSHELL_TEXT_CONTENT_MAP[textEl.dataset.textkey]) return base("text", textEl, { key: textEl.dataset.textkey });
+  if (svcEl) {
+    const shown = svcEl.hasAttribute("data-svc-idx") ? parseInt(svcEl.getAttribute("data-svc-idx"), 10) : parseInt(svcEl.dataset.bshellGridIdx, 10);
+    const f = bsxServiceFieldOf(svcEl, target, shown);
+    return base("item", svcEl, { svc: shown, fieldEl: f ? f.el : null, field: f ? f.field : null });
+  }
+  // A photo the template renders from the project's images.
+  const img = target.tagName === "IMG" ? target : null;
+  if (img) {
+    const src = img.getAttribute("src") || "";
+    if (src && src === d.heroImage && !(d.heroImages && d.heroImages.length)) return base("image", img, { img: "hero" });
+    const gi = (d.heroImages || []).indexOf(src);
+    if (gi !== -1) return base("image", img, { img: "gallery." + gi });
+    if (src && src === d.logo) return base("image", img, { img: "logo" });
+  }
+  const link = target.closest("a[href]");
+  // The hero's main button (the template's own call-to-action link).
+  if (link && top.contains(link) && secKey === "hero") {
+    const cta = bsxHeroCta();
+    if (cta && link.getAttribute("href") === cta.href) return base("button", link, { btn: "heroCta" });
+  }
+  if (link && top.contains(link)) {
+    const href = link.getAttribute("href") || "";
+    if (/^tel:/i.test(href)) return base("contact", link, { bind: "phone" });
+    if (/^mailto:/i.test(href)) return base("contact", link, { bind: "email" });
+    if (/wa\.me\//i.test(href)) return base("contact", link, { bind: "whatsapp" });
+  }
+  // A plain "טלפון: 050-..." line.
+  const leaf = bsxContactLeaf(target);
+  if (leaf) return base("contact", leaf.el, { bind: leaf.bind });
+  const video = target.closest(".site-video-wrap");
+  if (video && top.contains(video) && !secId) return base("video", video, {});
+  return base("section", top, {});
+}
+function bsxGridCardOf(el) {
+  if (typeof SITE_GROUP_GRID !== "string") return null;
+  const card = el.closest && el.closest(SITE_GROUP_GRID);
+  if (!card || card.closest("[data-svc-idx]") || card.closest("[data-dk-sec]")) return null;
   card.dataset.bshellGridIdx = String(Array.prototype.indexOf.call(card.parentElement.children, card));
   return card;
 }
-
-/* ---------- Selection model ----------
-   Every click in the canvas opens the editor of the SECTION it belongs
-   to (bshellSelection = { kind: "section", type, rootEl, focus }) —
-   hero/services/about/contact/... as defined in SITE_BLOCK_DEFS, plus
-   "site": the header/side rail/footer around them, which aren't blocks.
-   focus says what inside the section was clicked, so its field is
-   scrolled to, highlighted and focused: { svc: index } for one service
-   card, { key: textkey } for a text, { contact: "phone"|"email"|... }
-   for a contact detail. */
-const BSHELL_SITE_TYPE = "site";
-
-function bshellSectionTypeOfTop(top) {
-  const template = siteState.template;
-  const types = Object.keys(SITE_BLOCK_DEFS[template] || {});
-  for (const type of types) {
-    if (bshellQueryAnchor(top, bshellAnchorCandidates(template, type))) return type;
-  }
-  return null;
+function bsxHeroCta() {
+  if (typeof primaryCtaHref !== "function") return null;
+  try { return primaryCtaHref(siteState.data, "index"); } catch (e) { return null; }
 }
-
-/* Whether a section's editor shows the contact details: the contact
-   section itself, or a fused block that holds them (bento's grid). */
-function bshellSectionHasContact(type, rootEl) {
-  if (type === "contact" || type === BSHELL_SITE_TYPE) return true;
-  return !!(rootEl && rootEl.querySelector('[data-textkey="heading-contact"]'));
-}
-
-function bshellResolveClickTarget(target, doc) {
-  const top = target.closest("body > *");
-  if (!top) return null;
+function bsxContactLeaf(target) {
   const d = siteState.data;
-  let type = bshellSectionTypeOfTop(top) || BSHELL_SITE_TYPE;
-  let focus = null;
-  const svcEl = target.closest("[data-svc-idx]");
-  const gridCard = !svcEl && bshellGridCardOf(target);
-  const textEl = target.closest("[data-textkey]");
-  const link = target.closest('a[href^="tel:"], a[href^="mailto:"], a[href*="wa.me/"]');
-  if (svcEl) focus = { svc: parseInt(svcEl.dataset.svcIdx, 10) };
-  else if (gridCard) focus = { svc: parseInt(gridCard.dataset.bshellGridIdx, 10) };
-  else if (textEl && BSHELL_TEXT_CONTENT_MAP[textEl.dataset.textkey]) focus = { key: textEl.dataset.textkey };
-  else if (link) {
-    const href = link.getAttribute("href") || "";
-    focus = { contact: href.startsWith("mailto:") ? "email" : href.indexOf("wa.me/") !== -1 ? "whatsapp" : "phone" };
-  } else {
-    // A plain "טלפון: 050-..." line: match the clicked text to the details.
-    const text = (target.textContent || "").trim();
-    for (const k of ["email", "phone", "address"]) {
+  let el = target;
+  for (let depth = 0; el && depth < 3; depth++, el = el.parentElement) {
+    if (!el || el === el.ownerDocument.body || el.parentElement === el.ownerDocument.body) break;
+    if (el.childElementCount > 2) break;
+    const text = (el.textContent || "").trim();
+    if (!text || text.length > 140) continue;
+    for (const k of ["phone", "email", "address"]) {
       const v = String(d[k] || "").trim();
-      if (v && text && text.length < 200 && text.indexOf(v) !== -1) { focus = { contact: k }; break; }
+      if (v && text.indexOf(v) !== -1) return { el, bind: k };
     }
   }
-  // Contact details are edited where the contact section is: a phone in
-  // the header or the hero opens the contact section (or, on a template
-  // with no inline contact section, the header & footer panel).
-  if (focus && focus.contact && !bshellSectionHasContact(type, top)) {
-    const def = SITE_BLOCK_DEFS[siteState.template].contact;
-    type = (def && (!def.active || def.active(d))) ? "contact" : BSHELL_SITE_TYPE;
-  }
-  // The business name in the header/footer belongs to the header & footer
-  // panel; inside the hero it stays with the hero.
-  const rootEl = type === BSHELL_SITE_TYPE ? (bshellSectionTypeOfTop(top) ? null : top) : bshellFindSectionRoot(doc, type);
-  const sel = { kind: "section", type, rootEl, focus, topIdx: rootEl === top ? top.getAttribute("data-bshell-top") : null };
-  sel.focusEl = (focus && (focus.svc != null || focus.key)) ? (svcEl || gridCard || textEl) : null;
-  return sel;
+  return null;
 }
-
-function bshellFindSectionRoot(doc, type) {
-  if (!doc) return null;
-  if (type === BSHELL_SITE_TYPE) {
-    // The first top-level element that isn't one of the blocks — the
-    // header/side rail on every template.
-    return Array.from(doc.body.children).find((el) => el.hasAttribute("data-bshell-top") && el.tagName !== "SCRIPT"
-      && el.id !== "deskkit-badge" && !bshellSectionTypeOfTop(el) && el.textContent.trim()) || null;
+/* Which text of a service card was clicked: its name, description or
+   price (the card shows dd._services[shown], so the match is exact). */
+function bsxServiceFieldOf(card, target, shown) {
+  const dd = withFallback(siteState.data);
+  const s = (dd._services || [])[shown];
+  if (!s) return null;
+  let el = target;
+  while (el && el !== card.parentElement) {
+    const text = (el.textContent || "").trim();
+    if (el.childElementCount === 0 || el === target) {
+      for (const f of ["name", "desc", "price"]) {
+        if (s[f] && text === String(s[f]).trim()) return { el, field: f };
+      }
+    }
+    if (el === card) break;
+    el = el.parentElement;
   }
-  const anchorEl = bshellFindAnchorEl(doc, siteState.template, type);
-  return anchorEl ? anchorEl.closest("body > *") : null;
-}
-
-/* The element inside the section that the focus points at (outlined
-   instead of the whole section). */
-function bshellFindFocusEl(doc, sel) {
-  if (!doc || !sel || !sel.focus) return null;
-  const scope = sel.rootEl || doc;
-  if (sel.focus.svc != null) {
-    const card = scope.querySelector(`[data-svc-idx="${sel.focus.svc}"]`);
-    if (card) return card;
-    const grid = scope.querySelector(SITE_GROUP_GRID);
-    return grid ? grid.parentElement.children[sel.focus.svc] || null : null;
-  }
-  if (sel.focus.key) return scope.querySelector(`[data-textkey="${sel.focus.key}"]`);
   return null;
 }
 
-function bshellDeselect() {
-  bshellSelection = null;
-  bshellApplySelectionVisual();
-  bshellRenderProperties();
-  bshellRenderHierarchy();
-}
-
-function bshellSelectSection(type, focus) {
-  const doc = document.getElementById("bshell-canvas-iframe").contentDocument;
-  // A HIDDEN section renders nothing in the canvas at all, so there's
-  // no element to anchor on — select it anyway (rootEl: null), purely
-  // so the Properties panel's own visibility switch can still show and
-  // bring it back. bshellApplySelectionVisual() already no-ops safely
-  // without a rootEl; only the scroll+outline step is skipped.
-  bshellSelection = { kind: "section", type, rootEl: bshellFindSectionRoot(doc, type), focus: focus || null };
-  bshellSelection.focusEl = bshellFindFocusEl(doc, bshellSelection);
-  const target = bshellSelection.focusEl || bshellSelection.rootEl;
-  if (target) target.scrollIntoView({ behavior: "smooth", block: "center" });
-  bshellApplySelectionVisual();
-  bshellRenderProperties();
-  bshellRenderHierarchy();
-}
-
-/* One service card (from the hierarchy list, or after adding/duplicating
-   one): its section's editor, scrolled to and focused on that card. */
-function bshellSelectService(idx) {
-  const type = bshellItemsType();
-  if (type) bshellSelectSection(type, { svc: idx });
-}
-function bshellItemsType() {
-  const defs = SITE_BLOCK_DEFS[siteState.template] || {};
-  return Object.keys(defs).find((t) => defs[t].hasItems) || null;
-}
-
-/* Site-wide settings (contact info, WhatsApp, copyright, brand color/
-   font, images, video) — not tied to any one Section/Element, so this
-   is a FOURTH selection kind alongside text/service/section rather
-   than forcing it through the Section model. Reached via its own
-   always-visible row above the Sections list (not nested inside the
-   hierarchy tree, since it isn't part of the page structure), same
-   "click something -> see it in Properties" pattern as everything
-   else in the Shell. No live canvas anchor (these fields render as
-   plain text/attributes in several places, not one selectable
-   element), so this never touches bshellApplySelectionVisual's outline
-   — clears whatever WAS outlined in the canvas instead. */
-function bshellSelectSettings() {
-  bshellSelection = { kind: "settings" };
-  bshellApplySelectionVisual();
-  bshellRenderProperties();
-  bshellRenderHierarchy();
-}
-
-/* Outline + mini-toolbar are injected straight into the iframe's own
-   document (not positioned from the parent page) — far simpler than
-   tracking cross-frame coordinates on every scroll/resize, and it
-   naturally scrolls/stays put with the content since it IS content of
-   that document. */
-function bshellApplySelectionVisual() {
-  const iframe = document.getElementById("bshell-canvas-iframe");
-  const doc = iframe.contentDocument;
-  if (!doc) return;
-  doc.querySelectorAll(".bshell-outline-target").forEach((el) => el.classList.remove("bshell-outline-target"));
-  const oldToolbar = doc.getElementById("bshell-mini-toolbar");
-  if (oldToolbar) oldToolbar.remove();
-  if (!bshellSelection) return;
-  // The clicked service/text when there is one, else the whole section.
-  const focusEl = bshellSelection.focusEl && doc.contains(bshellSelection.focusEl) ? bshellSelection.focusEl : null;
-  const el = focusEl || bshellSelection.rootEl;
-  if (!el || !doc.contains(el)) return;
-  const isSvc = !!(focusEl && bshellSelection.focus && bshellSelection.focus.svc != null);
-  const isBlock = !focusEl && bshellSelection.type !== BSHELL_SITE_TYPE;
-
-  if (!doc.getElementById("bshell-outline-style")) {
-    const style = doc.createElement("style");
-    style.id = "bshell-outline-style";
-    style.textContent = `
-      .bshell-outline-target{outline:2px solid #14B8A6 !important; outline-offset:2px !important;}
-      #bshell-mini-toolbar{position:absolute; z-index:999999; display:flex; gap:2px; background:#111827; border-radius:8px; padding:3px; box-shadow:0 4px 14px rgba(0,0,0,.28);}
-      #bshell-mini-toolbar button{all:unset; box-sizing:border-box; cursor:pointer; color:#fff; width:27px; height:27px; display:flex; align-items:center; justify-content:center; border-radius:6px; font-size:13px; text-align:center;}
-      #bshell-mini-toolbar button:hover:not(:disabled){background:#14B8A6;}
-      #bshell-mini-toolbar button:disabled{opacity:.35; cursor:default;}`;
-    doc.head.appendChild(style);
+/* Stable way back to the same element after the canvas re-renders. */
+function bsxLocatorFor(el, secKey) {
+  const root = bsxMap.rootOf.get(secKey);
+  if (!root || !el) return { secKey };
+  if (el === root) return { secKey };
+  const attrs = ["data-dk-field", "data-dk-btn", "data-dk-img", "data-dk-video", "data-dk-item", "data-dk-bind", "data-textkey", "data-svc-idx"];
+  for (const a of attrs) {
+    if (el.hasAttribute(a)) {
+      const sel = `[${a}="${bsxCss(el.getAttribute(a))}"]`;
+      const list = (root.matches(sel) ? [root] : []).concat(Array.from(root.querySelectorAll(sel)));
+      return { secKey, sel, nth: Math.max(0, list.indexOf(el)) };
+    }
   }
+  const path = [];
+  let n = el;
+  while (n && n !== root && n.parentElement) { path.unshift(Array.prototype.indexOf.call(n.parentElement.children, n)); n = n.parentElement; }
+  return n === root ? { secKey, path } : { secKey };
+}
+function bsxLocate(loc) {
+  if (!loc) return null;
+  const root = bsxMap.rootOf.get(loc.secKey);
+  if (!root) return null;
+  if (loc.sel) {
+    const list = (root.matches(loc.sel) ? [root] : []).concat(Array.from(root.querySelectorAll(loc.sel)));
+    return list[loc.nth] || list[0] || null;
+  }
+  if (loc.path) {
+    let n = root;
+    for (const i of loc.path) { n = n && n.children[i]; }
+    return n || null;
+  }
+  return root;
+}
 
-  el.classList.add("bshell-outline-target");
-  const rect = el.getBoundingClientRect();
-  const scrollY = doc.defaultView.scrollY || doc.documentElement.scrollTop;
-  const toolbar = doc.createElement("div");
-  toolbar.id = "bshell-mini-toolbar";
-  toolbar.style.top = Math.max(4, rect.top + scrollY - 34) + "px";
-  toolbar.style.insetInlineStart = Math.max(4, rect.left) + "px";
-  // Built from only the actions that actually apply to this selection's
-  // kind, instead of always showing all 4 buttons with most of them
-  // disabled — confirmed live as reading broken rather than just
-  // "nothing else to do here" for a plain text selection (every kind
-  // except service/section had 3 of 4 icons permanently greyed out).
-  const toolbarButtons = [`<button type="button" data-tool="edit" title="${bsL("עריכה", "Edit")}">✎</button>`];
-  if (isSvc) {
-    toolbarButtons.push(`<button type="button" data-tool="duplicate" title="${bsL("שכפול", "Duplicate")}">⧉</button>`);
+/* ---------- Labels for the hover/selection chip ---------- */
+function bsxLabelOf(desc) {
+  if (!desc) return "";
+  const word = bshellItemWord();
+  switch (desc.kind) {
+    case "text": {
+      if (desc.key) return BSHELL_TEXT_CONTENT_MAP[desc.key].label;
+      return /^H[1-6]$/.test(desc.el.tagName) ? bsL("כותרת", "Heading") : bsL("טקסט", "Text");
+    }
+    case "button": return bsL("כפתור", "Button");
+    case "image": return desc.img === "logo" ? bsL("לוגו", "Logo") : bsL("תמונה", "Image");
+    case "contact": return { phone: bsL("טלפון", "Phone"), email: bsL("מייל", "Email"), address: bsL("כתובת", "Address"), whatsapp: bsL("וואטסאפ", "WhatsApp") }[desc.bind] || bsL("פרט קשר", "Contact detail");
+    case "item": return desc.svc != null ? `${word[0]} ${desc.svc + 1}` : bsL("פריט", "Item");
+    case "video": return bsL("סרטון", "Video");
+    default: return bsxSectionLabel(desc.secKey);
   }
-  if (isBlock) {
-    toolbarButtons.push(`<button type="button" data-tool="hide" title="${bsL("הסתרה/הצגה", "Hide/show")}">◐</button>`);
+}
+
+/* ---------- Selection ---------- */
+function bsxSelect(desc, opts) {
+  opts = opts || {};
+  if (bsxEdit && (!desc || desc.el !== bsxEdit.el)) bsxCommitEdit();
+  if (!desc) { bsxDeselect(); return; }
+  desc.loc = bsxLocatorFor(desc.el, desc.secKey);
+  if (desc.fieldEl) desc.fieldLoc = bsxLocatorFor(desc.fieldEl, desc.secKey);
+  desc.label = bsxLabelOf(desc);
+  bsxSel = desc;
+  bsxClosePopover();
+  bsxRenderElTools();
+  if (typeof bsxOnSelectionChanged === "function") bsxOnSelectionChanged();
+  if (opts.edit !== false) {
+    if (desc.kind === "text") bsxStartTextEdit(desc);
+    else if (desc.kind === "item" && desc.fieldEl) bsxStartItemFieldEdit(desc);
   }
-  if (isSvc) {
-    toolbarButtons.push(`<button type="button" data-tool="delete" title="${bsL("מחיקה", "Delete")}">🗑</button>`);
+  if (opts.scroll) bsxScrollIntoView(desc.el);
+  bsxDraw();
+}
+function bsxDeselect() {
+  bsxCommitEdit();
+  bsxSel = null;
+  bsxClosePopover();
+  bsxRenderElTools();
+  if (typeof bsxOnSelectionChanged === "function") bsxOnSelectionChanged();
+  bsxDraw();
+}
+function bsxSelectSection(key, opts) {
+  const root = bsxMap.rootOf.get(key);
+  if (!root) { bsxDeselect(); return false; }
+  bsxSelect({ kind: "section", el: root, secKey: key }, Object.assign({ edit: false }, opts || {}));
+  return true;
+}
+function bsxScrollIntoView(el) {
+  if (!el || !el.isConnected) return;
+  try { el.scrollIntoView({ behavior: bsxReducedMotion() ? "auto" : "smooth", block: "center" }); } catch (e) { el.scrollIntoView(); }
+}
+function bsxReducedMotion() { return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); }
+
+/* After every re-render: rebuild the map, find the selected element again
+   (or drop a selection whose element is gone), redraw. */
+function bsxOnCanvasUpdated() {
+  const cdoc = bsxDoc();
+  // FAQ answers sit in <details>: open in the editor so they can be edited.
+  if (cdoc) cdoc.querySelectorAll("details:not([open])").forEach((el) => { el.open = true; });
+  bsxBuildMap();
+  if (bsxSel) {
+    const el = bsxLocate(bsxSel.loc);
+    if (el) {
+      bsxSel.el = el;
+      if (bsxSel.fieldLoc) bsxSel.fieldEl = bsxLocate(bsxSel.fieldLoc);
+    } else if (bsxSel.kind === "contact" && bsxSel.lastRect) {
+      bsxSel.el = null; // keep the toolbar where it was while the value is being typed
+    } else {
+      bsxSel = null;
+      bsxRenderElTools();
+      if (typeof bsxOnSelectionChanged === "function") bsxOnSelectionChanged();
+    }
   }
-  toolbar.innerHTML = toolbarButtons.join("");
-  toolbar.addEventListener("mousedown", (e) => e.stopPropagation());
-  toolbar.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const btn = e.target.closest("button[data-tool]");
-    if (!btn || btn.disabled) return;
-    bshellToolbarAction(btn.dataset.tool);
+  if (bsxHover && !(bsxHover.el && bsxHover.el.isConnected)) bsxHover = null;
+  bsxDraw();
+}
+
+/* ---------- Pointer handling in the canvas ---------- */
+let bsxDownHandled = false;
+function bsxOnCanvasDown(e) {
+  bsxDownHandled = false;
+  if (e.button !== 0) return;
+  if (bsxEdit && bsxEdit.el.contains(e.target)) return; // caret placement inside the text being edited
+  const desc = bsxResolve(e.target);
+  if (!desc) { bsxDeselect(); bsxDownHandled = true; return; }
+  // Texts become editable on mousedown so the browser puts the caret
+  // exactly where the click landed.
+  if (desc.kind === "text" || (desc.kind === "item" && desc.fieldEl)) {
+    bsxSelect(desc);
+    bsxDownHandled = true;
+    return;
+  }
+  e.preventDefault(); // no text selection / focus on links while selecting
+}
+function bsxOnCanvasClick(e) {
+  // Nothing in the canvas ever navigates, dials, submits or opens.
+  const editingHere = bsxEdit && bsxEdit.el.contains(e.target);
+  e.preventDefault();
+  e.stopPropagation();
+  if (editingHere || bsxDownHandled) { bsxDownHandled = false; return; }
+  const desc = bsxResolve(e.target);
+  if (!desc) { bsxDeselect(); return; }
+  if (bsxSel && bsxSel.kind !== "section" && desc.kind === "section" && bsxSel.secKey === desc.secKey && bsxSel.el === desc.el) return;
+  bsxSelect(desc);
+}
+let bsxMoveRaf = 0, bsxMoveTarget = null;
+let bsxPointer = null; // last pointer position inside the canvas (canvas coordinates)
+function bsxOnCanvasMove(e) {
+  bsxMoveTarget = e.target;
+  bsxPointer = { x: e.clientX, y: e.clientY };
+  if (bsxMoveRaf) return;
+  bsxMoveRaf = requestAnimationFrame(() => {
+    bsxMoveRaf = 0;
+    clearTimeout(bsxHoverClearTimer);
+    if (bsxDrag) return;
+    bsxHover = bsxResolve(bsxMoveTarget);
+    if (bsxHover) bsxHover.label = bsxLabelOf(bsxHover);
+    bsxDraw();
   });
-  doc.body.appendChild(toolbar);
+}
+function bsxScheduleHoverClear() {
+  clearTimeout(bsxHoverClearTimer);
+  bsxHoverClearTimer = setTimeout(() => {
+    if (bsxPointerOverTools) return;
+    bsxHover = null;
+    bsxDraw();
+  }, 350);
 }
 
-function bshellToolbarAction(tool) {
-  if (!bshellSelection) return;
-  const svcIdx = bshellSelection.focus && bshellSelection.focus.svc;
-  if (tool === "edit") {
-    document.getElementById("bshell-hier").classList.remove("bshell-drawer-open");
-    document.getElementById("bshell-props").classList.add("bshell-drawer-open");
-    const focused = document.querySelector("#bshell-props-body .is-focused input, #bshell-props-body .is-focused textarea");
-    const first = focused || document.querySelector("#bshell-props-body input, #bshell-props-body textarea");
-    if (first) first.focus();
-    return;
-  }
-  if (tool === "duplicate" && svcIdx != null) return bshellDuplicateService(svcIdx);
-  if (tool === "hide" && bshellSelection.type !== BSHELL_SITE_TYPE) {
-    bshellSnapshot();
-    bshellToggleSectionVisibility(bshellSelection.type);
-    bshellDeselect();
-    bshellRenderCanvas();
-    bshellRenderHierarchy();
-    bshellScheduleSave();
-    return;
-  }
-  if (tool === "delete" && svcIdx != null) bshellDeleteService(svcIdx);
-}
-
-/* Shared by the canvas mini-toolbar and the section editor's own
-   per-service buttons. */
-function bshellDuplicateService(idx) {
-  const d = siteState.data;
-  if (!d.services || !d.services[idx]) return;
-  bshellSnapshot();
-  d.services.splice(idx + 1, 0, Object.assign({}, d.services[idx]));
-  bshellRenderCanvas(() => bshellSelectService(idx + 1));
-  bshellRenderHierarchy();
-  bshellScheduleSave();
-}
-function bshellDeleteService(idx) {
-  const d = siteState.data;
-  if (!d.services || d.services.length <= 1) return; // a services section needs at least one row to mean anything
-  bshellSnapshot();
-  d.services.splice(idx, 1);
-  const type = bshellSelection && bshellSelection.type;
-  bshellRenderCanvas(() => { if (type) bshellSelectSection(type); });
-  bshellRenderHierarchy();
-  bshellScheduleSave();
-}
-function bshellAddService() {
-  const d = siteState.data;
-  bshellSnapshot();
-  d.services = d.services || [];
-  d.services.push({ name: "", desc: "", price: "" });
-  const newIdx = d.services.length - 1;
-  bshellRenderCanvas(() => bshellSelectService(newIdx));
-  bshellRenderHierarchy();
-  bshellScheduleSave();
-}
-
-/* hiddenBlocks (new, additive) gates hero/services the same way
-   def.active() already gates about/contact via d.pages — read here so
-   activeBlocksForPage() (js/site-blocks.js) respects it without that
-   shared file needing to know the Shell exists. Patched onto EVERY
-   migrated template's block that doesn't already define its own
-   active() — not just hero/services by name, since some templates'
-   real type keys differ (freelancer's "aboutTags", bento's "grid"),
-   and two templates' "contact" (freelancer, portfolio) genuinely have
-   no d.pages-based gate of their own either (their CTA footer always
-   showed, by original design). _bshellHiddenGate marks exactly which
-   types this patch touched, so the Properties panel below knows
-   whether to write d.hiddenBlocks or d.pages when toggling visibility
-   — never by guessing from the type's name. */
-(function bshellPatchBlockVisibility() {
-  (SITE_MIGRATED_TEMPLATES || []).forEach((template) => {
-    const defs = SITE_BLOCK_DEFS[template];
-    if (!defs) return;
-    Object.keys(defs).forEach((type) => {
-      if (!defs[type].active) {
-        defs[type]._bshellHiddenGate = true;
-        defs[type].active = (d) => !(d.hiddenBlocks && d.hiddenBlocks[type]);
-      }
-    });
+/* ---------- Overlay: outlines, chips, toolbars, "+" buttons ----------
+   Drawn in the editor page on top of the canvas (never inside the site's
+   own document), re-measured every frame while anything is shown so it
+   follows scrolling, animations and typing. */
+const bsxOv = {};
+function bsxWireOverlay() {
+  const ov = document.getElementById("bsx-overlay");
+  const mk = (cls, tag) => { const el = document.createElement(tag || "div"); el.className = "bsx-ov " + cls; el.hidden = true; ov.appendChild(el); return el; };
+  bsxOv.secBox = mk("bsx-box is-sec");
+  bsxOv.secChip = mk("bsx-chip is-sec");
+  bsxOv.hoverBox = mk("bsx-box is-hover");
+  bsxOv.hoverChip = mk("bsx-chip");
+  bsxOv.selBox = mk("bsx-box is-sel");
+  bsxOv.selChip = mk("bsx-chip");
+  bsxOv.lineTop = mk("bsx-insert-line");
+  bsxOv.lineBottom = mk("bsx-insert-line");
+  bsxOv.insTop = mk("bsx-insert", "button");
+  bsxOv.insBottom = mk("bsx-insert", "button");
+  [bsxOv.insTop, bsxOv.insBottom].forEach((b) => {
+    b.type = "button";
+    b.innerHTML = bsxIcon("plus") + `<span>${bsL("הוספת חלק", "Add section")}</span>`;
+    b.addEventListener("click", (e) => { e.stopPropagation(); if (typeof bsxOpenAddSection === "function") bsxOpenAddSection(parseInt(b.dataset.at, 10)); });
   });
-})();
-
-/* The one place that decides HOW a (template,type) pair's visibility
-   is actually stored — toggled from the mini-toolbar's "hide" button
-   and from the Properties panel's switch alike, so the two can never
-   drift out of sync on which flag they write. */
-function bshellToggleSectionVisibility(type) {
-  const d = siteState.data;
-  const def = SITE_BLOCK_DEFS[siteState.template][type];
-  if (def._bshellHiddenGate) {
-    d.hiddenBlocks = d.hiddenBlocks || {};
-    d.hiddenBlocks[type] = !d.hiddenBlocks[type];
-  } else {
-    // Same real mechanism the old sidebar's "דף נפרד" checkboxes use
-    // — hiding the inline section here is the mirror of turning that
-    // page OFF, not a second, parallel visibility flag.
-    ensurePagesShape(d).pages[type] = !(d.pages && d.pages[type]);
-  }
+  bsxOv.secTools = mk("bsx-tools bsx-sectools");
+  bsxOv.secTools.setAttribute("role", "toolbar");
+  bsxOv.elTools = mk("bsx-tools");
+  bsxOv.elTools.setAttribute("role", "toolbar");
+  bsxOv.drop = mk("bsx-drop-line");
+  bsxOv.ghost = mk("bsx-drag-ghost");
+  [bsxOv.secTools, bsxOv.elTools, bsxOv.insTop, bsxOv.insBottom].forEach((el) => {
+    el.addEventListener("mouseenter", () => { bsxPointerOverTools = true; clearTimeout(bsxHoverClearTimer); });
+    el.addEventListener("mouseleave", () => { bsxPointerOverTools = false; bsxScheduleHoverClear(); });
+  });
+  bsxOv.secTools.addEventListener("click", bsxOnSecToolsClick);
+  bsxOv.secTools.addEventListener("pointerdown", bsxOnSecToolsPointerDown);
+  bsxOv.secTools.addEventListener("keydown", bsxOnSecToolsKey);
+  bsxOv.elTools.addEventListener("click", bsxOnElToolsClick);
+  bsxOv.elTools.addEventListener("mousedown", (e) => { if (!e.target.closest("input, select, textarea")) e.preventDefault(); });
+  new ResizeObserver(() => bsxDraw()).observe(document.getElementById("bsx-stage"));
 }
-
-/* ---------- Properties panel ---------- */
-
-function bshellRenderProperties() {
-  const empty = document.getElementById("bshell-props-empty");
-  const body = document.getElementById("bshell-props-body");
-  if (!bshellSelection) {
-    empty.style.display = "";
-    body.style.display = "none";
-    body.innerHTML = "";
-    return;
-  }
-  empty.style.display = "none";
-  body.style.display = "";
-  if (bshellSelection.kind === "section") body.innerHTML = bshellPropsHtmlForSection(bshellSelection.type);
-  else if (bshellSelection.kind === "settings") body.innerHTML = bshellPropsHtmlForSettings();
-  bshellWirePropertiesPanel();
-  if (bshellSelection.kind === "section" && bshellSelection.focus) bshellFocusInProps(bshellSelection.focus);
-}
-
-/* ---------- Section editor ----------
-   One panel per section: ALL of its texts (and, for the services
-   section, every service card, each one a small group of fields), then
-   its style controls, then layout/visibility. Which texts a section has
-   is read from the section itself in the canvas (the data-textkey
-   elements inside it), so every template — and fused blocks like
-   freelancer's about+tags or bento's grid — gets exactly the fields it
-   really shows; a hidden section falls back to its usual set.
-
-   Style controls are per GROUP, never per item: one font/colour/size
-   for the section's title, one for the hero's tagline, one for ALL
-   service names and one for ALL service descriptions. Fonts only from
-   SITE_FONTS, sizes from a short list that fits each group. The title
-   and texts keep using d.textStyles[textkey] (the same per-text styles
-   saved projects already have, so they render exactly as before); the
-   service groups are d.textStyles["svc-name"] / ["svc-desc"]
-   (siteGroupStyleCss in site-templates.js). */
-const BSHELL_SECTION_DEFAULT_KEYS = {
-  hero: ["businessName", "heading-heroTitle", "tagline"],
-  services: ["heading-services"],
-  about: ["heading-about", "aboutText"],
-  aboutTags: ["aboutText"],
-  contact: ["heading-contact"],
-  grid: [],
-  [BSHELL_SITE_TYPE]: ["businessName"],
-};
-const BSHELL_ITEM_WORD = {
-  services: [bsL("שירות", "Service"), bsL("השירותים", "services")],
-  products: [bsL("מוצר", "Product"), bsL("המוצרים", "products")],
-  work: [bsL("עבודה", "Project"), bsL("העבודות", "projects")],
-};
-// Size choices (px) per kind of text — big enough to matter, never wild.
-const BSHELL_STYLE_SIZES = {
-  hero: [28, 32, 36, 42, 48, 56, 64, 72],
-  heading: [20, 24, 28, 32, 36, 42, 48],
-  name: [14, 16, 18, 20, 22, 24, 28, 32],
-  body: [12, 13, 14, 15, 16, 17, 18, 20, 22],
-};
-const BSHELL_CONTACT_FIELDS = [
-  { key: "phone", label: bsL("טלפון", "Phone"), dir: "ltr" },
-  { key: "email", label: bsL("מייל", "Email"), dir: "ltr" },
-  { key: "address", label: bsL("כתובת", "Address") },
-  { key: "whatsapp", label: bsL("מספר וואטסאפ אחר (אם שונה מהטלפון)", "Other WhatsApp number (if different from phone)"), dir: "ltr" },
-];
-
-function bshellSectionLabel(type) {
-  if (type === BSHELL_SITE_TYPE) return bsL("ראש ותחתית האתר", "Header & footer");
-  const def = SITE_BLOCK_DEFS[siteState.template][type];
-  return def ? bsLabel(def.label) || type : type;
-}
-
-function bshellSectionTextKeys(type, rootEl) {
-  const keys = (BSHELL_SECTION_DEFAULT_KEYS[type] || []).slice();
-  if (rootEl) {
-    rootEl.querySelectorAll("[data-textkey]").forEach((el) => {
-      const k = el.dataset.textkey;
-      if (BSHELL_TEXT_CONTENT_MAP[k] && keys.indexOf(k) === -1) keys.push(k);
-    });
-  }
-  // The about section's own title only exists on some templates.
-  return keys.filter((k) => k !== "heading-about" || type !== "about" || !rootEl || rootEl.querySelector('[data-textkey="heading-about"]'));
-}
-
-function bshellPropsHtmlForSection(type) {
-  const d = siteState.data;
-  const sel = bshellSelection;
-  const rootEl = sel && sel.rootEl;
-  const def = SITE_BLOCK_DEFS[siteState.template][type];
-  const keys = bshellSectionTextKeys(type, rootEl);
-  const hasItems = !!(def && def.hasItems);
-  const hasContact = bshellSectionHasContact(type, rootEl);
-  const word = BSHELL_ITEM_WORD[TEMPLATE_SECTION_ROLE[siteState.template]] || BSHELL_ITEM_WORD.services;
-
-  const textField = (key) => {
-    const f = BSHELL_TEXT_CONTENT_MAP[key];
-    const v = f.get(d);
-    const input = f.multiline
-      ? `<textarea data-text-key="${key}" maxlength="500" rows="5">${escapeHtmlS(v)}</textarea>`
-      : `<input type="text" data-text-key="${key}" maxlength="90" value="${escapeHtmlS(v)}" placeholder="${f.placeholder ? escapeHtmlS(f.placeholder) : ""}">`;
-    return `<div class="bshell-props-field" data-field-key="${key}"><label class="bshell-props-label">${escapeHtmlS(f.label)}</label>${input}</div>`;
+let bsxLoopOn = false;
+function bsxStartLoop() {
+  if (bsxLoopOn) return;
+  bsxLoopOn = true;
+  const tick = () => {
+    if (!bshellActiveFlag) { bsxLoopOn = false; return; }
+    if (bsxSel || bsxHover || bsxDrag) bsxDraw();
+    requestAnimationFrame(tick);
   };
-  const services = d.services || [];
-  const itemsHtml = hasItems ? `
-      <div class="bshell-props-label bshell-svc-list-label">${bsL(`רשימת ${word[1]}`, `Your ${word[1]}`)}</div>
-      <div class="bshell-svc-list">${services.map((s, i) => `
-        <div class="bshell-svc-item" data-svc-item="${i}">
-          <div class="bshell-svc-item-head">
-            <span class="bshell-svc-item-num">${i + 1}</span>
-            <span class="bshell-svc-item-title">${escapeHtmlS((s.name || "").trim() || `${word[0]} ${i + 1}`)}</span>
-            <button type="button" class="bshell-icon-btn" data-svc-action="duplicate" data-svc-idx="${i}" title="${bsL("שכפול", "Duplicate")}" aria-label="${bsL("שכפול", "Duplicate")}">⧉</button>
-            ${services.length > 1 ? `<button type="button" class="bshell-icon-btn" data-svc-action="delete" data-svc-idx="${i}" title="${bsL("מחיקה", "Delete")}" aria-label="${bsL("מחיקה", "Delete")}">🗑</button>` : ""}
-          </div>
-          <label class="bshell-props-label">${bsL("שם", "Name")}</label>
-          <input type="text" data-svc-idx="${i}" data-svc-field="name" maxlength="40" value="${escapeHtmlS(s.name || "")}">
-          <label class="bshell-props-label">${bsL("תיאור קצר", "Short description")}</label>
-          <textarea data-svc-idx="${i}" data-svc-field="desc" maxlength="90" rows="2">${escapeHtmlS(s.desc || "")}</textarea>
-          <label class="bshell-props-label">${bsL("מחיר (לא חובה)", "Price (optional)")}</label>
-          <input type="text" data-svc-idx="${i}" data-svc-field="price" maxlength="20" value="${escapeHtmlS(s.price || "")}">
-        </div>`).join("")}
-      </div>
-      <button type="button" class="bshell-add-item" data-svc-action="add">${bsL(`+ הוספת ${word[0]}`, `+ Add ${word[0].toLowerCase()}`)}</button>` : "";
-  const contactHtml = hasContact ? `
-      <div class="bshell-props-label bshell-svc-list-label">${bsL("פרטי קשר", "Contact details")}</div>
-      ${BSHELL_CONTACT_FIELDS.map((f) => `<div class="bshell-props-field" data-contact-field="${f.key}">
-        <label class="bshell-props-label">${f.label}</label>
-        <input type="text" data-contact-key="${f.key}"${f.dir ? ` dir="${f.dir}"` : ""} value="${escapeHtmlS(d[f.key] || "")}">
-      </div>`).join("")}
-      <p class="bshell-settings-field-hint">${bsL("אותם פרטים מופיעים בכל מקום באתר (כותרת, כפתורים, תחתית).", "The same details appear everywhere on the site (header, buttons, footer).")}</p>` : "";
+  requestAnimationFrame(tick);
+}
+function bsxGeom() {
+  const stage = document.getElementById("bsx-stage");
+  const f = bsxFrame();
+  if (!stage || !f) return null;
+  const s = stage.getBoundingClientRect();
+  const fr = f.getBoundingClientRect();
+  return { s, fr, vis: { x0: fr.left - s.left, y0: fr.top - s.top, x1: fr.right - s.left, y1: fr.bottom - s.top }, w: s.width, h: s.height };
+}
+function bsxRectIn(g, el) {
+  if (!el || !el.isConnected || !el.getBoundingClientRect) return null;
+  const r = el.getBoundingClientRect();
+  if (!r.width && !r.height) return null;
+  return { x: g.vis.x0 + r.left, y: g.vis.y0 + r.top, w: r.width, h: r.height };
+}
+function bsxClip(g, r) {
+  const x0 = Math.max(r.x, g.vis.x0), y0 = Math.max(r.y, g.vis.y0);
+  const x1 = Math.min(r.x + r.w, g.vis.x1), y1 = Math.min(r.y + r.h, g.vis.y1);
+  if (x1 <= x0 || y1 <= y0) return null;
+  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+}
+function bsxPlace(el, r) {
+  el.hidden = !r;
+  if (!r) return;
+  el.style.left = r.x + "px"; el.style.top = r.y + "px";
+  el.style.width = r.w + "px"; el.style.height = r.h + "px";
+}
+function bsxDraw() {
+  if (!bsxOv.selBox) return;
+  const g = bsxGeom();
+  const previewing = document.getElementById("bshell-root").classList.contains("is-previewing");
+  const hideAll = () => Object.values(bsxOv).forEach((el) => { el.hidden = true; });
+  if (!g || previewing) { hideAll(); return; }
+  const uiRtl = bsxSiteDirIsRtlUi();
 
-  // Style groups: the title first, then the section's other texts, then
-  // the items as two groups.
-  const groups = keys.map((key) => {
-    const label = key.indexOf("heading-") === 0 ? (key === "heading-heroTitle" ? bsL("כותרת ראשית", "Main heading") : bsL("כותרת החלק", "Section title")) : BSHELL_TEXT_CONTENT_MAP[key].label;
-    const sizes = key === "heading-heroTitle" ? BSHELL_STYLE_SIZES.hero : key.indexOf("heading-") === 0 ? BSHELL_STYLE_SIZES.heading : key === "businessName" ? BSHELL_STYLE_SIZES.name : BSHELL_STYLE_SIZES.body;
-    return { key, label, sizes, align: true };
+  // Selected element
+  let selRect = null;
+  if (bsxSel) {
+    const r = bsxSel.el ? bsxRectIn(g, bsxSel.el) : bsxSel.lastRect || null;
+    if (r && bsxSel.el) bsxSel.lastRect = r;
+    selRect = r ? bsxClip(g, r) : null;
+    const isSec = bsxSel.kind === "section";
+    bsxPlace(bsxOv.selBox, isSec ? null : selRect);
+    bsxOv.selBox.classList.toggle("is-editing", !!bsxEdit);
+    if (!isSec && selRect && bsxSel.label && !bsxOv.elTools.childElementCount) {
+      bsxOv.selChip.hidden = false;
+      bsxOv.selChip.textContent = bsxSel.label;
+      bsxChipAt(bsxOv.selChip, selRect, g, uiRtl);
+      bsxOv.selChip.classList.toggle("is-global", bsxSel.kind === "contact");
+    } else bsxOv.selChip.hidden = true;
+  } else { bsxOv.selBox.hidden = true; bsxOv.selChip.hidden = true; }
+
+  // Hovered element (not the selected one)
+  const hv = bsxHover && !bsxDrag ? bsxHover : null;
+  if (hv && hv.kind !== "section" && !(bsxSel && bsxSel.el === hv.el)) {
+    const r = bsxRectIn(g, hv.el);
+    const c = r ? bsxClip(g, r) : null;
+    bsxPlace(bsxOv.hoverBox, c);
+    if (c && !(bsxSel && bsxSel.kind !== "section" && selRect && Math.abs(selRect.y - c.y) < 24)) {
+      bsxOv.hoverChip.hidden = false;
+      bsxOv.hoverChip.textContent = hv.label || bsxLabelOf(hv);
+      bsxChipAt(bsxOv.hoverChip, c, g, uiRtl);
+    } else bsxOv.hoverChip.hidden = true;
+  } else { bsxOv.hoverBox.hidden = true; bsxOv.hoverChip.hidden = true; }
+
+  // Section frame: the hovered section, else the selected one's.
+  let secKey = bsxDrag ? null : (hv ? hv.secKey : (bsxSel ? bsxSel.secKey : null));
+  if (hv && bsxSel && hv.secKey !== bsxSel.secKey) {
+    // a hovered section scrolled out of view: show the selected one's tools
+    const hr = bsxMap.rootOf.get(hv.secKey);
+    const hrr = hr ? bsxRectIn(g, hr) : null;
+    if (!hrr || !bsxClip(g, hrr)) secKey = bsxSel.secKey;
+  }
+  const secRoot = secKey ? bsxMap.rootOf.get(secKey) : null;
+  const secR = secRoot ? bsxRectIn(g, secRoot) : null;
+  const secC = secR ? bsxClip(g, secR) : null;
+  bsxPlace(bsxOv.secBox, secC);
+  bsxOv.secBox.classList.toggle("is-sel", !!(bsxSel && bsxSel.kind === "section" && bsxSel.secKey === secKey));
+  if (secC) {
+    bsxOv.secChip.hidden = false;
+    bsxOv.secChip.textContent = bsxSectionLabel(secKey);
+    const cw = bsxOv.secChip.offsetWidth || 80;
+    bsxOv.secChip.style.top = secC.y + "px";
+    bsxOv.secChip.style.left = (uiRtl ? secC.x + secC.w - cw : secC.x) + "px";
+    if (bsxOv.secTools.dataset.key !== secKey || bsxOv.secTools.dataset.v !== bsxSecToolsVersion(secKey)) bsxRenderSecTools(secKey);
+    bsxOv.secTools.hidden = false;
+    const tw = bsxOv.secTools.offsetWidth, th = bsxOv.secTools.offsetHeight;
+    let ty = secC.y + 8;
+    if (secC.h < th + 16) ty = secC.y + Math.max(0, (secC.h - th) / 2);
+    const tx = uiRtl ? secC.x + 8 : secC.x + secC.w - tw - 8;
+    bsxOv.secTools.style.top = ty + "px";
+    bsxOv.secTools.style.left = Math.max(g.vis.x0 + 4, tx) + "px";
+  } else { bsxOv.secChip.hidden = true; bsxOv.secTools.hidden = true; }
+
+  // "+" between sections (blocks only, and only when sections can be added)
+  const visIdx = secKey ? bsxMap.keys.indexOf(secKey) : -1;
+  const canAdd = bsxLibOn() && bsxAvailableTypes().length > 0;
+  const placeIns = (btn, line, y, at) => {
+    if (!canAdd || visIdx === -1 || !secR || y < g.vis.y0 + 2 || y > g.vis.y1 - 2) { btn.hidden = true; line.hidden = true; return; }
+    btn.hidden = false;
+    btn.dataset.at = String(at);
+    btn.style.top = y + "px";
+    btn.style.left = (secC.x + secC.w / 2) + "px";
+    btn.setAttribute("aria-label", bsL("הוספת חלק כאן", "Add a section here"));
+    line.hidden = false;
+    line.style.top = (y - 1) + "px";
+    line.style.left = secC.x + "px";
+    line.style.width = secC.w + "px";
+  };
+  placeIns(bsxOv.insTop, bsxOv.lineTop, secR ? secR.y : 0, visIdx);
+  placeIns(bsxOv.insBottom, bsxOv.lineBottom, secR ? secR.y + secR.h : 0, visIdx + 1);
+  if (!bsxOv.insTop.hidden && !bsxOv.secTools.hidden) {
+    // keep the "+" off the section toolbar
+    const tt = parseFloat(bsxOv.secTools.style.top);
+    if (Math.abs(tt - parseFloat(bsxOv.insTop.style.top)) < 30 && secC && secC.y > g.vis.y0 + 2) bsxOv.secTools.style.top = (secC.y + 22) + "px";
+  }
+
+  // Element toolbar
+  if (bsxSel && bsxSel.kind !== "section" && selRect && bsxOv.elTools.childElementCount) {
+    bsxOv.elTools.hidden = false;
+    const tw = bsxOv.elTools.offsetWidth, th = bsxOv.elTools.offsetHeight;
+    let ty = selRect.y - th - 12;
+    if (ty < g.vis.y0 + 4) ty = selRect.y + selRect.h + 12;
+    if (ty + th > g.h - 76) ty = Math.max(g.vis.y0 + 4, selRect.y - th - 12);
+    if (ty < 4) ty = 4;
+    let tx = uiRtl ? selRect.x + selRect.w - tw : selRect.x;
+    tx = Math.max(8, Math.min(tx, g.w - tw - 8));
+    bsxOv.elTools.style.top = ty + "px";
+    bsxOv.elTools.style.left = tx + "px";
+  } else bsxOv.elTools.hidden = true;
+
+  if (!bsxDrag) { bsxOv.drop.hidden = true; bsxOv.ghost.hidden = true; }
+}
+function bsxChipAt(chip, r, g, uiRtl) {
+  const cw = chip.offsetWidth || 60;
+  let x = uiRtl ? r.x + r.w - cw : r.x;
+  x = Math.max(4, Math.min(x, g.w - cw - 4));
+  chip.style.left = x + "px";
+  chip.style.top = (r.y < g.vis.y0 + 24 ? r.y + 24 : r.y) + "px";
+}
+
+/* ---------- Section toolbar ---------- */
+function bsxSecToolsVersion(key) {
+  const vis = bsxMap.keys;
+  return [vis.indexOf(key), vis.length, bsxLibOn() ? 1 : 0].join(",");
+}
+function bsxVariantChoices(key) {
+  if (bsxIsCustom(key)) {
+    const s = bsxSecData(key);
+    const e = s && bsxLibEntry(s.type);
+    const v = e && e.variants ? Object.keys(e.variants) : [];
+    return v.length > 1 && typeof siteSectionSetVariant === "function" ? v : [];
+  }
+  if (!bsxIsBlockKey(key) || typeof variantOptionsFor !== "function") return [];
+  const o = variantOptionsFor(siteState.template, key);
+  return o ? Object.keys(o) : [];
+}
+function bsxRenderSecTools(key) {
+  const el = bsxOv.secTools;
+  el.dataset.key = key;
+  el.dataset.v = bsxSecToolsVersion(key);
+  const b = (act, icon, label, extra) => `<button type="button" class="bsx-icon-btn" data-sec="${act}" title="${bsxEsc(label)}" aria-label="${bsxEsc(label)}"${extra || ""}>${bsxIcon(icon)}</button>`;
+  const label = bsxSectionLabel(key);
+  if (!bsxIsBlockKey(key)) {
+    const parts = [b("settings", "settings", bsL("הגדרות", "Settings"))];
+    if (key === "video") parts.push(b("remove-video", "trash", bsL("הסרת הסרטון", "Remove the video")));
+    el.innerHTML = parts.join("");
+    el.setAttribute("aria-label", label);
+    return;
+  }
+  const vis = bsxMap.keys;
+  const i = vis.indexOf(key);
+  const custom = bsxIsCustom(key);
+  const parts = [
+    `<button type="button" class="bsx-grip" data-sec="drag" title="${bsxEsc(bsL("גררו כדי להזיז (או חיצים במקלדת)", "Drag to move (or arrow keys)"))}" aria-label="${bsxEsc(bsL("הזזת החלק", "Move section"))}: ${bsxEsc(label)}">${bsxIcon("grip")}</button>`,
+    b("up", "up", bsL("הזזה למעלה", "Move up"), i <= 0 ? " disabled" : ""),
+    b("down", "down", bsL("הזזה למטה", "Move down"), i >= vis.length - 1 ? " disabled" : ""),
+  ];
+  if (bsxVariantChoices(key).length > 1) parts.push(`<span class="bsx-tools-sep"></span>`, `<button type="button" class="bsx-tool-txt" data-sec="variant" title="${bsxEsc(bsL("בחירת עיצוב אחר לחלק", "Pick another design for this section"))}">${bsxIcon("palette")}<span>${bsL("עיצוב", "Design")}</span></button>`);
+  parts.push(`<span class="bsx-tools-sep"></span>`);
+  if (custom && typeof siteSectionDuplicate === "function") parts.push(b("duplicate", "copy", bsL("שכפול", "Duplicate")));
+  parts.push(custom ? b("delete", "trash", bsL("מחיקת החלק", "Delete section")) : b("hide", "eyeOff", bsL("הסתרת החלק", "Hide section")));
+  parts.push(b("settings", "settings", bsL("הגדרות החלק", "Section settings")));
+  el.innerHTML = parts.join("");
+  el.setAttribute("aria-label", label);
+}
+function bsxOnSecToolsClick(e) {
+  const btn = e.target.closest("[data-sec]");
+  if (!btn || btn.disabled) return;
+  e.stopPropagation();
+  const key = bsxOv.secTools.dataset.key;
+  const act = btn.dataset.sec;
+  if (act === "drag") return;
+  bsxSectionAction(key, act);
+}
+function bsxSectionAction(key, act) {
+  if (!key) return;
+  const vis = bsxMap.keys;
+  const i = vis.indexOf(key);
+  if (act === "up") bsxMoveSection(key, i - 1);
+  else if (act === "down") bsxMoveSection(key, i + 1);
+  else if (act === "variant") { if (typeof bsxOpenVariantPicker === "function") bsxOpenVariantPicker(key); }
+  else if (act === "duplicate") bsxDuplicateSection(key);
+  else if (act === "delete") bsxDeleteSection(key);
+  else if (act === "hide") bsxHideSection(key);
+  else if (act === "remove-video") bsxRemoveBuiltinVideo();
+  else if (act === "settings") {
+    if (key.indexOf("site:") === 0) { bsxSelectSection(key); bsxOpenPanel("chrome"); }
+    else if (key === "video") { bsxSelectSection(key); bsxOpenPanel("video"); }
+    else { bsxSelectSection(key); bsxOpenPanel("section"); }
+  }
+}
+function bsxOnSecToolsKey(e) {
+  const grip = e.target.closest('[data-sec="drag"]');
+  if (!grip) return;
+  const key = bsxOv.secTools.dataset.key;
+  const i = bsxMap.keys.indexOf(key);
+  if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+    e.preventDefault();
+    bsxMoveSection(key, e.key === "ArrowUp" ? i - 1 : i + 1, { refocusGrip: true });
+  }
+}
+
+/* ---------- Section operations ---------- */
+function bsxMoveKeyFallback(d, key, toVis) {
+  const order = ensureBlockOrder(d, siteState.template, "index");
+  const vis = activeBlocksForPage(d, siteState.template, "index");
+  if (!order || order.indexOf(key) === -1) return;
+  const rest = vis.filter((k) => k !== key);
+  toVis = Math.max(0, Math.min(toVis, rest.length));
+  order.splice(order.indexOf(key), 1);
+  if (toVis >= rest.length) {
+    const last = rest[rest.length - 1];
+    order.splice(last ? order.indexOf(last) + 1 : order.length, 0, key);
+  } else order.splice(order.indexOf(rest[toVis]), 0, key);
+}
+function bsxMoveSection(key, toVis, opts) {
+  const vis = bsxMap.keys;
+  const from = vis.indexOf(key);
+  if (from === -1 || toVis < 0 || toVis > vis.length - 1 || toVis === from) return;
+  bsxCommitEdit();
+  bshellSnapshot();
+  const d = siteState.data;
+  if (typeof siteSectionMove === "function") siteSectionMove(d, siteState.template, "index", key, toVis);
+  else bsxMoveKeyFallback(d, key, toVis);
+  bshellScheduleSave();
+  bshellRenderCanvas(() => {
+    bsxSelectSection(key, { scroll: true });
+    if (opts && opts.refocusGrip) {
+      bsxRenderSecTools(key);
+      bsxDraw();
+      const g = bsxOv.secTools.querySelector('[data-sec="drag"]');
+      if (g) g.focus();
+    }
+    if (typeof bsxRefreshPanel === "function") bsxRefreshPanel();
+    bsxAnnounce(bsL(`החלק הוזז למקום ${toVis + 1}`, `Section moved to position ${toVis + 1}`));
   });
-  if (hasItems) {
-    const doc = document.getElementById("bshell-canvas-iframe").contentDocument;
-    const has = (k) => !doc || !rootEl || rootEl.querySelector(`:is(${SITE_GROUP_STYLE_SELECTORS[k]})`);
-    if (has("svc-name")) groups.push({ key: "svc-name", label: bsL(`שמות ${word[1]}`, `Names of the ${word[1]}`), sizes: BSHELL_STYLE_SIZES.name, hint: true });
-    if (has("svc-desc")) groups.push({ key: "svc-desc", label: bsL(`תיאורי ${word[1]}`, `Descriptions of the ${word[1]}`), sizes: BSHELL_STYLE_SIZES.body, hint: true });
+}
+function bsxDuplicateSection(key) {
+  if (!bsxIsCustom(key) || typeof siteSectionDuplicate !== "function") return;
+  bsxCommitEdit();
+  bshellSnapshot();
+  const newKey = siteSectionDuplicate(siteState.data, siteState.template, "index", key);
+  bshellScheduleSave();
+  bshellRenderCanvas(() => {
+    if (newKey) bsxSelectSection(newKey, { scroll: true });
+    if (typeof bsxRefreshPanel === "function") bsxRefreshPanel();
+  });
+  bsxToast(bsL("החלק שוכפל", "Section duplicated"));
+}
+function bsxSectionHasContent(key) {
+  const s = bsxSecData(key);
+  if (!s) return false;
+  const walk = (v) => {
+    if (typeof v === "string") return v.trim().length > 0;
+    if (Array.isArray(v)) return v.some(walk);
+    if (v && typeof v === "object") return Object.keys(v).some((k) => walk(v[k]));
+    return false;
+  };
+  return walk(s.content);
+}
+async function bsxDeleteSection(key) {
+  if (!bsxIsCustom(key)) return bsxHideSection(key);
+  if (typeof siteSectionRemove !== "function") return;
+  bsxCommitEdit();
+  if (bsxSectionHasContent(key)) {
+    const ok = await bsxConfirm({
+      title: bsL("למחוק את החלק?", "Delete this section?"),
+      text: bsL(`"${bsxSectionLabel(key)}" וכל התוכן שבו יימחקו מהאתר. אפשר לבטל מיד אחר כך.`, `"${bsxSectionLabel(key)}" and everything in it will be removed. You can undo right after.`),
+      ok: bsL("מחיקה", "Delete"), danger: true,
+    });
+    if (!ok) return;
   }
-
-  const options = def && (typeof variantOptionsFor === "function") ? variantOptionsFor(siteState.template, type) : null;
-  const current = (d.blockVariants && d.blockVariants[type]) || "default";
-  // def.active() IS the ground truth for "visible inline right now,"
-  // whichever flag it actually reads (d.pages[type] for a real
-  // separate-page toggle, d.hiddenBlocks[type] for the Shell's own
-  // additive one — see bshellToggleSectionVisibility for which).
-  const reallyVisible = def && def.active ? !!def.active(d) : true;
-  const displayHtml = def ? `
-    <div class="bshell-settings-group">
-      <div class="bshell-settings-group-title">${bsL("תצוגה", "Display")}</div>
-      ${options ? `
-      <div class="bshell-props-field">
-        <label class="bshell-props-label">${bsL("עיצוב (Layout)", "Layout")}</label>
-        <select id="bshell-prop-variant">
-          ${Object.entries(options).map(([key, o]) => `<option value="${key}"${key === current ? " selected" : ""}>${escapeHtmlS(bsLabel(o.label))}</option>`).join("")}
-        </select>
-      </div>` : ""}
-      <div class="bshell-props-field">
-        <div class="bshell-toggle-row">
-          <label class="bshell-props-label" style="margin:0;">${bsL("הצגת החלק הזה", "Show this section")}</label>
-          <label class="bshell-switch">
-            <input type="checkbox" id="bshell-prop-visible"${reallyVisible ? " checked" : ""}>
-            <span class="bshell-switch-track"></span>
-            <span class="bshell-switch-thumb"></span>
-          </label>
-        </div>
-      </div>
-      ${type === "hero" ? bshellBsdHeroRow(d) : ""}
-    </div>` : `
-    <div class="bshell-settings-group">
-      <div class="bshell-props-field">
-        <div class="bshell-toggle-row">
-          <label class="bshell-props-label" style="margin:0;">${bsL("הסתרת שורת זכויות יוצרים בתחתית", "Hide the copyright line at the bottom")}</label>
-          <label class="bshell-switch">
-            <input type="checkbox" id="bshell-prop-hide-copyright"${d.hideCopyright ? " checked" : ""}>
-            <span class="bshell-switch-track"></span>
-            <span class="bshell-switch-thumb"></span>
-          </label>
-        </div>
-      </div>
-    </div>`;
-
-  return `
-    <span class="bshell-props-kind">${escapeHtmlS(bshellSectionLabel(type))}</span>
-    <div class="bshell-settings-group">
-      <div class="bshell-settings-group-title">${bsL("תוכן", "Content")}</div>
-      ${keys.map(textField).join("")}
-      ${itemsHtml}
-      ${contactHtml}
-    </div>
-    ${groups.length ? `
-    <div class="bshell-settings-group">
-      <div class="bshell-settings-group-title">${bsL("עיצוב הטקסטים", "Text style")}</div>
-      ${groups.map(bshellStyleGroupHtml).join("")}
-      ${groups.some((g) => g.hint) ? `<p class="bshell-settings-field-hint bshell-style-hint">${bsL(`העיצוב חל על כל ${word[1]} יחד, כדי שהאתר יישאר אחיד.`, `The style applies to all ${word[1]} together, so the site stays consistent.`)}</p>` : ""}
-    </div>` : ""}
-    ${displayHtml}`;
+  bshellSnapshot();
+  siteSectionRemove(siteState.data, siteState.template, "index", key);
+  bsxAfterStructural();
+  bsxToast(bsL("החלק נמחק", "Section deleted"), { action: { label: bsL("ביטול", "Undo"), fn: bshellUndo } });
 }
-
-/* One style group: font / colour / size (and alignment for a single
-   text). The colour box shows the colour the text has right now in the
-   canvas until a colour is actually picked — only a touched colour is
-   saved. */
-function bshellStyleGroupHtml(g) {
+function bsxHideSection(key) {
+  if (!bsxIsBlockKey(key) || bsxIsCustom(key)) return;
+  bsxCommitEdit();
+  bshellSnapshot();
+  bshellSetBuiltinVisible(key, false);
+  bsxAfterStructural();
+  bsxToast(bsL("החלק הוסתר — אפשר להחזיר אותו ממבנה האתר", "Section hidden — bring it back from Site structure"), { action: { label: bsL("ביטול", "Undo"), fn: bshellUndo } });
+}
+function bsxShowSection(key) {
+  bsxCommitEdit();
+  bshellSnapshot();
+  bshellSetBuiltinVisible(key, true);
+  bshellScheduleSave();
+  bshellRenderCanvas(() => {
+    bsxSelectSection(key, { scroll: true });
+    if (typeof bsxRefreshPanel === "function") bsxRefreshPanel();
+  });
+}
+function bsxAfterStructural(after) {
+  bsxSel = null;
+  bsxHover = null;
+  bsxRenderElTools();
+  if (typeof bsxOnSelectionChanged === "function") bsxOnSelectionChanged();
+  bshellScheduleSave();
+  bshellRenderCanvas(() => {
+    if (typeof bsxRefreshPanel === "function") bsxRefreshPanel();
+    if (after) after();
+  });
+}
+function bsxRemoveBuiltinVideo() {
+  if (!siteState.data.videoUrl) return;
+  bsxCommitEdit();
+  bshellSnapshot();
+  siteState.data.videoUrl = "";
+  siteState.data.heroVideoBg = false;
+  bsxAfterStructural();
+  bsxToast(bsL("הסרטון הוסר", "Video removed"), { action: { label: bsL("ביטול", "Undo"), fn: bshellUndo } });
+}
+/* Adds a library section at a visible position, then selects it. */
+function bsxInsertSection(type, variant, at) {
+  if (!bsxLibOn()) return null;
+  bsxCommitEdit();
+  bshellSnapshot();
   const d = siteState.data;
-  const s = (d.textStyles && d.textStyles[g.key]) || {};
-  const fontKeys = Object.keys(SITE_FONTS);
-  const sizes = g.sizes.slice();
-  if (s.size && sizes.indexOf(Number(s.size)) === -1) sizes.push(Number(s.size)); // a size saved earlier stays selectable
-  sizes.sort((a, b) => a - b);
-  const shown = s.color ? "#" + String(s.color).replace("#", "") : bshellCurrentTextColor(g.key);
-  const custom = !!(s.font || s.color || s.size || s.align);
-  return `
-    <div class="bshell-style-group" data-style-key="${g.key}">
-      <div class="bshell-style-group-head">
-        <span class="bshell-style-group-name">${escapeHtmlS(g.label)}</span>
-        ${custom ? `<button type="button" class="bshell-style-reset" data-style-reset>${bsL("↺ ברירת מחדל", "↺ Default")}</button>` : ""}
-      </div>
-      <div class="bshell-style-row">
-        <select data-style-prop="font" aria-label="${bsL("גופן", "Font")}">
-          <option value="">${bsL("גופן התבנית", "Template font")}</option>
-          ${fontKeys.map((k) => `<option value="${k}"${s.font === k ? " selected" : ""}>${escapeHtmlS(bsLabel(SITE_FONTS[k].name))}</option>`).join("")}
-        </select>
-        <input type="color" data-style-prop="color" value="${escapeHtmlS(shown)}" aria-label="${bsL("צבע", "Color")}"${s.color ? ' data-touched="1"' : ""}>
-        <select data-style-prop="size" aria-label="${bsL("גודל", "Size")}">
-          <option value="">${bsL("גודל רגיל", "Normal size")}</option>
-          ${sizes.map((n) => `<option value="${n}"${String(s.size) === String(n) ? " selected" : ""}>${n}px</option>`).join("")}
-        </select>
-      </div>
-      ${g.align ? `<div class="bshell-align-row">
-        <button type="button" class="bshell-align-btn${s.align === "right" ? " active" : ""}" data-align="right">${bsL("ימין", "Right")}</button>
-        <button type="button" class="bshell-align-btn${s.align === "center" ? " active" : ""}" data-align="center">${bsL("מרכז", "Center")}</button>
-        <button type="button" class="bshell-align-btn${s.align === "left" ? " active" : ""}" data-align="left">${bsL("שמאל", "Left")}</button>
-      </div>` : ""}
-    </div>`;
+  const id = siteSectionCreate(d, type, variant);
+  if (!id) { bshellUndoStack.pop(); bshellSyncUndoButtons(); return null; }
+  const key = "x:" + id;
+  const vis = bsxMap.keys.length;
+  siteSectionInsert(d, siteState.template, "index", key, Math.max(0, Math.min(at == null ? vis : at, vis)));
+  bshellScheduleSave();
+  bshellRenderCanvas(() => {
+    bsxSelectSection(key, { scroll: true });
+    if (typeof bsxRefreshPanel === "function") bsxRefreshPanel();
+  });
+  return key;
 }
 
-function bshellCurrentTextColor(key) {
-  const doc = document.getElementById("bshell-canvas-iframe").contentDocument;
-  const el = doc && (SITE_GROUP_STYLE_SELECTORS[key] ? doc.querySelector(`:is(${SITE_GROUP_STYLE_SELECTORS[key]})`) : doc.querySelector(`[data-textkey="${key}"]`));
-  const m = el ? String(doc.defaultView.getComputedStyle(el).color).match(/\d+/g) : null;
-  return m ? "#" + m.slice(0, 3).map((n) => Number(n).toString(16).padStart(2, "0")).join("") : "#000000";
+/* Drag & drop of a section by its handle: a shield over the canvas keeps
+   the pointer events here, a teal line shows where it will land, the
+   canvas scrolls near its edges. */
+function bsxOnSecToolsPointerDown(e) {
+  const grip = e.target.closest('[data-sec="drag"]');
+  if (!grip || e.button !== 0) return;
+  e.preventDefault();
+  const key = bsxOv.secTools.dataset.key;
+  if (bsxMap.keys.indexOf(key) === -1) return;
+  bsxCommitEdit();
+  const stage = document.getElementById("bsx-stage");
+  const shield = document.createElement("div");
+  shield.className = "bsx-shield";
+  stage.appendChild(shield);
+  bsxDrag = { key, from: bsxMap.keys.indexOf(key), gap: null, shield, sx: e.clientX, sy: e.clientY, moved: false };
+  bsxOv.ghost.textContent = bsxSectionLabel(key);
+  const move = (ev) => bsxDragMove(ev.clientX, ev.clientY);
+  const up = () => {
+    shield.removeEventListener("pointermove", move);
+    shield.removeEventListener("pointerup", up);
+    shield.removeEventListener("pointercancel", up);
+    bsxDragEnd();
+  };
+  shield.addEventListener("pointermove", move);
+  shield.addEventListener("pointerup", up);
+  shield.addEventListener("pointercancel", up);
+  try { shield.setPointerCapture(e.pointerId); } catch (err) { /* not capturable */ }
+  bsxDragMove(e.clientX, e.clientY);
+}
+function bsxDragMove(cx, cy) {
+  if (!bsxDrag) return;
+  const g = bsxGeom();
+  if (!g) return;
+  if (Math.abs(cx - bsxDrag.sx) + Math.abs(cy - bsxDrag.sy) > 4) bsxDrag.moved = true;
+  const y = cy - g.s.top;
+  const keys = bsxMap.keys;
+  let gap = keys.length;
+  for (let i = 0; i < keys.length; i++) {
+    const r = bsxRectIn(g, bsxMap.rootOf.get(keys[i]));
+    if (r && y < r.y + r.h / 2) { gap = i; break; }
+  }
+  bsxDrag.gap = gap;
+  const ref = gap < keys.length ? bsxRectIn(g, bsxMap.rootOf.get(keys[gap])) : bsxRectIn(g, bsxMap.rootOf.get(keys[keys.length - 1]));
+  const ly = ref ? (gap < keys.length ? ref.y : ref.y + ref.h) : y;
+  const lineY = Math.max(g.vis.y0 + 2, Math.min(ly, g.vis.y1 - 4));
+  bsxOv.drop.hidden = false;
+  bsxOv.drop.style.top = (lineY - 2) + "px";
+  bsxOv.drop.style.left = (g.vis.x0 + 12) + "px";
+  bsxOv.drop.style.width = (g.vis.x1 - g.vis.x0 - 24) + "px";
+  bsxOv.ghost.hidden = false;
+  bsxOv.ghost.style.left = (cx - g.s.left + 14) + "px";
+  bsxOv.ghost.style.top = (cy - g.s.top + 10) + "px";
+  ["secTools", "insTop", "insBottom", "lineTop", "lineBottom", "elTools", "hoverBox", "hoverChip"].forEach((k) => { bsxOv[k].hidden = true; });
+  // auto-scroll near the canvas edges
+  const win = bsxFrame().contentWindow;
+  const edge = 60;
+  if (cy - g.fr.top < edge) win.scrollBy(0, -18);
+  else if (g.fr.bottom - cy < edge) win.scrollBy(0, 18);
+}
+function bsxDragEnd() {
+  const drag = bsxDrag;
+  bsxDrag = null;
+  if (drag && drag.shield) drag.shield.remove();
+  bsxOv.drop.hidden = true;
+  bsxOv.ghost.hidden = true;
+  if (!drag || drag.gap == null || !drag.moved) { bsxDraw(); return; }
+  const to = drag.gap > drag.from ? drag.gap - 1 : drag.gap;
+  if (to !== drag.from) bsxMoveSection(drag.key, to);
+  else bsxDraw();
 }
 
-/* Scrolls the clicked thing's field into view in the panel, highlights
-   it and puts the cursor in it (a service card: its name). On a phone
-   the panel is a closed drawer, so only the highlight is set there. */
-function bshellFocusInProps(focus) {
-  const body = document.getElementById("bshell-props-body");
-  let el = null;
-  if (focus.svc != null) el = body.querySelector(`[data-svc-item="${focus.svc}"]`);
-  else if (focus.key) el = body.querySelector(`[data-field-key="${focus.key}"]`);
-  else if (focus.contact) el = body.querySelector(`[data-contact-field="${focus.contact}"]`);
+/* ---------- Element toolbar ---------- */
+function bsxRenderElTools() {
+  const el = bsxOv.elTools;
   if (!el) return;
-  el.classList.add("is-focused");
-  const props = document.getElementById("bshell-props");
-  const drawerClosed = window.matchMedia && window.matchMedia("(max-width: 860px)").matches && !props.classList.contains("bshell-drawer-open");
-  el.scrollIntoView({ block: "center" });
-  const input = el.querySelector("input, textarea");
-  if (input && !drawerClosed) {
-    input.focus({ preventScroll: true });
-    try { input.setSelectionRange(input.value.length, input.value.length); } catch (err) { /* not a text field */ }
+  if (!bsxSel || bsxSel.kind === "section") { el.innerHTML = ""; el.hidden = true; return; }
+  el.innerHTML = bsxElToolsHtml(bsxSel);
+  el.setAttribute("aria-label", bsxSel.label || "");
+  if (bsxSel.kind === "contact" || bsxSel.kind === "video") bsxWireToolsField();
+}
+function bsxTB(act, icon, label, extra) {
+  return `<button type="button" class="bsx-icon-btn${extra && extra.cls ? " " + extra.cls : ""}" data-act="${act}" title="${bsxEsc(label)}" aria-label="${bsxEsc(label)}"${extra && extra.pressed != null ? ` aria-pressed="${extra.pressed}"` : ""}${extra && extra.disabled ? " disabled" : ""}>${bsxIcon(icon)}</button>`;
+}
+const BSX_SEP = '<span class="bsx-tools-sep"></span>';
+function bsxElToolsHtml(sel) {
+  const parent = BSX_SEP + bsxTB("parent", "parent", bsL("בחירת החלק כולו", "Select the whole section"));
+  if (sel.kind === "text") return bsxTextToolsHtml(sel) + parent;
+  if (sel.kind === "item") return bsxItemToolsHtml(sel) + parent;
+  if (sel.kind === "image") return bsxImageToolsHtml(sel) + parent;
+  if (sel.kind === "button") return bsxButtonToolsHtml(sel) + parent;
+  if (sel.kind === "contact") {
+    const v = bsxContactValue(sel.bind);
+    const icon = { phone: "phone", email: "mail", address: "pin", whatsapp: "whatsapp" }[sel.bind] || "contact";
+    const dir = sel.bind === "address" ? "" : ' dir="ltr"';
+    return `<div class="bsx-tools-field">${bsxIcon(icon)}<input type="text" data-tfield="contact" value="${bsxEsc(v)}"${dir} aria-label="${bsxEsc(sel.label)}" placeholder="${bsxEsc(sel.label)}"></div>`
+      + bsxTB("open-business", "settings", bsL("כל פרטי העסק", "All business details"))
+      + `<div class="bsx-tools-note">${bsxIcon("globe")}<span>${bsL("פרט עסקי — מתעדכן בכל האתר", "Business detail — updates across the whole site")}</span></div>`;
+  }
+  if (sel.kind === "video") {
+    return `<div class="bsx-tools-field">${bsxIcon("video")}<input type="url" data-tfield="video" dir="ltr" value="${bsxEsc(bsxVideoUrlOf(sel))}" placeholder="https://youtube.com/watch?v=…" aria-label="${bsxEsc(bsL("קישור לסרטון (YouTube או Vimeo)", "Video link (YouTube or Vimeo)"))}"></div>`
+      + bsxTB("video-remove", "trash", bsL("הסרת הסרטון", "Remove the video"), { cls: "bsx-danger" }) + parent;
+  }
+  return "";
+}
+
+/* ----- text ----- */
+function bsxStyleTarget(sel) {
+  // { get(): style object, set(prop, value) } for the selected text
+  const d = siteState.data;
+  if (sel.key) {
+    return {
+      get: () => (d.textStyles && d.textStyles[sel.key]) || {},
+      set: (prop, value) => bshellSetTextStyle(sel.key, prop, value),
+      reset: () => { if (d.textStyles) delete d.textStyles[sel.key]; },
+    };
+  }
+  if (sel.secId) {
+    const sec = () => (siteState.data.sections || {})[sel.secId];
+    return {
+      get: () => { const s = sec(); return (s && s.styles && s.styles[sel.path]) || {}; },
+      set: (prop, value) => bsxStyleWrite(sel.secId, sel.path, prop, value),
+      reset: () => { const s = sec(); if (s && s.styles) { delete s.styles[sel.path]; if (!Object.keys(s.styles).length) delete s.styles; } },
+    };
+  }
+  return null;
+}
+function bsxTextCaps(sel) {
+  const c = bsxCaps();
+  if (sel.secId) {
+    const p = (c.secStyle && c.secStyle.text) || [];
+    return { font: p.indexOf("font") !== -1, size: p.indexOf("size") !== -1, color: p.indexOf("color") !== -1, align: p.indexOf("align") !== -1, weight: p.indexOf("weight") !== -1, advanced: p.indexOf("lineHeight") !== -1 };
+  }
+  return { font: true, size: true, color: true, align: true, weight: c.textWeight, advanced: c.textAdvanced };
+}
+function bsxSizesFor(sel) {
+  if (sel.key === "heading-heroTitle") return BSHELL_STYLE_SIZES.hero;
+  if (sel.key && sel.key.indexOf("heading-") === 0) return BSHELL_STYLE_SIZES.heading;
+  if (sel.key === "businessName") return BSHELL_STYLE_SIZES.name;
+  if (sel.key) return BSHELL_STYLE_SIZES.body;
+  const tag = sel.el && sel.el.tagName;
+  if (tag === "H1") return BSHELL_STYLE_SIZES.hero;
+  if (/^H[2-3]$/.test(tag)) return BSHELL_STYLE_SIZES.heading;
+  if (/^H[4-6]$/.test(tag)) return BSHELL_STYLE_SIZES.name;
+  return BSHELL_STYLE_SIZES.body;
+}
+/* "start"/"end" in the site's own direction, stored as the physical
+   right/left the renderer already understands. */
+function bsxAlignToStored(a) {
+  const rtl = bsxSiteRtl();
+  if (a === "start") return rtl ? "right" : "left";
+  if (a === "end") return rtl ? "left" : "right";
+  return a;
+}
+function bsxAlignFromStored(a) {
+  if (!a) return "";
+  const rtl = bsxSiteRtl();
+  if (a === "center") return "center";
+  if (a === "right") return rtl ? "start" : "end";
+  if (a === "left") return rtl ? "end" : "start";
+  return "";
+}
+function bsxComputed(sel) {
+  const el = sel.el;
+  if (!el || !el.isConnected) return {};
+  const cs = el.ownerDocument.defaultView.getComputedStyle(el);
+  return { color: bsxRgbToHex(cs.color), size: Math.round(parseFloat(cs.fontSize) || 0), weight: parseInt(cs.fontWeight, 10) || 400 };
+}
+function bsxRgbToHex(c) {
+  const m = String(c || "").match(/\d+(\.\d+)?/g);
+  return m ? "#" + m.slice(0, 3).map((n) => Math.round(Number(n)).toString(16).padStart(2, "0")).join("") : "#000000";
+}
+function bsxTextToolsHtml(sel) {
+  const st = bsxStyleTarget(sel);
+  const s = st ? st.get() : {};
+  const caps = bsxTextCaps(sel);
+  const comp = bsxComputed(sel);
+  const parts = [];
+  if (caps.font) {
+    const fname = s.font && SITE_FONTS[s.font] ? bsLabel(SITE_FONTS[s.font].name).replace(/\s*\(.*\)$/, "") : bsL("גופן", "Font");
+    parts.push(`<button type="button" class="bsx-tool-txt" data-act="font" title="${bsxEsc(bsL("גופן", "Font"))}" aria-haspopup="listbox"><span>${bsxEsc(fname)}</span>${bsxIcon("caret").replace("<svg", '<svg class="bsx-caret"')}</button>`);
+  }
+  if (caps.size) parts.push(`<button type="button" class="bsx-tool-txt" data-act="size" title="${bsxEsc(bsL("גודל", "Size"))}" aria-haspopup="listbox"><span>${s.size ? bsxEsc(String(s.size)) : (comp.size || "")}</span>${bsxIcon("caret").replace("<svg", '<svg class="bsx-caret"')}</button>`);
+  if (caps.color) parts.push(`<button type="button" class="bsx-tool-color" data-act="color" title="${bsxEsc(bsL("צבע", "Color"))}" aria-label="${bsxEsc(bsL("צבע", "Color"))}"><i style="background:${bsxEsc(s.color ? "#" + String(s.color).replace("#", "") : comp.color)}"></i></button>`);
+  if (caps.weight) parts.push(bsxTB("bold", "bold", bsL("מודגש", "Bold"), { pressed: String(String(s.weight) === "700"), cls: String(s.weight) === "700" ? "is-on" : "" }));
+  if (caps.align) {
+    const a = bsxAlignFromStored(s.align);
+    const icon = bsxAlignIcon(a || "start");
+    parts.push(bsxTB("align", icon, bsL("יישור", "Alignment"), { cls: a ? "is-on" : "" }));
+  }
+  parts.push(BSX_SEP, bsxTB("text-more", "sliders", bsL("עוד אפשרויות עיצוב", "More style options")));
+  return parts.join("");
+}
+
+/* ----- items (a service / a list item) ----- */
+function bsxItemToolsHtml(sel) {
+  const list = bsxItemList(sel);
+  const i = list ? list.index : -1;
+  const n = list ? list.count : 0;
+  const word = sel.svc != null ? bshellItemWord()[0] : bsL("פריט", "Item");
+  return [
+    bsxTB("item-up", "up", bsL("הקדמה", "Move earlier"), { disabled: i <= 0 }),
+    bsxTB("item-down", "down", bsL("הזזה אחורה", "Move later"), { disabled: i < 0 || i >= n - 1 }),
+    bsxTB("item-dup", "copy", bsL(`שכפול ${word}`, `Duplicate ${word.toLowerCase()}`), { disabled: i < 0 }),
+    bsxTB("item-del", "trash", bsL(`מחיקת ${word}`, `Delete ${word.toLowerCase()}`), { disabled: i < 0, cls: "bsx-danger" }),
+    BSX_SEP,
+    `<button type="button" class="bsx-tool-txt" data-act="item-add" title="${bsxEsc(bsL(`הוספת ${word}`, `Add ${word.toLowerCase()}`))}">${bsxIcon("plus")}<span>${bsxEsc(bsL(`${word} חדש`, `New ${word.toLowerCase()}`))}</span></button>`,
+    sel.svc != null ? bsxTB("item-style", "sliders", bsL(`עיצוב כל ה${bshellItemWord()[1]}`, `Style all ${bshellItemWord()[1]}`)) : "",
+  ].join("");
+}
+
+/* ----- images ----- */
+function bsxImageToolsHtml(sel) {
+  const info = bsxImageInfo(sel);
+  const parts = [
+    `<button type="button" class="bsx-tool-txt" data-act="img-replace" title="${bsxEsc(bsL("העלאת תמונה חדשה", "Upload a new image"))}">${bsxIcon("upload")}<span>${bsL("החלפה", "Replace")}</span></button>`,
+    bsxTB("img-library", "gallery", bsL("בחירה מהתמונות שכבר העליתם", "Choose from images you already uploaded")),
+  ];
+  if (info.canStyle) parts.push(bsxTB("img-fit", "fit", info.fit === "contain" ? bsL("תמונה מלאה (לחצו למילוי המסגרת)", "Whole image (click to fill the frame)") : bsL("ממלאת את המסגרת (לחצו להצגת התמונה המלאה)", "Fills the frame (click to show the whole image)"), { pressed: String(info.fit === "contain"), cls: info.fit === "contain" ? "is-on" : "" }));
+  parts.push(bsxTB("img-more", "sliders", bsL("עוד: יחס, מיקוד, תיאור", "More: ratio, focus, description")));
+  if (info.canRemove) parts.push(BSX_SEP, bsxTB("img-remove", "trash", bsL("הסרת התמונה", "Remove the image"), { cls: "bsx-danger" }));
+  return parts.join("");
+}
+
+/* ----- buttons ----- */
+function bsxButtonToolsHtml(sel) {
+  const info = bsxButtonInfo(sel);
+  if (!info.editable) {
+    // The template's own button: it follows the contact details.
+    return `<div class="bsx-tools-note" style="flex-basis:auto">${bsxIcon("link")}<span>${bsxEsc(info.note)}</span></div>`
+      + bsxTB("open-business", "edit", bsL("עריכת פרטי הקשר", "Edit contact details"));
+  }
+  const parts = [
+    bsxTB("btn-label", "edit", bsL("עריכת הטקסט על הכפתור", "Edit the button text")),
+    info.submit ? "" : `<button type="button" class="bsx-tool-txt" data-act="btn-action" title="${bsxEsc(bsL("לאן הכפתור מוביל", "Where the button leads"))}">${bsxIcon("link")}<span>${bsxEsc(bsxActionLabel(info.action))}</span></button>`,
+  ];
+  if (info.canStyle) {
+    parts.push(`<button type="button" class="bsx-tool-color" data-act="btn-bg" title="${bsxEsc(bsL("צבע הכפתור", "Button color"))}" aria-label="${bsxEsc(bsL("צבע הכפתור", "Button color"))}"><i style="background:${bsxEsc(info.style.bg || bsxComputedBg(sel))}"></i></button>`);
+    parts.push(bsxTB("btn-more", "sliders", bsL("עיצוב הכפתור", "Button style")));
+  }
+  if (sel.secId && !info.submit) {
+    parts.push(BSX_SEP);
+    if (bsxButtonIsListItem(sel)) parts.push(bsxTB("btn-dup", "copy", bsL("שכפול הכפתור", "Duplicate button")));
+    parts.push(bsxTB("btn-del", "trash", bsL("הסרת הכפתור", "Remove button"), { cls: "bsx-danger" }));
+  }
+  return parts.join("");
+}
+function bsxComputedBg(sel) {
+  if (!sel.el || !sel.el.isConnected) return "#14B8A6";
+  return bsxRgbToHex(sel.el.ownerDocument.defaultView.getComputedStyle(sel.el).backgroundColor);
+}
+
+function bsxOnElToolsClick(e) {
+  const btn = e.target.closest("[data-act]");
+  if (!btn || btn.disabled || !bsxSel) return;
+  e.stopPropagation();
+  const act = btn.dataset.act;
+  const sel = bsxSel;
+  if (act === "parent") { bsxSelectSection(sel.secKey); return; }
+  if (act === "open-business") { bsxOpenPanel("business", { focus: sel.bind }); return; }
+  if (act === "font") return bsxFontPopover(btn, sel);
+  if (act === "size") return bsxSizePopover(btn, sel);
+  if (act === "color") return bsxColorPopover(btn, sel, "text");
+  if (act === "bold") { const st = bsxStyleTarget(sel); const on = String(st.get().weight) === "700"; bsxApplyStyle(sel, "weight", on ? "" : "700"); return; }
+  if (act === "align") return bsxAlignPopover(btn, sel);
+  if (act === "text-more") { bsxOpenPanel("text"); return; }
+  if (act.indexOf("item-") === 0) return bsxItemAction(sel, act.slice(5));
+  if (act === "img-replace") return bsxPickAndUpload(sel);
+  if (act === "img-library") return bsxLibraryPopover(btn, sel);
+  if (act === "img-fit") { const info = bsxImageInfo(sel); bsxSetImageStyle(sel, "fit", info.fit === "contain" ? "" : "contain"); return; }
+  if (act === "img-more") { bsxOpenPanel("image"); return; }
+  if (act === "img-remove") return bsxRemoveImage(sel);
+  if (act === "btn-label") return bsxStartButtonLabelEdit(sel);
+  if (act === "btn-action" || act === "btn-more") { bsxOpenPanel("button"); return; }
+  if (act === "btn-bg") return bsxColorPopover(btn, sel, "btn-bg");
+  if (act === "btn-dup") return bsxButtonDuplicate(sel);
+  if (act === "btn-del") return bsxButtonRemove(sel);
+  if (act === "video-remove") {
+    if (sel.secId) { bsxCommitEdit(); bshellSnapshot(); siteSectionSetField(siteState.data, sel.secId, sel.path || "url", ""); bsxAfterStructural(); return; }
+    bsxDeselect(); bsxRemoveBuiltinVideo(); return;
   }
 }
 
-/* בס"ד sits at the very top of the site, so the Hero panel is where
-   people look for it — same d.showBsd as the switch in site settings. */
-function bshellBsdHeroRow(d) {
-  return `
-    <div class="bshell-props-field">
-        <div class="bshell-toggle-row">
-          <label class="bshell-props-label" style="margin:0;">${bsL("הצגת בס\"ד בראש האתר", "Show \"BS\"D\" (בס\"ד) at the top of the site")}</label>
-          <label class="bshell-switch">
-            <input type="checkbox" id="bshell-prop-bsd"${d.showBsd ? " checked" : ""}>
-            <span class="bshell-switch-track"></span>
-            <span class="bshell-switch-thumb"></span>
-          </label>
-        </div>
-      </div>`;
+/* Contact + video fields typed right in the toolbar. */
+function bsxWireToolsField() {
+  const input = bsxOv.elTools.querySelector("[data-tfield]");
+  if (!input) return;
+  let timer = null;
+  input.addEventListener("focus", () => bshellBeginEdit(input));
+  input.addEventListener("blur", () => bshellEndEdit(input));
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); input.blur(); bsxDeselect(); }
+    else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); input.blur(); bsxDeselect(); }
+  });
+  input.addEventListener("input", () => {
+    const d = siteState.data;
+    if (input.dataset.tfield === "contact") bsxSetContactValue(bsxSel.bind, input.value);
+    else if (bsxSel.secId) siteSectionSetField(d, bsxSel.secId, bsxSel.path || "url", input.value.trim());
+    else d.videoUrl = input.value.trim();
+    bshellScheduleSave();
+    clearTimeout(timer);
+    timer = setTimeout(() => bshellRenderCanvas(), input.dataset.tfield === "video" ? 450 : 90);
+  });
+  if (bsxSel && bsxSel.kind === "contact") setTimeout(() => { if (document.activeElement !== input) { input.focus(); input.select(); } }, 0);
 }
-
-/* Site-wide settings that have no live canvas anchor at all — unlike
-   every other Properties view, this one isn't contextual to a
-   selection in the page structure, it's the Shell's own equivalent of
-   the old sidebar's "עיצוב האתר" / "תמונות ומדיה" / "פרטי יצירת קשר"
-   groups. Same underlying d.* fields, same uploadSiteImage()/
-   SITE_FONTS/SITE_GALLERY_MAX the old sidebar already uses — this is
-   a new way to reach them, not a new place they're stored. */
-function bshellPropsHtmlForSettings() {
+function bsxVideoUrlOf(sel) {
+  if (sel && sel.secId) { const v = typeof siteSectionGetField === "function" ? siteSectionGetField(siteState.data, sel.secId, sel.path || "url") : ""; return typeof v === "string" ? v : ""; }
+  return siteState.data.videoUrl || "";
+}
+function bsxContactValue(bind) {
   const d = siteState.data;
-  const fontKeys = (typeof SITE_FONTS === "object") ? Object.keys(SITE_FONTS) : [];
-  const hasWhatsapp = !d.noWhatsapp;
-  return `
-    <span class="bshell-props-kind">${bsL("הגדרות האתר", "Site settings")}</span>
-
-    <div class="bshell-settings-group">
-      <div class="bshell-props-field">
-        <div class="bshell-toggle-row">
-          <label class="bshell-props-label" style="margin:0;">${bsL("הצגת בס\"ד בראש האתר", "Show \"BS\"D\" (בס\"ד) at the top of the site")}</label>
-          <label class="bshell-switch">
-            <input type="checkbox" id="bshell-set-bsd"${d.showBsd ? " checked" : ""}>
-            <span class="bshell-switch-track"></span>
-            <span class="bshell-switch-thumb"></span>
-          </label>
-        </div>
-      </div>
-      <p class="bshell-settings-field-hint">${bsL("כבוי כברירת מחדל. מופיע קטן בפינה הימנית העליונה של כל עמודי האתר.", "Off by default. Appears small in the top corner of every page of the site.")}</p>
-    </div>
-${(typeof DK_AUTOMATE_ENABLED !== "undefined" && DK_AUTOMATE_ENABLED === true) ? `
-    <div class="bshell-settings-group">
-      <div class="bshell-props-field">
-        <div class="bshell-toggle-row">
-          <label class="bshell-props-label" style="margin:0;" for="bshell-set-leadform">${bsL("טופס \"השאירו פרטים\"", "\"Leave your details\" form")}</label>
-          <label class="bshell-switch">
-            <input type="checkbox" id="bshell-set-leadform"${d.leadForm === true ? " checked" : ""}>
-            <span class="bshell-switch-track"></span>
-            <span class="bshell-switch-thumb"></span>
-          </label>
-        </div>
-      </div>
-      <p class="bshell-settings-field-hint">${bsL("כבוי כברירת מחדל. מוסיף לאתר כפתור \"השאירו פרטים\". כל פנייה נכנסת ל-DeskKit Automate כליד חדש, ואם הפעלת את \"טיפול בליד חדש\" — הלקוח מקבל מענה אוטומטי ואת/ה התראה. אחרי ההפעלה צריך לפרסם את האתר מחדש.", "Off by default. Adds a \"Leave your details\" button to the site. Every inquiry goes into DeskKit Automate as a new lead, and if you turned on \"New lead handling\", the customer gets an automatic reply and you get a notification. After turning it on, republish the site.")}</p>
-    </div>` : ""}
-
-    <div class="bshell-settings-group">
-      <div class="bshell-settings-group-title">${bsL("פרטי קשר", "Contact details")}</div>
-      <div class="bshell-props-field">
-        <label class="bshell-props-label">${bsL("טלפון", "Phone")}</label>
-        <input type="text" id="bshell-set-phone" dir="ltr" value="${escapeHtmlS(d.phone || "")}">
-      </div>
-      <div class="bshell-props-field">
-        <div class="bshell-toggle-row">
-          <label class="bshell-props-label" style="margin:0;">${bsL("המספר הזה הוא גם הוואטסאפ שלי", "This number is also my WhatsApp")}</label>
-          <label class="bshell-switch">
-            <input type="checkbox" id="bshell-set-has-whatsapp"${hasWhatsapp ? " checked" : ""}>
-            <span class="bshell-switch-track"></span>
-            <span class="bshell-switch-thumb"></span>
-          </label>
-        </div>
-      </div>
-      <div class="bshell-props-field">
-        <label class="bshell-props-label">${bsL("מספר וואטסאפ אחר (אם שונה מהטלפון)", "Other WhatsApp number (if different from phone)")}</label>
-        <input type="text" id="bshell-set-whatsapp" dir="ltr" value="${escapeHtmlS(d.whatsapp || "")}">
-      </div>
-      <div class="bshell-props-field">
-        <label class="bshell-props-label">${bsL("מייל", "Email")}</label>
-        <input type="text" id="bshell-set-email" dir="ltr" value="${escapeHtmlS(d.email || "")}">
-      </div>
-      <div class="bshell-props-field">
-        <label class="bshell-props-label">${bsL("כתובת", "Address")}</label>
-        <input type="text" id="bshell-set-address" value="${escapeHtmlS(d.address || "")}">
-      </div>
-    </div>
-
-    <div class="bshell-settings-group">
-      <div class="bshell-settings-group-title">${bsL("עיצוב ומותג", "Design & brand")}</div>
-      ${bshellMoodPickerHtml(d)}
-      <div class="bshell-props-field">
-        <label class="bshell-props-label">${bsL("צבע ראשי", "Primary color")}</label>
-        <input type="color" id="bshell-set-color" value="${escapeHtmlS(d.primaryColor || "#1F5C4E")}">
-      </div>
-      <div class="bshell-props-field">
-        <label class="bshell-props-label">${bsL("גופן", "Font")}</label>
-        <select id="bshell-set-font">
-          ${fontKeys.map((k) => `<option value="${k}"${(d.fontFamily || "heebo") === k ? " selected" : ""}>${escapeHtmlS(bsLabel(SITE_FONTS[k].name))}</option>`).join("")}
-        </select>
-      </div>
-      <div class="bshell-props-field">
-        <label class="bshell-props-label" for="bshell-set-site-lang">${bsL("שפת האתר", "Site language")}</label>
-        <select id="bshell-set-site-lang">
-          <option value="he"${d.siteLang === "en" ? "" : " selected"}>${bsL("עברית", "Hebrew")}</option>
-          <option value="en"${d.siteLang === "en" ? " selected" : ""}>English</option>
-        </select>
-        <p class="bshell-settings-field-hint">${bsL("השפה של האתר עצמו: כיוון הטקסט והכותרות והתוויות שמופיעות כברירת מחדל. הטקסטים שכתבתם לא משתנים.", "The language of the site itself: text direction and the default headings and labels. Text you wrote stays as it is.")}</p>
-      </div>
-      <div class="bshell-props-field">
-        <div class="bshell-toggle-row">
-          <label class="bshell-props-label" style="margin:0;">${bsL("הסתרת שורת זכויות יוצרים בתחתית", "Hide the copyright line at the bottom")}</label>
-          <label class="bshell-switch">
-            <input type="checkbox" id="bshell-set-hide-copyright"${d.hideCopyright ? " checked" : ""}>
-            <span class="bshell-switch-track"></span>
-            <span class="bshell-switch-thumb"></span>
-          </label>
-        </div>
-      </div>
-    </div>
-
-    <div class="bshell-settings-group">
-      <div class="bshell-settings-group-title">${bsL("תמונות ומדיה", "Images & media")}</div>
-      <div class="bshell-props-field">
-        <label class="bshell-props-label">${bsL("תמונה ראשית", "Main image")}</label>
-        <div class="photo-row">
-          <div class="photo-preview" id="bshell-set-photo-preview">${d.heroImage ? `<img src="${escapeHtmlS(d.heroImage)}" alt="${bsL("תמונת הכותרת", "Header image")}">` : `<span class="site-photo-placeholder">🖼️</span>`}</div>
-          <div class="photo-actions">
-            <label class="btn-mini photo-upload-btn" for="bshell-set-photo">${bsL("העלאת תמונה", "Upload image")}</label>
-            <input type="file" id="bshell-set-photo" accept="image/*" style="display:none;">
-            <button type="button" class="photo-remove" id="bshell-set-photo-remove">${bsL("הסרת תמונה", "Remove image")}</button>
-          </div>
-        </div>
-      </div>
-      <div class="bshell-props-field">
-        <label class="bshell-props-label" for="bshell-set-hero-alt">${bsL("תיאור התמונה הראשית (לא חובה)", "Main image description (optional)")}</label>
-        <input type="text" id="bshell-set-hero-alt" maxlength="125" value="${escapeHtmlS(d.heroAlt || "")}" placeholder="${bsL("לדוגמה: הצוות שלנו בסטודיו", "e.g. Our team at the studio")}">
-        <p class="bshell-settings-field-hint">${bsL("נקרא בקול לגולשים עיוורים ועוזר לגוגל להבין את התמונה. ריק — ישמש שם העסק.", "Read aloud to blind visitors and helps Google understand the photo. Empty — your business name is used.")}</p>
-      </div>
-      <div class="bshell-props-field">
-        <label class="bshell-props-label">${bsL(`גלריית תמונות (עד ${SITE_GALLERY_MAX})`, `Image gallery (up to ${SITE_GALLERY_MAX})`)}</label>
-        <p class="bshell-settings-field-hint">${bsL("אם יש תמונות בגלריה, הן מתחלפות אוטומטית במקום התמונה הראשית.", "If the gallery has images, they rotate automatically in place of the main image.")}</p>
-        <div id="bshell-set-gallery-preview" class="site-gallery-preview">${bshellGalleryPreviewHtml(d)}</div>
-        <label class="btn-mini photo-upload-btn" for="bshell-set-gallery">${bsL("הוספת תמונה לגלריה", "Add image to gallery")}</label>
-        <input type="file" id="bshell-set-gallery" accept="image/*" multiple style="display:none;">
-      </div>
-      <div class="bshell-props-field">
-        <label class="bshell-props-label">${bsL("קישור לסרטון (יוטיוב)", "Video link (YouTube)")}</label>
-        <input type="text" id="bshell-set-video" dir="ltr" placeholder="https://youtube.com/watch?v=..." value="${escapeHtmlS(d.videoUrl || "")}">
-      </div>
-      <div class="bshell-props-field">
-        <div class="bshell-toggle-row">
-          <label class="bshell-props-label" style="margin:0;">${bsL("הצגת הסרטון כרקע לכותרת הראשית", "Play the video behind the main heading")}</label>
-          <label class="bshell-switch">
-            <input type="checkbox" id="bshell-set-video-bg"${d.heroVideoBg ? " checked" : ""}>
-            <span class="bshell-switch-track"></span>
-            <span class="bshell-switch-thumb"></span>
-          </label>
-        </div>
-      </div>
-    </div>
-
-    ${bshellSeoGroupHtml(d)}`;
+  if (bind === "whatsapp") return d.whatsapp || (d.noWhatsapp ? "" : d.phone || "");
+  return d[bind] || "";
+}
+function bsxSetContactValue(bind, v) {
+  const d = siteState.data;
+  if (bind === "whatsapp") {
+    d.whatsapp = v;
+    if (v.trim()) d.noWhatsapp = false;
+  } else d[bind] = v;
 }
 
-/* ---------- Mood ("סגנון") — one of SITE_MOODS (site-templates.js) or
-   none. A mood is a starting look, not a lock: it fills in the ordinary
-   primary colour + font fields below (which the owner can still change),
-   and siteMoodCss() adds its heading font / corners / spacing on top. */
+/* ---------- Styles ---------- */
+const BSX_STYLE_PROPS = ["font", "color", "size", "align", "weight", "lineHeight", "letterSpacing", "maxWidth"];
+function bshellSetTextStyle(key, prop, value) {
+  const d = siteState.data;
+  d.textStyles = d.textStyles || {};
+  const next = Object.assign({}, d.textStyles[key]);
+  if (value) next[prop] = value; else delete next[prop];
+  if (BSX_STYLE_PROPS.some((p) => next[p])) d.textStyles[key] = next;
+  else delete d.textStyles[key];
+}
+function bsxApplyStyle(sel, prop, value) {
+  const st = bsxStyleTarget(sel);
+  if (!st) return;
+  bsxCommitEdit();
+  bshellSnapshot();
+  st.set(prop, value);
+  bshellScheduleSave();
+  bshellRenderCanvas(() => { bsxRenderElTools(); if (typeof bsxRefreshPanel === "function") bsxRefreshPanel(); });
+}
+
+/* ---------- Popovers (font / size / colour / image library) ---------- */
+let bsxPopEl = null;
+function bsxClosePopover() { if (bsxPopEl) { bsxPopEl.remove(); bsxPopEl = null; } }
+function bsxClosePopoverIfOutside(t) { if (bsxPopEl && !bsxPopEl.contains(t) && !(t.closest && t.closest("[data-act]"))) bsxClosePopover(); }
+function bsxPopover(anchor, html, wire) {
+  bsxClosePopover();
+  const pop = document.createElement("div");
+  pop.className = "bsx-pop";
+  pop.setAttribute("role", "dialog");
+  pop.innerHTML = html;
+  document.getElementById("bshell-root").appendChild(pop);
+  const r = anchor.getBoundingClientRect();
+  const w = pop.offsetWidth, h = pop.offsetHeight;
+  let left = bsxSiteDirIsRtlUi() ? r.right - w : r.left;
+  left = Math.max(8, Math.min(left, window.innerWidth - w - 8));
+  let top = r.bottom + 6;
+  if (top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 6);
+  pop.style.left = left + "px";
+  pop.style.top = top + "px";
+  bsxPopEl = pop;
+  pop.addEventListener("mousedown", (e) => { if (!e.target.closest("input")) e.preventDefault(); });
+  pop.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); bsxClosePopover(); anchor.focus(); }
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      const items = Array.from(pop.querySelectorAll("button"));
+      const i = items.indexOf(document.activeElement);
+      e.preventDefault();
+      const n = e.key === "ArrowDown" ? (i + 1) % items.length : (i - 1 + items.length) % items.length;
+      if (items[n]) items[n].focus();
+    }
+  });
+  if (wire) wire(pop);
+  const first = pop.querySelector(".is-on") || pop.querySelector("button, input");
+  if (first) first.focus({ preventScroll: true });
+  return pop;
+}
+let bsxFontsLoaded = false;
+function bsxEnsureFontPreviews() {
+  if (bsxFontsLoaded || typeof SITE_FONTS !== "object") return;
+  bsxFontsLoaded = true;
+  const fams = Object.keys(SITE_FONTS).map((k) => "family=" + SITE_FONTS[k].googleParam.split(":")[0]).join("&");
+  const l = document.createElement("link");
+  l.rel = "stylesheet";
+  l.href = "https://fonts.googleapis.com/css2?" + fams + "&display=swap";
+  document.head.appendChild(l);
+}
+function bsxFontPopover(anchor, sel) {
+  bsxEnsureFontPreviews();
+  const cur = (bsxStyleTarget(sel).get().font) || "";
+  const html = `<button type="button" class="bsx-pop-item${!cur ? " is-on" : ""}" data-font=""><span>${bsL("גופן האתר", "Site font")}</span><small>${bsL("ברירת מחדל", "Default")}</small></button><div class="bsx-pop-sep"></div>`
+    + Object.keys(SITE_FONTS).map((k) => `<button type="button" class="bsx-pop-item${cur === k ? " is-on" : ""}" data-font="${k}" style="font-family:${bsxEsc(SITE_FONTS[k].stack)}"><span>${bsxEsc(bsLabel(SITE_FONTS[k].name).replace(/\s*\(.*\)$/, ""))}</span><small>אבג Abc</small></button>`).join("");
+  bsxPopover(anchor, html, (pop) => pop.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-font]");
+    if (!b) return;
+    bsxClosePopover();
+    bsxApplyStyle(sel, "font", b.dataset.font);
+  }));
+}
+function bsxSizePopover(anchor, sel) {
+  const cur = String(bsxStyleTarget(sel).get().size || "");
+  const sizes = bsxSizesFor(sel).slice();
+  if (cur && sizes.indexOf(Number(cur)) === -1) sizes.push(Number(cur));
+  sizes.sort((a, b) => a - b);
+  const html = `<button type="button" class="bsx-pop-item${!cur ? " is-on" : ""}" data-size=""><span>${bsL("גודל רגיל", "Normal size")}</span></button><div class="bsx-pop-sep"></div>`
+    + sizes.map((n) => `<button type="button" class="bsx-pop-item${cur === String(n) ? " is-on" : ""}" data-size="${n}"><span>${n}</span><small>px</small></button>`).join("")
+    + `<div class="bsx-pop-sep"></div><div class="bsx-pop-row"><label style="font-size:12.5px;color:#475569">${bsL("גודל אחר", "Custom")}</label><input type="number" min="8" max="160" step="1" data-size-custom value="${bsxEsc(cur)}" aria-label="${bsxEsc(bsL("גודל בפיקסלים", "Size in pixels"))}"><button type="button" class="bsx-btn" data-size-apply style="height:32px">${bsL("החלה", "Apply")}</button></div>`;
+  bsxPopover(anchor, html, (pop) => {
+    const apply = () => {
+      const v = parseInt(pop.querySelector("[data-size-custom]").value, 10);
+      if (v >= 8 && v <= 160) { bsxClosePopover(); bsxApplyStyle(sel, "size", String(v)); }
+    };
+    pop.addEventListener("click", (e) => {
+      if (e.target.closest("[data-size-apply]")) return apply();
+      const b = e.target.closest("[data-size]");
+      if (!b) return;
+      bsxClosePopover();
+      bsxApplyStyle(sel, "size", b.dataset.size);
+    });
+    pop.querySelector("[data-size-custom]").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); apply(); } });
+  });
+}
+/* The alignment glyphs are drawn left-to-right; on a right-to-left site
+   "start" is the right edge. */
+function bsxAlignIcon(a) {
+  if (a === "center") return "alignCenter";
+  const rtl = bsxSiteRtl();
+  return (a === "start") === rtl ? "alignEnd" : "alignStart";
+}
+function bsxAlignPopover(anchor, sel) {
+  const cur = bsxAlignFromStored(bsxStyleTarget(sel).get().align);
+  const opts = [["", "", bsL("כמו בעיצוב", "As designed")], ["start", bsxAlignIcon("start"), bsL("לתחילת השורה", "Start")], ["center", "alignCenter", bsL("למרכז", "Center")], ["end", bsxAlignIcon("end"), bsL("לסוף השורה", "End")]];
+  const html = opts.map(([v, icon, l]) => `<button type="button" class="bsx-pop-item${cur === v ? " is-on" : ""}" data-align="${v}"><span style="display:inline-flex;align-items:center;gap:8px">${v ? bsxIcon(icon) : ""}${bsxEsc(l)}</span></button>`).join("");
+  bsxPopover(anchor, html, (pop) => pop.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-align]");
+    if (!b) return;
+    bsxClosePopover();
+    bsxApplyStyle(sel, "align", b.dataset.align ? bsxAlignToStored(b.dataset.align) : "");
+  }));
+}
+function bsxThemeColors() {
+  const d = siteState.data;
+  const out = [];
+  try {
+    const pal = derivePalette(d.primaryColor || "#1F5C4E");
+    out.push("#" + pal.primary, "#" + pal.primaryDark, "#" + pal.ice);
+  } catch (e) { /* no palette */ }
+  return out.concat(["#111827", "#374151", "#6B7280", "#FFFFFF", "#DC2626", "#D97706", "#059669", "#2563EB", "#7C3AED"]).slice(0, 12);
+}
+function bsxColorPopover(anchor, sel, which) {
+  const cur = which === "text" ? String(bsxStyleTarget(sel).get().color || "") : (which === "btn-bg" ? String(bsxButtonInfo(sel).style.bg || "") : String(bsxButtonInfo(sel).style.color || ""));
+  const norm = (c) => String(c || "").replace("#", "").toLowerCase();
+  const colors = bsxThemeColors();
+  const html = `<div class="bsx-pop-colors">${colors.map((c) => `<button type="button" data-color="${c}" class="${norm(c) === norm(cur) ? "is-on" : ""}" style="background:${c}" title="${c}" aria-label="${c}"></button>`).join("")}</div>
+    <div class="bsx-pop-sep"></div>
+    <div class="bsx-pop-row"><label style="font-size:12.5px;color:#475569">${bsL("צבע אחר", "Custom")}</label><input type="color" data-color-custom value="${bsxEsc(cur ? "#" + norm(cur) : (which === "text" ? bsxComputed(sel).color || "#000000" : "#14b8a6"))}" style="width:44px;height:32px;padding:2px;border:1px solid #CBD5E1;border-radius:8px"></div>
+    <button type="button" class="bsx-pop-item" data-color=""><span>${bsL("צבע ברירת המחדל", "Default color")}</span></button>`;
+  bsxPopover(anchor, html, (pop) => {
+    const set = (v) => {
+      if (which === "text") bsxApplyStyle(sel, "color", v ? norm(v).toUpperCase() : "");
+      else bsxSetButtonStyle(sel, which === "btn-bg" ? "bg" : "color", v ? "#" + norm(v).toUpperCase() : "");
+    };
+    pop.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-color]");
+      if (!b) return;
+      bsxClosePopover();
+      set(b.dataset.color);
+    });
+    const ci = pop.querySelector("[data-color-custom]");
+    ci.addEventListener("change", () => { bsxClosePopover(); set(ci.value); });
+  });
+}
+
+/* ---------- Inline text editing ---------- */
+function bsxTextSpec(sel) {
+  const d = () => siteState.data;
+  if (sel.key) {
+    const f = BSHELL_TEXT_CONTENT_MAP[sel.key];
+    return {
+      get: () => f.get(d()), set: (v) => f.set(d(), v), multiline: !!f.multiline, heading: !!f.heading,
+      mirror: `[data-textkey="${sel.key}"]`, onSet: sel.key === "businessName" ? bsxUpdateTopName : null,
+    };
+  }
+  if (sel.secId) {
+    const multi = /^(P|DIV|BLOCKQUOTE|LI|DD)$/.test(sel.el.tagName) || /(body|text|desc|answer|quote|content|paragraph)$/i.test(sel.path);
+    return {
+      get: () => { const v = typeof siteSectionGetField === "function" ? siteSectionGetField(d(), sel.secId, sel.path) : ""; return typeof v === "string" ? v : ""; },
+      set: (v) => { if (typeof siteSectionSetField === "function") siteSectionSetField(d(), sel.secId, sel.path, v); },
+      multiline: multi,
+      mirror: `[data-dk-sec="${bsxCss(sel.secId)}"] [data-dk-field="${bsxCss(sel.path)}"]`,
+    };
+  }
+  return null;
+}
+function bsxStartTextEdit(sel) {
+  const spec = bsxTextSpec(sel);
+  if (!spec || !sel.el) return;
+  bsxBeginInline(sel.el, spec);
+}
+function bsxItemFieldSpec(sel) {
+  const d = () => siteState.data;
+  if (sel.svc != null) {
+    const field = sel.field;
+    return {
+      get: () => { const i = bsxSvcRealIndex(sel.svc); return i == null ? "" : String((d().services[i] || {})[field] || ""); },
+      set: (v) => bsxSetServiceField(sel.svc, field, v),
+      multiline: field === "desc",
+    };
+  }
+  const path = sel.field;
+  return {
+    get: () => { const v = typeof siteSectionGetField === "function" ? siteSectionGetField(d(), sel.secId, path) : ""; return typeof v === "string" ? v : ""; },
+    set: (v) => { if (typeof siteSectionSetField === "function") siteSectionSetField(d(), sel.secId, path, v); },
+    multiline: /^(P|DIV|BLOCKQUOTE|LI|DD)$/.test(sel.fieldEl.tagName) || /(body|text|desc|answer|a|quote)$/i.test(path),
+  };
+}
+function bsxStartItemFieldEdit(sel) {
+  if (!sel.fieldEl) return;
+  bsxBeginInline(sel.fieldEl, bsxItemFieldSpec(sel));
+}
+function bsxBeginInline(el, spec) {
+  if (bsxEdit && bsxEdit.el === el) return;
+  if (bsxEdit) bsxCommitEdit();
+  const doc = el.ownerDocument;
+  const mirrors = spec.mirror ? Array.from(doc.querySelectorAll(spec.mirror)).filter((m) => m !== el) : [];
+  bsxEdit = { el, spec, orig: spec.get(), origHtml: el.innerHTML, mirrors: mirrors.map((m) => [m, m.innerHTML]), snap: false, changed: false };
+  try { el.setAttribute("contenteditable", "plaintext-only"); } catch (e) { /* older engines */ }
+  if (el.contentEditable !== "plaintext-only") el.setAttribute("contenteditable", "true");
+  el.setAttribute("data-bsx-editing", "1");
+  el.setAttribute("spellcheck", "true");
+  el.setAttribute("role", "textbox");
+  el.setAttribute("aria-multiline", String(!!spec.multiline));
+  if (el.hasAttribute("data-dk-empty")) el.setAttribute("data-bsx-ph", el.getAttribute("data-dk-ph") || bsL("הקלידו כאן…", "Type here…"));
+  else if (spec.heading || spec.placeholder) el.setAttribute("data-bsx-ph", spec.placeholder || bsL("כותרת", "Heading"));
+  const focusIt = () => {
+    if (!bsxEdit || bsxEdit.el !== el) return;
+    try { if (doc.defaultView && !doc.hasFocus()) doc.defaultView.focus(); } catch (e) { /* not focusable */ }
+    if (doc.activeElement !== el) el.focus({ preventScroll: true });
+  };
+  setTimeout(focusIt, 0);
+  bsxDraw();
+}
+function bsxReadText(el, multiline) {
+  let v = el.innerText != null ? el.innerText : el.textContent;
+  v = String(v || "").replace(/\u00a0/g, " ");
+  if (!multiline) v = v.replace(/[\r\n]+/g, " ");
+  else v = v.replace(/\n$/, "");
+  return v;
+}
+function bsxOnEditInput(e) {
+  if (!bsxEdit || e.target !== bsxEdit.el) return;
+  const v = bsxReadText(bsxEdit.el, bsxEdit.spec.multiline);
+  if (!bsxEdit.snap) { bshellSnapshot(); bsxEdit.snap = true; }
+  bsxEdit.changed = true;
+  bsxEdit.spec.set(v);
+  if (bsxEdit.spec.onSet) bsxEdit.spec.onSet();
+  if (v.trim()) bsxEdit.mirrors.forEach(([m]) => { if (m.isConnected) m.textContent = v; });
+  bshellScheduleSave();
+}
+function bsxOnPaste(e) {
+  if (!bsxEdit || !bsxEdit.el.contains(e.target)) return;
+  e.preventDefault();
+  let text = (e.clipboardData && e.clipboardData.getData("text/plain")) || "";
+  if (!bsxEdit.spec.multiline) text = text.replace(/[\r\n]+/g, " ");
+  const doc = bsxEdit.el.ownerDocument;
+  if (!doc.execCommand("insertText", false, text)) {
+    const s = doc.getSelection();
+    if (s && s.rangeCount) { const r = s.getRangeAt(0); r.deleteContents(); r.insertNode(doc.createTextNode(text)); r.collapse(false); }
+    bsxOnEditInput({ target: bsxEdit.el });
+  }
+}
+function bsxEndInlineDom(ed) {
+  const el = ed.el;
+  el.removeAttribute("contenteditable");
+  el.removeAttribute("data-bsx-editing");
+  el.removeAttribute("data-bsx-ph");
+  el.removeAttribute("spellcheck");
+  el.removeAttribute("role");
+  el.removeAttribute("aria-multiline");
+  if (el.ownerDocument.activeElement === el) el.blur();
+}
+function bsxCommitEdit() {
+  const ed = bsxEdit;
+  if (!ed) return;
+  bsxEdit = null;
+  bsxEndInlineDom(ed);
+  if (ed.changed) {
+    let v = bsxReadText(ed.el, ed.spec.multiline);
+    if (!ed.spec.multiline) v = v.trim();
+    ed.spec.set(v);
+    if (ed.spec.onSet) ed.spec.onSet();
+    bshellScheduleSave();
+    // Put the edited element (and its mirrors) back to what the canvas'
+    // last render had, then patch from there: the patch always knows the
+    // real starting point, and an emptied heading gets its default text.
+    if (ed.el.isConnected) ed.el.innerHTML = ed.origHtml;
+    ed.mirrors.forEach(([m, h]) => { if (m.isConnected) m.innerHTML = h; });
+    bshellRenderCanvas();
+  }
+  bsxDraw();
+}
+function bsxCancelEdit() {
+  const ed = bsxEdit;
+  if (!ed) return;
+  bsxEdit = null;
+  bsxEndInlineDom(ed);
+  if (ed.changed) {
+    ed.spec.set(ed.orig);
+    if (ed.spec.onSet) ed.spec.onSet();
+    if (ed.snap) { bshellUndoStack.pop(); bshellSyncUndoButtons(); }
+    if (ed.el.isConnected) ed.el.innerHTML = ed.origHtml;
+    ed.mirrors.forEach(([m, h]) => { if (m.isConnected) m.innerHTML = h; });
+    bshellScheduleSave();
+  }
+  bsxDraw();
+}
+
+/* ---------- Keyboard ---------- */
+function bsxOnKey(e) {
+  if (!bshellActiveFlag) return;
+  const mod = e.ctrlKey || e.metaKey;
+  const k = (e.key || "").toLowerCase();
+  const inCanvas = e.target && e.target.ownerDocument === bsxDoc();
+  const t = document.activeElement;
+  const typingInEditor = !inCanvas && t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable);
+  if (document.querySelector(".bsx-modal-back")) return; // dialogs handle their own keys
+
+  if (bsxEdit && inCanvas) {
+    if (k === "enter" && !bsxEdit.spec.multiline) { e.preventDefault(); bsxCommitEdit(); return; }
+    if (k === "escape") { e.preventDefault(); bsxCancelEdit(); return; }
+    if (k === "tab") { e.preventDefault(); bsxCommitEdit(); return; }
+    if (mod && (k === "z" || k === "y")) { e.preventDefault(); bsxCommitEdit(); if (k === "y" || e.shiftKey) bshellRedo(); else bshellUndo(); return; }
+    if (mod && k === "s") { e.preventDefault(); bsxCommitEdit(); bshellSaveNow(); return; }
+    return;
+  }
+  if (mod && k === "s") { e.preventDefault(); bsxCommitEdit(); bshellSaveNow(); return; }
+  if (mod && (k === "z" || k === "y")) {
+    if (typingInEditor) return; // native undo inside a panel field
+    e.preventDefault();
+    if (k === "y" || e.shiftKey) bshellRedo(); else bshellUndo();
+    return;
+  }
+  if (typingInEditor) return;
+  if (inCanvas && (k === "enter" || k === " ")) { e.preventDefault(); return; } // no link/button activation by keyboard
+  if (k === "escape") {
+    if (bsxPopEl) { e.preventDefault(); bsxClosePopover(); return; }
+    const preview = document.getElementById("bshell-root").classList.contains("is-previewing");
+    if (preview && typeof bsxStopPreview === "function") { e.preventDefault(); bsxStopPreview(); return; }
+    if (document.getElementById("bsx-help")) { e.preventDefault(); bsxCloseHelp(); return; }
+    if (bsxSel) { e.preventDefault(); bsxDeselect(); return; }
+    if (typeof bsxPanelMode !== "undefined" && bsxPanelMode) { e.preventDefault(); bsxClosePanel(); return; }
+    return;
+  }
+  if ((k === "delete" || k === "backspace") && bsxSel) {
+    if (bsxSel.kind === "section" && bsxIsCustom(bsxSel.secKey)) { e.preventDefault(); bsxDeleteSection(bsxSel.secKey); return; }
+    if (bsxSel.kind === "item") { e.preventDefault(); bsxItemAction(bsxSel, "del"); return; }
+  }
+}
+
+/* ---------- Items: the template's services, or a library section's list ---------- */
+function bsxSvcNamedIdx() {
+  const out = [];
+  (siteState.data.services || []).forEach((s, i) => { if (s && s.name && s.name.trim()) out.push(i); });
+  return out;
+}
+function bsxSvcRealIndex(shown) {
+  const named = bsxSvcNamedIdx();
+  if (named.length) return named[shown] != null ? named[shown] : null;
+  return null; // placeholders on screen
+}
+function bsxSetServiceField(shown, field, v) {
+  const d = siteState.data;
+  d.services = Array.isArray(d.services) ? d.services : [];
+  let i = bsxSvcRealIndex(shown);
+  if (i == null) {
+    // Typing over a placeholder card turns it into a real item (it has to
+    // have a name to be shown).
+    const dd = withFallback(d);
+    const ph = (dd._services || [])[shown] || {};
+    const item = { name: field === "name" ? v : (ph.name || ""), desc: field === "desc" ? v : "", price: field === "price" ? v : "" };
+    const emptyIdx = d.services.findIndex((s) => !s || !(s.name && s.name.trim()));
+    if (emptyIdx !== -1) { d.services[emptyIdx] = item; i = emptyIdx; } else { d.services.push(item); i = d.services.length - 1; }
+    return;
+  }
+  d.services[i] = Object.assign({}, d.services[i], { [field]: v });
+}
+function bsxItemList(sel) {
+  if (sel.svc != null) {
+    const named = bsxSvcNamedIdx();
+    return { index: named.length ? sel.svc : -1, count: named.length };
+  }
+  if (sel.secId && sel.itemPath && typeof siteSectionGetField === "function") {
+    const m = sel.itemPath.match(/^(.*)\.(\d+)$/);
+    if (!m) return null;
+    const arr = siteSectionGetField(siteState.data, sel.secId, m[1]);
+    return Array.isArray(arr) ? { index: parseInt(m[2], 10), count: arr.length, arrPath: m[1], arr } : null;
+  }
+  return null;
+}
+async function bsxItemAction(sel, act) {
+  const d = siteState.data;
+  const list = bsxItemList(sel);
+  bsxCommitEdit();
+  if (sel.svc != null) {
+    const word = bshellItemWord();
+    const named = bsxSvcNamedIdx();
+    const real = bsxSvcRealIndex(sel.svc);
+    if (act === "style") { bsxOpenPanel("itemstyle"); return; }
+    if (act === "add") {
+      bshellSnapshot();
+      d.services = Array.isArray(d.services) ? d.services.filter((s) => s && s.name && s.name.trim()) : [];
+      const at = real == null ? d.services.length : real + 1;
+      d.services.splice(at, 0, { name: siteState.data.siteLang === "en" ? `New ${word[0].toLowerCase()}` : `${word[0]} חדש`, desc: "", price: "" });
+      const shownNew = d.services.slice(0, at + 1).filter((s) => s.name && s.name.trim()).length - 1;
+      bshellScheduleSave();
+      bshellRenderCanvas(() => bsxSelectItemByShown(shownNew, "name"));
+      return;
+    }
+    if (real == null) return;
+    if (act === "up" || act === "down") {
+      const pos = named.indexOf(real);
+      const other = named[act === "up" ? pos - 1 : pos + 1];
+      if (other == null) return;
+      bshellSnapshot();
+      const tmp = d.services[real]; d.services[real] = d.services[other]; d.services[other] = tmp;
+      bshellScheduleSave();
+      bshellRenderCanvas(() => bsxSelectItemByShown(act === "up" ? sel.svc - 1 : sel.svc + 1));
+      return;
+    }
+    if (act === "dup") {
+      bshellSnapshot();
+      d.services.splice(real + 1, 0, Object.assign({}, d.services[real]));
+      bshellScheduleSave();
+      bshellRenderCanvas(() => bsxSelectItemByShown(sel.svc + 1));
+      return;
+    }
+    if (act === "del") {
+      const last = named.length <= 1;
+      const name = (d.services[real].name || "").trim();
+      const ok = await bsxConfirm({
+        title: last ? bsL(`למחוק את ה${word[0]} האחרון?`, `Delete the last ${word[0].toLowerCase()}?`) : bsL(`למחוק את "${name}"?`, `Delete "${name}"?`),
+        text: last ? bsL("אחרי המחיקה יוצגו באתר דוגמאות במקומו, עד שתוסיפו חדש.", "After deleting, examples will show in its place until you add a new one.") : bsL("אפשר לבטל מיד אחר כך.", "You can undo right after."),
+        ok: bsL("מחיקה", "Delete"), danger: true,
+      });
+      if (!ok) return;
+      bshellSnapshot();
+      d.services.splice(real, 1);
+      if (!d.services.length) d.services.push({ name: "", desc: "", price: "" });
+      bsxAfterStructural();
+      bsxToast(bsL("נמחק", "Deleted"), { action: { label: bsL("ביטול", "Undo"), fn: bshellUndo } });
+      return;
+    }
+    return;
+  }
+  // A library section's list
+  if (!list || typeof siteSectionSetField !== "function") return;
+  const arr = JSON.parse(JSON.stringify(list.arr));
+  const i = list.index;
+  if (act === "add") {
+    bshellSnapshot();
+    if (typeof siteSectionAddItem === "function") siteSectionAddItem(d, sel.secId, list.arrPath, i + 1);
+    else { arr.splice(i + 1, 0, bsxBlankLike(arr[i] !== undefined ? arr[i] : arr[0])); siteSectionSetField(d, sel.secId, list.arrPath, arr); }
+    bshellScheduleSave();
+    bshellRenderCanvas(() => bsxSelectCustomItem(sel.secId, list.arrPath, i + 1));
+    return;
+  }
+  if (act === "up" || act === "down") {
+    const j = act === "up" ? i - 1 : i + 1;
+    if (j < 0 || j >= arr.length) return;
+    bshellSnapshot();
+    const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    siteSectionSetField(d, sel.secId, list.arrPath, arr);
+    bsxSwapItemStyles(sel.secId, list.arrPath, i, j);
+    bshellScheduleSave();
+    bshellRenderCanvas(() => bsxSelectCustomItem(sel.secId, list.arrPath, j));
+    return;
+  }
+  if (act === "dup") {
+    bshellSnapshot();
+    arr.splice(i + 1, 0, JSON.parse(JSON.stringify(arr[i])));
+    siteSectionSetField(d, sel.secId, list.arrPath, arr);
+    bshellScheduleSave();
+    bshellRenderCanvas(() => bsxSelectCustomItem(sel.secId, list.arrPath, i + 1));
+    return;
+  }
+  if (act === "del") {
+    const last = arr.length <= 1;
+    const ok = await bsxConfirm({
+      title: last ? bsL("למחוק את הפריט האחרון?", "Delete the last item?") : bsL("למחוק את הפריט?", "Delete this item?"),
+      text: bsL("אפשר לבטל מיד אחר כך.", "You can undo right after."), ok: bsL("מחיקה", "Delete"), danger: true,
+    });
+    if (!ok) return;
+    bshellSnapshot();
+    if (typeof siteSectionRemoveItem === "function") siteSectionRemoveItem(d, sel.secId, sel.itemPath);
+    else { arr.splice(i, 1); siteSectionSetField(d, sel.secId, list.arrPath, arr); }
+    bsxAfterStructural();
+    bsxToast(bsL("נמחק", "Deleted"), { action: { label: bsL("ביטול", "Undo"), fn: bshellUndo } });
+  }
+}
+/* Per-field styles are keyed by path ("items.2.title"): moving an item
+   carries its styles with it. */
+function bsxSwapItemStyles(secId, arrPath, i, j) {
+  const s = siteState.data.sections && siteState.data.sections[secId];
+  if (!s || !s.styles) return;
+  const pi = arrPath + "." + i + ".", pj = arrPath + "." + j + ".";
+  const next = {};
+  Object.keys(s.styles).forEach((k) => {
+    if (k.indexOf(pi) === 0) next[pj + k.slice(pi.length)] = s.styles[k];
+    else if (k.indexOf(pj) === 0) next[pi + k.slice(pj.length)] = s.styles[k];
+    else next[k] = s.styles[k];
+  });
+  s.styles = next;
+}
+function bsxBlankLike(v) {
+  if (typeof v === "string") return "";
+  if (Array.isArray(v)) return [];
+  if (v && typeof v === "object") { const o = {}; Object.keys(v).forEach((k) => { o[k] = bsxBlankLike(v[k]); }); return o; }
+  return v === undefined ? "" : v;
+}
+function bsxSelectItemByShown(shown, field) {
+  const doc = bsxDoc();
+  if (!doc) return;
+  let card = doc.querySelector(`[data-svc-idx="${shown}"]`);
+  if (!card && typeof SITE_GROUP_GRID === "string") {
+    const grid = doc.querySelectorAll(SITE_GROUP_GRID);
+    card = grid[shown] ? bsxGridCardOf(grid[shown]) : null;
+  }
+  if (!card) return;
+  let fieldEl = null;
+  if (field) { const f = bsxFieldElOfCard(card, shown, field); if (f) fieldEl = f; }
+  const desc = { kind: "item", el: card, secKey: bsxMap.keyOfTop.get(card.closest("body > *")), svc: shown, fieldEl, field: fieldEl ? field : null };
+  if (!desc.secKey) return;
+  bsxSelect(desc, { scroll: true });
+  if (fieldEl && bsxEdit) {
+    // put the caret at the end and select the placeholder name
+    const s = doc.getSelection(); const r = doc.createRange(); r.selectNodeContents(fieldEl); s.removeAllRanges(); s.addRange(r);
+  }
+}
+function bsxFieldElOfCard(card, shown, field) {
+  const dd = withFallback(siteState.data);
+  const s = (dd._services || [])[shown];
+  if (!s || !s[field]) return null;
+  const want = String(s[field]).trim();
+  return Array.from(card.querySelectorAll("*")).find((el) => el.childElementCount === 0 && (el.textContent || "").trim() === want) || null;
+}
+function bsxSelectCustomItem(secId, arrPath, idx) {
+  const doc = bsxDoc();
+  const el = doc && doc.querySelector(`[data-dk-sec="${bsxCss(secId)}"] [data-dk-item="${bsxCss(arrPath + "." + idx)}"]`);
+  if (!el) return;
+  const secKey = bsxMap.keyOfTop.get(el.closest("body > *"));
+  bsxSelect({ kind: "item", el, secKey, secId, itemPath: arrPath + "." + idx, fieldEl: null, field: null }, { scroll: true });
+}
+
+/* ---------- Images ---------- */
+function bsxImageInfo(sel) {
+  const d = siteState.data;
+  const caps = bsxCaps();
+  if (sel.secId) {
+    const v = typeof siteSectionGetField === "function" ? siteSectionGetField(d, sel.secId, sel.path) : null;
+    const s = d.sections && d.sections[sel.secId];
+    const st = (s && s.styles && s.styles[sel.path]) || {};
+    const imgProps = (caps.secStyle && caps.secStyle.image) || [];
+    const obj = v && typeof v === "object" ? v : null;
+    // The library keeps fit/ratio on the image itself ({src, alt, fit,
+    // ratio}) where its renderer uses them (text & image); only offered
+    // where the object carries them.
+    const inContent = !!(obj && ("fit" in obj || "ratio" in obj));
+    return {
+      src: typeof v === "string" ? v : (obj && obj.src) || "", alt: obj ? obj.alt || "" : "",
+      canAlt: !!obj, canStyle: inContent || imgProps.indexOf("fit") !== -1, canRatio: inContent || imgProps.indexOf("ratio") !== -1, canFocal: imgProps.indexOf("focal") !== -1,
+      fit: (inContent ? (obj.fit === "contain" ? "contain" : "") : st.fit) || "", ratio: (inContent ? obj.ratio : st.ratio) || "", focal: st.focal || "",
+      canRemove: true, objectish: !!obj, inContent, ratioOptions: inContent ? ["1:1", "4:3", "16:9"] : null,
+    };
+  }
+  const key = sel.img === "logo" ? "logo" : "hero";
+  const st = (d.imageStyles && d.imageStyles[key]) || {};
+  let src = "";
+  if (sel.img === "hero") src = d.heroImage || "";
+  else if (sel.img === "logo") src = d.logo || "";
+  else { const i = parseInt(String(sel.img).split(".")[1], 10); src = (d.heroImages || [])[i] || ""; }
+  return {
+    src, alt: d.heroAlt || "", canAlt: sel.img !== "logo", canStyle: caps.imageStyles, canRatio: caps.imageStyles, canFocal: caps.imageStyles,
+    fit: st.fit || "", ratio: st.ratio || "", focal: st.focal || "", canRemove: true, styleKey: key,
+  };
+}
+function bsxSetImageSrc(sel, url) {
+  const d = siteState.data;
+  if (sel.secId) {
+    if (typeof siteSectionSetField !== "function") return;
+    const v = typeof siteSectionGetField === "function" ? siteSectionGetField(d, sel.secId, sel.path) : null;
+    if (v && typeof v === "object") siteSectionSetField(d, sel.secId, sel.path + ".src", url);
+    else siteSectionSetField(d, sel.secId, sel.path, url);
+    return;
+  }
+  if (sel.img === "hero") d.heroImage = url;
+  else if (sel.img === "logo") d.logo = url;
+  else {
+    const i = parseInt(String(sel.img).split(".")[1], 10);
+    d.heroImages = Array.isArray(d.heroImages) ? d.heroImages : [];
+    if (i >= 0 && i < d.heroImages.length) d.heroImages[i] = url; else d.heroImages.push(url);
+  }
+}
+function bsxSetImageStyle(sel, prop, value) {
+  const d = siteState.data;
+  bsxCommitEdit();
+  bshellSnapshot();
+  if (sel.secId) {
+    const info = bsxImageInfo(sel);
+    if (info.inContent && (prop === "fit" || prop === "ratio")) siteSectionSetField(d, sel.secId, sel.path + "." + prop, prop === "fit" ? (value || "cover") : (value || "auto"));
+    else bsxStyleWrite(sel.secId, sel.path, prop, value);
+  } else {
+    const key = sel.img === "logo" ? "logo" : "hero";
+    d.imageStyles = d.imageStyles || {};
+    const next = Object.assign({}, d.imageStyles[key]);
+    if (value) next[prop] = value; else delete next[prop];
+    if (Object.keys(next).length) d.imageStyles[key] = next; else delete d.imageStyles[key];
+    if (!Object.keys(d.imageStyles).length) delete d.imageStyles;
+  }
+  bshellScheduleSave();
+  bshellRenderCanvas(() => { bsxRenderElTools(); if (typeof bsxRefreshPanel === "function") bsxRefreshPanel(); });
+}
+function bsxSetImageAlt(sel, v) {
+  const d = siteState.data;
+  if (sel.secId) {
+    if (typeof siteSectionSetField === "function") siteSectionSetField(d, sel.secId, sel.path + ".alt", v);
+  } else if (v.trim()) d.heroAlt = v; else delete d.heroAlt;
+  bshellScheduleSave();
+}
+function bsxProjectImages() {
+  const out = [];
+  const seen = new Set();
+  const walk = (v, depth) => {
+    if (depth > 8 || v == null) return;
+    if (typeof v === "string") {
+      if (/^https?:\/\/\S+$/i.test(v) && (/\.(png|jpe?g|webp|gif|avif|svg)(\?|$)/i.test(v) || /\/site-images\//.test(v)) && !seen.has(v)) { seen.add(v); out.push(v); }
+      return;
+    }
+    if (Array.isArray(v)) { v.forEach((x) => walk(x, depth + 1)); return; }
+    if (typeof v === "object") Object.keys(v).forEach((k) => { if (k !== "moodPrev" && k !== "moodBefore") walk(v[k], depth + 1); });
+  };
+  walk(siteState.data, 0);
+  return out;
+}
+function bsxLibraryPopover(anchor, sel) {
+  const imgs = bsxProjectImages();
+  const cur = bsxImageInfo(sel).src;
+  const html = imgs.length
+    ? `<div style="font-size:12.5px;font-weight:700;color:#475569;padding:4px 6px 8px">${bsL("התמונות באתר הזה", "Images in this site")}</div><div class="bsx-thumb-grid" style="width:240px">${imgs.map((src) => `<button type="button" class="bsx-thumb${src === cur ? " is-on" : ""}" data-img-src="${bsxEsc(src)}" aria-label="${bsxEsc(bsL("בחירת התמונה", "Choose this image"))}"><img src="${bsxEsc(src)}" alt=""></button>`).join("")}</div>`
+    : `<div class="bsx-empty" style="width:220px">${bsL("עדיין לא הועלו תמונות לאתר הזה.", "No images have been uploaded to this site yet.")}</div>`;
+  bsxPopover(anchor, html, (pop) => pop.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-img-src]");
+    if (!b) return;
+    bsxClosePopover();
+    bsxCommitEdit();
+    bshellSnapshot();
+    bsxSetImageSrc(sel, b.dataset.imgSrc);
+    bshellScheduleSave();
+    bshellRenderCanvas(() => { bsxRenderElTools(); if (typeof bsxRefreshPanel === "function") bsxRefreshPanel(); });
+  }));
+}
+/* Upload through the existing pipeline (shrink in the browser, the
+   project's own folder, the storage-allowance messages). */
+function bsxPickFile(multiple) {
+  return new Promise((resolve) => {
+    const input = document.getElementById("bsx-file-input");
+    input.value = "";
+    input.multiple = !!multiple;
+    const done = () => { input.removeEventListener("change", done); resolve(Array.from(input.files || [])); };
+    input.addEventListener("change", done);
+    input.click();
+  });
+}
+async function bsxUploadOne(file, name) {
+  if (!file) return null;
+  if (typeof SITE_IMAGE_MAX_INPUT === "number" && file.size > SITE_IMAGE_MAX_INPUT) {
+    bsxToast(bsL(`"${file.name}" גדולה מדי — בחרו קובץ עד 25MB.`, `"${file.name}" is too large — choose a file up to 25MB.`), { error: true });
+    return null;
+  }
+  const url = typeof uploadSiteImage === "function" ? await uploadSiteImage(file, name) : null;
+  if (!url) bsxToast(typeof siteUploadErrorText === "function" ? siteUploadErrorText(file.name) : bsL("העלאת התמונה נכשלה, נסו שוב.", "The upload failed, please try again."), { error: true, ms: 7000 });
+  return url;
+}
+async function bsxPickAndUpload(sel) {
+  const files = await bsxPickFile(false);
+  if (!files.length) return;
+  const toast = bsxToast(bsL("מעלים את התמונה…", "Uploading the image…"), { ms: 60000 });
+  const name = sel.secId ? "sec-" + String(sel.secId).replace(/[^a-z0-9_-]/gi, "").slice(0, 24) : (sel.img === "logo" ? "logo" : sel.img === "hero" ? "hero" : "gallery-" + Date.now());
+  const url = await bsxUploadOne(files[0], name);
+  if (toast) toast.remove();
+  if (!url) return;
+  bsxCommitEdit();
+  bshellSnapshot();
+  bsxSetImageSrc(sel, url);
+  bshellScheduleSave();
+  bshellRenderCanvas(() => { bsxRenderElTools(); if (typeof bsxRefreshPanel === "function") bsxRefreshPanel(); });
+  bsxToast(bsL("התמונה הוחלפה", "Image replaced"));
+}
+function bsxRemoveImage(sel) {
+  const d = siteState.data;
+  bsxCommitEdit();
+  bshellSnapshot();
+  if (sel.secId) {
+    const info = bsxImageInfo(sel);
+    if (typeof siteSectionSetField === "function") siteSectionSetField(d, sel.secId, info.objectish ? sel.path + ".src" : sel.path, "");
+  } else if (sel.img === "hero") d.heroImage = "";
+  else if (sel.img === "logo") delete d.logo;
+  else {
+    const i = parseInt(String(sel.img).split(".")[1], 10);
+    if (Array.isArray(d.heroImages) && i >= 0) d.heroImages.splice(i, 1);
+  }
+  bsxAfterStructural();
+  bsxToast(bsL("התמונה הוסרה", "Image removed"), { action: { label: bsL("ביטול", "Undo"), fn: bshellUndo } });
+}
+
+/* ---------- Buttons ---------- */
+/* Button actions use the section library's shape:
+   { kind: "link" | "tel" | "whatsapp" | "email" | "scroll", value }.
+   An empty value for tel/whatsapp/email means "the business's own
+   phone / WhatsApp / email" (it follows the contact details). */
+const BSX_ACTION_KINDS = ["link", "tel", "whatsapp", "email", "scroll"];
+function bsxActionLabel(a) {
+  if (!a || !a.kind) return bsL("לאן?", "Where to?");
+  return { link: bsL("קישור", "Link"), tel: bsL("שיחה", "Call"), whatsapp: bsL("וואטסאפ", "WhatsApp"), email: bsL("מייל", "Email"), scroll: bsL("חלק באתר", "Section") }[a.kind] || bsL("קישור", "Link");
+}
+function bsxButtonIsListItem(sel) { return !!(sel.secId && /\.\d+$/.test(sel.path)); }
+/* Where a library button keeps its text: an object button ({label,
+   action}) at path.label, or a plain string field (the lead form's
+   "buttonLabel"). */
+function bsxBtnLabelPath(sel) {
+  const v = typeof siteSectionGetField === "function" ? siteSectionGetField(siteState.data, sel.secId, sel.path) : undefined;
+  if (typeof v === "string" || (v == null && sel.el && sel.el.closest && sel.el.closest("form"))) return sel.path;
+  return sel.path + ".label";
+}
+function bsxButtonInfo(sel) {
+  const d = siteState.data;
+  const caps = bsxCaps();
+  if (sel.secId) {
+    const get = (p) => (typeof siteSectionGetField === "function" ? siteSectionGetField(d, sel.secId, p) : undefined);
+    const s = d.sections && d.sections[sel.secId];
+    const btnProps = (caps.secStyle && caps.secStyle.button) || [];
+    const labelPath = bsxBtnLabelPath(sel);
+    const submit = labelPath === sel.path;
+    return {
+      editable: typeof siteSectionSetField === "function",
+      submit, labelPath,
+      label: String(get(labelPath) || (sel.el ? sel.el.textContent.trim() : "")),
+      action: submit ? null : get(sel.path + ".action") || null,
+      style: (s && s.styles && s.styles[sel.path]) || {},
+      canStyle: btnProps.indexOf("bg") !== -1, canSize: btnProps.indexOf("size") !== -1, canRadius: btnProps.indexOf("radius") !== -1,
+    };
+  }
+  if (sel.btn === "heroCta" && caps.heroCta) {
+    const h = d.heroCta || {};
+    const cta = bsxHeroCta();
+    return { editable: true, labelPath: "label", label: h.label || (sel.el && sel.el.isConnected ? sel.el.textContent.trim() : (cta ? cta.label : "")), action: h.action || null, style: h.style || {}, canStyle: caps.ctaStyle, canSize: caps.ctaStyle, canRadius: caps.ctaStyle, builtin: true };
+  }
+  // The template's own hero button: label and target come from the
+  // contact details (primaryCtaHref) — explained, not faked.
+  const cta = bsxHeroCta();
+  const href = cta ? cta.href : "";
+  const via = /wa\.me/.test(href) ? bsL("וואטסאפ", "WhatsApp") : /^mailto:/.test(href) ? bsL("מייל", "email") : /^tel:/.test(href) ? bsL("שיחת טלפון", "a phone call") : bsL("עמוד יצירת הקשר", "the contact page");
+  return { editable: false, note: bsL(`הכפתור מוביל ל${via} לפי פרטי הקשר`, `This button leads to ${via}, from your contact details`), style: {} };
+}
+function bsxStyleWrite(secId, path, prop, v) {
+  const d = siteState.data;
+  const s = d.sections && d.sections[secId];
+  if (!s) return;
+  const next = Object.assign({}, s.styles && s.styles[path]);
+  if (v) next[prop] = v; else delete next[prop];
+  if (typeof siteSectionSetStyle === "function") { siteSectionSetStyle(d, secId, path, Object.keys(next).length ? next : null); if (s.styles && !Object.keys(s.styles).length) delete s.styles; return; }
+  s.styles = s.styles || {};
+  if (Object.keys(next).length) s.styles[path] = next; else delete s.styles[path];
+  if (!Object.keys(s.styles).length) delete s.styles;
+}
+function bsxButtonWrite(sel, mutate) {
+  const d = siteState.data;
+  bsxCommitEdit();
+  bshellSnapshot();
+  if (sel.secId) {
+    const labelPath = bsxBtnLabelPath(sel);
+    mutate({
+      setLabel: (v) => siteSectionSetField(d, sel.secId, labelPath, v),
+      setAction: (a) => { if (labelPath !== sel.path) siteSectionSetField(d, sel.secId, sel.path + ".action", a); },
+      setStyle: (prop, v) => bsxStyleWrite(sel.secId, sel.path, prop, v),
+    });
+  } else mutate({
+    setLabel: (v) => { d.heroCta = Object.assign({}, d.heroCta); if (v) d.heroCta.label = v; else delete d.heroCta.label; bsxTidyHeroCta(); },
+    setAction: (a) => { d.heroCta = Object.assign({}, d.heroCta); if (a) d.heroCta.action = a; else delete d.heroCta.action; bsxTidyHeroCta(); },
+    setStyle: (prop, v) => {
+      d.heroCta = Object.assign({}, d.heroCta);
+      const st = Object.assign({}, d.heroCta.style);
+      if (v) st[prop] = v; else delete st[prop];
+      if (Object.keys(st).length) d.heroCta.style = st; else delete d.heroCta.style;
+      bsxTidyHeroCta();
+    },
+  });
+  bshellScheduleSave();
+  bshellRenderCanvas(() => { bsxRenderElTools(); if (typeof bsxRefreshPanel === "function") bsxRefreshPanel(); });
+}
+function bsxTidyHeroCta() { const d = siteState.data; if (d.heroCta && !Object.keys(d.heroCta).length) delete d.heroCta; }
+function bsxSetButtonStyle(sel, prop, v) { bsxButtonWrite(sel, (w) => w.setStyle(prop, v)); }
+function bsxSetButtonLabelData(sel, v) {
+  const d = siteState.data;
+  if (sel.secId) siteSectionSetField(d, sel.secId, bsxBtnLabelPath(sel), v);
+  else { d.heroCta = Object.assign({}, d.heroCta); if (v.trim()) d.heroCta.label = v; else delete d.heroCta.label; bsxTidyHeroCta(); }
+}
+function bsxStartButtonLabelEdit(sel) {
+  const el = sel.el;
+  if (!el) return;
+  const info = bsxButtonInfo(sel);
+  const target = el.querySelector("[data-dk-field]") || el;
+  bsxBeginInline(target, { get: () => info.label, set: (v) => bsxSetButtonLabelData(sel, v), multiline: false });
+  const doc = target.ownerDocument;
+  setTimeout(() => { const s = doc.getSelection(); const r = doc.createRange(); r.selectNodeContents(target); s.removeAllRanges(); s.addRange(r); }, 10);
+}
+function bsxButtonDuplicate(sel) {
+  const m = sel.path.match(/^(.*)\.(\d+)$/);
+  if (!m || typeof siteSectionGetField !== "function") return;
+  const arr = siteSectionGetField(siteState.data, sel.secId, m[1]);
+  if (!Array.isArray(arr)) return;
+  const copy = JSON.parse(JSON.stringify(arr));
+  copy.splice(parseInt(m[2], 10) + 1, 0, JSON.parse(JSON.stringify(copy[parseInt(m[2], 10)])));
+  bsxCommitEdit();
+  bshellSnapshot();
+  siteSectionSetField(siteState.data, sel.secId, m[1], copy);
+  bsxAfterStructural();
+}
+async function bsxButtonRemove(sel) {
+  const ok = await bsxConfirm({ title: bsL("להסיר את הכפתור?", "Remove this button?"), text: bsL("אפשר לבטל מיד אחר כך.", "You can undo right after."), ok: bsL("הסרה", "Remove"), danger: true });
+  if (!ok) return;
+  const d = siteState.data;
+  bsxCommitEdit();
+  bshellSnapshot();
+  const m = sel.path.match(/^(.*)\.(\d+)$/);
+  const arr = m && typeof siteSectionGetField === "function" ? siteSectionGetField(d, sel.secId, m[1]) : null;
+  if (Array.isArray(arr)) {
+    if (typeof siteSectionRemoveItem === "function") siteSectionRemoveItem(d, sel.secId, sel.path);
+    else { const copy = JSON.parse(JSON.stringify(arr)); copy.splice(parseInt(m[2], 10), 1); siteSectionSetField(d, sel.secId, m[1], copy); }
+  } else siteSectionSetField(d, sel.secId, bsxBtnLabelPath(sel), "");
+  bsxAfterStructural();
+  bsxToast(bsL("הכפתור הוסר", "Button removed"), { action: { label: bsL("ביטול", "Undo"), fn: bshellUndo } });
+}
+
+/* ---------- Toasts, dialogs, live region ---------- */
+function bsxToast(msg, opts) {
+  opts = opts || {};
+  const box = document.getElementById("bsx-toasts");
+  if (!box) return null;
+  const t = document.createElement("div");
+  t.className = "bsx-toast" + (opts.error ? " is-error" : "");
+  t.setAttribute("role", opts.error ? "alert" : "status");
+  t.innerHTML = `<span>${bsxEsc(msg)}</span>`;
+  if (opts.action) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = opts.action.label;
+    b.addEventListener("click", () => { t.remove(); opts.action.fn(); });
+    t.appendChild(b);
+  }
+  while (box.children.length > 2) box.firstChild.remove();
+  box.appendChild(t);
+  setTimeout(() => t.remove(), opts.ms || (opts.action ? 7000 : 2600));
+  return t;
+}
+function bsxAnnounce(msg) {
+  let live = document.getElementById("bsx-live");
+  if (!live) {
+    live = document.createElement("div");
+    live.id = "bsx-live";
+    live.setAttribute("aria-live", "polite");
+    live.style.cssText = "position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);";
+    document.getElementById("bshell-root").appendChild(live);
+  }
+  live.textContent = msg;
+}
+function bsxConfirm(o) {
+  return new Promise((resolve) => {
+    const back = document.createElement("div");
+    back.className = "bsx-modal-back";
+    back.innerHTML = `<div class="bsx-modal bsx-modal-sm" role="alertdialog" aria-modal="true" aria-labelledby="bsx-confirm-title" dir="${bsxSiteDirIsRtlUi() ? "rtl" : "ltr"}">
+      <div class="bsx-modal-head"><h2 id="bsx-confirm-title">${bsxEsc(o.title)}</h2></div>
+      ${o.text ? `<div class="bsx-modal-text">${bsxEsc(o.text)}</div>` : ""}
+      <div class="bsx-modal-foot"><button type="button" data-no>${bsL("ביטול", "Cancel")}</button><button type="button" data-yes class="${o.danger ? "is-danger" : "is-primary"}">${bsxEsc(o.ok || bsL("אישור", "OK"))}</button></div>
+    </div>`;
+    document.body.appendChild(back);
+    const prevFocus = document.activeElement;
+    const done = (v) => { back.remove(); document.removeEventListener("keydown", key, true); if (prevFocus && prevFocus.focus) try { prevFocus.focus({ preventScroll: true }); } catch (e) { /* gone */ } resolve(v); };
+    const key = (e) => {
+      if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); done(false); }
+      else if (e.key === "Tab") {
+        const btns = Array.from(back.querySelectorAll("button"));
+        const i = btns.indexOf(document.activeElement);
+        e.preventDefault();
+        btns[(i + (e.shiftKey ? -1 : 1) + btns.length) % btns.length].focus();
+      }
+    };
+    document.addEventListener("keydown", key, true);
+    back.addEventListener("click", (e) => { if (e.target === back) done(false); });
+    back.querySelector("[data-no]").addEventListener("click", () => done(false));
+    back.querySelector("[data-yes]").addEventListener("click", () => done(true));
+    back.querySelector("[data-yes]").focus();
+  });
+}
+
+/* ---------- Moods (site design) ---------- */
 function bshellMoodPickerHtml(d) {
   if (typeof SITE_MOODS !== "object") return "";
   const current = (d.mood && SITE_MOODS[d.mood]) ? d.mood : "";
@@ -1618,36 +2941,21 @@ function bshellMoodPickerHtml(d) {
       </button>`;
   };
   return `
-      <div class="bshell-props-field">
-        <label class="bshell-props-label" id="bshell-mood-label">${bsL("סגנון", "Mood")}</label>
+      <div class="bsx-field">
+        <span class="bsx-label" id="bshell-mood-label">${bsL("סגנון מוכן", "Ready-made style")}</span>
         <div class="bshell-mood-grid" role="radiogroup" aria-labelledby="bshell-mood-label">
           ${btn("", bsL("ללא", "None"), null)}
           ${Object.keys(SITE_MOODS).map((k) => btn(k, bsL(SITE_MOODS[k].label, SITE_MOODS[k].labelEn), SITE_MOODS[k])).join("")}
         </div>
         ${d.moodPrev && typeof d.moodPrev === "object" ? `<button type="button" class="bshell-mood-restore" id="bshell-mood-restore">${bsL("↩ חזרה לעיצוב הקודם", "↩ Back to the previous design")}</button>` : ""}
-        <p class="bshell-settings-field-hint bshell-mood-hint">${bsL("בוחר צבע, גופנים, פינות ומרווחים שמתאימים זה לזה. אפשר לשנות צבע וגופן גם אחרי הבחירה.", "Picks a colour, fonts, corners and spacing that go together. You can still change the colour and font afterwards.")}</p>
+        <p class="bsx-hint">${bsL("בוחר צבע, גופנים, פינות ומרווחים שמתאימים זה לזה. שימו לב: סגנון מחליף גם צבעים וגופנים שבחרתם לטקסטים בודדים (אפשר לחזור עם הכפתור למעלה).", "Picks a colour, fonts, corners and spacing that go together. Note: a style also replaces colours and fonts you chose for single texts (the button above brings them back).")}</p>
       </div>`;
 }
-
-/* Choosing a mood writes its colour + body font into d.primaryColor /
-   d.fontFamily, and clears the colour/font of every per-text and group
-   style (d.textStyles) — a heading the owner once coloured red by hand
-   would otherwise keep that red under every mood, and the mood would
-   seem to change nothing but the font. Sizes and alignment stay. The
-   owner can still recolour anything afterwards.
-
-   Two ways back, each kept in the project data:
-   - d.moodBefore: the look before the FIRST mood, for "ללא" — which puts
-     back only what still shows the mood's own choice (a colour/font the
-     owner picked by hand after the mood stays), then deletes d.mood/
-     d.moodBefore/d.moodPrev: exactly the "no mood" shape every older
-     project already has.
-   - d.moodPrev: the exact design settings from just before the LAST
-     mood click (mood, colour, font, every text style), for the
-     "↩ חזרה לעיצוב הקודם" button under the picker
-     (bshellRestorePrevDesign). */
+/* A mood writes its colour + body font into d.primaryColor/d.fontFamily
+   and clears per-text colours/fonts (sizes and alignment stay). d.moodBefore
+   = the look before the first mood (for "ללא"), d.moodPrev = the exact
+   design before the last mood click (for "↩ חזרה לעיצוב הקודם"). */
 const BSHELL_DESIGN_KEYS = ["mood", "moodBefore", "primaryColor", "fontFamily", "textStyles"];
-
 function bshellApplyMood(d, key) {
   const next = (key && SITE_MOODS[key]) ? SITE_MOODS[key] : null;
   const cur = (d.mood && SITE_MOODS[d.mood]) ? SITE_MOODS[d.mood] : null;
@@ -1666,7 +2974,6 @@ function bshellApplyMood(d, key) {
     d.mood = key;
     d.primaryColor = next.primaryColor;
     d.fontFamily = next.bodyFont;
-    // Emptied entries stay as {} (renders nothing, keeps the key order).
     Object.keys(d.textStyles || {}).forEach((k) => {
       if (d.textStyles[k]) { delete d.textStyles[k].color; delete d.textStyles[k].font; }
     });
@@ -1691,10 +2998,6 @@ function bshellApplyMood(d, key) {
   delete d.moodBefore;
   delete d.moodPrev;
 }
-
-/* "↩ חזרה לעיצוב הקודם": exactly the design settings from before the
-   last mood choice (which may itself have been another mood). Used once
-   — the button disappears until the next mood choice. */
 function bshellRestorePrevDesign(d) {
   const prev = d.moodPrev;
   if (!prev || typeof prev !== "object") return false;
@@ -1705,36 +3008,29 @@ function bshellRestorePrevDesign(d) {
   return true;
 }
 
-/* ---------- SEO / "איך האתר נראה בגוגל" ----------
-   d.seo = { title, description, ogImage } — every field optional. Empty
-   fields keep today's automatic <title>/<meta description> (business name
-   + tagline); see siteSeoFields() in site-templates.js for exactly what
-   the published page gets. The lengths below are guidance only — nothing
-   here ever blocks typing or saving. */
+/* ---------- SEO / "איך האתר נראה בגוגל" ---------- */
 const BSHELL_SEO_RANGES = { title: [50, 60], description: [150, 160] };
-// Roughly where Google cuts a result off (characters, not pixels).
 const BSHELL_SERP_CUT = { desktop: { title: 60, description: 160 }, mobile: { title: 78, description: 120 } };
 let bshellSerpDevice = "desktop";
-
 function bshellSeoGroupHtml(d) {
   const seo = (d.seo && typeof d.seo === "object") ? d.seo : {};
   return `
-    <div class="bshell-settings-group" id="bshell-seo-group">
-      <div class="bshell-settings-group-title">${bsL("SEO / איך האתר נראה בגוגל", "SEO / How your site looks on Google")}</div>
-      <p class="bshell-settings-field-hint bshell-seo-intro">${bsL("לא חובה. מה שתשאירו ריק ימולא אוטומטית משם העסק ומשורת התיאור. השינויים יופיעו באתר החי אחרי הפרסום הבא.", "Optional. Anything left empty is filled in automatically from your business name and tagline. Changes reach the live site the next time you publish.")}</p>
-      <div class="bshell-props-field">
-        <label class="bshell-props-label" for="bshell-seo-title">${bsL("כותרת בגוגל", "Title on Google")}</label>
+    <div class="bsx-pgroup" id="bshell-seo-group">
+      <div class="bsx-pgroup-title">${bsL("SEO / איך האתר נראה בגוגל", "SEO / How your site looks on Google")}</div>
+      <p class="bsx-hint" style="margin:0 0 12px">${bsL("לא חובה. מה שתשאירו ריק ימולא אוטומטית משם העסק ומשורת התיאור. השינויים יופיעו באתר החי אחרי הפרסום הבא.", "Optional. Anything left empty is filled in automatically from your business name and tagline. Changes reach the live site the next time you publish.")}</p>
+      <div class="bsx-field">
+        <label class="bsx-label" for="bshell-seo-title">${bsL("כותרת בגוגל", "Title on Google")}</label>
         <input type="text" id="bshell-seo-title" maxlength="200" value="${escapeHtmlS(seo.title || "")}" placeholder="${bsL("לדוגמה: סטודיו לעיצוב פנים בתל אביב | שם העסק", "e.g. Interior design studio in Tel Aviv | Business name")}">
         <div class="bshell-seo-count" id="bshell-seo-title-count" aria-live="polite"></div>
       </div>
-      <div class="bshell-props-field">
-        <label class="bshell-props-label" for="bshell-seo-desc">${bsL("תיאור בגוגל", "Description on Google")}</label>
+      <div class="bsx-field">
+        <label class="bsx-label" for="bshell-seo-desc">${bsL("תיאור בגוגל", "Description on Google")}</label>
         <textarea id="bshell-seo-desc" class="bshell-seo-desc" maxlength="500" rows="4" placeholder="${bsL("משפט או שניים: מה אתם עושים, לאיזה אזור, ולמה לבחור בכם.", "A sentence or two: what you do, where, and why choose you.")}">${escapeHtmlS(seo.description || "")}</textarea>
         <div class="bshell-seo-count" id="bshell-seo-desc-count" aria-live="polite"></div>
       </div>
-      <div class="bshell-props-field">
+      <div class="bsx-field">
         <div class="bshell-serp-head">
-          <span class="bshell-props-label" style="margin:0;">${bsL("תצוגה מקדימה בגוגל", "Google preview")}</span>
+          <span class="bsx-label" style="margin:0;">${bsL("תצוגה מקדימה בגוגל", "Google preview")}</span>
           <div class="bshell-serp-toggle" role="group" aria-label="${bsL("גודל מסך", "Screen size")}">
             <button type="button" data-serp-device="desktop" class="${bshellSerpDevice === "desktop" ? "active" : ""}" aria-pressed="${bshellSerpDevice === "desktop"}">${bsL("מחשב", "Desktop")}</button>
             <button type="button" data-serp-device="mobile" class="${bshellSerpDevice === "mobile" ? "active" : ""}" aria-pressed="${bshellSerpDevice === "mobile"}">${bsL("נייד", "Mobile")}</button>
@@ -1742,27 +3038,22 @@ function bshellSeoGroupHtml(d) {
         </div>
         <div class="bshell-serp-scroll"><div class="bshell-serp" id="bshell-serp"></div></div>
       </div>
-      <div class="bshell-props-field">
-        <span class="bshell-props-label">${bsL("תמונה לשיתוף (וואטסאפ, פייסבוק)", "Share image (WhatsApp, Facebook)")}</span>
+      <div class="bsx-field">
+        <span class="bsx-label">${bsL("תמונה לשיתוף (וואטסאפ, פייסבוק)", "Share image (WhatsApp, Facebook)")}</span>
         <div class="bshell-og-grid" id="bshell-og-grid" role="radiogroup">${bshellOgOptionsHtml(d)}</div>
       </div>
     </div>`;
 }
-
 function bshellOgOptionsHtml(d) {
   const gallery = (d.heroImages || []).filter(Boolean);
-  // Picking the hero photo itself is the same as the default ("").
   const chosen = (d.seo && d.seo.ogImage && d.seo.ogImage !== d.heroImage && gallery.includes(d.seo.ogImage)) ? d.seo.ogImage : "";
   const heroSrc = d.heroImage || gallery[0] || "";
   const opt = (value, src, label) => `<button type="button" class="bshell-og-opt${value === chosen ? " active" : ""}" role="radio" aria-checked="${value === chosen}" data-og="${escapeHtmlS(value)}" title="${escapeHtmlS(label)}">
       ${src ? `<img src="${escapeHtmlS(src)}" alt="">` : `<span class="site-photo-placeholder">🖼️</span>`}<span>${escapeHtmlS(label)}</span></button>`;
-  if (!heroSrc) return `<p class="bshell-settings-field-hint" style="margin:0;">${bsL("עדיין אין תמונות באתר. אחרי שתעלו תמונה ראשית (למעלה, ב\"תמונות ומדיה\") היא תשמש גם לשיתוף.", "No images on the site yet. Once you upload a main image (above, under \"Images & media\") it's used for sharing too.")}</p>`;
+  if (!heroSrc) return `<p class="bsx-hint" style="margin:0;">${bsL("עדיין אין תמונות באתר. אחרי שתעלו תמונה ראשית היא תשמש גם לשיתוף.", "No images on the site yet. Once you upload a main image it's used for sharing too.")}</p>`;
   return opt("", heroSrc, bsL("התמונה הראשית", "Main image"))
     + gallery.filter((src) => src !== d.heroImage).map((src, i) => opt(src, src, bsL(`גלריה ${i + 1}`, `Gallery ${i + 1}`))).join("");
 }
-
-/* Live counter under each SEO field: green inside the recommended range,
-   orange outside it, grey while empty (the automatic text is used). */
 function bshellSeoCount(el, value, kind) {
   if (!el) return;
   const [lo, hi] = BSHELL_SEO_RANGES[kind];
@@ -1776,7 +3067,6 @@ function bshellSeoCount(el, value, kind) {
   el.dataset.state = state;
   el.innerHTML = `<b>${len}</b>/${hi} · ${escapeHtmlS(msg)}`;
 }
-
 function bshellSerpCut(text, max) {
   const chars = Array.from(text);
   if (chars.length <= max) return text;
@@ -1785,10 +3075,6 @@ function bshellSerpCut(text, max) {
   if (space > max * 0.6) cut = cut.slice(0, space);
   return cut.replace(/[\s,.;:–—-]+$/, "") + "…";
 }
-
-/* Reads the title/description straight out of the home page this builder
-   would publish right now (currentSiteHtml), so the preview can never
-   disagree with the real tags. */
 function bshellSerpSource() {
   const html = currentSiteHtml("index");
   const headEnd = html.indexOf("</head>");
@@ -1796,7 +3082,6 @@ function bshellSerpSource() {
   const meta = doc.querySelector('meta[name="description"]');
   return { title: (doc.title || "").trim(), description: meta ? (meta.getAttribute("content") || "").trim() : "" };
 }
-
 function bshellRenderSerp() {
   const box = document.getElementById("bshell-serp");
   if (!box) return;
@@ -1817,478 +3102,45 @@ function bshellRenderSerp() {
     <div class="bshell-serp-desc">${src.description ? escapeHtmlS(bshellSerpCut(src.description, cut.description)) : `<span class="bshell-serp-missing">${bsL("(אין תיאור — גוגל יבחר טקסט מהעמוד בעצמו)", "(No description — Google will pick text from the page itself)")}</span>`}</div>
     ${liveUrl ? "" : `<div class="bshell-serp-note">${bsL("הכתובת הסופית תיקבע בפרסום הראשון.", "The final address is set when you first publish.")}</div>`}`;
 }
-
 function bshellSetSeoField(d, key, value) {
   d.seo = (d.seo && typeof d.seo === "object") ? d.seo : {};
   if (value.trim()) d.seo[key] = value; else delete d.seo[key];
-  if (!Object.keys(d.seo).length) delete d.seo; // nothing set -> today's automatic tags, no leftover shape
+  if (!Object.keys(d.seo).length) delete d.seo;
 }
-
 function bshellWireSeoPanel(d) {
   const titleEl = document.getElementById("bshell-seo-title");
   const descEl = document.getElementById("bshell-seo-desc");
-  const titleCount = document.getElementById("bshell-seo-title-count");
-  const descCount = document.getElementById("bshell-seo-desc-count");
   const bind = (el, key, countEl, kind) => {
     if (!el) return;
     bshellSeoCount(countEl, el.value, kind);
     el.addEventListener("focus", () => bshellBeginEdit(el));
     el.addEventListener("blur", () => bshellEndEdit(el));
     el.addEventListener("input", () => {
-      bshellSetSeoField(d, key, el.value);
+      bshellSetSeoField(siteState.data, key, el.value);
       bshellSeoCount(countEl, el.value, kind);
       bshellRenderSerp();
-      bshellScheduleSave(); // head-only tags: nothing on the canvas changes
+      bshellScheduleSave();
     });
   };
-  bind(titleEl, "title", titleCount, "title");
-  bind(descEl, "description", descCount, "description");
-
+  bind(titleEl, "title", document.getElementById("bshell-seo-title-count"), "title");
+  bind(descEl, "description", document.getElementById("bshell-seo-desc-count"), "description");
   document.querySelectorAll("[data-serp-device]").forEach((btn) => {
     btn.addEventListener("click", () => {
       bshellSerpDevice = btn.dataset.serpDevice;
-      document.querySelectorAll("[data-serp-device]").forEach((b) => {
-        b.classList.toggle("active", b === btn);
-        b.setAttribute("aria-pressed", String(b === btn));
-      });
+      document.querySelectorAll("[data-serp-device]").forEach((b) => { b.classList.toggle("active", b === btn); b.setAttribute("aria-pressed", String(b === btn)); });
       bshellRenderSerp();
     });
   });
-
   const ogGrid = document.getElementById("bshell-og-grid");
   if (ogGrid) {
     ogGrid.addEventListener("click", (e) => {
       const opt = e.target.closest(".bshell-og-opt");
       if (!opt) return;
       bshellSnapshot();
-      bshellSetSeoField(d, "ogImage", opt.dataset.og || "");
-      ogGrid.innerHTML = bshellOgOptionsHtml(d);
+      bshellSetSeoField(siteState.data, "ogImage", opt.dataset.og || "");
+      ogGrid.innerHTML = bshellOgOptionsHtml(siteState.data);
       bshellScheduleSave();
     });
   }
   bshellRenderSerp();
-}
-function bshellGalleryPreviewHtml(d) {
-  const images = d.heroImages || [];
-  return images.map((src, i) =>
-    `<div class="site-gallery-thumb" data-idx="${i}"><img src="${escapeHtmlS(src)}" alt="${bsL(`תמונה ${i + 1} בגלריה`, `Gallery image ${i + 1}`)}"><button type="button" data-action="bshell-remove-gallery-photo" aria-label="${bsL("הסרה", "Remove")}">✕</button></div>`
-  ).join("");
-}
-
-function bshellWirePropertiesPanel() {
-  if (bshellSelection.kind === "section") return bshellWireSectionProps(bshellSelection.type);
-  if (bshellSelection.kind === "settings") return bshellWireSettingsProps();
-}
-
-/* Lighter than a full re-select: keeps the current selection's type and
-   focus, just re-points rootEl/focusEl at the matching elements in
-   whatever document the canvas now shows (after a patch or a swap), and
-   refreshes the outline/toolbar — without touching the Properties panel,
-   so it never steals focus out of a field the user is typing in. A
-   section that is now hidden simply has no element to outline. */
-function bshellReanchorSelection() {
-  const sel = bshellSelection;
-  if (!sel || sel.kind !== "section") { bshellApplySelectionVisual(); return; }
-  const doc = document.getElementById("bshell-canvas-iframe").contentDocument;
-  if (!doc) return;
-  if (sel.type === BSHELL_SITE_TYPE) {
-    sel.rootEl = (sel.topIdx != null && doc.querySelector(`body > [data-bshell-top="${sel.topIdx}"]`)) || (sel.topIdx == null ? null : bshellFindSectionRoot(doc, sel.type));
-  } else {
-    sel.rootEl = bshellFindSectionRoot(doc, sel.type);
-  }
-  sel.focusEl = bshellFindFocusEl(doc, sel);
-  bshellApplySelectionVisual();
-}
-
-/* Writes one style group (d.textStyles[key]) — an empty group is
-   removed, so "back to default" leaves no trace in the saved data. */
-function bshellSetTextStyle(key, prop, value) {
-  const d = siteState.data;
-  d.textStyles = d.textStyles || {};
-  const next = Object.assign({}, d.textStyles[key]);
-  if (value) next[prop] = value; else delete next[prop];
-  if (next.font || next.color || next.size || next.align) d.textStyles[key] = next;
-  else delete d.textStyles[key];
-}
-
-/* Everything in the section editor is wired by delegation on the panel
-   body — fields are re-rendered often (a service added, a group reset),
-   and every edit ends the same way: change siteState.data, patch the
-   canvas in place (bshellRenderCanvas), autosave. */
-function bshellWireSectionProps(type) {
-  const d = siteState.data;
-  const body = document.getElementById("bshell-props-body");
-  const isField = (el) => el.matches && el.matches("[data-text-key], [data-svc-field], [data-contact-key], input[type=color][data-style-prop]");
-  body.addEventListener("focusin", (e) => { if (isField(e.target)) bshellBeginEdit(e.target); });
-  body.addEventListener("focusout", (e) => { if (isField(e.target)) bshellEndEdit(e.target); });
-  body.addEventListener("input", (e) => {
-    const el = e.target;
-    if (el.dataset.textKey) {
-      BSHELL_TEXT_CONTENT_MAP[el.dataset.textKey].set(d, el.value);
-      if (el.dataset.textKey === "businessName") {
-        const t = SITE_TEMPLATES[siteState.template];
-        document.getElementById("bshell-top-name").textContent = el.value.trim() || (t ? bsLabel(t.label) : bsL("הפרויקט שלי", "My project"));
-      }
-    } else if (el.dataset.svcField) {
-      const i = parseInt(el.dataset.svcIdx, 10);
-      if (!d.services || !d.services[i]) return;
-      d.services[i][el.dataset.svcField] = el.value;
-      if (el.dataset.svcField === "name") {
-        const title = el.closest(".bshell-svc-item").querySelector(".bshell-svc-item-title");
-        if (title) title.textContent = el.value.trim() || title.textContent;
-        bshellRenderHierarchy();
-      }
-    } else if (el.dataset.contactKey) {
-      d[el.dataset.contactKey] = el.value;
-    } else if (el.dataset.styleProp === "color") {
-      el.dataset.touched = "1";
-      bshellSetTextStyle(el.closest("[data-style-key]").dataset.styleKey, "color", el.value.replace("#", ""));
-    } else {
-      return;
-    }
-    bshellRenderCanvas();
-    bshellScheduleSave();
-  });
-  body.addEventListener("change", (e) => {
-    const el = e.target;
-    if (el.tagName !== "SELECT" || !el.dataset.styleProp) return;
-    bshellSnapshot();
-    bshellSetTextStyle(el.closest("[data-style-key]").dataset.styleKey, el.dataset.styleProp, el.value);
-    bshellRenderCanvas();
-    bshellRefreshStyleGroup(el.closest("[data-style-key]"));
-    bshellScheduleSave();
-  });
-  body.addEventListener("click", (e) => {
-    const svcBtn = e.target.closest("[data-svc-action]");
-    if (svcBtn) {
-      const i = parseInt(svcBtn.dataset.svcIdx, 10);
-      if (svcBtn.dataset.svcAction === "add") bshellAddService();
-      else if (svcBtn.dataset.svcAction === "duplicate") bshellDuplicateService(i);
-      else if (svcBtn.dataset.svcAction === "delete") bshellDeleteService(i);
-      return;
-    }
-    const group = e.target.closest("[data-style-key]");
-    if (!group) return;
-    const key = group.dataset.styleKey;
-    const alignBtn = e.target.closest(".bshell-align-btn");
-    if (alignBtn) {
-      bshellSnapshot();
-      const s = (d.textStyles && d.textStyles[key]) || {};
-      bshellSetTextStyle(key, "align", s.align === alignBtn.dataset.align ? "" : alignBtn.dataset.align);
-    } else if (e.target.closest("[data-style-reset]")) {
-      bshellSnapshot();
-      delete (d.textStyles || {})[key];
-    } else {
-      return;
-    }
-    bshellRenderCanvas();
-    bshellRefreshStyleGroup(group);
-    bshellScheduleSave();
-  });
-  bshellWireSectionDisplayProps(type);
-}
-
-/* Re-renders one style group in place (its reset link / active buttons)
-   without rebuilding the whole panel. */
-function bshellRefreshStyleGroup(groupEl) {
-  if (!groupEl) return;
-  const key = groupEl.dataset.styleKey;
-  const label = groupEl.querySelector(".bshell-style-group-name").textContent;
-  const sizes = Array.from(groupEl.querySelectorAll('[data-style-prop="size"] option')).map((o) => Number(o.value)).filter(Boolean);
-  const tmp = document.createElement("div");
-  tmp.innerHTML = bshellStyleGroupHtml({ key, label, sizes, align: !!groupEl.querySelector(".bshell-align-row") });
-  groupEl.replaceWith(tmp.firstElementChild);
-}
-
-function bshellWireSectionDisplayProps(type) {
-  const variantEl = document.getElementById("bshell-prop-variant");
-  const visibleEl = document.getElementById("bshell-prop-visible");
-  if (variantEl) {
-    variantEl.addEventListener("change", () => {
-      bshellSnapshot();
-      siteState.data.blockVariants = siteState.data.blockVariants || {};
-      if (variantEl.value === "default") delete siteState.data.blockVariants[type];
-      else siteState.data.blockVariants[type] = variantEl.value;
-      bshellRenderCanvas(() => bshellSelectSection(type));
-      bshellScheduleSave();
-    });
-  }
-  const bsdEl = document.getElementById("bshell-prop-bsd");
-  if (bsdEl) {
-    bsdEl.addEventListener("change", () => {
-      bshellSnapshot();
-      siteState.data.showBsd = bsdEl.checked;
-      bshellRenderCanvas(() => bshellSelectSection(type));
-      bshellScheduleSave();
-    });
-  }
-  if (visibleEl) {
-    visibleEl.addEventListener("change", () => {
-      bshellSnapshot();
-      bshellToggleSectionVisibility(type);
-      bshellRenderCanvas(() => bshellSelectSection(type));
-      bshellRenderHierarchy();
-      bshellScheduleSave();
-    });
-  }
-  const hideCopyrightEl = document.getElementById("bshell-prop-hide-copyright");
-  if (hideCopyrightEl) {
-    hideCopyrightEl.addEventListener("change", () => {
-      bshellSnapshot();
-      siteState.data.hideCopyright = hideCopyrightEl.checked;
-      bshellRenderCanvas(() => bshellSelectSection(type));
-      bshellScheduleSave();
-    });
-  }
-}
-
-/* ---------- Settings (site-wide, no canvas anchor) ----------
-   Every field here ends in bshellRenderCanvas(), which patches the
-   canvas in place (see the comment above bshellCanvasHtml) — a phone
-   number typed here updates the header, the hero and the contact
-   section without reloading the page. */
-function bshellWireSettingsProps() {
-  const d = siteState.data;
-
-  const bindPlainText = (id, key) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener("focus", () => bshellBeginEdit(el));
-    el.addEventListener("blur", () => bshellEndEdit(el));
-    el.addEventListener("input", () => {
-      d[key] = el.value;
-      bshellRenderCanvas();
-      bshellScheduleSave();
-    });
-  };
-  bindPlainText("bshell-set-phone", "phone");
-  bindPlainText("bshell-set-whatsapp", "whatsapp");
-  bindPlainText("bshell-set-email", "email");
-  bindPlainText("bshell-set-address", "address");
-  bindPlainText("bshell-set-video", "videoUrl");
-
-  document.querySelectorAll(".bshell-mood-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const key = btn.dataset.mood || "";
-      if ((d.mood || "") === key) return;
-      bshellSnapshot();
-      bshellApplyMood(d, key);
-      bshellRenderProperties(); // the colour/font fields show the mood's values
-      bshellApplyGlobalStylesLive();
-      bshellScheduleSave();
-    });
-  });
-  const moodRestoreEl = document.getElementById("bshell-mood-restore");
-  if (moodRestoreEl) {
-    moodRestoreEl.addEventListener("click", () => {
-      bshellSnapshot();
-      if (!bshellRestorePrevDesign(d)) return;
-      bshellRenderProperties();
-      bshellApplyGlobalStylesLive();
-      bshellScheduleSave();
-    });
-  }
-
-  // Alt text only — nothing visible on the canvas changes.
-  const heroAltEl = document.getElementById("bshell-set-hero-alt");
-  if (heroAltEl) {
-    heroAltEl.addEventListener("focus", () => bshellBeginEdit(heroAltEl));
-    heroAltEl.addEventListener("blur", () => bshellEndEdit(heroAltEl));
-    heroAltEl.addEventListener("input", () => {
-      if (heroAltEl.value.trim()) d.heroAlt = heroAltEl.value; else delete d.heroAlt;
-      bshellScheduleSave();
-    });
-  }
-
-  bshellWireSeoPanel(d);
-
-  const hasWhatsappEl = document.getElementById("bshell-set-has-whatsapp");
-  if (hasWhatsappEl) {
-    hasWhatsappEl.addEventListener("change", () => {
-      bshellSnapshot();
-      d.noWhatsapp = !hasWhatsappEl.checked;
-      bshellRenderCanvas();
-      bshellScheduleSave();
-    });
-  }
-
-  const colorEl = document.getElementById("bshell-set-color");
-  if (colorEl) {
-    colorEl.addEventListener("focus", () => bshellBeginEdit(colorEl));
-    colorEl.addEventListener("change", () => bshellEndEdit(colorEl));
-    colorEl.addEventListener("input", () => {
-      d.primaryColor = colorEl.value;
-      bshellApplyGlobalStylesLive();
-      bshellScheduleSave();
-    });
-  }
-
-  const fontEl = document.getElementById("bshell-set-font");
-  if (fontEl) {
-    fontEl.addEventListener("change", () => {
-      bshellSnapshot();
-      d.fontFamily = fontEl.value;
-      bshellApplyGlobalStylesLive();
-      bshellScheduleSave();
-    });
-  }
-
-  // Site language (d.siteLang — see site-templates.js): "en" for an
-  // English site, no key at all for Hebrew (the default), so an existing
-  // Hebrew site's saved data never changes just by opening settings.
-  const siteLangEl = document.getElementById("bshell-set-site-lang");
-  if (siteLangEl) {
-    siteLangEl.addEventListener("change", () => {
-      bshellSnapshot();
-      if (siteLangEl.value === "en") d.siteLang = "en"; else delete d.siteLang;
-      bshellRenderCanvas();
-      bshellScheduleSave();
-    });
-  }
-
-  const bsdEl = document.getElementById("bshell-set-bsd");
-  if (bsdEl) {
-    bsdEl.addEventListener("change", () => {
-      bshellSnapshot();
-      d.showBsd = bsdEl.checked;
-      bshellRenderCanvas();
-      bshellScheduleSave();
-    });
-  }
-
-  const leadFormEl = document.getElementById("bshell-set-leadform");
-  if (leadFormEl) {
-    leadFormEl.addEventListener("change", () => {
-      bshellSnapshot();
-      if (leadFormEl.checked) d.leadForm = true; else delete d.leadForm;
-      bshellRenderCanvas();
-      bshellScheduleSave();
-    });
-  }
-
-  const hideCopyrightEl = document.getElementById("bshell-set-hide-copyright");
-  if (hideCopyrightEl) {
-    hideCopyrightEl.addEventListener("change", () => {
-      bshellSnapshot();
-      d.hideCopyright = hideCopyrightEl.checked;
-      bshellRenderCanvas();
-      bshellScheduleSave();
-    });
-  }
-
-  const videoBgEl = document.getElementById("bshell-set-video-bg");
-  if (videoBgEl) {
-    videoBgEl.addEventListener("change", () => {
-      bshellSnapshot();
-      d.heroVideoBg = videoBgEl.checked;
-      bshellRenderCanvas();
-      bshellScheduleSave();
-    });
-  }
-
-  const photoEl = document.getElementById("bshell-set-photo");
-  if (photoEl) {
-    photoEl.addEventListener("change", async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      if (file.size > SITE_IMAGE_MAX_INPUT) {
-        alert(bsL("התמונה גדולה מדי — בחרו קובץ עד 25MB.", "The image is too large — choose a file up to 25MB."));
-        e.target.value = "";
-        return;
-      }
-      bshellSnapshot();
-      const url = await uploadSiteImage(file, "hero");
-      if (!url) {
-        alert(siteUploadErrorText());
-        bshellUndoStack.pop();
-        bshellSyncUndoButtons();
-        e.target.value = "";
-        return;
-      }
-      d.heroImage = url;
-      bshellRenderProperties();
-      bshellRenderCanvas();
-      bshellScheduleSave();
-    });
-  }
-  const photoRemoveEl = document.getElementById("bshell-set-photo-remove");
-  if (photoRemoveEl) {
-    photoRemoveEl.addEventListener("click", () => {
-      if (!d.heroImage) return;
-      bshellSnapshot();
-      d.heroImage = "";
-      const fileInput = document.getElementById("bshell-set-photo");
-      if (fileInput) fileInput.value = "";
-      bshellRenderProperties();
-      bshellRenderCanvas();
-      bshellScheduleSave();
-    });
-  }
-
-  const galleryEl = document.getElementById("bshell-set-gallery");
-  if (galleryEl) {
-    galleryEl.addEventListener("change", (e) => {
-      const files = Array.from(e.target.files || []);
-      if (!files.length) return;
-      bshellSnapshot();
-      d.heroImages = d.heroImages || [];
-      const roomLeft = SITE_GALLERY_MAX - d.heroImages.length;
-      if (roomLeft <= 0) {
-        alert(bsL(`אפשר עד ${SITE_GALLERY_MAX} תמונות בגלריה — הסירו אחת כדי להוסיף חדשה.`, `The gallery holds up to ${SITE_GALLERY_MAX} images — remove one to add a new one.`));
-        bshellUndoStack.pop();
-        bshellSyncUndoButtons();
-        e.target.value = "";
-        return;
-      }
-      const toAdd = files.slice(0, roomLeft);
-      if (files.length > toAdd.length) {
-        alert(bsL(`אפשר עד ${SITE_GALLERY_MAX} תמונות בגלריה — נוספו רק ${toAdd.length} מתוך ${files.length} שבחרתם.`, `The gallery holds up to ${SITE_GALLERY_MAX} images — only ${toAdd.length} of the ${files.length} you chose were added.`));
-      }
-      let remaining = toAdd.length;
-      toAdd.forEach(async (file) => {
-        if (file.size > SITE_IMAGE_MAX_INPUT) {
-          alert(bsL(`"${file.name}" גדולה מדי — בחרו קובץ עד 25MB.`, `"${file.name}" is too large — choose a file up to 25MB.`));
-          remaining -= 1;
-          if (remaining === 0) { bshellRenderProperties(); bshellRenderCanvas(); bshellScheduleSave(); }
-          return;
-        }
-        // Each gallery photo gets its own unique name (unlike the single,
-        // stable "hero" slot) — same convention site-builder.js's own
-        // gallery upload already uses.
-        const name = "gallery-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
-        const url = await uploadSiteImage(file, name);
-        if (!url) alert(siteUploadErrorText(file.name));
-        else d.heroImages.push(url);
-        remaining -= 1;
-        if (remaining === 0) { bshellRenderProperties(); bshellRenderCanvas(); bshellScheduleSave(); }
-      });
-      e.target.value = "";
-    });
-  }
-  const galleryPreviewEl = document.getElementById("bshell-set-gallery-preview");
-  if (galleryPreviewEl) {
-    galleryPreviewEl.addEventListener("click", (e) => {
-      const btn = e.target.closest('[data-action="bshell-remove-gallery-photo"]');
-      if (!btn) return;
-      bshellSnapshot();
-      const idx = parseInt(btn.closest("[data-idx]").dataset.idx, 10);
-      d.heroImages.splice(idx, 1);
-      bshellRenderProperties();
-      bshellRenderCanvas();
-      bshellScheduleSave();
-    });
-  }
-}
-
-/* Colour/font/mood changes. This used to swap only the page's first
-   <style> tag — which missed every colour that isn't in it: the
-   "centered" hero / "grid" services layouts (site-blocks.js) paint the
-   primary colour in inline style attributes, and per-text colours sit
-   on the text itself, so on those projects a new colour or mood seemed
-   to change only the font. bshellRenderCanvas()'s in-place patch covers
-   the <style>, the font <link>s and every inline style alike, still
-   without reloading the iframe (so dragging the colour wheel stays
-   smooth). */
-function bshellApplyGlobalStylesLive() {
-  bshellRenderCanvas();
 }

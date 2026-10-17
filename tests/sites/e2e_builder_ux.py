@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Browser tests for the website builder's editing UX (sites.html -> the
-Builder Shell): the publish dialog's colours, design moods on every
+site editor, js/builder-shell.js): the publish dialog's colours, design moods on every
 template (+ "↩ חזרה לעיצוב הקודם"), in-place canvas updates while typing,
 the plain-text בס"ד, and click-anything-to-edit organised by section.
 
@@ -16,7 +16,7 @@ Exit code 1 if any check fails.
 import colorsys, json, os, re, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from e2e_seo_moods import Backend, CHROMIUM, REF, ROOT, SB, offline, serve, session  # noqa: E402
+from e2e_seo_moods import Backend, CHROMIUM, REF, ROOT, SB, offline, open_panel, serve, session  # noqa: E402
 from playwright.sync_api import sync_playwright  # noqa: E402
 
 SHOTS = os.environ.get("SHOT_DIR") or "/tmp/deskkit-builder-ux"
@@ -164,76 +164,96 @@ def run(br, port):
     pg.keyboard.press("Escape")
     pg.wait_for_timeout(200)
 
-    # ------------------------------------------------ 3. section editor on local-service (fixed checks)
+    # ------------------------------------------------ 3. editing on the canvas, organised by section (local-service)
+    # The editor no longer has a hierarchy column + properties form: texts are
+    # edited in place, items/contact details from a toolbar next to them, and
+    # one side panel holds the rest. The DATA and RENDERING checks are the same.
     fr = pg.frame_locator("#bshell-canvas-iframe")
     mark(pg)
     fr.locator('[data-textkey="heading-services"]').first.click()
     pg.wait_for_timeout(250)
-    sel = pg.evaluate("({ t: bshellSelection.type, f: bshellSelection.focus })")
-    check("Clicking the services title opens the services section", sel["t"] == "services" and sel["f"] == {"key": "heading-services"}, sel)
-    check("The services section editor lists every service and the title + group styles",
-          pg.locator("#bshell-props-body .bshell-svc-item").count() == 3 and pg.locator('#bshell-props-body [data-text-key="heading-services"]').count() == 1
-          and pg.locator('#bshell-props-body [data-style-key="svc-name"]').count() == 1 and pg.locator('#bshell-props-body [data-style-key="svc-desc"]').count() == 1
-          and pg.locator('#bshell-props-body [data-style-key="heading-services"]').count() == 1)
+    sel = pg.evaluate("({ k: bsxSel.kind, key: bsxSel.key, sec: bsxSel.secKey, editing: !!bsxEdit })")
+    check("Clicking the services title edits that title, inside the services section", sel == {"k": "text", "key": "heading-services", "sec": "services", "editing": True}, sel)
+    pg.keyboard.press("Escape")
+    pg.evaluate("bsxSelectSection('services'); bsxOpenPanel('section'); 0")
+    pg.wait_for_timeout(200)
+    check("The services section's panel lists every service", pg.locator("#bsx-panel [data-secp-item]").count() == 3)
+    pg.click('#bsx-panel [data-secp="item-style"]')
+    pg.wait_for_selector('#bsx-panel[data-mode="itemstyle"]')
+    check("…and its style view has one group for all names and one for all descriptions",
+          pg.locator('#bsx-panel [data-style-key="svc-name"]').count() == 1 and pg.locator('#bsx-panel [data-style-key="svc-desc"]').count() == 1)
     check("No per-item font controls (one font select per group only)",
-          pg.locator("#bshell-props-body .bshell-svc-item select").count() == 0
-          and pg.locator('#bshell-props-body select[data-style-prop="font"]').count() == pg.locator("#bshell-props-body .bshell-style-group").count())
-    font_opts = pg.evaluate("[...document.querySelectorAll('#bshell-props-body [data-style-key=\"svc-name\"] select[data-style-prop=font] option')].map(o => o.value).filter(Boolean)")
+          pg.locator("#bsx-panel select[id^='bsx-gs-font-']").count() == pg.locator("#bsx-panel .bshell-style-group").count() == 2)
+    font_opts = pg.evaluate("[...document.querySelectorAll('#bsx-panel [data-style-key=\"svc-name\"] select[id^=bsx-gs-font-] option')].map(o => o.value).filter(Boolean)")
     check("Group fonts are limited to the existing font list", sorted(font_opts) == sorted(pg.evaluate("Object.keys(SITE_FONTS)")), font_opts)
+    pg.click("#bsx-panel-close")
 
-    fr.locator('[data-svc-idx="2"]').first.click()
+    fr.locator('[data-svc-idx="2"] h3').first.click()
     pg.wait_for_timeout(300)
-    st = pg.evaluate("""({ t: bshellSelection.type, f: bshellSelection.focus,
-      active: [document.activeElement.dataset.svcIdx, document.activeElement.dataset.svcField],
-      focused: [...document.querySelectorAll('#bshell-props-body .is-focused')].map(e => e.dataset.svcItem) })""")
-    check("Clicking a specific service opens the services section, focused on THAT service",
-          st["t"] == "services" and st["f"] == {"svc": 2} and st["active"] == ["2", "name"] and st["focused"] == ["2"], st)
+    st = pg.evaluate("({ k: bsxSel.kind, svc: bsxSel.svc, field: bsxSel.field, editing: !!bsxEdit })")
+    check("Clicking a specific service selects THAT service and edits its name in place", st == {"k": "item", "svc": 2, "field": "name", "editing": True}, st)
     pg.screenshot(path=os.path.join(SHOTS, "section_editor_services_1400.png"))
+    pg.keyboard.press("End")
     pg.keyboard.type(" פלוס")
     pg.wait_for_timeout(250)
     live = pg.evaluate(f"{FRAME}.contentDocument.querySelector('[data-svc-idx=\"2\"] h3').textContent")
-    check("Typing a service name updates the preview in place (no iframe reload)", marked(pg) and live == "הום סטיילינג פלוס", (marked(pg), live))
+    check("Typing a service name updates the preview in place (no iframe reload)", marked(pg) and live == "הום סטיילינג פלוס" and pg.evaluate("siteState.data.services[2].name") == "הום סטיילינג פלוס", (marked(pg), live))
+    pg.keyboard.press("Enter")
 
     # group style: one colour for every service name
-    pg.evaluate("""(() => { const el = document.querySelector('#bshell-props-body [data-style-key="svc-name"] input[type=color]');
+    pg.evaluate("bsxOpenPanel('itemstyle'); 0")
+    pg.wait_for_selector('#bsx-panel [data-style-key="svc-name"] input[type=color]')
+    pg.evaluate("""(() => { const el = document.querySelector('#bsx-panel [data-style-key="svc-name"] input[type=color]');
       el.focus(); el.value = '#0E7490'; el.dispatchEvent(new Event('input', { bubbles: true })); })()""")
     pg.wait_for_timeout(200)
     names = pg.evaluate(f"[...{FRAME}.contentDocument.querySelectorAll('[data-svc-idx] h3')].map(h => getComputedStyle(h).color)")
     check("A service-name colour applies to ALL service names at once, in place",
           marked(pg) and len(names) == 3 and set(names) == {"rgb(14, 116, 144)"} and pg.evaluate("siteState.data.textStyles['svc-name'].color").upper() == "0E7490", (names, marked(pg)))
-    pg.select_option('#bshell-props-body [data-style-key="svc-desc"] select[data-style-prop="font"]', "varelaRound")
+    pg.select_option('#bsx-panel [data-style-key="svc-desc"] select[id^="bsx-gs-font-"]', "varelaRound")
     pg.wait_for_timeout(200)
     descs = pg.evaluate(f"[...{FRAME}.contentDocument.querySelectorAll('[data-svc-idx] p')].map(p => getComputedStyle(p).fontFamily)")
     check("A description font applies to all service descriptions", marked(pg) and descs and all("Varela Round" in f for f in descs), descs)
     html = pg.evaluate("currentSiteHtml('index')")
     check("Group styles are in the published HTML (CSS, not per-item inline styles)",
           ":is([data-svc-idx] h3" in html and "color:#0e7490 !important" in html.lower() and 'data-svc-idx="0" style=' not in html)
+    pg.click("#bsx-panel-close")
 
-    # contact: email + phone clicks
+    # contact: email + phone clicks edit the global fields from the toolbar
     fr.locator(".ls-contact .line", has_text="hello@example.co.il").first.click()
     pg.wait_for_timeout(250)
-    st = pg.evaluate("({ t: bshellSelection.type, f: bshellSelection.focus, a: document.activeElement.dataset.contactKey, h: !!document.querySelector('#bshell-props-body [data-text-key=\"heading-contact\"]') })")
-    check("Clicking the email in the contact section opens the contact section, email field focused", st == {"t": "contact", "f": {"contact": "email"}, "a": "email", "h": True}, st)
+    st = pg.evaluate("({ k: bsxSel.kind, b: bsxSel.bind, a: document.activeElement.dataset.tfield, note: (document.querySelector('.bsx-tools .bsx-tools-note') || {}).textContent || '' })")
+    check("Clicking the email in the contact section edits the (global) email, field focused", st["k"] == "contact" and st["b"] == "email" and st["a"] == "contact" and "פרט עסקי" in st["note"], st)
     pg.screenshot(path=os.path.join(SHOTS, "section_editor_contact_1400.png"))
+    pg.keyboard.press("End")
     pg.keyboard.type(".x")
     pg.wait_for_timeout(250)
     check("Typing the email updates the contact section in place", marked(pg) and "hello@example.co.il.x" in pg.evaluate(f"{FRAME}.contentDocument.querySelector('.ls-contact').textContent"))
+    pg.keyboard.press("Enter")
     fr.locator(".ls-contact .line", has_text="050-1234567").first.click()
     pg.wait_for_timeout(200)
-    st = pg.evaluate("({ t: bshellSelection.type, f: bshellSelection.focus, a: document.activeElement.dataset.contactKey })")
-    check("Clicking the phone at the bottom opens the contact section, phone field focused", st == {"t": "contact", "f": {"contact": "phone"}, "a": "phone"}, st)
+    st = pg.evaluate("({ k: bsxSel.kind, b: bsxSel.bind, a: document.activeElement.dataset.tfield })")
+    check("Clicking the phone at the bottom edits the phone, field focused", st == {"k": "contact", "b": "phone", "a": "contact"}, st)
+    pg.keyboard.press("Escape")
     # (a JS click: the free-plan DeskKit badge floats over the footer corner)
     pg.evaluate(f"{FRAME}.contentDocument.querySelector('.ls-footer').click()")
     pg.wait_for_timeout(200)
-    check("Clicking the footer opens the header & footer panel", pg.evaluate("bshellSelection.type") == "site"
-          and pg.locator('#bshell-props-body [data-text-key="businessName"]').count() == 1 and pg.locator("#bshell-prop-hide-copyright").count() == 1)
+    footer_sel = pg.evaluate("bsxSel && bsxSel.kind === 'section' && bsxSel.secKey.indexOf('site:') === 0")
+    pg.evaluate("bsxOpenPanel('chrome'); 0")
+    pg.wait_for_timeout(150)
+    check("Clicking the footer selects the header & footer part, whose panel has the name and copyright switch", footer_sel
+          and pg.locator("#bsx-chrome-name").count() == 1 and pg.locator("#bshell-prop-hide-copyright").count() == 1)
+    pg.click("#bsx-panel-close")
     fr.locator('[data-textkey="aboutText"]').first.click()
     pg.wait_for_timeout(200)
-    st = pg.evaluate("({ t: bshellSelection.type, f: bshellSelection.focus, a: document.activeElement.dataset.textKey })")
-    check("Clicking the about text opens the about section with that text focused", st == {"t": "about", "f": {"key": "aboutText"}, "a": "aboutText"}, st)
+    st = pg.evaluate("({ k: bsxSel.kind, key: bsxSel.key, sec: bsxSel.secKey, editing: !!bsxEdit })")
+    check("Clicking the about text edits it in place, in the about section", st == {"k": "text", "key": "aboutText", "sec": "about", "editing": True}, st)
+    pg.keyboard.press("Control+End")
     pg.keyboard.type(" עוד")
     pg.wait_for_timeout(200)
-    check("Typing the about text patches the preview in place", marked(pg) and "אנחנו עסק קטן. עוד" in pg.evaluate(f"{FRAME}.contentDocument.querySelector('[data-textkey=aboutText]').textContent"))
+    check("Typing the about text patches the preview in place", marked(pg) and "אנחנו עסק קטן. עוד" in pg.evaluate(f"{FRAME}.contentDocument.querySelector('[data-textkey=aboutText]').textContent")
+          and pg.evaluate("siteState.data.about") == "אנחנו עסק קטן. עוד")
+    pg.keyboard.press("Escape")
+    pg.keyboard.press("Escape")
 
     # Saved per-text overrides render unchanged until edited
     bn = pg.evaluate(f"(() => {{ const el = {FRAME}.contentDocument.querySelector('[data-textkey=businessName]'); return [getComputedStyle(el).color, el.getAttribute('style')]; }})()")
@@ -244,20 +264,22 @@ def run(br, port):
     box = fr.locator('[data-svc-idx="0"]').first.bounding_box()
     pg.mouse.move(box["x"] + 10, box["y"] + 10)
     pg.mouse.move(box["x"] + 30, box["y"] + 30)
-    pg.wait_for_timeout(150)
-    hov = pg.evaluate(f"(() => {{ const el = {FRAME}.contentDocument.querySelector('[data-svc-idx=\"0\"]'); const cs = getComputedStyle(el); return [el.classList.contains('bshell-hover-target'), cs.outlineStyle, cs.cursor]; }})()")
-    check("Hovering a service card shows a dashed outline and a hand cursor", hov[0] and hov[1] == "dashed" and hov[2] == "pointer", hov)
+    pg.wait_for_timeout(200)
+    hov = pg.evaluate(f"""(() => {{ const b = document.querySelector('.bsx-box.is-hover'); const r = b.getBoundingClientRect();
+      const f = document.getElementById('bshell-canvas-iframe').getBoundingClientRect(); const c = {FRAME}.contentDocument.querySelector('[data-svc-idx="0"]').getBoundingClientRect();
+      return [!b.hidden, Math.abs(r.left - (f.left + c.left)) < 2 && Math.abs(r.width - c.width) < 2, getComputedStyle({FRAME}.contentDocument.querySelector('[data-svc-idx="0"]')).cursor, document.querySelector('.bsx-ov.bsx-chip:not(.is-sec):not([hidden])') ? document.querySelector('.bsx-ov.bsx-chip:not(.is-sec):not([hidden])').textContent : '']; }})()""")
+    check("Hovering a service card outlines it (with its label) and shows a hand cursor", hov[0] and hov[1] and hov[2] == "pointer" and "1" in hov[3], hov)
 
     # a structural change (hide a section) re-renders double-buffered: same scroll, no blank frame
     pg.evaluate(f"{FRAME}.contentWindow.scrollTo(0, 900)")
     pg.wait_for_timeout(100)
-    pg.evaluate("bshellSelectSection('about')")
+    pg.evaluate("bsxSelectSection('about'); bsxOpenPanel('section'); 0")
     pg.wait_for_timeout(200)
     y0 = pg.evaluate(f"{FRAME}.contentWindow.scrollY")
     pg.evaluate("""window.__swapSeen = []; new MutationObserver(() => {
       const f = document.getElementById('bshell-canvas-iframe'); window.__swapSeen.push(!!(f && f.contentDocument && f.contentDocument.body && f.contentDocument.body.children.length));
     }).observe(document.querySelector('.bshell-canvas-shadow'), { childList: true })""")
-    pg.click("#bshell-prop-visible", force=True)
+    pg.click('#bsx-panel [data-secp="hide"]')
     pg.wait_for_function(f"{FRAME}.contentWindow.__dkMark !== 'same-document' && !document.querySelector('.bshell-canvas-buffer')", timeout=10000)
     pg.wait_for_timeout(150)
     y1 = pg.evaluate(f"{FRAME}.contentWindow.scrollY")
@@ -280,13 +302,16 @@ def run(br, port):
         mark(pg)
         errs = []
 
-        # typing in a text field never reloads the canvas
-        fr.locator('[data-textkey="heading-heroTitle"]').first.click()
+        # typing in a text never reloads the canvas
+        pg.evaluate(f"{FRAME}.contentDocument.querySelector('[data-textkey=\"heading-heroTitle\"]').scrollIntoView({{block:'center'}})")
+        fr.locator('[data-textkey="heading-heroTitle"]').first.click(force=True)
         pg.wait_for_timeout(150)
-        if pg.evaluate("document.activeElement.dataset.textKey") != "heading-heroTitle": errs.append("hero heading not focused")
+        if not pg.evaluate("!!bsxEdit && bsxSel.key === 'heading-heroTitle'"): errs.append("hero heading not editable")
+        pg.keyboard.press("Control+A")
         pg.keyboard.type("כותרת")
-        if pg.evaluate(f"{FRAME}.contentDocument.querySelector('[data-textkey=\"heading-heroTitle\"]').textContent") != "כותרת": errs.append("hero text not patched")
-        pg.keyboard.press("Control+A"); pg.keyboard.press("Backspace")  # empty -> template default, still in place
+        if pg.evaluate(f"{FRAME}.contentDocument.querySelector('[data-textkey=\"heading-heroTitle\"]').textContent") != "כותרת": errs.append("hero text not shown")
+        pg.keyboard.press("Control+A"); pg.keyboard.press("Backspace"); pg.keyboard.press("Enter")  # empty -> template default, still in place
+        pg.wait_for_timeout(150)
         if pg.evaluate(f"{FRAME}.contentDocument.querySelector('[data-textkey=\"heading-heroTitle\"]').textContent") != "הייי בדיקה": errs.append("default heading not restored")
         # a specific service
         # (a JS click: playground's bubbles are moving under physics)
@@ -295,33 +320,37 @@ def run(br, port):
           const el = doc.querySelector('[data-svc-idx="{idx}"]') || doc.querySelectorAll(SITE_GROUP_GRID)[{idx}];
           el.scrollIntoView({{ block: 'center' }}); (el.querySelector('h3, .name, span') || el).click(); }})()""")
         pg.wait_for_timeout(200)
-        st = pg.evaluate("({ f: bshellSelection.focus, t: bshellSelection.type, a: [document.activeElement.dataset.svcIdx, document.activeElement.dataset.svcField], items: bshellItemsType() })")
-        if not (st["f"] == {"svc": idx} and st["t"] == st["items"] and st["a"] == [str(idx), "name"]): errs.append(f"service click {st}")
+        st = pg.evaluate("({ k: bsxSel && bsxSel.kind, svc: bsxSel && bsxSel.svc, field: bsxSel && bsxSel.field, editing: !!bsxEdit })")
+        if st != {"k": "item", "svc": idx, "field": "name", "editing": True}: errs.append(f"service click {st}")
+        pg.keyboard.press("End")
         pg.keyboard.type("!")
-        if pg.evaluate("siteState.data.services[1].name") != "ליווי!": errs.append("service typing not saved")
+        if pg.evaluate("siteState.data.services[1].name") != "ליווי!": errs.append("service typing not saved " + str(pg.evaluate("siteState.data.services[1].name")))
         page_text = pg.evaluate(f"{FRAME}.contentDocument.body.textContent")
         if "ליווי!" not in page_text: errs.append("service typing not shown")
-        # phone typed in the section editor / settings
-        pg.click("#bshell-settings-btn")
+        pg.keyboard.press("Enter")
+        # phone typed in the business details panel
+        open_panel(pg, "business")
         pg.fill("#bshell-set-phone", "050-7654321")
+        pg.wait_for_timeout(150)
         if "050-7654321" not in pg.evaluate(f"{FRAME}.contentDocument.body.innerHTML") and tpl not in ("catalog", "boutique"):
             errs.append("phone not shown")
         check(f"{tpl}: typing (hero heading, service name, phone) updates the preview without reloading it", marked(pg) and not errs, (marked(pg), errs))
+        pg.click("#bsx-panel-close")
 
-        # email click -> the section that holds the contact details, email focused
+        # email click -> the global email field, focused
         has_email = pg.evaluate(f"(() => {{ const doc = {FRAME}.contentDocument; return [...doc.querySelectorAll('body *')].some(el => !el.children.length && el.textContent.includes('hello@example.co.il')) || !!doc.querySelector('a[href^=\"mailto:\"]'); }})()")
         if has_email:
             pg.evaluate(f"""(() => {{ const doc = {FRAME}.contentDocument;
               const el = [...doc.querySelectorAll('body *')].find(e => !e.children.length && e.textContent.includes('hello@example.co.il')) || doc.querySelector('a[href^="mailto:"]');
               el.scrollIntoView({{ block: 'center' }}); el.click(); }})()""")
-            pg.wait_for_timeout(200)
-            st = pg.evaluate("({ t: bshellSelection.type, f: bshellSelection.focus, focused: !!document.querySelector('#bshell-props-body [data-contact-field=\"email\"].is-focused'), a: document.activeElement.dataset.contactKey })")
-            check(f"{tpl}: clicking the email opens the section with the contact details, email focused",
-                  st["f"] == {"contact": "email"} and st["focused"] and st["a"] == "email" and st["t"] in ("contact", "site", "grid"), st)
+            pg.wait_for_timeout(250)
+            st = pg.evaluate("({ k: bsxSel && bsxSel.kind, b: bsxSel && bsxSel.bind, a: document.activeElement.dataset.tfield, v: document.activeElement.value })")
+            check(f"{tpl}: clicking the email edits the global email, its field focused",
+                  st["k"] == "contact" and st["b"] == "email" and st["a"] == "contact" and st["v"] == "hello@example.co.il", st)
+            pg.keyboard.press("Escape")
 
         # mood: colours (not just the font) change in the live preview; then restore
-        pg.click("#bshell-settings-btn")
-        pg.wait_for_selector(".bshell-mood-btn")
+        open_panel(pg, "design")
         check(f"{tpl}: no restore button before any mood", pg.locator("#bshell-mood-restore").count() == 0)
         before_data = pg.evaluate("JSON.stringify({ p: siteState.data.primaryColor, f: siteState.data.fontFamily, m: siteState.data.mood, ts: siteState.data.textStyles })")
         before_cols = set(pg.evaluate(CANVAS_COLOURS))
@@ -349,7 +378,7 @@ def run(br, port):
         corporate_state = pg.evaluate("({ p: siteState.data.primaryColor, m: siteState.data.mood, f: siteState.data.fontFamily })")
         check(f"{tpl}: restore after a second mood goes back to the first mood's design",
               corporate_state == {"p": m["primaryColor"], "m": "corporate", "f": m["bodyFont"]} and pg.locator("#bshell-mood-restore").count() == 0, corporate_state)
-        # undo back to before any mood is covered by e2e_seo_moods; here: from no mood -> mood -> restore = exact original
+        # from no mood -> mood -> restore = exact original
         pg.click('.bshell-mood-btn[data-mood=""]')
         settle(pg)
         pg.click('.bshell-mood-btn[data-mood="tech"]')
@@ -359,6 +388,7 @@ def run(br, port):
         pg.wait_for_timeout(900)  # let the templates' own colour transitions finish
         after_data = pg.evaluate("JSON.stringify({ p: siteState.data.primaryColor, f: siteState.data.fontFamily, m: siteState.data.mood, ts: siteState.data.textStyles })")
         restored_cols = set(pg.evaluate(CANVAS_COLOURS))
+        # the hero title was edited above (then emptied) and the phone/service changed: compare design only
         check(f"{tpl}: '↩ חזרה לעיצוב הקודם' restores colour, fonts and per-text styles exactly (data, HTML and preview colours)",
               after_data == before_data and pg.evaluate("currentSiteHtml('index')") == before_html and restored_cols == before_cols
               and pg.evaluate("siteState.data.moodPrev === undefined"),
@@ -366,19 +396,20 @@ def run(br, port):
         check(f"{tpl}: no JS errors", not pg.errors, pg.errors[:3])
         ctx.close()
 
-    # ------------------------------------------------ 5. 375px: section editor in the drawer
+    # ------------------------------------------------ 5. 375px: editing with the bottom sheet
     ctx, pg, be = open_builder(br, port, "local-service", project("local-service"), width=375, height=812)
     fr = pg.frame_locator("#bshell-canvas-iframe")
-    fr.locator('[data-svc-idx="1"]').first.click(force=True)
+    fr.locator('[data-svc-idx="1"]').first.click(force=True, position={"x": 6, "y": 6})
     pg.wait_for_timeout(250)
-    pg.click("#bshell-mobile-props-btn")
+    pg.click('.bsx-tools [data-act="item-style"]')
     pg.wait_for_timeout(400)
-    st = pg.evaluate("""(() => { const p = document.getElementById('bshell-props');
-      return { open: p.classList.contains('bshell-drawer-open'), sw: p.scrollWidth, cw: p.clientWidth, focused: !!p.querySelector('[data-svc-item="1"].is-focused'),
+    st = pg.evaluate("""(() => { const p = document.getElementById('bsx-panel'); const r = p.getBoundingClientRect(); const b = document.getElementById('bsx-panel-body');
+      return { open: !p.hidden, sheet: r.width >= 370 && r.bottom >= innerHeight - 1 && r.top > innerHeight * 0.3, sw: b.scrollWidth, cw: b.clientWidth, svc: bsxSel && bsxSel.svc,
                page: document.documentElement.scrollWidth - document.documentElement.clientWidth }; })()""")
     pg.screenshot(path=os.path.join(SHOTS, "section_editor_375.png"))
-    check("375px: the section editor opens in the drawer, focused service highlighted, no sideways scroll",
-          st["open"] and st["focused"] and st["sw"] <= st["cw"] + 1 and st["page"] <= 1, st)
+    check("375px: a service's style opens in a bottom sheet, the service stays selected, no sideways scroll",
+          st["open"] and st["sheet"] and st["svc"] == 1 and st["sw"] <= st["cw"] + 1 and st["page"] <= 1, st)
+    pg.click("#bsx-panel-close")
     pg.click("#bshell-publish-btn")
     pg.wait_for_selector("#dk-checklist-confirm")
     pg.click("#dk-checklist-confirm")

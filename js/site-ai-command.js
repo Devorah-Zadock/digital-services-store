@@ -73,7 +73,9 @@ function siteAiCommandContext() {
   const d = ensurePagesShape(siteState.data);
   const defs = SITE_BLOCK_DEFS[template] || {};
   const availableTypes = Object.keys(defs);
-  const activeTypes = activeBlocksForPage(d, template, "index");
+  // The template's own blocks only — added library sections ("x:<id>")
+  // aren't something the AI ops know how to address.
+  const activeTypes = activeBlocksForPage(d, template, "index").filter((t) => defs[t]);
   const variantOptions = {};
   availableTypes.forEach((type) => {
     const opts = typeof variantOptionsFor === "function" ? variantOptionsFor(template, type) : null;
@@ -128,7 +130,7 @@ function siteAiCleanOps(result, d, template) {
   const raw = Array.isArray(result.ops) ? result.ops : [result];
   const defs = SITE_BLOCK_DEFS[template] || {};
   const available = Object.keys(defs);
-  const active = activeBlocksForPage(d, template, "index");
+  const active = activeBlocksForPage(d, template, "index").filter((t) => defs[t]);
   const fields = siteAiTextFieldsFor(template, available);
   const services = Array.isArray(d.services) ? d.services : [];
   const claimed = new Set();
@@ -293,9 +295,13 @@ function applySiteAiOp(d, template, result) {
   const ordered = ops.slice().sort((a, b) => rank(a) - rank(b) || (a.op === "removeService" ? b.index - a.index : 0));
   ordered.forEach((op) => {
     if (op.op === "reorder") {
+      // The template's own blocks take the new order in their own slots;
+      // added library sections ("x:<id>") stay exactly where they are.
       const order = ensureBlockOrder(d, template, "index");
-      const inactiveTail = order.filter((t) => op.order.indexOf(t) === -1);
-      d.blockOrder.index = op.order.concat(inactiveTail);
+      const isCustom = (t) => typeof t === "string" && t.indexOf("x:") === 0;
+      const builtins = op.order.concat(order.filter((t) => !isCustom(t) && op.order.indexOf(t) === -1));
+      let next = 0;
+      d.blockOrder.index = order.map((t) => (isCustom(t) ? t : builtins[next++])).filter((t) => t !== undefined);
     } else if (op.op === "addSection") {
       ensureBlockOrder(d, template, "index").push(op.type);
     } else if (op.op === "removeSection") {

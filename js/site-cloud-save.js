@@ -63,7 +63,17 @@ async function siteAutosaveTick() {
 // of whether this upsert actually succeeded. supabase-js never throws
 // on a query error, so a caller that doesn't check the return value
 // here has no way to know the save silently failed.
-async function saveSiteNow() {
+// One save at a time: a call made while a save is still on its way waits
+// for it, then saves the latest data. Without this, two overlapping first
+// saves (no siteProjectId yet) could each create a row, and an older
+// payload could land after a newer one.
+let siteSaveChain = Promise.resolve();
+function saveSiteNow() {
+  const run = siteSaveChain.then(saveSiteNowOnce, saveSiteNowOnce);
+  siteSaveChain = run.catch(() => null);
+  return run;
+}
+async function saveSiteNowOnce() {
   if (!siteCurrentUserId) return null;
   // updated_at: so an edited site moves to the top of "My projects" (newest first).
   const row = { user_id: siteCurrentUserId, template: siteState.template, data: siteState.data, updated_at: new Date().toISOString() };

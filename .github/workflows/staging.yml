@@ -72,7 +72,7 @@ jobs:
 
       - name: Automate database (staging)
         if: inputs.task == 'setup' || inputs.task == 'deploy' || inputs.task == 'deploy-and-test'
-        run: python3 .github/scripts/staging.py sql automate/sql/10_engine.sql automate/sql/90_staging_test_helpers.sql automate/sql/95_staging_settings.sql
+        run: python3 .github/scripts/staging.py sql automate/sql/10_engine.sql automate/sql/90_staging_test_helpers.sql automate/sql/95_staging_settings.sql supabase/sql/site_projects_updated_at.sql
 
       - name: Secrets (safe mail mode), auth and schedule (staging)
         if: inputs.task != 'status'
@@ -145,6 +145,16 @@ jobs:
           cd "$RUNNER_TEMP/sched" && npm init -y > /dev/null && npm i --silent playwright@1.56.1 > /dev/null
           npx playwright install --with-deps chromium > /dev/null 2>&1
           node staging_schedule.mjs
+
+      # Runs even when an earlier test step failed (independent feature).
+      - name: Site builder on staging (real database, real browser)
+        if: ${{ !cancelled() && (inputs.task == 'test' || inputs.task == 'deploy-and-test') }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/sites" && cp tests/sites/staging_site_builder.mjs "$RUNNER_TEMP/sites/"
+          cd "$RUNNER_TEMP/sites" && npm init -y > /dev/null && npm i --silent playwright@1.56.1 > /dev/null
+          npx playwright install --with-deps chromium > /dev/null 2>&1
+          node staging_site_builder.mjs
 
       - name: Staging counts
         if: always()

@@ -86,13 +86,32 @@ function dkAppSidebarItemHtml(it, here) {
 // Collapse state (260px <-> 70px icon-only) is a per-viewer convenience,
 // remembered the same way the lang toggle already does — never required
 // for the sidebar to render correctly if it's missing or blocked.
+// Inside the site editor (body[data-dk-sidebar-scope="builder"], set by
+// js/builder-shell.js) the choice is remembered separately and starts
+// COLLAPSED, so the site being edited gets the room; everywhere else it
+// starts open, exactly as before.
+function dkSidebarPrefKey() {
+  return document.body && document.body.dataset.dkSidebarScope === "builder" ? "dk_sidebar_collapsed_builder" : "dk_sidebar_collapsed";
+}
 function dkSidebarCollapsedPref() {
-  try { return localStorage.getItem("dk_sidebar_collapsed") === "1"; } catch (e) { return false; }
+  const key = dkSidebarPrefKey();
+  const fallback = key !== "dk_sidebar_collapsed";
+  try {
+    const v = localStorage.getItem(key);
+    return v === null ? fallback : v === "1";
+  } catch (e) { return fallback; }
 }
 
 function dkToggleAppSidebar() {
   const collapsed = document.body.classList.toggle("dk-app-sidebar-collapsed");
-  try { localStorage.setItem("dk_sidebar_collapsed", collapsed ? "1" : "0"); } catch (e) {}
+  try { localStorage.setItem(dkSidebarPrefKey(), collapsed ? "1" : "0"); } catch (e) {}
+}
+
+// Re-applies the remembered choice (the editor calls this when it opens,
+// since opening it switches which choice applies).
+function dkApplyAppSidebarPref() {
+  if (!document.body) return;
+  document.body.classList.toggle("dk-app-sidebar-collapsed", dkSidebarCollapsedPref());
 }
 
 function dkSidebarAccountIcon() {
